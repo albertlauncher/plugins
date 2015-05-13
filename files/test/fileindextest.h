@@ -1,5 +1,5 @@
 // albert - a simple application launcher for linux
-// Copyright (C) 2014 Manuel Schneider
+// Copyright (C) 2014-2015 Manuel Schneider
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,29 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "fileindexbuilder.h"
-#include "fileindex.h"
-#include "fileitem.h"
-#include <QDebug>
-#include <QDirIterator>
+#pragma once
+#include <QObject>
+#include <QtTest/QtTest>
 
-void FileIndexBuilder::run() {
+class FileIndexTest : public QObject
+{
+    Q_OBJECT
+private slots:
 
-	for(Service::Item *i : _result)
-		delete i;
-	_result.clear();
+    void initTestCase(){}
+    void test1(){QVERIFY(true);}
+    void test2(){QVERIFY(true);}
+    void cleanupTestCase(){}
+};
 
-	qDebug() << "[FileIndex]\tLooking in: " << _ref->paths();
-
-	for ( const QString &p : _ref->paths()) {
-		QDirIterator it(p, QDirIterator::Subdirectories);
-		while (it.hasNext()) {
-			it.next();
-			if (it.fileInfo().isHidden() && !_ref->indexHiddenFiles())
-				continue;
-			_result.push_back(new FileIndex::Item(it.fileInfo()));
-		}
-	}
-	qDebug() << "[FileIndex]\tFound " << _result.size() << " files.";
-	emit fileIndexingDone();
-}
+QTEST_MAIN(FileIndexTest)
+//#include "files_test.moc"
