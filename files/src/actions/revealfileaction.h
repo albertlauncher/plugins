@@ -14,7 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "actions.h"
+#pragma once
+#include "abstractfileaction.h"
+#include <QString>
+#include <QIcon>
+class Query;
 
-
-
+namespace Files {
+class RevealFileAction final : public AbtractFileAction
+{
+public:
+    RevealFileAction(File *file) : AbtractFileAction(file) {}
+    QString name(Query const *q) const override;
+    QString description(Query const *q) const override;
+    QIcon   icon() const override;
+    void    activate(Query const *q) override;
+    uint    usage() const override;
+protected:
+    static unsigned int usageCounter;
+};
+}
