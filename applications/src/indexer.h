@@ -15,25 +15,28 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
-#include <QVariant>
-#include "interfaces/iitem.h"
+#include <QObject>
+#include <QRunnable>
+#include <QMutex>
 
 namespace Applications {
+class Extension;
 
-class App;
-
-class LaunchAppAction final : public IItem
+class Indexer final : public QObject,  public QRunnable
 {
+    Q_OBJECT
 public:
-    LaunchAppAction(App *app) : _app(app) {}
+    Indexer(Extension *ext)
+        : _extension(ext), _abort(false) {}
+    void run() override;
+    void abort(){_abort=true;}
 
-    QVariant       data(int role = Qt::DisplayRole) const override;
-    void           activate() override;
-    unsigned short score() const override;
+private:
+    Extension *_extension;
+    bool _abort;
 
-protected:
-    App *_app;
-    static unsigned short usageCounter;
+signals:
+    void statusInfo(const QString&);
 };
 
 }
