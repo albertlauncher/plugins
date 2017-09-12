@@ -138,7 +138,7 @@ void ExternalExtensions::Extension::reloadExtensions() {
     }
 
     for ( std::unique_ptr<ExternalExtension> &obj : d->externalExtensions )
-        unregisterQueryHandler(obj.get());
+        registerQueryHandler(obj.get());
 
     emit extensionsUpdated();
 }
