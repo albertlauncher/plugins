@@ -1,0 +1,5 @@
+CMakeLists.txt.user*
+build*
+*.qmlc
+*.jsc
+
