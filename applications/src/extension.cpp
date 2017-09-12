@@ -404,6 +404,9 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                                                          icon,
                                                          name,
                                                          fIt.filePath());
+            // Malformed exec line
+            if (commandline.isEmpty())
+                continue;
 
             shared_ptr<StandardAction> sa = std::make_shared<StandardAction>();
             sa->setText(QString("Run '%1'").arg(name));
