@@ -24,8 +24,9 @@ QmlBoxModel::FrontendPlugin::FrontendPlugin()
     : Frontend("org.albert.frontend.boxmodel.qml"),
       mainWindow(new MainWindow(this)){
 
-    connect(mainWindow.get(), &MainWindow::inputChanged,
-            this, &Frontend::inputChanged);
+    connect(mainWindow.get(), &MainWindow::inputChanged, [this](){
+        emit inputChanged(input());
+    });
 
     connect(mainWindow.get(), &MainWindow::settingsWidgetRequested,
             this, &Frontend::settingsWidgetRequested);

@@ -86,7 +86,7 @@ protected:
 
 signals:
 
-    void inputChanged(QString input);
+    void inputChanged();
     void settingsWidgetRequested();
 
 };

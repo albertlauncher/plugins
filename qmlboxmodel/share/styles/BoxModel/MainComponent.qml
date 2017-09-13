@@ -81,6 +81,7 @@ Item {
                         NumberAnimation { to: 1; duration: 500; easing.type: Easing.InOutExpo }
                     }
                 }
+                onTextChanged: { root.state="" }
             } // historyTextInput
 
             DesktopListView {
@@ -242,14 +243,6 @@ Item {
     ]
 
     Connections {
-        target: historyTextInput
-        onTextChanged: {
-            inputChanged(historyTextInput.text)
-            state=""
-        }
-    }
-
-    Connections {
         target: mainWindow
         onVisibilityChanged: {
             state=""
@@ -266,25 +259,29 @@ Item {
     /*
      * Currently the interface with the program logic comprises the following:
      *
-     * Context property 'resultsModel'
-     * Context property 'history'
-     * Listeners on signal: 'inputChanged'
-     * External invokation of 'onMainWindowHidden' (Focus out)
-     * External invokation of availableThemes
-     * External invokation of setTheme
-     * External invokation of settableProperties
-     * External mutations of the properties returned by availableProperties
+     * These context properties are set:
+     *   - mainWindow
+     *   - resultsModel
+     *   - history
      *
-     * Canges to this interface will increment the minor version of the
-     * interface version, if the new interface is a superset of the last one,
-     * i.e. it is backwards compatible, otherwise the major version will be
-     * incremented.
+     * These properties must exist in root:
+     *   - inputText (string, including the implicitly genreated signal)
      *
-     * Note: As long albert is in alpha stage the interface may break anytime.
+     * These functions must extist in root:
+     *   - availableThemes()
+     *   - setTheme(str)
+     *
+     * These signals must exist in root:
+     *   - inputChanged(str)
+     *   - settingsWidgetRequested()
+     *
+     * These object names with must exist somewhere:
+     *   - frame (the visual root frame, i.e. withouth shadow)
+     *   - preferences (QtObject containing only preference propterties)
      */
     property string interfaceVersion: "1.0-alpha" // Will not change until beta
 
-    signal inputChanged(string text)
+    property alias inputText: historyTextInput.text
     signal settingsWidgetRequested()
 
     function activate(/*optional*/ action) {

@@ -88,8 +88,8 @@ QmlBoxModel::MainWindow::MainWindow(FrontendPlugin *plugin, QWindow *parent) : Q
             }
 
             // Forward signals
-            connect(rootObject(), SIGNAL(inputChanged(QString)),
-                    this, SIGNAL(inputChanged(QString)));
+            connect(rootObject(), SIGNAL(inputTextChanged()),
+                    this, SIGNAL(inputChanged()));
 
             connect(rootObject(), SIGNAL(settingsWidgetRequested()),
                     this, SIGNAL(settingsWidgetRequested()));
@@ -209,18 +209,27 @@ QmlBoxModel::MainWindow::~MainWindow() {
 
 /** ***************************************************************************/
 QString QmlBoxModel::MainWindow::input() {
-    QString retVal;
-    QMetaObject::invokeMethod(rootObject(), "getInput", Qt::DirectConnection,
-                              Q_RETURN_ARG(QString, retVal));
-    return retVal;
 
+    // Get root object
+    QObject *rootObj = rootObject();
+    if (!rootObj){
+        qWarning() << "Could not retrieve input: There is no root object.";
+        return QString();
+    }
+    return rootObj->property("inputText").toString();
 }
 
 
 /** ***************************************************************************/
 void QmlBoxModel::MainWindow::setInput(const QString &input) {
-    QMetaObject::invokeMethod(rootObject(), "setInput", Qt::DirectConnection,
-                              Q_ARG(QString, input));
+
+    // Get root object
+    QObject *rootObj = rootObject();
+    if (!rootObj){
+        qWarning() << "Could not retrieve input: There is no root object.";
+        return;
+    }
+    rootObj->setProperty("inputText", input);
 }
 
 
