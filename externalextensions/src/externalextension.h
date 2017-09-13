@@ -38,8 +38,6 @@ public:
      */
 
     QStringList triggers() const override { return {trigger_}; }
-    void setupSession() override;
-    void teardownSession() override;
     void handleQuery(Core::Query *query) const override;
 
     /*

@@ -35,7 +35,7 @@ using std::shared_ptr;
 using std::vector;
 using namespace Core;
 
-#define EXTERNAL_EXTENSION_IID "org.albert.extension.external/v2.0"
+#define EXTERNAL_EXTENSION_IID "org.albert.extension.external/v3.0"
 
 namespace {
 
@@ -131,10 +131,6 @@ bool saveVariables (QJsonObject *object,
 ExternalExtensions::ExternalExtension::ExternalExtension(const QString &path, const QString &id)
     : QueryHandler(id), path_(path) {
 
-    // Never run the extension concurrent
-    QMutexLocker lock (&processMutex_);
-
-
     /*
      * Get the metadata
      */
@@ -204,8 +200,6 @@ ExternalExtensions::ExternalExtension::ExternalExtension(const QString &path, co
 /** ***************************************************************************/
 ExternalExtensions::ExternalExtension::~ExternalExtension() {
 
-    // Never run the extension concurrent
-    QMutexLocker lock (&processMutex_);
     QString errorString;
     QJsonObject object;
     QByteArray out;
@@ -235,72 +229,6 @@ ExternalExtensions::ExternalExtension::~ExternalExtension() {
 
 
 /** ***************************************************************************/
-void ExternalExtensions::ExternalExtension::setupSession() {
-
-    // Never run the extension concurrent
-    QMutexLocker lock (&processMutex_);
-    QString errorString;
-    QJsonObject object;
-    QByteArray out;
-
-    // Run the process
-    variables_["ALBERT_OP"] = "SETUPSESSION";
-    if ( !runProcess(path_, &variables_, &out, &errorString) ) {
-        qWarning() << qPrintable(QString("Session setup failed: %1 (%2)").arg(errorString, path_));
-        return;
-    }
-
-    if ( out.isEmpty() )
-        return;
-
-    // Parse stdout
-    if ( !parseJsonObject(out, &object,  &errorString) ) {
-        qWarning() << qPrintable(QString("Session setup failed: %1 (%2)").arg(errorString, path_));
-        return;
-    }
-
-    // Save the variables, if any
-    if ( !saveVariables(&object, &variables_, &errorString) ){
-        qWarning() << qPrintable(QString("Session setup: %1 (%2)").arg(errorString, path_));
-        return;
-    }
-}
-
-
-/** ***************************************************************************/
-void ExternalExtensions::ExternalExtension::teardownSession() {
-
-    // Never run the extension concurrent
-    QMutexLocker lock (&processMutex_);
-    QString errorString;
-    QJsonObject object;
-    QByteArray out;
-
-    // Run the process
-    variables_["ALBERT_OP"] = "TEARDOWNSESSION";
-    if ( !runProcess(path_, &variables_, &out, &errorString) ) {
-        qWarning() << qPrintable(QString("Session teardown failed: %1 (%2)").arg(errorString, path_));
-        return;
-    }
-
-    if ( out.isEmpty() )
-        return;
-
-    // Parse stdout
-    if ( !parseJsonObject(out, &object,  &errorString) ) {
-        qWarning() << qPrintable(QString("Session teardown failed: %1 (%2)").arg(errorString, path_));
-        return;
-    }
-
-    // Save the variables, if any
-    if ( !saveVariables(&object, &variables_, &errorString) ){
-        qWarning() << qPrintable(QString("Session teardown: %1 (%2)").arg(errorString, path_));
-        return;
-    }
-}
-
-
-/** ***************************************************************************/
 void ExternalExtensions::ExternalExtension::handleQuery(Query* query) const {
 
     // External extension must run only when triggered, since they are too ressource heavy
@@ -309,6 +237,9 @@ void ExternalExtensions::ExternalExtension::handleQuery(Query* query) const {
 
     // Never run the extension concurrent
     QMutexLocker lock (&processMutex_);
+    if (!query->isValid())
+        return;
+
     QString errorString;
     QJsonObject object;
     QByteArray out;
