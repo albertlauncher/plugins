@@ -23,6 +23,12 @@
 #include "externalextensionmodel.h"
 #include "externalextension.h"
 
+
+namespace {
+enum class Section{Name, Trigger, Path, Count};
+}
+
+
 /** ***************************************************************************/
 int ExternalExtensions::ExternalExtensionsModel::rowCount(const QModelIndex &) const {
     return static_cast<int>(externalExtensions_.size());
@@ -86,26 +92,57 @@ QVariant ExternalExtensions::ExternalExtensionsModel::data(const QModelIndex &in
         return QVariant();
 
     switch (role) {
+    case Qt::DecorationRole: {
+        if ( static_cast<Section>(index.column()) == Section::Name ) {
+            switch (externalExtensions_[static_cast<size_t>(index.row())]->state()) {
+            case ExternalExtension::State::Initialized:
+                return QIcon(":plugin_loaded");
+            case ExternalExtension::State::Error:
+                return QIcon(":plugin_error");
+            }
+        }
+        return QVariant();
+    }
     case Qt::DisplayRole: {
         switch (static_cast<Section>(index.column())) {
-        case Section::Name:  return externalExtensions_[index.row()]->name();
-        case Section::Trigger:  return externalExtensions_[index.row()]->triggers()[0] ;
-        case Section::Path:  return externalExtensions_[index.row()]->path();
+        case Section::Name:  return externalExtensions_[static_cast<size_t>(index.row())]->name();
+        case Section::Trigger:  return externalExtensions_[static_cast<size_t>(index.row())]->trigger();
+        case Section::Path:  return externalExtensions_[static_cast<size_t>(index.row())]->path();
         default: return QVariant();
         }
     }
     case Qt::EditRole: {
         switch (static_cast<Section>(index.column())) {
-        case Section::Name:  return externalExtensions_[index.row()]->name();
-        case Section::Trigger:  return externalExtensions_[index.row()]->triggers()[0];
-        case Section::Path:  return externalExtensions_[index.row()]->path();
+        case Section::Name:  return externalExtensions_[static_cast<size_t>(index.row())]->name();
+        case Section::Trigger:  return externalExtensions_[static_cast<size_t>(index.row())]->trigger();
+        case Section::Path:  return externalExtensions_[static_cast<size_t>(index.row())]->path();
         default: return QVariant();
         }
     }
     case Qt::ToolTipRole: {
-        switch (static_cast<Section>(index.column())) {
-        default: return "Double click to edit";
-        }
+        QString toolTip;
+        const ExternalExtension *ext = externalExtensions_[static_cast<size_t>(index.row())].get();
+
+        toolTip = QString("ID: %1").arg(ext->id());
+
+        if (!ext->version().isEmpty())
+            toolTip.append(QString("\nVersion: %1").arg(ext->version()));
+
+        if (!ext->author().isEmpty())
+            toolTip.append(QString("\nAuthor: %1").arg(ext->author()));
+
+        if (!ext->dependencies().empty())
+            toolTip.append(QString("\nDependencies: %1").arg(ext->dependencies().join(", ")));
+
+        toolTip.append(QString("\nPath: %1").arg(ext->path()));
+
+        if (!ext->description().isEmpty())
+            toolTip.append(QString("\nDescription: %1").arg(ext->description()));
+
+        if (ext->state() == ExternalExtension::State::Error && !ext->errorString().isEmpty())
+            toolTip.append(QString("\nERROR: %1").arg(ext->errorString()));
+
+        return toolTip;
     }
     default:
         return QVariant();
@@ -123,5 +160,5 @@ Qt::ItemFlags ExternalExtensions::ExternalExtensionsModel::flags(const QModelInd
 
 /** ***************************************************************************/
 void ExternalExtensions::ExternalExtensionsModel::onActivated(const QModelIndex &index) {
-    QDesktopServices::openUrl(QUrl(externalExtensions_[index.row()]->path()));
+    QDesktopServices::openUrl(QUrl(externalExtensions_[static_cast<size_t>(index.row())]->path()));
 }

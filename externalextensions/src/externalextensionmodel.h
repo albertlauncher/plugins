@@ -42,7 +42,6 @@ public:
 private:
 
     const std::vector<std::unique_ptr<ExternalExtension>> &externalExtensions_;
-    enum class Section{Name, Trigger, Path, Count};
 };
 
 }

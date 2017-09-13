@@ -30,14 +30,31 @@
 #include "util/standardaction.h"
 #include "util/standarditem.h"
 #include "xdg/iconlookup.h"
-using std::pair;
-using std::shared_ptr;
-using std::vector;
+using namespace std;
 using namespace Core;
 
 #define EXTERNAL_EXTENSION_IID "org.albert.extension.external/v3.0"
 
 namespace {
+
+const constexpr char* ALBERT_OP = "ALBERT_OP";
+const constexpr char* ALBERT_QRY = "ALBERT_QUERY";
+const constexpr uint PROC_TIMEOUT = 5000;
+
+enum Message {
+    Metadata,
+    Initialize,
+    Finalize,
+    Query
+};
+
+QString OP_COMMANDS[] = {
+    "METADATA",
+    "INITIALIZE",
+    "FINALIZE",
+    "QUERY"
+};
+
 
 bool runProcess (QString path,
                  std::map<QString, QString> *variables,
@@ -50,12 +67,16 @@ bool runProcess (QString path,
     for ( auto & entry : *variables )
         env.insert(entry.first, entry.second);
     process.setProcessEnvironment(env);
-    process.setProgram(path);
-    process.start();
-    process.waitForFinished(-1);
+    process.start(path);
+
+    if ( !process.waitForFinished(PROC_TIMEOUT) ){
+        *errorString = "Process timed out.";
+        process.kill();
+        return false;
+    }
 
     if ( process.exitStatus() != QProcess::NormalExit ) {
-        *errorString = QString("Process crashed.");
+        *errorString = "Process crashed.";
         return false;
     }
 
@@ -67,10 +88,10 @@ bool runProcess (QString path,
         QByteArray cerr = process.readAllStandardError();
 
         if (!cout.isEmpty())
-            errorString->append(QString("\n%1").arg(QString(cout)));
+            errorString->append(QString("\n%1").arg(QString(cout)).trimmed());
 
         if (!cerr.isEmpty())
-            errorString->append(QString("\n%1").arg(QString(cerr)));
+            errorString->append(QString("\n%1").arg(QString(cerr)).trimmed());
 
         return false;
     }
@@ -93,12 +114,12 @@ bool parseJsonObject (const QByteArray &json,
         return false;
     }
 
-    *object = document.object();
-    if ( object->isEmpty() ) {
-        *errorString = QString("Expected json object, but received an array.");
+    if ( !document.isObject() ) {
+        *errorString = "Output does not contain a JSON object.";
         return false;
     }
 
+    *object = document.object();
     return true;
 }
 
@@ -129,85 +150,117 @@ bool saveVariables (QJsonObject *object,
 
 /** ***************************************************************************/
 ExternalExtensions::ExternalExtension::ExternalExtension(const QString &path, const QString &id)
-    : QueryHandler(id), path_(path) {
+    : QueryHandler(id), path_(path), id_(id) {
+
+    state_ = State::Error;
+    name_ = id; // Will be overwritten when available
 
     /*
      * Get the metadata
      */
 
+    QString preparedMessage = QString(OP_COMMANDS[Message::Metadata]).append(": %1 [%2]");
+
     // Run the process
-    variables_["ALBERT_OP"] = "METADATA";
-    QString errorString;
     QByteArray out;
-    if ( !runProcess(path_, &variables_, &out, &errorString) )
-        throw QString("Getting metadata failed: %1 (%2)").arg(errorString, path_);
+    variables_[ALBERT_OP] = OP_COMMANDS[Message::Metadata];
+    if ( !runProcess(path_, &variables_, &out, &errorString_) ){
+        qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
+        return;
+    }
 
     // Parse stdout
     QJsonObject object;
-    if ( !parseJsonObject(out, &object,  &errorString) )
-        throw QString("Getting metadata failed: %1 (%2)").arg(errorString, path_);
+    if ( !parseJsonObject(out, &object,  &errorString_) ) {
+        qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
+        return;
+    }
 
     // Check for a sane interface ID (IID)
-    if (object["iid"].isUndefined())
-        throw QString("Getting metadata failed: Does not contain an interface id. (%1)").arg(path_);
+    QJsonValue value = object["iid"];
+    if (value.isNull()) {
+        errorString_ = "Metadate does not contain an interface id (iid).";
+        qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
+        return;
+    }
 
-    QString iid = object["iid"].toString();
-    if (iid != EXTERNAL_EXTENSION_IID)
-        throw QString("Getting metadata failed: Interface id '%1' does not match '%2'. (%3)").arg(iid, EXTERNAL_EXTENSION_IID, path_);
+    QString iid = value.toString();
+    if (iid != EXTERNAL_EXTENSION_IID) {
+        errorString_ = QString("Interface id '%1' does not match '%2'.").arg(iid, EXTERNAL_EXTENSION_IID);
+        qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
+        return;
+    }
+
+    trigger_ = object["trigger"].toString();
+    if ( trigger_.isEmpty() ){
+        errorString_ = "No trigger defined in metadata.";
+        qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
+        return;
+    }
 
     // Get opional data
-    QJsonValue val;
+    value = object["name"];
+    name_ = value.isString() ? value.toString() : id_;
 
-    val = object["trigger"];
-    trigger_ = val.isString() ? val.toString() : QString();
+    value = object["version"];
+    version_ = value.isString() ? value.toString() : "N/A";
 
-    val = object["name"];
-    name_ = val.isString() ? val.toString() : id;
+    value = object["author"];
+    author_ = value.isString() ? value.toString() : "N/A";
 
-    val = object["version"];
-    version_ = val.isString() ? val.toString() : "N/A";
+    value = object["description"];
+    description_ = value.toString();
 
-    val = object["author"];
-    author_ = val.isString() ? val.toString() : "N/A";
-
-    QStringList dependencies;
-    for (const QJsonValue & value : object["dependencies"].toArray())
-         dependencies.append(value.toString());
+    value = object["dependencies"];
+    if ( value.isArray() )
+        for (const QJsonValue & value : value.toArray())
+            dependencies_.append(value.toString());
 
 
     /*
      * Initialize the extension
      */
 
+    preparedMessage = QString(OP_COMMANDS[Message::Initialize]).append(": %1 [%2]");
+
     // Run the process
-    variables_["ALBERT_OP"] = "INITIALIZE";
-    if ( !runProcess(path, &variables_, &out,  &errorString) )
-        throw QString("Initialization failed: %1 (%2)").arg(errorString, path_);
-
-    if ( out.isEmpty() )
+    variables_[ALBERT_OP] = OP_COMMANDS[Message::Initialize];
+    if ( !runProcess(path_, &variables_, &out, &errorString_) ){
+        qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
         return;
+    }
 
-    // Parse stdout
-    if ( !parseJsonObject(out, &object,  &errorString) )
-        throw QString("Initialization failed: %1 (%2)").arg(errorString, path_);
+    if ( !out.isEmpty() ) {
 
-    // Finally save the variables, if any
-    if ( !saveVariables(&object, &variables_, &errorString) )
-        qWarning() << qPrintable(QString("Initialization: %1 (%2)").arg(errorString, path_));
+        // Parse stdout
+        if ( !parseJsonObject(out, &object,  &errorString_) ){
+            qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
+            return;
+        }
+
+        // Finally save the variables, if any
+        if ( !saveVariables(&object, &variables_, &errorString_) ){
+            qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
+            return;
+        }
+    }
+
+    state_ = State::Initialized;
 }
 
 
 /** ***************************************************************************/
 ExternalExtensions::ExternalExtension::~ExternalExtension() {
 
-    QString errorString;
     QJsonObject object;
     QByteArray out;
 
+    QString preparedMessage = QString(OP_COMMANDS[Message::Finalize]).append(": %1 [%2]");
+
     // Run the process
-    variables_["ALBERT_OP"] = "FINALIZE";
-    if ( !runProcess(path_, &variables_, &out, &errorString) ) {
-        qWarning() << qPrintable(QString("Finalization failed: %1 (%2)").arg(errorString, path_));
+    variables_[ALBERT_OP] = OP_COMMANDS[Message::Finalize];
+    if ( !runProcess(path_, &variables_, &out, &errorString_) ) {
+        qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
         return;
     }
 
@@ -215,21 +268,23 @@ ExternalExtensions::ExternalExtension::~ExternalExtension() {
         return;
 
     // Parse stdout
-    if ( !parseJsonObject(out, &object,  &errorString) ) {
-        qWarning() << qPrintable(QString("Finalization failed: %1 (%2)").arg(errorString, path_));
+    if ( !parseJsonObject(out, &object,  &errorString_) )  {
+        qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
         return;
     }
 
     // Save the variables, if any
-    if ( !saveVariables(&object, &variables_, &errorString) ){
-        qWarning() << qPrintable(QString("Finalization: %1 (%2)").arg(errorString, path_));
+    if ( !saveVariables(&object, &variables_, &errorString_) ) {
+        qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
         return;
     }
 }
 
 
 /** ***************************************************************************/
-void ExternalExtensions::ExternalExtension::handleQuery(Query* query) const {
+void ExternalExtensions::ExternalExtension::handleQuery(Core::Query* query) const {
+
+    Q_ASSERT(state_ != State::Error);
 
     // External extension must run only when triggered, since they are too ressource heavy
     if ( query->trigger().isEmpty() )
@@ -240,21 +295,48 @@ void ExternalExtensions::ExternalExtension::handleQuery(Query* query) const {
     if (!query->isValid())
         return;
 
-    QString errorString;
-    QJsonObject object;
     QByteArray out;
+    QString errorString;
+    QString preparedMessage = QString(OP_COMMANDS[Message::Query]).append(": %1 [%2]");
+
+    // Build env
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    variables_[ALBERT_OP] = OP_COMMANDS[Message::Query];
+    variables_[ALBERT_QRY] = query->searchTerm();
+    for ( auto & entry : variables_ )
+        env.insert(entry.first, entry.second);
 
     // Run the process
-    variables_["ALBERT_OP"] = "QUERY";
-    variables_["ALBERT_QUERY"] = query->searchTerm();
-    if ( !runProcess(path_, &variables_, &out, &errorString) ) {
-        qWarning() << qPrintable(QString("Handle query failed: %1 (%2)").arg(errorString, path_));
+    QProcess process;
+    process.setProcessEnvironment(env);
+    process.start(path_);
+
+    while( !process.waitForFinished(10) ) {
+        if (!query->isValid()) {
+            process.terminate();
+            if ( !process.waitForFinished(PROC_TIMEOUT) )
+                process.kill();
+            return;
+        }
+    }
+
+    if ( process.exitStatus() != QProcess::NormalExit ) {
+        qWarning() << qPrintable(preparedMessage.arg("Process crashed.", path_));
         return;
     }
 
+    if ( process.exitCode() != 0 ) {
+        errorString = QString("Exit code is %1.").arg(process.exitCode()).append(process.readAllStandardError());
+        qWarning() << qPrintable(preparedMessage.arg(errorString, path_));
+        return;
+    }
+
+    out = process.readAllStandardOutput();
+
     // Parse stdout
+    QJsonObject object;
     if ( !parseJsonObject(out, &object,  &errorString) ) {
-        qWarning() << qPrintable(QString("Handle query failed: %1 (%2)").arg(errorString, path_));
+        qWarning() << qPrintable(preparedMessage.arg(errorString, path_));
         return;
     }
 
@@ -262,63 +344,65 @@ void ExternalExtensions::ExternalExtension::handleQuery(Query* query) const {
         return;
 
     // Save the variables, if any
-    if ( !saveVariables(&object, &variables_, &errorString) ){
-        qWarning() << qPrintable(QString("Handle query: %1 (%2)").arg(errorString, path_));
-        return;
+    if ( !saveVariables(&object, &variables_, &errorString) ) {
+         qWarning() << qPrintable(preparedMessage.arg(errorString, path_));
+         return;
     }
 
-    // Check existance of items
-    if ( !object.contains("items") ) {
-        qWarning() << qPrintable(QString("Handle query failed: Result contains no items (%1)").arg(path_));
+    // Quit if there are no items
+    QJsonValue value = object["items"];
+    if ( value.isNull() )
         return;
-    }
 
     // Check type of items
-    if ( !object["items"].isArray() ) {
-        qWarning() << qPrintable(QString("Handle query failed: 'items' is not an array (%1)").arg(path_));
+    if ( !value.isArray() ) {
+        errorString = "'items' is not an array.";
+        qWarning() << qPrintable(preparedMessage.arg(errorString, path_));
         return;
     }
 
     // Iterate over the results
-    shared_ptr<StandardItem> standardItem;
-    shared_ptr<StandardAction> standardAction;
-    vector<shared_ptr<Action>> standardActionVector;
+    shared_ptr<StandardItem> item;
+    shared_ptr<StandardAction> action;
+    vector<shared_ptr<Action>> actions;
     vector<pair<shared_ptr<Core::Item>,short>> results;
 
-    for (const QJsonValue & itemValue : object["items"].toArray() ){
+    int i = 0;
+    for (const QJsonValue & itemValue : value.toArray() ){
 
         if ( !itemValue.isObject() ) {
-            qWarning() << qPrintable(QString("Item is not a json object. (%1)").arg(path_));
-            continue;
+            qWarning() << qPrintable(QString("Returned item %1 Item is not a JSON object. (%2)").arg(i).arg(path_));
+            return;
         }
         object = itemValue.toObject();
 
         // Build the item from the json object
-        standardItem = std::make_shared<StandardItem>(object["id"].toString());
-        standardItem->setText(object["name"].toString());
-        standardItem->setSubtext(object["description"].toString());
-        standardItem->setCompletionString(object["completion"].toString());
+        item = std::make_shared<StandardItem>(object["id"].toString());
+        item->setText(object["name"].toString());
+        item->setSubtext(object["description"].toString());
+        item->setCompletionString(object["completion"].toString());
         QString icon = XDG::IconLookup::iconPath({object["icon"].toString(), "unknown"});
-        standardItem->setIconPath(icon.isEmpty() ? ":unknown" : icon);
+        item->setIconPath(icon.isEmpty() ? ":unknown" : icon);
 
         // Build the actions
-        standardActionVector.clear();
+        actions.clear();
         for (const QJsonValue & value : object["actions"].toArray()){
             object = value.toObject();
-            standardAction = std::make_shared<StandardAction>();
-            standardAction->setText(object["name"].toString());
+            action = std::make_shared<StandardAction>();
+            action->setText(object["name"].toString());
             QString command = object["command"].toString();
             QStringList arguments;
             for (const QJsonValue & value : object["arguments"].toArray())
                  arguments.append(value.toString());
-            standardAction->setAction(std::bind(static_cast<bool(*)(const QString&,const QStringList&)>(&QProcess::startDetached), command, arguments));
-            standardActionVector.push_back(standardAction);
+            action->setAction(std::bind(static_cast<bool(*)(const QString&,const QStringList&)>(&QProcess::startDetached), command, arguments));
+            actions.push_back(std::move(action));
         }
-        standardItem->setActions(std::move(standardActionVector));
+        item->setActions(std::move(actions));
 
-        results.emplace_back(std::move(standardItem), 0);
+        results.emplace_back(std::move(item), 0);
     }
 
-    query->addMatches(results.begin(), results.end());
+    query->addMatches(make_move_iterator(results.begin()),
+                      make_move_iterator(results.end()));
 }
 

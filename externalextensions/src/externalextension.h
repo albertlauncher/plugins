@@ -23,12 +23,15 @@
 
 namespace ExternalExtensions {
 
-class ExternalExtension final :
-        public QObject,
-        public Core::QueryHandler
+class ExternalExtension final : public Core::QueryHandler
 {
-
 public:
+
+    enum class State {
+        Initialized,
+        Error
+    };
+
 
     ExternalExtension(const QString &path, const QString &id);
     ~ExternalExtension();
@@ -45,12 +48,16 @@ public:
      */
 
 
-    const QString &path() { return path_; }
-    const QString &id() { return id_; }
-    const QString &name() { return name_; }
-    const QString &author() { return author_; }
-    const QString &version() { return version_; }
-    const QStringList &dependencies() { return dependencies_; }
+    const QString &path() const { return path_; }
+    const QString &id() const { return id_; }
+    const QString &name() const { return name_; }
+    const QString &author() const { return author_; }
+    const QString &version() const { return version_; }
+    const QString &description() const { return description_; }
+    const QString &trigger() const { return trigger_; }
+    const QStringList &dependencies() const { return dependencies_; }
+    const State  &state() const { return state_; }
+    const QString  &errorString() const { return errorString_; }
 
 private:
 
@@ -61,8 +68,11 @@ private:
     QString name_;
     QString author_;
     QString version_;
-    QStringList dependencies_;
     QString trigger_;
+    QString description_;
+    QStringList dependencies_;
+    State state_;
+    QString errorString_;
     mutable std::map<QString, QString> variables_;
     mutable QMutex processMutex_;
 };

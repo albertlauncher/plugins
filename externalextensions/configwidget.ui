@@ -14,7 +14,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#808080;&quot;&gt;External extensions allow the user to rapidly write custom extensions. External extensions are basically programs that follow a specific communication protocol. For the details see the wiki. The list below contains the found extensions.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#808080;&quot;&gt;External extensions allow the user to rapidly write custom extensions. External extensions are basically programs that follow a specific communication protocol. For the details see the &lt;/span&gt;&lt;a href=&quot;https://albertlauncher.github.io/docs/extending/external/v3/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;wiki&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; color:#808080;&quot;&gt;. The list below contains the extensions found on your system.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
