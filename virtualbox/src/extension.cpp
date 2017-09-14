@@ -123,7 +123,7 @@ void VirtualBox::Private::rescanVBoxConfig(QString path) {
     }
 
     qInfo() << qPrintable(QString("Indexed %2 VirtualBox images.").arg(found));
-}
+}*/
 
 
 
