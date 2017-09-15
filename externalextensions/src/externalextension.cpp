@@ -252,6 +252,9 @@ ExternalExtensions::ExternalExtension::ExternalExtension(const QString &path, co
 /** ***************************************************************************/
 ExternalExtensions::ExternalExtension::~ExternalExtension() {
 
+    if ( state_ == State::Error )
+        return;
+
     QJsonObject object;
     QByteArray out;
 
@@ -260,21 +263,6 @@ ExternalExtensions::ExternalExtension::~ExternalExtension() {
     // Run the process
     variables_[ALBERT_OP] = OP_COMMANDS[Message::Finalize];
     if ( !runProcess(path_, &variables_, &out, &errorString_) ) {
-        qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
-        return;
-    }
-
-    if ( out.isEmpty() )
-        return;
-
-    // Parse stdout
-    if ( !parseJsonObject(out, &object,  &errorString_) )  {
-        qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
-        return;
-    }
-
-    // Save the variables, if any
-    if ( !saveVariables(&object, &variables_, &errorString_) ) {
         qWarning() << qPrintable(preparedMessage.arg(errorString_, path_));
         return;
     }
