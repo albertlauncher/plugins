@@ -117,7 +117,7 @@ QJsonObject Files::IndexTreeNode::serialize(){
 /**************************************************************************************************/
 void Files::IndexTreeNode::deserialize(const QJsonObject &object, shared_ptr<IndexTreeNode> parent) {
 
-    parent = parent;
+    this->parent = parent;
     name = object["name"].toString();
     lastModified = QDateTime::fromString(object["lastmodified"].toString());
 
@@ -188,7 +188,7 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
                 pattern = QString("^%1$").arg(QDir(fileInfo.filePath()).filePath(pattern.mid(1, -1)));
                 localIgnoreEntries.emplace_back(QRegularExpression(pattern), patternType);
             } else {
-                pattern = QString("%1$").arg(pattern);
+                pattern = QString("/%1$").arg(pattern);
                 localIgnoreEntries.emplace_back(QRegularExpression(pattern), patternType);
             }
         }
@@ -272,7 +272,7 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
 
     // Recursively check all childnodes too
     for ( const shared_ptr<IndexTreeNode> &child : children )
-        child->updateRecursion(abort, mimeDatabase, indexSettings, indexedDirs, ignoreEntries);
+        child->updateRecursion(abort, mimeDatabase, indexSettings, indexedDirs, localIgnoreEntries);
 
 }
 
