@@ -404,7 +404,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                                                          icon,
                                                          name,
                                                          fIt.filePath());
-            // Malformed exec line
+            // Malformed exec line. Constraint (1)
             if (commandline.isEmpty())
                 continue;
 
@@ -535,7 +535,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                  && !exec.startsWith("sh ")
                  && !exec.startsWith("dbus-send ")
                  && !exec.startsWith("/") )
-                indexStrings.emplace_back(exec, UINT_MAX);
+                indexStrings.emplace_back(commandline[0], UINT_MAX);  // safe since (1)
 
             for (auto & kw : keywords)
                 indexStrings.emplace_back(kw, UINT_MAX);
