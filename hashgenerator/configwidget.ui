@@ -12,22 +12,14 @@
   </property>
   <layout class="QVBoxLayout">
    <item>
-    <spacer name="verticalSpacer_2">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; color:#808080;&quot;&gt;This is a simple hashing extension. Just type &amp;quot;hash &amp;quot; and the string you would like to hash. You will get a list of items containing the hash value of your string generated with the state of the art hashing algorithms. You can also compute the hash you want directly by using the hash name as prefix, e.g. &amp;quot;md5 Hello world&amp;quot;.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;
+&lt;head/&gt;
+&lt;body&gt;
+&lt;p&gt;This is a simple hashing extension. Just type &amp;quot;hash &amp;quot; and the string you would like to hash. You will get a list of items containing the hash value of your string generated with the state of the art hashing algorithms. You can also compute the hash you want directly by using the hash name as prefix, e.g. &amp;quot;md5 Hello world&amp;quot;.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>

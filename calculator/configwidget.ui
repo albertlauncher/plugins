@@ -2,15 +2,17 @@
 <ui version="4.0">
  <class>Calculator::ConfigWidget</class>
  <widget class="QWidget" name="Calculator::ConfigWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>800</width>
-    <height>600</height>
-   </rect>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is a simple calculator extension. It lets you evaluate basic math expressions. Check the &lt;a href=&quot;https://albertlauncher.github.io/docs/extensions/calculator/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;docs&lt;/span&gt;&lt;/a&gt; for built-in fuctions and operators.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
    <item>
     <widget class="QCheckBox" name="checkBox_groupsep">
      <property name="text">
