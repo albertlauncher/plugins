@@ -293,7 +293,7 @@ void ExternalExtensions::ExternalExtension::handleQuery(Core::Query* query) cons
     // Build env
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     variables_[ALBERT_OP] = OP_COMMANDS[Message::Query];
-    variables_[ALBERT_QRY] = query->searchTerm();
+    variables_[ALBERT_QRY] = query->string();
     for ( auto & entry : variables_ )
         env.insert(entry.first, entry.second);
 

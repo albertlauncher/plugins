@@ -161,49 +161,44 @@ QWidget *Ssh::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Ssh::Extension::handleQuery(Core::Query * query) const {
 
-    if ( query->searchTerm().isEmpty() )
-        return;
+    if ( query->isTriggered() ){
 
-    // This extension must run only triggered
-    if ( query->trigger().isNull() )
-        return;
-
-    QStringList queryTerms = query->searchTerm().split(' ',QString::SkipEmptyParts);
-
-    // Add all hosts if there are no arguments
-    if ( queryTerms.size() == 1)
+        // Add all hosts that the query is a prefix of
         for ( shared_ptr<Core::StandardItem>& host : d->hosts )
-            query->addMatch(host);  // Explicitly: No move
+            if ( host->text().startsWith(query->string()) )
+                query->addMatch(host, static_cast<uint>(1.0*query->string().size()/host->text().size()* UINT_MAX));
 
-    if ( queryTerms.size() != 2)
-        return;
+        if (!query->string().trimmed().isEmpty()) {
+            // Add the quick connect item
+            QString trimmed = query->string().trimmed();
+            shared_ptr<StandardAction> action = std::make_shared<StandardAction>();
+            action->setText(QString("Connect to '%1' using ssh").arg(trimmed));
+            action->setAction([trimmed, this](){
+                QStringList tokens;
+                tokens << Core::ShUtil::split(terminalCommand) << d->shell << "-c"
+                       << QString(" ssh %1 || read -rsp $'\nPress enter to close the terminal.\n'").arg(trimmed);
+                QProcess::startDetached(tokens.takeFirst(), tokens);
+            });
 
-    // Add all hosts that the query is a prefix of
-    for ( shared_ptr<Core::StandardItem>& host : d->hosts )
-        if ( host->text().startsWith(queryTerms[1]) )
-            // Explicitly: No move
-            query->addMatch(host, static_cast<uint>(1.0*query->searchTerm().size()/host->text().size()* UINT_MAX));
+            std::shared_ptr<StandardItem> item  = std::make_shared<StandardItem>("");
+            item->setText(trimmed);
+            item->setSubtext(QString("Quick connect to '%1' using ssh").arg(trimmed));
+            item->setCompletionString(QString("ssh %1").arg(trimmed));
+            item->setIconPath(d->icon);
+            item->setActions({action});
 
-    // Add the quick connect item
-    std::shared_ptr<StandardItem> item  = std::make_shared<StandardItem>("");
-    item->setText(queryTerms[1]);
-    item->setSubtext(QString("Quick connect to '%1' using ssh").arg(queryTerms[1]));
-    item->setCompletionString(QString("ssh %1").arg(queryTerms[1]));
-    item->setIconPath(d->icon);
+            query->addMatch(std::move(item));
+        }
 
-    shared_ptr<StandardAction> action = std::make_shared<StandardAction>();
-    action->setText(QString("Connect to '%1' using ssh").arg(queryTerms[1]));
-    action->setAction([queryTerms, this](){
-        QStringList tokens;
-        tokens << Core::ShUtil::split(terminalCommand)
-               << d->shell << "-c"
-               << QString(" ssh %1 || read -rsp $'\nPress enter to close the terminal.\n'")
-                  .arg(queryTerms[1]);
-        QProcess::startDetached(tokens.takeFirst(), tokens);
-    });
-    item->setActions({action});
+    } else {
 
-    query->addMatch(std::move(item));
+        // Add all hosts that the query is a prefix of
+        if ( !query->string().isEmpty())
+            for ( shared_ptr<Core::StandardItem>& host : d->hosts )
+                if ( host->text().startsWith(query->string()) )
+                    query->addMatch(host, static_cast<uint>(1.0*query->string().size()/host->text().size()* UINT_MAX));
+
+    }
 }
 
 

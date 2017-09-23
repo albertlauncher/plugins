@@ -318,16 +318,13 @@ QWidget *Files::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Files::Extension::handleQuery(Core::Query * query) const {
 
-    if ( query->searchTerm().isEmpty() )
-        return;
+    if ( query->trigger()=="/" || query->trigger()=="~" ) {
 
-    if ( query->searchTerm().startsWith('/') || query->searchTerm().startsWith("~") ) {
-
-        QFileInfo queryFileInfo(query->searchTerm());
+        QFileInfo queryFileInfo(query->rawString());
 
         // Substitute tilde
-        if ( query->searchTerm()[0] == '~' )
-            queryFileInfo.setFile(QDir::homePath()+query->searchTerm().right(query->searchTerm().size()-1));
+        if ( query->rawString()[0] == '~' )
+            queryFileInfo.setFile(QDir::homePath()+query->string());
 
         // Get all matching files
         QFileInfo pathInfo(queryFileInfo.path());
@@ -346,7 +343,10 @@ void Files::Extension::handleQuery(Core::Query * query) const {
     }
     else
     {
-        if ( QString("albert scan files").startsWith(query->searchTerm()) ) {
+        if ( query->string().isEmpty() )
+            return;
+
+        if ( QString("albert scan files").startsWith(query->string()) ) {
 
             shared_ptr<StandardAction> standardAction = make_shared<StandardAction>();
             standardAction->setText("Update the file index");
@@ -363,8 +363,7 @@ void Files::Extension::handleQuery(Core::Query * query) const {
         }
 
         // Search for matches
-        const vector<shared_ptr<IndexableItem>> &indexables =
-                d->offlineIndex.search(query->searchTerm());
+        const vector<shared_ptr<IndexableItem>> &indexables = d->offlineIndex.search(query->string());
 
         // Add results to query
         vector<pair<shared_ptr<Core::Item>,uint>> results;

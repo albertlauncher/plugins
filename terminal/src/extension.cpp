@@ -75,7 +75,7 @@ Terminal::Extension::Extension()
 
     // passwd must not be freed
     passwd *pwd = getpwuid(geteuid());
-    if (pwd == NULL)
+    if (pwd == nullptr)
         throw "Could not retrieve user shell";
     d->shell = pwd->pw_shell;
 
@@ -103,22 +103,14 @@ QWidget *Terminal::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Terminal::Extension::handleQuery(Core::Query * query) const {
 
-    if ( query->searchTerm().isEmpty() )
-        return;
-
-    // This extension must run only triggered
-    if ( query->trigger().isNull() )
-        return;
-
-    QString commandline = query->searchTerm().mid(1).trimmed();
-    if (commandline.isEmpty())
+    if ( !query->isTriggered() || query->string().trimmed().isEmpty() )
         return;
 
     vector<pair<shared_ptr<Core::Item>,short>> results;
 
     // Extract data from input string: [0] program. The rest: args
-    QString potentialProgram = commandline.section(' ', 0, 0, QString::SectionSkipEmpty);
-    QString argsString = commandline.section(' ', 1, -1, QString::SectionSkipEmpty);
+    QString potentialProgram = query->string().section(' ', 0, 0, QString::SectionSkipEmpty);
+    QString argsString = query->string().section(' ', 1, -1, QString::SectionSkipEmpty);
 
     // Iterate over matches
     set<QString>::iterator it = lower_bound(d->index.begin(), d->index.end(), potentialProgram);
@@ -137,24 +129,31 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
 
         QString commandlineString = QString("%1 %2").arg(*it, argsString);
 
-        vector<shared_ptr<Action>> actions;
+        shared_ptr<StandardAction> runAction = make_shared<StandardAction>();
+        runAction->setText("Run");
+        runAction->setAction([commandlineString](){
+            QProcess::startDetached(commandlineString);
+        });
 
-        actions.push_back(make_shared<StandardAction>("Execute in your  shell", [this, commandlineString](){
+        shared_ptr<StandardAction> shellAction = make_shared<StandardAction>();
+        shellAction->setText("Run in a shell");
+        shellAction->setAction([this, commandlineString](){
             QProcess::startDetached(d->shell, {"-ic", commandlineString});
-        }));
+        });
 
-        actions.push_back(make_shared<StandardAction>("Execute in the terminal", [=](){
+        shared_ptr<StandardAction> termAction = make_shared<StandardAction>();
+        termAction->setText("Run in a terminal");
+        termAction->setAction([this, commandlineString](){
             QStringList tokens = Core::ShUtil::split(terminalCommand);
             tokens << d->shell << "-ic" << QString("%1; exec %2").arg(commandlineString, d->shell);
             QProcess::startDetached(tokens.takeFirst(), tokens);
-        }));
+        });
 
-        // Build Item
         shared_ptr<StandardItem> item = make_shared<StandardItem>(*it);
         item->setText(commandlineString);
-        item->setSubtext(QString("Run '%1' in your shell").arg(commandlineString));
+        item->setSubtext(QString("Run '%1'").arg(commandlineString));
         item->setIconPath(d->iconPath);
-        item->setActions(move(actions));
+        item->setActions({ move(runAction), move(shellAction), move(termAction) });
 
         results.emplace_back(item, 0);
         ++it;
@@ -165,24 +164,35 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
     for (pair<shared_ptr<Core::Item>,short> &match: results)
         std::static_pointer_cast<StandardItem>(match.first)->setCompletionString(completion);
 
-    // Build Item
-    vector<shared_ptr<Action>> actions;
-    actions.push_back(make_shared<StandardAction>("Execute in the shell",
-                                                       [this, commandline](){
+    // Build general item
+    QString commandline = query->string();
+
+    shared_ptr<StandardAction> runAction = make_shared<StandardAction>();
+    runAction->setText("Run");
+    runAction->setAction([commandline](){
+        QProcess::startDetached(commandline);
+    });
+
+    shared_ptr<StandardAction> shellAction = make_shared<StandardAction>();
+    shellAction->setText("Run in a shell");
+    shellAction->setAction([this, commandline](){
         QProcess::startDetached(d->shell, {"-ic", commandline});
-    }));
-     actions.push_back(make_shared<StandardAction>("Execute in the terminal", [=](){
+    });
+
+    shared_ptr<StandardAction> termAction = make_shared<StandardAction>();
+    termAction->setText("Run in a terminal");
+    termAction->setAction([this, commandline](){
         QStringList tokens = Core::ShUtil::split(terminalCommand);
         tokens << d->shell << "-ic" << QString("%1; exec %2").arg(commandline, d->shell);
         QProcess::startDetached(tokens.takeFirst(), tokens);
-    }));
+    });
 
     shared_ptr<StandardItem> item = make_shared<StandardItem>();
-    item->setText(commandline);
-    item->setSubtext(QString("Try running '%1' in your shell").arg(commandline));
-    item->setCompletionString(query->searchTerm());
+    item->setText(QString("I'm Feeling Lucky").arg(commandline));
+    item->setSubtext(QString("Try running '%1'").arg(commandline));
+    item->setCompletionString(query->rawString());
     item->setIconPath(d->iconPath);
-    item->setActions(move(actions));
+    item->setActions({ move(runAction), move(shellAction), move(termAction) });
 
     results.emplace_back(item, 0);
 
@@ -215,7 +225,7 @@ void Terminal::Extension::rebuildIndex() {
 
     connect(&d->futureWatcher, &QFutureWatcher<set<QString>>::finished, this, [this](){
         d->index = d->futureWatcher.future().result();
-        disconnect(&d->futureWatcher,0,0,0);
+        disconnect(&d->futureWatcher, nullptr, nullptr, nullptr);
     });
 
     d->futureWatcher.setFuture(QtConcurrent::run(index));

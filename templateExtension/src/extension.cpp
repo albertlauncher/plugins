@@ -94,7 +94,11 @@ void ProjectNamespace::Extension::teardownSession() {
 void ProjectNamespace::Extension::handleQuery(Core::Query * query) const {
 
     // Queries can be empty
-    if ( query->searchTerm().isEmpty() )
+    if ( query->string().isEmpty() )
+        return;
+
+    // They can also contain only spaces
+    if ( query->string().trimmed().isEmpty() )
         return;
 
     // If you registered a trigger and it matches trigger will contain it
@@ -114,7 +118,7 @@ void ProjectNamespace::Extension::handleQuery(Core::Query * query) const {
          * relevance of the item 0 mean not relevant UINT_MAX is totally relevant (exact match).
          * E.g. it the query is "it" and your items name is "item"
          *
-         *   my_item.name().startswith(query->searchterm)
+         *   my_item.name().startswith(query->string)
          *
          * is a naive match criterion and
          *

@@ -624,16 +624,10 @@ QWidget *Applications::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Applications::Extension::handleQuery(Core::Query * query) const {
 
-    if ( query->searchTerm().isEmpty() )
-        return;
+    const vector<shared_ptr<Core::IndexableItem>> &indexables = d->offlineIndex.search(query->string());
 
-    // Search for matches
-    const vector<shared_ptr<Core::IndexableItem>> &indexables = d->offlineIndex.search(query->searchTerm().toLower());
-
-    // Add results to query
     vector<pair<shared_ptr<Core::Item>,uint>> results;
     for (const shared_ptr<Core::IndexableItem> &item : indexables)
-        // TODO `Search` has to determine the relevance. Set to 0 for now
         results.emplace_back(std::static_pointer_cast<Core::StandardIndexItem>(item), 1);
 
     query->addMatches(std::make_move_iterator(results.begin()),

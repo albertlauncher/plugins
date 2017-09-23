@@ -246,14 +246,14 @@ void MPRIS::Extension::setupSession() {
 /** ***************************************************************************/
 void MPRIS::Extension::handleQuery(Core::Query *query) const {
 
-    if ( query->searchTerm().isEmpty() )
+    const QString& q = query->string().trimmed().toLower();
+
+    if ( q.isEmpty() )
         return;
 
     // Do not proceed if there are no players running. Why would you even?
     if (d->mediaPlayers.isEmpty())
         return;
-
-    const QString& q = query->searchTerm().toLower();
 
     // Filter applicable commands
     QStringList cmds;
@@ -264,11 +264,7 @@ void MPRIS::Extension::handleQuery(Core::Query *query) const {
 
 
     // For every option create entries for every player
-    uint percentage = 0;
     for (QString& cmd: cmds) {
-        // Calculate how many percent of the query match the command
-        percentage = static_cast<uint>(1.0*q.length()/cmd.length())*UINT_MAX;
-
         // Get the command
         Command& toExec = d->commandObjects.find(cmd).value();
         // For every player:
@@ -276,7 +272,8 @@ void MPRIS::Extension::handleQuery(Core::Query *query) const {
             // See if it's applicable for this player
             if (toExec.isApplicable(*p))
                 // And add a match if so
-                query->addMatch(toExec.produceAlbertItem(*p), percentage);
+                query->addMatch(toExec.produceAlbertItem(*p),
+                                static_cast<uint>(1.0*q.length()/cmd.length())*UINT_MAX);
         }
     }
 }

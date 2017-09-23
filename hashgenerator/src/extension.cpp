@@ -101,10 +101,6 @@ QStringList HashGenerator::Extension::triggers() const {
 
 /** ***************************************************************************/
 void HashGenerator::Extension::handleQuery(Core::Query * query) const {
-    if ( query->trigger().isEmpty() )
-        return;
-
-    QString string = query->searchTerm().mid(query->trigger().size());
 
     auto buildItem = [](int algorithm, QString string){
         QCryptographicHash hash(static_cast<QCryptographicHash::Algorithm>(algorithm));
@@ -122,20 +118,17 @@ void HashGenerator::Extension::handleQuery(Core::Query * query) const {
         return item;
     };
 
-
-    // Output all hashes
     if ( query->trigger() == "hash " ) {
+        // Output all hashes
         for (int algorithm = 0; algorithm < 11; ++algorithm)
-            query->addMatch(buildItem(algorithm, string));
-    }
-
-    // Output particular hash
-    else {
+            query->addMatch(buildItem(algorithm, query->string()));
+    } else {
+        // Output particular hash if name matches
         auto it = std::find(algorithmNames.begin(), algorithmNames.end(),
                             query->trigger().trimmed().toUpper());
         if (it != algorithmNames.end()) {
             int algorithm = static_cast<int>(std::distance(algorithmNames.begin(), it));
-            query->addMatch(buildItem(algorithm, string));
+            query->addMatch(buildItem(algorithm, query->string()));
         }
     }
 }

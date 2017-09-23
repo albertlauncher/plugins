@@ -252,28 +252,25 @@ QWidget *System::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void System::Extension::handleQuery(Core::Query * query) const {
 
-   if ( query->searchTerm().isEmpty())
-       return;
+    if ( query->string().isEmpty())
+        return;
 
-   for (size_t i = 0; i < NUMCOMMANDS; ++i) {
-        if ( itemTitles[i].startsWith(query->searchTerm(), Qt::CaseInsensitive) ) {
+    for (size_t i = 0; i < NUMCOMMANDS; ++i) {
+        if ( itemTitles[i].startsWith(query->string(), Qt::CaseInsensitive) ) {
+
+            QString cmd = d->commands[i];
+            std::shared_ptr<Core::StandardAction> action = std::make_shared<Core::StandardAction>();
+            action->setText(itemDescriptions[i]);
+            action->setAction([=](){ QProcess::startDetached(cmd); });
 
             std::shared_ptr<Core::StandardItem> item = std::make_shared<Core::StandardItem>(configNames[i]);
             item->setText(itemTitles[i]);
             item->setSubtext(itemDescriptions[i]);
             item->setIconPath(d->iconPaths[i]);
+            item->setActions({move(action)});
 
-            QString cmd = d->commands[i];
-            std::shared_ptr<Core::StandardAction> action = std::make_shared<Core::StandardAction>();
-            action->setText(itemDescriptions[i]);
-            action->setAction([=](){
-                QProcess::startDetached(cmd);
-            });
-
-            item->setActions({action});
-
-            query->addMatch(std::move(item), static_cast<uint>(static_cast<float>(query->searchTerm().size())/itemTitles[i].size()*UINT_MAX));
-       }
-   }
+            query->addMatch(std::move(item), static_cast<uint>(static_cast<float>(query->string().size())/itemTitles[i].size()*UINT_MAX));
+        }
+    }
 }
 

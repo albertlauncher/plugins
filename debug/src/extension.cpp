@@ -90,7 +90,7 @@ const QString& Debug::Extension::trigger() const {
 void Debug::Extension::handleQuery(Core::Query * query) const {
 
     // This extension must run only triggered
-    if ( query->trigger().isNull() )
+    if ( !query->isTriggered() )
         return;
 
     for (int i = 0 ; i < d->count; ++i){

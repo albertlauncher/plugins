@@ -36,8 +36,9 @@ Files::OpenFileAction::OpenFileAction(Files::File *file) : FileAction(file) {
 QString Files::OpenFileAction::text() const {
     return "Open with default application";
 }
-
+#include  <QDebug>
 void Files::OpenFileAction::activate() {
+    qDebug() << QUrl::fromLocalFile(file_->filePath()).toEncoded();
     QDesktopServices::openUrl(QUrl::fromLocalFile(file_->filePath()));
 }
 
