@@ -253,7 +253,7 @@ std::vector<Websearch::SearchEngine> defaultSearchEngines = {
     {"GitHub",        "gh ",  ":github",    "https://github.com/search?utf8=✓&q=%s"},
     {"Wikipedia",     "wiki ",":wikipedia", "https://en.wikipedia.org/w/index.php?search=%s"},
     {"Wolfram Alpha", "=",    ":wolfram",   "https://www.wolframalpha.com/input/?i=%s"},
-    {"DuckDuckGo",    "dd",   ":duckduckgo","https://duckduckgo.com/?q=%s"},
+    {"DuckDuckGo",    "dd ",  ":duckduckgo","https://duckduckgo.com/?q=%s"},
 };
 
 shared_ptr<Core::Item> buildWebsearchItem(const Websearch::SearchEngine &se, const QString &searchterm) {
