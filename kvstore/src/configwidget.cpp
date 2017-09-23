@@ -17,13 +17,31 @@
 #include "configwidget.h"
 
 /** ***************************************************************************/
-KeyValueStore::ConfigWidget::ConfigWidget(QWidget *parent) : QWidget(parent) {
+KeyValueStore::ConfigWidget::ConfigWidget(QSqlDatabase *db, QWidget *parent) : QWidget(parent) {
     ui.setupUi(this);
-}
 
+    model = new QSqlTableModel(this, *db);
+    model->setTable("kv");
+    model->setEditStrategy(QSqlTableModel::OnFieldChange);
+    model->setHeaderData(0, Qt::Horizontal, tr("Key"));
+    model->setHeaderData(1, Qt::Horizontal, tr("Value"));
+    model->setSort(0, Qt::SortOrder::AscendingOrder);
+    model->select();
+
+    ui.tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui.tableView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui.tableView->setModel(model);
+
+}
 
 
 /** ***************************************************************************/
 KeyValueStore::ConfigWidget::~ConfigWidget() {
 
+}
+
+
+/** ***************************************************************************/
+void KeyValueStore::ConfigWidget::updateTable() {
+    model->select();
 }

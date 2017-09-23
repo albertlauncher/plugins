@@ -83,7 +83,7 @@ KeyValueStore::Extension::~Extension() {
 /** ***************************************************************************/
 QWidget *KeyValueStore::Extension::widget(QWidget *parent) {
     if (d->widget.isNull()) {
-        d->widget = new ConfigWidget(parent);
+        d->widget = new ConfigWidget(&d->db, parent);
     }
     return d->widget;
 }
@@ -111,12 +111,14 @@ void KeyValueStore::Extension::handleQuery(Core::Query * query) const {
             item->setCompletionString(query->string());
             item->setActions({std::make_shared<StandardAction>(
                               QString("Add mapping to the database"),
-                              [=](){
+                              [this, key, value](){
                                   QSqlQuery q(d->db);
                                   q.prepare(insertStmt);
                                   q.bindValue(":key", key);
                                   q.bindValue(":value", value);
                                   q.exec();
+                                  if (this->d->widget)
+                                      this->d->widget->updateTable();
                               })
                              });
             query->addMatch(move(item));
@@ -132,11 +134,13 @@ void KeyValueStore::Extension::handleQuery(Core::Query * query) const {
 
                 shared_ptr<StandardAction> action = std::make_shared<StandardAction>();
                 action->setText("Remove mapping from database");
-                action->setAction([=](){
+                action->setAction([this, key](){
                     QSqlQuery q(d->db);
                     q.prepare(removeStmt);
                     q.bindValue(":key", key);
                     q.exec();
+                    if (this->d->widget)
+                        this->d->widget->updateTable();
                 });
 
                 shared_ptr<StandardItem> item = std::make_shared<StandardItem>();

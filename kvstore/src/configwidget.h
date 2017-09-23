@@ -16,15 +16,26 @@
 
 #pragma once
 #include <QWidget>
+#include <QSqlTableModel>
+#include <QSqlDatabase>
 #include "ui_configwidget.h"
 
 namespace KeyValueStore {
 class ConfigWidget final : public QWidget
 {
     Q_OBJECT
+
 public:
-    explicit ConfigWidget(QWidget *parent = 0);
+
+    explicit ConfigWidget(QSqlDatabase *db, QWidget *parent = nullptr);
     ~ConfigWidget();
     Ui::ConfigWidget ui;
+
+    void updateTable();
+
+private:
+
+    QSqlTableModel *model;
+
 };
 }

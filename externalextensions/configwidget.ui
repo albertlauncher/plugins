@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>ExternalExtensions::ConfigWidget</class>
  <widget class="QWidget" name="ExternalExtensions::ConfigWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>274</width>
-    <height>210</height>
-   </rect>
-  </property>
   <layout class="QVBoxLayout">
    <item>
     <widget class="QLabel" name="label">
@@ -23,9 +15,6 @@
    </item>
    <item>
     <widget class="QTableView" name="tableView">
-     <property name="sizeAdjustPolicy">
-      <enum>QAbstractScrollArea::AdjustToContents</enum>
-     </property>
      <property name="alternatingRowColors">
       <bool>true</bool>
      </property>
