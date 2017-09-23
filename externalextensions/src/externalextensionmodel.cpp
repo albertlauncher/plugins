@@ -139,6 +139,9 @@ QVariant ExternalExtensions::ExternalExtensionsModel::data(const QModelIndex &in
         if (!ext->description().isEmpty())
             toolTip.append(QString("\nDescription: %1").arg(ext->description()));
 
+        if (!ext->usageExample().isEmpty())
+            toolTip.append(QString("\nUsage example: '%1'").arg(ext->usageExample()));
+
         if (ext->state() == ExternalExtension::State::Error && !ext->errorString().isEmpty())
             toolTip.append(QString("\nERROR: %1").arg(ext->errorString()));
 

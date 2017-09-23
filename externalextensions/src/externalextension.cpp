@@ -211,6 +211,9 @@ ExternalExtensions::ExternalExtension::ExternalExtension(const QString &path, co
     value = object["description"];
     description_ = value.toString();
 
+    value = object["usage_example"];
+    usageExample_ = value.toString();
+
     value = object["dependencies"];
     if ( value.isArray() )
         for (const QJsonValue & value : value.toArray())

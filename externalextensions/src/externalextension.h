@@ -54,6 +54,7 @@ public:
     const QString &author() const { return author_; }
     const QString &version() const { return version_; }
     const QString &description() const { return description_; }
+    const QString &usageExample() const { return usageExample_; }
     const QString &trigger() const { return trigger_; }
     const QStringList &dependencies() const { return dependencies_; }
     const State  &state() const { return state_; }
@@ -70,6 +71,7 @@ private:
     QString version_;
     QString trigger_;
     QString description_;
+    QString usageExample_;
     QStringList dependencies_;
     State state_;
     QString errorString_;
