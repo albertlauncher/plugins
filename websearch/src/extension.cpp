@@ -179,8 +179,8 @@ void Websearch::Extension::handleQuery(Core::Query * query) const {
         // Check syntax and TLD validity
         if ( url.isValid() && ( query->string().startsWith("http://") ||  // explict scheme
                                 query->string().startsWith("https://") ||  // explict scheme
-                                !url.topLevelDomain().isNull() ) )  // valid TLD
-        {
+                                ( QRegularExpression(R"R(\S+\.\S+$)R").match(url.host()).hasMatch() &&
+                                  !url.topLevelDomain().isNull()) ) ) {  // valid TLD
             shared_ptr<StandardAction> action = std::make_shared<StandardAction>();
             action->setText("Open URL");
              action->setAction([url](){ QDesktopServices::openUrl(url); });
