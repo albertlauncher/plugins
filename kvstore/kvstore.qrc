@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="kv">resources/kv.svg</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,9 @@
+{
+    "id" :              "org.albert.extension.kvstore",
+    "name" :            "Key Value Store",
+    "version" :         "1.0",
+    "platform" :        "All",
+    "group" :           "Extensions",
+    "author" :          "manuelschneid3r",
+    "dependencies" :    []
+}
