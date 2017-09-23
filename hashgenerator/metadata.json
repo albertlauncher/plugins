@@ -1,0 +1,9 @@
+{
+    "id" :              "org.albert.extension.hashgenerator",
+    "name" :            "Hash Generator",
+    "version" :         "1.0",
+    "platform" :        "All",
+    "group" :           "Extensions",
+    "author" :          "manuelschneid3r",
+    "dependencies" :    []
+}

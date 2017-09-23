@@ -17,10 +17,15 @@
 #include <QDebug>
 #include <QPointer>
 #include <stdexcept>
-#include "configwidget.h"
 #include "core/item.h"
-#include "extension.h"
 #include "core/query.h"
+#include "util/standardaction.h"
+#include "util/standarditem.h"
+#include "xdg/iconlookup.h"
+#include "configwidget.h"
+#include "extension.h"
+using namespace Core;
+using namespace std;
 
 
 
