@@ -5,29 +5,100 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 # Set the RPATH for the library lookup
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/albert")
 
+
+
 # FrontendPlugins
-add_subdirectory(widgetboxmodel)
-add_subdirectory(qmlboxmodel)
+
+option(BUILD_WIDGETBOXMODEL "Build the frontend" ON)
+if (BUILD_WIDGETBOXMODEL)
+    add_subdirectory(widgetboxmodel)
+endif()
+
+option(BUILD_QMLBOXMODEL "Build the frontend" ON)
+if (BUILD_QMLBOXMODEL)
+    add_subdirectory(qmlboxmodel)
+endif()
+
+
 
 # ExtensionPlugins
-add_subdirectory(applications)
-add_subdirectory(calculator)
-add_subdirectory(chromebookmarks)
-add_subdirectory(externalextensions)
-add_subdirectory(files)
-add_subdirectory(firefoxbookmarks)
-add_subdirectory(hashgenerator)
-add_subdirectory(kvstore)
-add_subdirectory(mpris)
-add_subdirectory(ssh)
-add_subdirectory(system)
-add_subdirectory(terminal)
-add_subdirectory(virtualbox)
-add_subdirectory(websearch)
 
-# Non-release plugins
-if(${BUILD_DEBUG_EXTENSIONS})
-    add_subdirectory(templateExtension)
+option(BUILD_APPLICATIONS "Build the extension" ON)
+if (BUILD_APPLICATIONS)
+    add_subdirectory(applications)
+endif()
+
+option(BUILD_CALCULATOR "Build the extension" ON)
+if (BUILD_CALCULATOR)
+    add_subdirectory(calculator)
+endif()
+
+option(BUILD_CHROMEBOOKMARKS "Build the extension" ON)
+if (BUILD_CHROMEBOOKMARKS)
+    add_subdirectory(chromebookmarks)
+endif()
+
+option(BUILD_EXTERNALEXTENSIONS "Build the extension" ON)
+if (BUILD_EXTERNALEXTENSIONS)
+    add_subdirectory(externalextensions)
+endif()
+
+option(BUILD_DEBUG "Build the extension" OFF)
+if (BUILD_DEBUG)
     add_subdirectory(debug)
-endif(${BUILD_DEBUG_EXTENSIONS})
+endif()
 
+option(BUILD_FILES "Build the extension" ON)
+if (BUILD_FILES)
+    add_subdirectory(files)
+endif()
+
+option(BUILD_FIREFOXBOOKMARKS "Build the extension" ON)
+if (BUILD_FIREFOXBOOKMARKS)
+    add_subdirectory(firefoxbookmarks)
+endif()
+
+option(BUILD_HASHGENERATOR "Build the extension" ON)
+if (BUILD_HASHGENERATOR)
+    add_subdirectory(hashgenerator)
+endif()
+
+option(BUILD_KVSTORE "Build the extension" ON)
+if (BUILD_KVSTORE)
+    add_subdirectory(kvstore)
+endif()
+
+option(BUILD_MPRIS "Build the extension" ON)
+if (BUILD_MPRIS)
+    add_subdirectory(mpris)
+endif()
+
+option(BUILD_SSH "Build the extension" ON)
+if (BUILD_SSH)
+    add_subdirectory(ssh)
+endif()
+
+option(BUILD_SYSTEM "Build the extension" ON)
+if (BUILD_SYSTEM)
+    add_subdirectory(system)
+endif()
+
+option(BUILD_TEMPLATE "Build the extension" OFF)
+if (BUILD_TEMPLATE)
+    add_subdirectory(templateExtension)
+endif()
+
+option(BUILD_TERMINAL "Build the extension" ON)
+if (BUILD_TERMINAL)
+    add_subdirectory(terminal)
+endif()
+
+option(BUILD_VIRTUALBOX "Build the extension" ON)
+if (BUILD_VIRTUALBOX)
+    add_subdirectory(virtualbox)
+endif()
+
+option(BUILD_WEBSEARCH "Build the extension" ON)
+if (BUILD_WEBSEARCH)
+    add_subdirectory(websearch)
+endif()
