@@ -1,26 +1,15 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.1.3)
 
 project(qmlboxmodel)
 
 file(GLOB_RECURSE SRC src/* metadata.json)
 
-find_package(Qt5 5.5.0 REQUIRED COMPONENTS
-    Widgets
-    Qml
-    Quick
-)
+find_package(Qt5 5.5.0 REQUIRED COMPONENTS Widgets Qml Quick)
 
-qt5_wrap_ui(UI
-    forms/configwidget.ui
-)
+add_library(${PROJECT_NAME} SHARED ${SRC})
 
-# Define the target
-add_library(${PROJECT_NAME} SHARED ${SRC}  ${UI})
+target_include_directories(${PROJECT_NAME} PRIVATE src/)
 
-# Set INCLUDE_DIRS and INTERFACE_INCLUDE_DIRS
-target_include_directories(${PROJECT_NAME} PRIVATE src/ forms/)
-
-# Link target to libraries
 target_link_libraries(${PROJECT_NAME}
     ${Qt5Widgets_LIBRARIES}
     ${Qt5Qml_LIBRARIES}
@@ -28,8 +17,5 @@ target_link_libraries(${PROJECT_NAME}
     albertcore
 )
 
-# Install target
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib/albert/plugins)
-
-# Define where to install the themes
 install(DIRECTORY "share/" DESTINATION "share/albert/org.albert.frontend.boxmodel.qml")
