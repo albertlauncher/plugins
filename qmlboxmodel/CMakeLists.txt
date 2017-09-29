@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-PROJECT(qmlboxmodel)
+project(qmlboxmodel)
 
-FILE(GLOB_RECURSE SRC src/* metadata.json)
+file(GLOB_RECURSE SRC src/* metadata.json)
 
 find_package(Qt5 5.5.0 REQUIRED COMPONENTS
     Widgets

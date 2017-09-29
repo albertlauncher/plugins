@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.11)
 
-PROJECT(mpris)
+project(mpris)
 
-FILE(GLOB_RECURSE SRC src/* metadata.json)
+file(GLOB_RECURSE SRC src/* metadata.json)
 
 find_package(Qt5 5.2.0 REQUIRED COMPONENTS
     Widgets
