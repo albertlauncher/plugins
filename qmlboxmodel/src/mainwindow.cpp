@@ -127,7 +127,7 @@ QmlBoxModel::MainWindow::MainWindow(FrontendPlugin *plugin, QWindow *parent) : Q
 
     // Center window between each hide and show
     connect(this, &QQuickView::visibilityChanged, [this](QWindow::Visibility visibility){
-        if ( visibility == QWindow::Visibility::Hidden )
+        if ( visibility != QWindow::Visibility::Hidden )
             if ( showCentered_ ){
                 QDesktopWidget *dw = QApplication::desktop();
                 setPosition(dw->availableGeometry(dw->screenNumber(QCursor::pos()))
