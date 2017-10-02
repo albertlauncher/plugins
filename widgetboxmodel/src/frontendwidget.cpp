@@ -133,7 +133,7 @@ WidgetBoxModel::FrontendWidget::FrontendWidget(QSettings *settings) : d(new Priv
     d->historyMoveMod_ = Qt::ControlModifier;
     d->settings = settings;
 
-	// INITIALIZE UI
+    // INITIALIZE UI
     d->ui.setupUi(this);
 //    setWindowIcon(qApp->windowIcon());
     setWindowTitle(qAppName());
@@ -729,7 +729,6 @@ bool WidgetBoxModel::FrontendWidget::nativeEvent(const QByteArray &eventType, vo
                  (fe->mode==XCB_NOTIFY_MODE_NORMAL && fe->detail==XCB_NOTIFY_DETAIL_NONLINEAR )) &&
                     d->hideOnFocusLoss_)
                 hide();
-            return true;
         }
         }
     }
