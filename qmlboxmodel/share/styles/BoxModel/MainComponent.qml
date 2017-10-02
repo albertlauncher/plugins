@@ -70,15 +70,20 @@ Item {
                 selectionColor: preferences.selection_color
                 Keys.forwardTo: [root, resultsList]
                 cursorDelegate : Item {
-                    id: cursor
-                    Rectangle { width: 1
+                    Rectangle {
+                        width: 1
                         height: parent.height
                         color: preferences.cursor_color
                     }
                     SequentialAnimation on opacity {
+                        id: animation
                         loops: Animation.Infinite;
-                        NumberAnimation { to: 0; duration: 500; easing.type: Easing.InOutExpo }
-                        NumberAnimation { to: 1; duration: 500; easing.type: Easing.InOutExpo }
+                        NumberAnimation { to: 0; duration: 750; easing.type: Easing.InOutExpo }
+                        NumberAnimation { to: 1; duration: 750; easing.type: Easing.InOutExpo }
+                    }
+                    Connections {
+                        target: historyTextInput
+                        onTextChanged: { opacity=1; animation.restart() }
                     }
                 }
                 onTextChanged: { root.state="" }
