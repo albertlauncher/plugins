@@ -101,7 +101,7 @@ void Debug::Extension::handleQuery(Core::Query * query) const {
         if (!query->isValid())
             return;
 
-        std::shared_ptr<StandardItem> item = std::make_shared<StandardItem>(QString::number(i));
+        auto item = std::make_shared<StandardItem>(QString::number(i));
         item->setText(QString("Das Item #%1").arg(i));
         item->setSubtext(QString("Toll, das Item #%1").arg(i));
         item->setIconPath(":debug");

@@ -16,8 +16,6 @@
 
 #include "item.h"
 #include <QDBusConnection>
-#include "util/standardaction.h"
-using Core::StandardAction;
 
 
 /** ***************************************************************************/
@@ -31,19 +29,15 @@ MPRIS::Item::Item(Player &p, const QString &title, const QString &subtext, const
         subtext_ = subtext.arg(p.name());
     else
         subtext_ = subtext;
-    actions_.push_back(shared_ptr<Action>(new StandardAction(subtext_, [this](){
-        QDBusConnection::sessionBus().send(message_);
-//        flags->hideWidget = hideAfter_;
-//        flags->clearInput = hideAfter_;
-    })));
+    actions_.emplace_back(subtext_, [this](){ QDBusConnection::sessionBus().send(message_); });
     if (p.canRaise()) {
-        actions_.push_back(shared_ptr<Action>(new StandardAction("Raise Window", [&p](){
+        actions_.emplace_back("Raise Window", [&p](){
             QString busid = p.busId();
             QDBusMessage raise = QDBusMessage::createMethodCall(busid, "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2", "Raise");
             if (!QDBusConnection::sessionBus().send(raise)) {
                 qWarning("Error calling raise method on dbus://%s", busid.toStdString().c_str());
             }
-        })));
+        });
     }
     id_ = "extension.mpris.item:%1.%2";
     id_ = id_.arg(p.busId()).arg(msg.member());
@@ -59,7 +53,7 @@ MPRIS::Item::~Item() {
 
 
 /** ***************************************************************************/
-vector<shared_ptr<Action>> MPRIS::Item::actions() {
+vector<Action> MPRIS::Item::actions() {
     return actions_;
 }
 

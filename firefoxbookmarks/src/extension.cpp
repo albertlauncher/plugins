@@ -42,10 +42,7 @@
 #include "extension.h"
 #include "configwidget.h"
 #include "core/extension.h"
-#include "core/item.h"
-#include "core/query.h"
 #include "util/offlineindex.h"
-#include "util/standardaction.h"
 #include "util/standardindexitem.h"
 #include "xdg/iconlookup.h"
 using std::pair;
@@ -181,42 +178,20 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
         ssii->setIndexKeywords(std::move(indexStrings));
 
         // Add actions
-        vector<shared_ptr<Action>> actions;
-
-        shared_ptr<StandardAction> actionDefault = std::make_shared<StandardAction>();
-        actionDefault->setText("Open URL in your default browser");
-        actionDefault->setAction([urlstr](){
-            QDesktopServices::openUrl(QUrl(urlstr));
-        });
-
-        shared_ptr<StandardAction> actionFirefox = std::make_shared<StandardAction>();
-        actionFirefox->setText("Open URL in Firefox");
-        actionFirefox->setAction([urlstr, this](){
+        vector<Action> actions;
+        actions.emplace_back("Open URL in Firefox",[urlstr, this](){
             QProcess::startDetached(firefoxExecutable, {urlstr});
         });
-
-        shared_ptr<StandardAction> actionNewFirefox = std::make_shared<StandardAction>();
-        actionNewFirefox->setText("Open URL in new Firefox window");
-        actionNewFirefox->setAction([urlstr, this](){
+        actions.emplace_back("Open URL in new Firefox window",[urlstr, this](){
             QProcess::startDetached(firefoxExecutable, {"--new-window", urlstr});
         });
-
-        shared_ptr<StandardAction> action = std::make_shared<StandardAction>();
-        action->setText("Copy url to clipboard");
-        action->setAction([urlstr](){ QApplication::clipboard()->setText(urlstr); });
-
-        // Set the order of the actions
-        if ( openWithFirefox )  {
-            actions.push_back(std::move(actionFirefox));
-            actions.push_back(std::move(actionNewFirefox));
-            actions.push_back(std::move(actionDefault));
-        } else {
-            actions.push_back(std::move(actionDefault));
-            actions.push_back(std::move(actionFirefox));
-            actions.push_back(std::move(actionNewFirefox));
-        }
-        actions.push_back(std::move(action));
-
+        actions.emplace(openWithFirefox ? actions.end() : actions.begin(),
+                             "Open URL in your default browser", [urlstr](){
+            QDesktopServices::openUrl(QUrl(urlstr));
+        });
+        actions.emplace_back("Copy url to clipboard",[urlstr](){
+            QApplication::clipboard()->setText(urlstr);
+        });
         ssii->setActions(std::move(actions));
 
         bookmarks.push_back(std::move(ssii));

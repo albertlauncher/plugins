@@ -1,18 +1,4 @@
-// albert - a simple application launcher for linux
 // Copyright (C) 2014-2017 Manuel Schneider
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <QClipboard>
 #include <QDebug>
@@ -25,10 +11,8 @@
 #include "muParser.h"
 #include "core/query.h"
 #include "util/standarditem.h"
-#include "util/standardaction.h"
 #include "xdg/iconlookup.h"
-using std::vector;
-using std::shared_ptr;
+using namespace std;
 using namespace Core;
 
 
@@ -115,31 +99,17 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
         return;
     }
 
-    // Build actions
-    vector<shared_ptr<Action>> actions;
-    shared_ptr<StandardAction> action = std::make_shared<StandardAction>();
-    action->setText(QString("Copy '%1' to clipboard").arg(result));
-    action->setAction([=](){ QApplication::clipboard()->setText(result); });
-    actions.push_back(action);
+    // Make an lvalue sthat can be captured by the lambda
+    QString equation = QString("%1 = %2").arg(query->string(), result);
 
-    // Make searchterm a lvalue that can be captured by the lambda
-    QString text = query->string();
-    action = std::make_shared<StandardAction>();
-    action->setText(QString("Copy '%1' to clipboard").arg(text));
-    action->setAction([=](){ QApplication::clipboard()->setText(text); });
-    actions.push_back(action);
+    auto item = make_shared<StandardItem>("muparser");
+    item->setText(result);
+    item->setSubtext(QString("Result of '%1'").arg(query->string()));
+    item->setIconPath(d->iconPath);
+    item->emplaceAction("Copy result to clipboard",
+                        [=](){ QApplication::clipboard()->setText(result); });
+    item->emplaceAction("Copy equation to clipboard",
+                        [=](){ QApplication::clipboard()->setText(equation); });
 
-    text = QString("%1 = %2").arg(query->string(), result);
-    action = std::make_shared<StandardAction>();
-    action->setText(QString("Copy '%1' to clipboard").arg(text));
-    action->setAction([=](){ QApplication::clipboard()->setText(text); });
-    actions.push_back(action);
-
-    shared_ptr<StandardItem> calcItem = std::make_shared<StandardItem>("muparser-eval");
-    calcItem->setText(result);
-    calcItem->setSubtext(QString("Result of '%1'").arg(query->string()));
-    calcItem->setIconPath(d->iconPath);
-    calcItem->setActions(std::move(actions));
-
-    query->addMatch(std::move(calcItem), UINT_MAX);
+    query->addMatch(move(item), UINT_MAX);
 }

@@ -1,18 +1,4 @@
-// albert - a simple application launcher for linux
-// Copyright (C) 2014-2015 Manuel Schneider
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright (C) 2014-2017 Manuel Schneider
 
 #include <QDebug>
 #include <QFileSystemWatcher>
@@ -29,8 +15,6 @@
 #include <pwd.h>
 #include "extension.h"
 #include "configwidget.h"
-#include "core/query.h"
-#include "util/standardaction.h"
 #include "util/standarditem.h"
 #include "util/shutil.h"
 #include "xdg/iconlookup.h"
@@ -92,7 +76,7 @@ public:
     QString icon;
     QPointer<ConfigWidget> widget;
     QFileSystemWatcher fileSystemWatcher;
-    vector<shared_ptr<Core::StandardItem>> hosts;
+    vector<shared_ptr<StandardItem>> hosts;
     QString shell;
     bool useKnownHosts;
 };
@@ -104,7 +88,7 @@ public:
 /** ***************************************************************************/
 Ssh::Extension::Extension()
     : Core::Extension("org.albert.extension.ssh"),
-      Core::QueryHandler(Core::Plugin::id()),
+      QueryHandler(Plugin::id()),
       d(new Private) {
 
     registerQueryHandler(this);
@@ -120,7 +104,7 @@ Ssh::Extension::Extension()
 
     // Find ssh
     if (QStandardPaths::findExecutable("ssh").isNull())
-        throw QString("[%s] ssh not found.").arg(Core::Plugin::id());
+        throw QString("[%s] ssh not found.").arg(Plugin::id());
 
     // Find an appropriate icon
     d->icon = XDG::IconLookup::iconPath({"ssh", "terminal"});
@@ -159,33 +143,30 @@ QWidget *Ssh::Extension::widget(QWidget *parent) {
 
 
 /** ***************************************************************************/
-void Ssh::Extension::handleQuery(Core::Query * query) const {
+void Ssh::Extension::handleQuery(Query * query) const {
 
     if ( query->isTriggered() ){
 
         // Add all hosts that the query is a prefix of
-        for ( shared_ptr<Core::StandardItem>& host : d->hosts )
+        for ( shared_ptr<StandardItem>& host : d->hosts )
             if ( host->text().startsWith(query->string()) )
                 query->addMatch(host, static_cast<uint>(1.0*query->string().size()/host->text().size()* UINT_MAX));
 
         if (!query->string().trimmed().isEmpty()) {
             // Add the quick connect item
             QString trimmed = query->string().trimmed();
-            shared_ptr<StandardAction> action = std::make_shared<StandardAction>();
-            action->setText(QString("Connect to '%1' using ssh").arg(trimmed));
-            action->setAction([trimmed, this](){
-                QStringList tokens;
-                tokens << Core::ShUtil::split(terminalCommand) << d->shell << "-c"
-                       << QString(" ssh %1 || read -rsp $'\nPress enter to close the terminal.\n'").arg(trimmed);
-                QProcess::startDetached(tokens.takeFirst(), tokens);
-            });
 
-            std::shared_ptr<StandardItem> item  = std::make_shared<StandardItem>("");
+            auto item  = std::make_shared<StandardItem>();
             item->setText(trimmed);
             item->setSubtext(QString("Quick connect to '%1' using ssh").arg(trimmed));
             item->setCompletionString(QString("ssh %1").arg(trimmed));
             item->setIconPath(d->icon);
-            item->setActions({action});
+            item->emplaceAction(QString("Connect to '%1' using ssh").arg(trimmed), [trimmed, this](){
+                QStringList tokens;
+                tokens << ShUtil::split(terminalCommand) << d->shell << "-c"
+                       << QString(" ssh %1 || read -rsp $'\nPress enter to close the terminal.\n'").arg(trimmed);
+                QProcess::startDetached(tokens.takeFirst(), tokens);
+            });
 
             query->addMatch(std::move(item));
         }
@@ -194,7 +175,7 @@ void Ssh::Extension::handleQuery(Core::Query * query) const {
 
         // Add all hosts that the query is a prefix of
         if ( !query->string().isEmpty())
-            for ( shared_ptr<Core::StandardItem>& host : d->hosts )
+            for ( shared_ptr<StandardItem>& host : d->hosts )
                 if ( host->text().startsWith(query->string()) )
                     query->addMatch(host, static_cast<uint>(1.0*query->string().size()/host->text().size()* UINT_MAX));
 
@@ -228,24 +209,20 @@ void Ssh::Extension::rescan() {
     for ( const QString& host : hosts ){
 
         // Create item
-        std::shared_ptr<StandardItem> si  = std::make_shared<StandardItem>(host);
-        si->setText(host);
-        si->setSubtext(QString("Connect to '%1' using ssh").arg(host));
-        si->setCompletionString(QString("ssh %1").arg(host));
-        si->setIconPath(d->icon);
-
-        shared_ptr<StandardAction> sa = std::make_shared<StandardAction>();
-        sa->setText(QString("Connect to '%1' using ssh").arg(host));
-        sa->setAction([host, this](){
+        auto item = std::make_shared<StandardItem>(host);
+        item->setText(host);
+        item->setSubtext(QString("Connect to '%1' using ssh").arg(host));
+        item->setCompletionString(QString("ssh %1").arg(host));
+        item->setIconPath(d->icon);
+        item->emplaceAction(QString("Connect to '%1' using ssh").arg(host), [host, this](){
             QStringList tokens;
-            tokens << Core::ShUtil::split(terminalCommand)
+            tokens << ShUtil::split(terminalCommand)
                    << d->shell << "-c"
                    << QString(" ssh %1 || read -rsp $'\nPress enter to close the terminal.\n'").arg(host);
             QProcess::startDetached(tokens.takeFirst(), tokens);
         });
-        si->setActions({sa});
 
-        sshHosts.push_back(std::move(si));
+        sshHosts.push_back(std::move(item));
     }
 
     d->hosts = std::move(sshHosts);

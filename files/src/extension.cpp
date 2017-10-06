@@ -1,18 +1,4 @@
-// albert - a simple application launcher for linux
 // Copyright (C) 2014-2017 Manuel Schneider
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <QDebug>
 #include <QDir>
@@ -35,10 +21,8 @@
 #include "standardfile.h"
 #include "extension.h"
 #include "indextreenode.h"
-#include "core/query.h"
 #include "util/offlineindex.h"
 #include "util/standarditem.h"
-#include "util/standardaction.h"
 using namespace Core;
 using namespace std;
 
@@ -348,18 +332,15 @@ void Files::Extension::handleQuery(Core::Query * query) const {
 
         if ( QString("albert scan files").startsWith(query->string()) ) {
 
-            shared_ptr<StandardAction> standardAction = make_shared<StandardAction>();
-            standardAction->setText("Update the file index");
-            // Const cast is fine since the action will not be called here
-            standardAction->setAction([this](){ const_cast<Extension*>(this)->updateIndex(); });
+            auto item = make_shared<StandardItem>("files.action.index");
+            item->setText("albert scan files");
+            item->setSubtext("Update the file index");
+            item->setIconPath(":app_icon");
+            item->emplaceAction("Update the file index",
+                                // Const cast is fine since the action will not be called here
+                                [this](){ const_cast<Extension*>(this)->updateIndex(); });
 
-            shared_ptr<StandardItem> standardItem = make_shared<StandardItem>("org.albert.extension.files.action.index");
-            standardItem->setText("albert scan files");
-            standardItem->setSubtext("Update the file index");
-            standardItem->setIconPath(":app_icon");
-            standardItem->setActions({standardAction});
-
-            query->addMatch(move(standardItem));
+            query->addMatch(move(item));
         }
 
         // Search for matches

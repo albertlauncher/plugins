@@ -14,9 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "vmitem.h"
-
 #include <QProcess>
+#include "vmitem.h"
+using namespace std;
+using namespace Core;
 
 /** ***************************************************************************/
 QString VirtualBox::VMItem::iconPath_;
@@ -26,7 +27,7 @@ const int VirtualBox::VMItem::VM_RESUME = 3;
 const int VirtualBox::VMItem::VM_STATE_CHANGING = -1;
 const int VirtualBox::VMItem::VM_DIFFERENT = -2;
 
-VirtualBox::VMItem::VMItem(const QString &name, const QString &uuid, int &mainAction, const ActionSPtrVec actions, const QString &state) : name_(name), uuid_(uuid), actions_(actions), mainAction_(mainAction) {
+VirtualBox::VMItem::VMItem(const QString &name, const QString &uuid, int &mainAction, const vector<Action> actions, const QString &state) : name_(name), uuid_(uuid), actions_(actions), mainAction_(mainAction) {
     idstring_ = QString("extension.virtualbox.item:%1.%2").arg(uuid).arg(state);
 }
 

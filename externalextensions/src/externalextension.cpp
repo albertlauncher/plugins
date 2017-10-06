@@ -1,18 +1,4 @@
-// albert - a simple application launcher for linux
 // Copyright (C) 2014-2017 Manuel Schneider
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "externalextension.h"
 #include <QByteArray>
@@ -26,8 +12,6 @@
 #include <QVBoxLayout>
 #include <functional>
 #include <vector>
-#include "core/query.h"
-#include "util/standardaction.h"
 #include "util/standarditem.h"
 #include "xdg/iconlookup.h"
 using namespace std;
@@ -354,8 +338,6 @@ void ExternalExtensions::ExternalExtension::handleQuery(Core::Query* query) cons
 
     // Iterate over the results
     shared_ptr<StandardItem> item;
-    shared_ptr<StandardAction> action;
-    vector<shared_ptr<Action>> actions;
     vector<pair<shared_ptr<Core::Item>,short>> results;
 
     int i = 0;
@@ -376,20 +358,18 @@ void ExternalExtensions::ExternalExtension::handleQuery(Core::Query* query) cons
         item->setIconPath(icon.isEmpty() ? ":unknown" : icon);
 
         // Build the actions
-        actions.clear();
         for (const QJsonValue & value : object["actions"].toArray()){
             object = value.toObject();
-            action = std::make_shared<StandardAction>();
-            action->setText(object["name"].toString());
+
             QString command = object["command"].toString();
             QStringList arguments;
             for (const QJsonValue & value : object["arguments"].toArray())
                  arguments.append(value.toString());
-            action->setAction(std::bind(static_cast<bool(*)(const QString&,const QStringList&)>(&QProcess::startDetached), command, arguments));
-            actions.push_back(std::move(action));
-        }
-        item->setActions(std::move(actions));
 
+            item->emplaceAction(object["name"].toString(), [command, arguments](){
+                QProcess::startDetached(command, arguments);
+            });
+        }
         results.emplace_back(std::move(item), 0);
     }
 

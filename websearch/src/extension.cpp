@@ -32,8 +32,6 @@
 #include "configwidget.h"
 #include "enginesmodel.h"
 #include "extension.h"
-#include "core/query.h"
-#include "util/standardaction.h"
 #include "util/standarditem.h"
 #include "xdg/iconlookup.h"
 using std::shared_ptr;
@@ -60,17 +58,12 @@ shared_ptr<Core::Item> buildWebsearchItem(const Websearch::SearchEngine &se, con
     QUrl url = QUrl(urlString);
     QString desc = QString("Start %1 search in your browser").arg(se.name);
 
-    std::shared_ptr<StandardAction> action = std::make_shared<StandardAction>();
-    action->setText(desc);
-    action->setAction([=](){ QDesktopServices::openUrl(url); });
-
-    std::shared_ptr<StandardItem> item = std::make_shared<StandardItem>(se.name);
+    auto item = std::make_shared<StandardItem>(se.name);
     item->setText(se.name);
     item->setSubtext(desc);
     item->setIconPath(se.iconPath);
     item->setCompletionString(QString("%1%2").arg(se.trigger, searchterm));
-
-    item->setActions({action});
+    item->emplaceAction(desc, [=](){ QDesktopServices::openUrl(url); });
 
     return item;
 }
@@ -181,17 +174,13 @@ void Websearch::Extension::handleQuery(Core::Query * query) const {
                                 query->string().startsWith("https://") ||  // explict scheme
                                 ( QRegularExpression(R"R(\S+\.\S+$)R").match(url.host()).hasMatch() &&
                                   !url.topLevelDomain().isNull()) ) ) {  // valid TLD
-            shared_ptr<StandardAction> action = std::make_shared<StandardAction>();
-            action->setText("Open URL");
-             action->setAction([url](){ QDesktopServices::openUrl(url); });
-
-            std::shared_ptr<StandardItem> item = std::make_shared<StandardItem>("valid_url");
+            auto item = std::make_shared<StandardItem>("valid_url");
             item->setText(QString("Open url in browser"));
             item->setSubtext(QString("Visit %1").arg(url.authority()));
             item->setCompletionString(query->string());
             QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
-            item->setIconPath(icon.isEmpty() ? ":favicon" : icon);
-            item->setActions({action});
+            item->setIconPath(icon.isNull() ? ":favicon" : icon);
+            item->emplaceAction("Open URL", [url](){ QDesktopServices::openUrl(url); });
 
             query->addMatch(std::move(item), UINT_MAX);
         }

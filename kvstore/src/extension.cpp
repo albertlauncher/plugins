@@ -1,18 +1,4 @@
-// albert - a simple application launcher for linux
-// Copyright (C) 2014-2015 Manuel Schneider
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright (C) 2014-2017 Manuel Schneider
 
 #include <QApplication>
 #include <QClipboard>
@@ -24,10 +10,7 @@
 #include <QCryptographicHash>
 #include <stdexcept>
 #include "configwidget.h"
-#include "core/item.h"
-#include "core/query.h"
 #include "util/standarditem.h"
-#include "util/standardaction.h"
 #include "extension.h"
 using namespace std;
 using namespace Core;
@@ -104,23 +87,21 @@ void KeyValueStore::Extension::handleQuery(Core::Query * query) const {
             if ( key.isEmpty() || value.isEmpty() )
                 return;
 
-            shared_ptr<StandardItem> item = std::make_shared<StandardItem>();
+            auto item = std::make_shared<StandardItem>();
             item->setText(QString("Set '%1': '%2'").arg(key, value));
             item->setSubtext(QString("Store this mapping in the database."));
             item->setIconPath(":kv");
             item->setCompletionString(query->string());
-            item->setActions({std::make_shared<StandardAction>(
-                              QString("Add mapping to the database"),
-                              [this, key, value](){
-                                  QSqlQuery q(d->db);
-                                  q.prepare(insertStmt);
-                                  q.bindValue(":key", key);
-                                  q.bindValue(":value", value);
-                                  q.exec();
-                                  if (this->d->widget)
-                                      this->d->widget->updateTable();
-                              })
-                             });
+            item->emplaceAction("Add mapping to the database", [this, key, value](){
+                QSqlQuery q(d->db);
+                q.prepare(insertStmt);
+                q.bindValue(":key", key);
+                q.bindValue(":value", value);
+                q.exec();
+                if (this->d->widget)
+                    this->d->widget->updateTable();
+            });
+
             query->addMatch(move(item));
         }
 
@@ -132,9 +113,12 @@ void KeyValueStore::Extension::handleQuery(Core::Query * query) const {
             while ( q.next() ){
                 QString key = q.value(0).toString();
 
-                shared_ptr<StandardAction> action = std::make_shared<StandardAction>();
-                action->setText("Remove mapping from database");
-                action->setAction([this, key](){
+                auto item = std::make_shared<StandardItem>();
+                item->setText(QString("Unset '%1': '%2'").arg(key, q.value(1).toString()));
+                item->setSubtext(QString("Remove this mapping from the database."));
+                item->setIconPath(":kv");
+                item->setCompletionString(QString("kv unset %1").arg(key));
+                item->emplaceAction("Remove mapping from database", [this, key](){
                     QSqlQuery q(d->db);
                     q.prepare(removeStmt);
                     q.bindValue(":key", key);
@@ -143,12 +127,6 @@ void KeyValueStore::Extension::handleQuery(Core::Query * query) const {
                         this->d->widget->updateTable();
                 });
 
-                shared_ptr<StandardItem> item = std::make_shared<StandardItem>();
-                item->setText(QString("Unset '%1': '%2'").arg(key, q.value(1).toString()));
-                item->setSubtext(QString("Remove this mapping from the database."));
-                item->setIconPath(":kv");
-                item->setCompletionString(QString("kv unset %1").arg(key));
-                item->setActions({action});
                 query->addMatch(move(item), static_cast<uint>(1.0/key.length()*searchterm.length()));
             }
         }
@@ -166,16 +144,14 @@ void KeyValueStore::Extension::handleQuery(Core::Query * query) const {
         QString key = q.value(0).toString();
         QString value = q.value(1).toString();
 
-        shared_ptr<StandardAction> action = std::make_shared<StandardAction>();
-        action->setText("Copy value to clipboard");
-        action->setAction([=](){ QApplication::clipboard()->setText(value); });
-
-        shared_ptr<StandardItem> item = std::make_shared<StandardItem>(QString("kv_%1").arg(key));
+        auto item = std::make_shared<StandardItem>(QString("kv_%1").arg(key));
         item->setText(value);
         item->setSubtext(QString("Value of '%1'").arg(key));
         item->setIconPath(":kv");
         item->setCompletionString(QString("kv %1").arg(key));
-        item->setActions({action});
+        item->emplaceAction("Copy value to clipboard",
+                            [=](){QApplication::clipboard()->setText(value);});
+
         query->addMatch(move(item), static_cast<uint>(1.0/key.length()*query->string().length()));
     }
 }

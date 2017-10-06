@@ -1,25 +1,8 @@
-// albert - a simple application launcher for linux
-// Copyright (C) 2014-2015 Manuel Schneider
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Copyright (C) 2014-2017 Manuel Schneider
 
 #include <QDebug>
 #include <QPointer>
 #include <stdexcept>
-#include "core/item.h"
-#include "core/query.h"
-#include "util/standardaction.h"
 #include "util/standarditem.h"
 #include "xdg/iconlookup.h"
 #include "configwidget.h"
@@ -27,14 +10,11 @@
 using namespace Core;
 using namespace std;
 
-
-
 class ProjectNamespace::Private
 {
 public:
     QPointer<ConfigWidget> widget;
 };
-
 
 
 /** ***************************************************************************/
@@ -44,10 +24,6 @@ ProjectNamespace::Extension::Extension()
       d(new Private) {
 
     registerQueryHandler(this);
-
-    /*
-     * Check the Extension and Plugin header to see the members in this scope
-     */
 
     // You can throw in the constructor if something fatal happened
     throw std::runtime_error( "Description of error." );
@@ -91,51 +67,50 @@ void ProjectNamespace::Extension::teardownSession() {
 
 
 /** ***************************************************************************/
-void ProjectNamespace::Extension::handleQuery(Core::Query * query) const {
+void ProjectNamespace::Extension::handleQuery(Core::Query *) const {
 
-    // Queries can be empty
-    if ( query->string().isEmpty() )
-        return;
-
-    // They can also contain only spaces
-    if ( query->string().trimmed().isEmpty() )
-        return;
-
-    // If you registered a trigger and it matches trigger will contain it
-    if ( !query->trigger().isNull() ) {
-
-        /*
-         * Use
-         *
-         *   query->addMatch(my_item)
-         *
-         * to add matches. If you created a throw away item MOVE it instead of
-         * copying e.g.:
-         *
-         *   query->addMatch(std::move(my_tmp_item))
-         *
-         * The relevance factor is optional. (Defaults to 0) its a usigned integer depicting the
-         * relevance of the item 0 mean not relevant UINT_MAX is totally relevant (exact match).
-         * E.g. it the query is "it" and your items name is "item"
-         *
-         *   my_item.name().startswith(query->string)
-         *
-         * is a naive match criterion and
-         *
-         *   UINT_MAX / ( query.searchterm().size() / my_item.name().size() )
-         *
-         * a naive match factor.
-         *
-         * If you have a lot of items use the iterator versions addMatches, e.g. like that
-         *
-         *   query->addMatches(my_items.begin(), my_items.end());
-         *
-         * If the items in the container are temporary object move them to avoid uneccesary
-         * reference counting:
-         *
-         *   query->addMatches(std::make_move_iterator(my_tmp_items.begin()),
-         *                     std::make_move_iterator(my_tmp_items.end()));
-         */
-    }
+    /*
+     * Things change so often I wont maintain this tutorial here. Check the relevant headers.
+     *
+     * - core/extension.h
+     * - core/queryhandler.h
+     * - core/query.h
+     * - core/item.h
+     * - core/action.h
+     * - util/standarditem.h
+     * - util/offlineindex.h
+     * - util/standardindexitem.h
+     *
+     * Use
+     *
+     *   query->addMatch(my_item)
+     *
+     * to add matches. If you created a throw away item MOVE it instead of
+     * copying e.g.:
+     *
+     *   query->addMatch(std::move(my_tmp_item))
+     *
+     * The relevance factor is optional. (Defaults to 0) its a usigned integer depicting the
+     * relevance of the item 0 mean not relevant UINT_MAX is totally relevant (exact match).
+     * E.g. it the query is "it" and your items name is "item"
+     *
+     *   my_item.name().startswith(query->string)
+     *
+     * is a naive match criterion and
+     *
+     *   UINT_MAX / ( query.searchterm().size() / my_item.name().size() )
+     *
+     * a naive match factor.
+     *
+     * If you have a lot of items use the iterator versions addMatches, e.g. like that
+     *
+     *   query->addMatches(my_items.begin(), my_items.end());
+     *
+     * If the items in the container are temporary object move them to avoid uneccesary
+     * reference counting:
+     *
+     *   query->addMatches(std::make_move_iterator(my_tmp_items.begin()),
+     *                     std::make_move_iterator(my_tmp_items.end()));
+     */
 }
 

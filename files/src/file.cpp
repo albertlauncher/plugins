@@ -1,26 +1,18 @@
-// albert - a simple application launcher for linux
 // Copyright (C) 2014-2017 Manuel Schneider
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "file.h"
+#include <QApplication>
+#include <QClipboard>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileInfo>
+#include <QMimeData>
+#include <QProcess>
+#include <QUrl>
 #include "xdg/iconlookup.h"
-#include "fileactions.h"
 using namespace std;
-
+using namespace Core;
+extern QString terminalCommand;
 
 std::map<QString,QString> Files::File::iconCache_;
 
@@ -84,16 +76,63 @@ QString Files::File::iconPath() const {
 
 
 /** ***************************************************************************/
-vector<shared_ptr<Core::Action>> Files::File::actions() {
-    vector<shared_ptr<Core::Action>> actions;
-    actions.push_back(std::make_shared<OpenFileAction>(this));
+std::vector<Core::Action> Files::File::actions() {
+
+    vector<Core::Action> actions;
+
+    actions.emplace_back("Open with default application", [this](){
+        QDesktopServices::openUrl(QUrl::fromLocalFile(filePath()));
+    });
+
     QFileInfo fileInfo(filePath());
     if ( fileInfo.isFile() && fileInfo.isExecutable() )
-        actions.push_back(std::make_shared<ExecuteFileAction>(this));
-    actions.push_back(std::make_shared<RevealFileAction>(this));
-    actions.push_back(std::make_shared<TerminalFileAction>(this));
-    actions.push_back(std::make_shared<CopyFileAction>(this));
-    actions.push_back(std::make_shared<CopyPathAction>(this));
+        actions.emplace_back("Execute file", [this](){
+            QProcess::startDetached(filePath());
+        });
+
+    actions.emplace_back("Reveal in file browser", [this](){
+        QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(filePath()).path()));
+    });
+
+    actions.emplace_back("Open terminal at this path", [this](){
+        QFileInfo fileInfo(filePath());
+        QStringList commandLine = terminalCommand.trimmed().split(' ');
+        if ( commandLine.size() == 0 )
+            return;
+        QProcess::startDetached(commandLine[0], {}, fileInfo.isDir() ? fileInfo.filePath() : fileInfo.path());
+    });
+
+    actions.emplace_back("Copy file to clipboard", [this](){
+        //  Get clipboard
+        QClipboard *cb = QApplication::clipboard();
+
+        // Ownership of the new data is transferred to the clipboard.
+        QMimeData* newMimeData = new QMimeData();
+
+        // Copy old mimedata
+        const QMimeData* oldMimeData = cb->mimeData();
+        for (const QString &f : oldMimeData->formats())
+            newMimeData->setData(f, oldMimeData->data(f));
+
+        // Copy path of file
+        QString filePath = this->filePath();
+        newMimeData->setText(filePath);
+
+        // Copy file
+        newMimeData->setUrls({QUrl::fromLocalFile(filePath)});
+
+        // Copy file (f*** you gnome)
+        QByteArray gnomeFormat = QByteArray("copy\n").append(QUrl::fromLocalFile(filePath).toEncoded());
+        newMimeData->setData("x-special/gnome-copied-files", gnomeFormat);
+
+        // Set the mimedata
+        cb->setMimeData(newMimeData);
+    });
+
+    actions.emplace_back("Copy path to clipboard", [this](){
+        QApplication::clipboard()->setText(filePath());
+    });
+
     return actions;
 }
 

@@ -1,19 +1,4 @@
-// albert - a simple application launcher for linux
 // Copyright (C) 2014-2017 Manuel Schneider
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 
 #include <QApplication>
 #include <QClipboard>
@@ -40,9 +25,6 @@
 #include <vector>
 #include "configwidget.h"
 #include "extension.h"
-#include "core/indexable.h"
-#include "core/query.h"
-#include "util/standardaction.h"
 #include "util/standardindexitem.h"
 #include "util/offlineindex.h"
 #include "xdg/iconlookup.h"
@@ -78,34 +60,26 @@ vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(const QString &bookma
             QString name = json["name"].toString();
             QString urlstr = json["url"].toString();
 
-            shared_ptr<StandardIndexItem> ssii  = std::make_shared<StandardIndexItem>(json["id"].toString());
-            ssii->setText(name);
-            ssii->setSubtext(urlstr);
-            QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
-            ssii->setIconPath((icon.isEmpty()) ? ":favicon" : icon);
+            vector<Action> actions;
+            actions.emplace_back("Open URL in your browser", [urlstr](){
+                QDesktopServices::openUrl(QUrl(urlstr));
+            });
+            actions.emplace_back("Copy URL to clipboard", [urlstr](){
+                QApplication::clipboard()->setText(urlstr);
+            });
 
             vector<IndexableItem::IndexString> indexStrings;
             QUrl url(urlstr);
             QString host = url.host();
             indexStrings.emplace_back(name, UINT_MAX);
             indexStrings.emplace_back(host.left(host.size()-url.topLevelDomain().size()), UINT_MAX/2);
+
+            shared_ptr<StandardIndexItem> ssii  = std::make_shared<StandardIndexItem>(json["id"].toString());
+            ssii->setText(name);
+            ssii->setSubtext(urlstr);
+            QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
+            ssii->setIconPath((icon.isEmpty()) ? ":favicon" : icon);
             ssii->setIndexKeywords(std::move(indexStrings));
-
-            vector<shared_ptr<Action>> actions;
-            shared_ptr<StandardAction> action = std::make_shared<StandardAction>();
-            action->setText("Open URL in your browser");
-            action->setAction([urlstr](){
-                QDesktopServices::openUrl(QUrl(urlstr));
-            });
-            actions.push_back(std::move(action));
-
-            action = std::make_shared<StandardAction>();
-            action->setText("Copy URL to clipboard");
-            action->setAction([urlstr](){
-                QApplication::clipboard()->setText(urlstr);
-            });
-            actions.push_back(std::move(action));
-
             ssii->setActions(std::move(actions));
 
             bookmarks.push_back(std::move(ssii));

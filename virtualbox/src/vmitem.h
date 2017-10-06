@@ -15,21 +15,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
-
 #include "core/item.h"
-using std::vector;
-using std::shared_ptr;
-using Core::Action;
-using Core::Item;
 
 namespace VirtualBox {
 
-typedef vector<shared_ptr<Action>> ActionSPtrVec;
-
-class VMItem : public Item
+class VMItem : public Core::Item
 {
 public:
-    VMItem(const QString &name, const QString &uuid, int &mainAction, const ActionSPtrVec actions, const QString &state);
+    VMItem(const QString &name,
+           const QString &uuid,
+           int &mainAction,
+           const std::vector<Core::Action> actions,
+           const QString &state);
 
 
     /*
@@ -40,7 +37,7 @@ public:
     QString text() const override { return name_; }
     QString subtext() const override;
     QString iconPath() const override { return iconPath_; }
-    ActionSPtrVec actions() override { return actions_; }
+    std::vector<Core::Action> actions() override { return actions_; }
 
     /*
      * Item specific members
@@ -57,7 +54,7 @@ private:
     QString name_;
     QString uuid_;
     QString idstring_;
-    ActionSPtrVec actions_;
+    std::vector<Core::Action> actions_;
     int mainAction_;
 };
 

@@ -29,13 +29,9 @@
 #include <functional>
 #include "extension.h"
 #include "vm.h"
-#include "core/query.h"
 #include "util/standarditem.h"
-#include "util/standardaction.h"
 #include "xdg/iconlookup.h"
-using Core::Action;
-using Core::StandardAction;
-using Core::StandardItem;
+using namespace Core;
 
 #include <nsString.h>
 #include <nsIServiceManager.h>

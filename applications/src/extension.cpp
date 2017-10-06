@@ -1,19 +1,4 @@
-// albert - a simple application launcher for linux
 // Copyright (C) 2014-2017 Manuel Schneider
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 
 #include <QApplication>
 #include <QDir>
@@ -36,10 +21,8 @@
 #include <vector>
 #include "configwidget.h"
 #include "extension.h"
-#include "core/query.h"
 #include "core/queryhandler.h"
 #include "util/offlineindex.h"
-#include "util/standardaction.h"
 #include "util/standardindexitem.h"
 #include "util/shutil.h"
 #include "xdg/iconlookup.h"
@@ -397,7 +380,6 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
              * Default action
              */
 
-            vector<shared_ptr<Action>> actions;
 
             // Unquote arguments and expand field codes
             QStringList commandline = expandedFieldCodes(Core::ShUtil::split(exec),
@@ -408,24 +390,22 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             if (commandline.isEmpty())
                 continue;
 
-            shared_ptr<StandardAction> sa = std::make_shared<StandardAction>();
-            sa->setText(QString("Run '%1'").arg(name));
+            vector<Action> actions;
+
             if (term){
-                sa->setAction([commandline, workingDir](){
+                actions.emplace_back("Run", [commandline, workingDir]() {
                     QStringList arguments = Core::ShUtil::split(terminalCommand);
                     arguments.append(commandline);
                     QString command = arguments.takeFirst();
                     QProcess::startDetached(command, arguments, workingDir);
                 });
             } else {
-                sa->setAction([commandline, workingDir](){
+                actions.emplace_back("Run", [commandline, workingDir]() {
                     QStringList arguments = commandline;
                     QString command = arguments.takeFirst();
                     QProcess::startDetached(command, arguments, workingDir);
                 });
             }
-
-            actions.push_back(sa);
 
 
             /*
@@ -433,23 +413,17 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
              */
 
             if (term){
-                sa = std::make_shared<StandardAction>();
-                sa->setText(QString("Run '%1' as root").arg(name));
-                sa->setAction([commandline, workingDir](){
+                actions.emplace_back("Run as root", [commandline, workingDir](){
                     QStringList arguments = Core::ShUtil::split(terminalCommand);
                     arguments.append(QString("sudo %1").arg(commandline.join(' ')));
                     QString command = arguments.takeFirst();
                     QProcess::startDetached(command, arguments, workingDir);
                 });
-                actions.push_back(sa);
             }
             else if ( !graphicalSudoPath.isNull() ) {
-                sa = std::make_shared<StandardAction>();
-                sa->setText(QString("Run '%1' as root").arg(name));
-                sa->setAction([=](){
+                actions.emplace_back("Run as root", [this, commandline, workingDir](){
                     QProcess::startDetached(graphicalSudoPath, commandline, workingDir);
                 });
-                actions.push_back(sa);
             }
 
 
@@ -458,8 +432,6 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
              */
 
             for (const QString &actionIdentifier: actionIdentifiers){
-
-                sa = std::make_shared<StandardAction>();
 
                 // Get iterator to action section
                 if ((sectionIterator = sectionMap.find(QString("Desktop Action %1").arg(actionIdentifier))) == sectionMap.end())
@@ -470,7 +442,6 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                 QString actionName = xdgStringEscape(getLocalizedKey("Name", valueMap, loc));
                 if (actionName.isNull())
                     continue;
-                sa->setText(actionName);
 
                 // Get action command
                 if ((entryIterator = valueMap.find("Exec")) == valueMap.end())
@@ -483,20 +454,19 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                                                              fIt.filePath());
 
                 if (term){
-                    sa->setAction([commandline, workingDir](){
+                    actions.emplace_back(actionName, [commandline, workingDir](){
                         QStringList arguments = Core::ShUtil::split(terminalCommand);
                         arguments.append(commandline);
                         QString command = arguments.takeFirst();
                         QProcess::startDetached(command, arguments, workingDir);
                     });
                 } else {
-                    sa->setAction([commandline, workingDir](){
+                    actions.emplace_back(actionName, [commandline, workingDir](){
                         QStringList arguments = commandline;
                         QString command = arguments.takeFirst();
                         QProcess::startDetached(command, arguments, workingDir);
                     });
                 }
-                actions.push_back(sa);
             }
 
 
@@ -505,23 +475,22 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
              */
 
             // Finally we got everything, build the item
-            shared_ptr<StandardIndexItem> ssii = std::make_shared<StandardIndexItem>(id);
-
-            // Set Name
-            ssii->setText(name);
+            shared_ptr<StandardIndexItem> item = std::make_shared<StandardIndexItem>();
+            item->setId(id);
+            item->setText(name);
 
             // Set subtext/tootip
             if (comment.isEmpty())
                 if (genericName.isEmpty())
-                    ssii->setSubtext(exec);
+                    item->setSubtext(exec);
                 else
-                    ssii->setSubtext(genericName);
+                    item->setSubtext(genericName);
             else
-                ssii->setSubtext(comment);
+                item->setSubtext(comment);
 
             // Set icon
             icon = XDG::IconLookup::iconPath({icon, "exec"});
-            ssii->setIconPath(icon.isEmpty() ? ":application-x-executable" : icon);
+            item->setIconPath(icon.isEmpty() ? ":application-x-executable" : icon);
 
             // Set keywords
             vector<IndexableItem::IndexString> indexStrings;
@@ -543,12 +512,12 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             if (!genericName.isEmpty())
                 indexStrings.emplace_back(genericName, UINT_MAX*0.7);
 
-            ssii->setIndexKeywords(std::move(indexStrings));
+            item->setIndexKeywords(std::move(indexStrings));
 
             // Set actions
-            ssii->setActions(std::move(actions));
+            item->setActions(std::move(actions));
 
-            desktopEntries.push_back(std::move(ssii));
+            desktopEntries.push_back(std::move(item));
         }
     }
     return desktopEntries;
