@@ -130,7 +130,7 @@ void ExternalExtensions::Extension::reloadExtensions() {
                 });
 
                 if ( it == d->externalExtensions.end() ) {
-                    d->externalExtensions.emplace_back(new ExternalExtension(path, QString("org.arlbert.extension.external.%1").arg(id)));
+                    d->externalExtensions.emplace_back(new ExternalExtension(path, QString("org.albert.extension.external.%1").arg(id)));
                     d->fileSystemWatcher.addPath(path);
                 }
             }
