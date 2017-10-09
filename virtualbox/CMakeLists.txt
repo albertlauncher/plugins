@@ -30,11 +30,12 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-    ${Qt5Widgets_LIBRARIES}
-    ${Qt5Xml_LIBRARIES}
-    albertcore
-    ${PATH_BIN}/VBoxXPCOM.so
-    xdg
+    PRIVATE
+        ${Qt5Widgets_LIBRARIES}
+        ${Qt5Xml_LIBRARIES}
+        albertcore
+        ${PATH_BIN}/VBoxXPCOM.so
+        xdg
 )
 
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib/albert/plugins)
