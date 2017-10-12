@@ -5,6 +5,7 @@ Item {
 
     id: listItem
 
+    property variant attachedModel: model
     property int iconSize
     property int spacing
     property int textSize

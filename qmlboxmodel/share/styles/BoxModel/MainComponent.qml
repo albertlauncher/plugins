@@ -210,7 +210,7 @@ Item {
         else if ( event.key === Qt.Key_Tab && resultsList.count > 0 ) {
             if ( resultsList.currentIndex === -1 )
                 resultsList.currentIndex = 0
-            historyTextInput.text = resultsList.model.data(resultsList.model.index(resultsList.currentIndex, 0),3) // OMG magic numbers hacked in
+            historyTextInput.text = resultsList.currentItem.attachedModel.itemCompletionStringRole
         } else event.accepted = false
     }
     Keys.onReleased: {
