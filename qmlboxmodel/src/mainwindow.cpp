@@ -499,10 +499,11 @@ void QmlBoxModel::MainWindow::resizeEvent(QResizeEvent *event) {
 
             Region region = XCreateRegion();
             XRectangle rectangle;
-            rectangle.x      = static_cast<int16_t>(frameObject->property("x").toUInt());
-            rectangle.y      = static_cast<int16_t>(frameObject->property("y").toUInt());
-            rectangle.width  = static_cast<uint16_t>(frameObject->property("width").toUInt());
-            rectangle.height = static_cast<uint16_t>(frameObject->property("height").toUInt());
+            double scalefactor = devicePixelRatio();
+            rectangle.x      = static_cast<int16_t>(frameObject->property("x").toUInt()*scalefactor);
+            rectangle.y      = static_cast<int16_t>(frameObject->property("y").toUInt()*scalefactor);
+            rectangle.width  = static_cast<uint16_t>(frameObject->property("width").toUInt()*scalefactor);
+            rectangle.height = static_cast<uint16_t>(frameObject->property("height").toUInt()*scalefactor);
             XUnionRectWithRegion(&rectangle, region, region);
             XShapeCombineRegion(QX11Info::display(), winId(), ShapeInput, 0, 0, region, ShapeSet);
             XDestroyRegion(region);

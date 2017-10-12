@@ -557,10 +557,11 @@ void WidgetBoxModel::FrontendWidget::resizeEvent(QResizeEvent *event) {
 
         Region region = XCreateRegion();
         XRectangle rectangle;
-        rectangle.x      = static_cast<int16_t>(d->ui.frame->geometry().x());
-        rectangle.y      = static_cast<int16_t>(d->ui.frame->geometry().y());
-        rectangle.width  = static_cast<uint16_t>(d->ui.frame->geometry().width());
-        rectangle.height = static_cast<uint16_t>(d->ui.frame->geometry().height());
+        double scalefactor = devicePixelRatioF();
+        rectangle.x      = static_cast<int16_t>(d->ui.frame->geometry().x()*scalefactor);
+        rectangle.y      = static_cast<int16_t>(d->ui.frame->geometry().y()*scalefactor);
+        rectangle.width  = static_cast<uint16_t>(d->ui.frame->geometry().width()*scalefactor);
+        rectangle.height = static_cast<uint16_t>(d->ui.frame->geometry().height()*scalefactor);
         XUnionRectWithRegion(&rectangle, region, region);
         XShapeCombineRegion(QX11Info::display(), winId(), ShapeInput, 0, 0, region, ShapeSet);
         XDestroyRegion(region);
