@@ -44,10 +44,9 @@
 #include "core/extension.h"
 #include "util/offlineindex.h"
 #include "util/standardindexitem.h"
+#include "util/standardactions.h"
 #include "xdg/iconlookup.h"
-using std::pair;
-using std::shared_ptr;
-using std::vector;
+using namespace std;
 using namespace Core;
 
 namespace {
@@ -86,7 +85,7 @@ public:
     void startIndexing();
     void finishIndexing();
     QFutureWatcher<vector<shared_ptr<Core::StandardIndexItem>>> futureWatcher;
-    std::vector<std::shared_ptr<Core::StandardIndexItem>> indexFirefoxBookmarks() const;
+    vector<shared_ptr<Core::StandardIndexItem>> indexFirefoxBookmarks() const;
 };
 
 
@@ -100,7 +99,7 @@ void FirefoxBookmarks::Private::startIndexing() {
     // Run finishIndexing when the indexing thread finished
     futureWatcher.disconnect();
     QObject::connect(&futureWatcher, &QFutureWatcher<vector<shared_ptr<Core::StandardIndexItem>>>::finished,
-                     std::bind(&Private::finishIndexing, this));
+                     bind(&Private::finishIndexing, this));
 
     // Run the indexer thread
     futureWatcher.setFuture(QtConcurrent::run(this, &Private::indexFirefoxBookmarks));
@@ -163,38 +162,32 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
         QString urlstr = result.value(2).toString();
 
         // Create item
-        shared_ptr<StandardIndexItem> ssii  = std::make_shared<StandardIndexItem>(result.value(0).toString());
-        ssii->setText(result.value(1).toString());
-        ssii->setSubtext(urlstr);
-        ssii->setIconPath(icon);
+        shared_ptr<StandardIndexItem> item  = make_shared<StandardIndexItem>(result.value(0).toString());
+        item->setText(result.value(1).toString());
+        item->setSubtext(urlstr);
+        item->setIconPath(icon);
 
         // Add severeal secondary index keywords
         vector<IndexableItem::IndexString> indexStrings;
         QUrl url(urlstr);
         QString host = url.host();
-        indexStrings.emplace_back(ssii->text(), UINT_MAX);
+        indexStrings.emplace_back(item->text(), UINT_MAX);
         indexStrings.emplace_back(host.left(host.size()-url.topLevelDomain().size()), UINT_MAX/2);
         indexStrings.emplace_back(result.value(2).toString(), UINT_MAX/4); // parent dirname
-        ssii->setIndexKeywords(std::move(indexStrings));
+        item->setIndexKeywords(move(indexStrings));
 
         // Add actions
-        vector<Action> actions;
-        actions.emplace_back("Open URL in Firefox",[urlstr, this](){
-            QProcess::startDetached(firefoxExecutable, {urlstr});
-        });
-        actions.emplace_back("Open URL in new Firefox window",[urlstr, this](){
-            QProcess::startDetached(firefoxExecutable, {"--new-window", urlstr});
-        });
-        actions.emplace(openWithFirefox ? actions.end() : actions.begin(),
-                             "Open URL in your default browser", [urlstr](){
-            QDesktopServices::openUrl(QUrl(urlstr));
-        });
-        actions.emplace_back("Copy url to clipboard",[urlstr](){
-            QApplication::clipboard()->setText(urlstr);
-        });
-        ssii->setActions(std::move(actions));
+        vector<shared_ptr<Action>> actions;
+        actions.push_back(make_shared<ProcAction>("Open URL in Firefox",
+                                                  QStringList({firefoxExecutable, urlstr})));
+        actions.push_back(make_shared<ProcAction>("Open URL in new Firefox window",
+                                                  QStringList({firefoxExecutable, "--new-window", urlstr})));
+        actions.insert(openWithFirefox ? actions.end() : actions.begin(),
+                       make_shared<UrlAction>("Open URL in your default browser", urlstr));
+        actions.push_back(make_shared<ClipboardAction>("Copy url to clipboard", urlstr));
+        item->setActions(move(actions));
 
-        bookmarks.push_back(std::move(ssii));
+        bookmarks.push_back(move(item));
     }
 
     return bookmarks;
@@ -287,7 +280,7 @@ FirefoxBookmarks::Extension::Extension()
 
     // If the update delay passed, update the index
     connect(&d->updateDelayTimer, &QTimer::timeout,
-            std::bind(&Private::startIndexing, d.get()));
+            bind(&Private::startIndexing, d.get()));
 }
 
 
@@ -360,10 +353,10 @@ void FirefoxBookmarks::Extension::handleQuery(Core::Query *query) const {
 
     vector<pair<shared_ptr<Core::Item>,uint>> results;
     for (const shared_ptr<Core::IndexableItem> &item : indexables)
-        results.emplace_back(std::static_pointer_cast<Core::StandardIndexItem>(item), 0);
+        results.emplace_back(static_pointer_cast<Core::StandardIndexItem>(item), 0);
 
-    query->addMatches(std::make_move_iterator(results.begin()),
-                      std::make_move_iterator(results.end()));
+    query->addMatches(make_move_iterator(results.begin()),
+                      make_move_iterator(results.end()));
 }
 
 

@@ -23,14 +23,12 @@
 #include "extension.h"
 #include "core/queryhandler.h"
 #include "util/offlineindex.h"
+#include "util/standardactions.h"
 #include "util/standardindexitem.h"
 #include "util/shutil.h"
 #include "xdg/iconlookup.h"
-using std::map;
-using std::pair;
-using std::vector;
-using std::shared_ptr;
 using namespace Core;
+using namespace std;
 
 extern QString terminalCommand;
 
@@ -377,102 +375,15 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 //                keywords = xdgStringEscape(valueIterator->second).split(';',QString::SkipEmptyParts);
 
             /*
-             * Default action
+             * Build the item
              */
-
 
             // Unquote arguments and expand field codes
             QStringList commandline = expandedFieldCodes(Core::ShUtil::split(exec),
-                                                         icon,
-                                                         name,
-                                                         fIt.filePath());
+                                                         icon, name, fIt.filePath());
             // Malformed exec line. Constraint (1)
             if (commandline.isEmpty())
                 continue;
-
-            vector<Action> actions;
-
-            if (term){
-                actions.emplace_back("Run", [commandline, workingDir]() {
-                    QStringList arguments = Core::ShUtil::split(terminalCommand);
-                    arguments.append(commandline);
-                    QString command = arguments.takeFirst();
-                    QProcess::startDetached(command, arguments, workingDir);
-                });
-            } else {
-                actions.emplace_back("Run", [commandline, workingDir]() {
-                    QStringList arguments = commandline;
-                    QString command = arguments.takeFirst();
-                    QProcess::startDetached(command, arguments, workingDir);
-                });
-            }
-
-
-            /*
-             * Root action
-             */
-
-            if (term){
-                actions.emplace_back("Run as root", [commandline, workingDir](){
-                    QStringList arguments = Core::ShUtil::split(terminalCommand);
-                    arguments.append(QString("sudo %1").arg(commandline.join(' ')));
-                    QString command = arguments.takeFirst();
-                    QProcess::startDetached(command, arguments, workingDir);
-                });
-            }
-            else if ( !graphicalSudoPath.isNull() ) {
-                actions.emplace_back("Run as root", [this, commandline, workingDir](){
-                    QProcess::startDetached(graphicalSudoPath, commandline, workingDir);
-                });
-            }
-
-
-            /*
-             * Desktop Actions
-             */
-
-            for (const QString &actionIdentifier: actionIdentifiers){
-
-                // Get iterator to action section
-                if ((sectionIterator = sectionMap.find(QString("Desktop Action %1").arg(actionIdentifier))) == sectionMap.end())
-                    continue;
-                map<QString,QString> &valueMap = sectionIterator->second;
-
-                // Try to get the localized action name
-                QString actionName = xdgStringEscape(getLocalizedKey("Name", valueMap, loc));
-                if (actionName.isNull())
-                    continue;
-
-                // Get action command
-                if ((entryIterator = valueMap.find("Exec")) == valueMap.end())
-                    continue;
-
-                // Unquote arguments and expand field codes
-                QStringList commandline = expandedFieldCodes(Core::ShUtil::split(entryIterator->second),
-                                                             icon,
-                                                             name,
-                                                             fIt.filePath());
-
-                if (term){
-                    actions.emplace_back(actionName, [commandline, workingDir](){
-                        QStringList arguments = Core::ShUtil::split(terminalCommand);
-                        arguments.append(commandline);
-                        QString command = arguments.takeFirst();
-                        QProcess::startDetached(command, arguments, workingDir);
-                    });
-                } else {
-                    actions.emplace_back(actionName, [commandline, workingDir](){
-                        QStringList arguments = commandline;
-                        QString command = arguments.takeFirst();
-                        QProcess::startDetached(command, arguments, workingDir);
-                    });
-                }
-            }
-
-
-            /*
-             * Build the item
-             */
 
             // Finally we got everything, build the item
             shared_ptr<StandardIndexItem> item = std::make_shared<StandardIndexItem>();
@@ -514,8 +425,52 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 
             item->setIndexKeywords(std::move(indexStrings));
 
-            // Set actions
-            item->setActions(std::move(actions));
+
+
+            /*
+             * Build actions
+             */
+
+            // Default and root action
+            if (term) {
+                item->addAction(make_shared<TermAction>("Run", commandline, workingDir));
+                item->addAction(make_shared<TermAction>("Run as root", QStringList("sudo")+commandline, workingDir));
+            } else {
+                item->addAction(make_shared<ProcAction>("Run", commandline, workingDir));
+                item->addAction(make_shared<ProcAction>("Run as root", QStringList("gksudo")+commandline, workingDir));
+            }
+
+            // Desktop Actions
+            for (const QString &actionIdentifier: actionIdentifiers){
+
+                // Get iterator to action section
+                if ((sectionIterator = sectionMap.find(QString("Desktop Action %1").arg(actionIdentifier))) == sectionMap.end())
+                    continue;
+                map<QString,QString> &valueMap = sectionIterator->second;
+
+                // Try to get the localized action name
+                QString actionName = xdgStringEscape(getLocalizedKey("Name", valueMap, loc));
+                if (actionName.isNull())
+                    continue;
+
+                // Get action command
+                if ((entryIterator = valueMap.find("Exec")) == valueMap.end())
+                    continue;
+
+                // Unquote arguments and expand field codes
+                QStringList commandline = expandedFieldCodes(Core::ShUtil::split(entryIterator->second),
+                                                             icon, name, fIt.filePath());
+                if (term)
+                    item->addAction(make_shared<TermAction>(actionName, commandline, workingDir));
+                else
+                    item->addAction(make_shared<ProcAction>(actionName, commandline, workingDir));
+
+            }
+
+
+            /*
+             * Add item
+             */
 
             desktopEntries.push_back(std::move(item));
         }

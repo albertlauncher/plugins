@@ -23,6 +23,7 @@
 #include "indextreenode.h"
 #include "util/offlineindex.h"
 #include "util/standarditem.h"
+#include "util/standardactions.h"
 using namespace Core;
 using namespace std;
 
@@ -336,9 +337,9 @@ void Files::Extension::handleQuery(Core::Query * query) const {
             item->setText("albert scan files");
             item->setSubtext("Update the file index");
             item->setIconPath(":app_icon");
-            item->emplaceAction("Update the file index",
-                                // Const cast is fine since the action will not be called here
-                                [this](){ const_cast<Extension*>(this)->updateIndex(); });
+            // Const cast is fine since the action will not be called here
+            item->addAction(make_shared<FuncAction>("Update the file index",
+                                                    [this](){ const_cast<Extension*>(this)->updateIndex();}));
 
             query->addMatch(move(item));
         }

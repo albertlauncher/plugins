@@ -25,7 +25,7 @@ public:
     VMItem(const QString &name,
            const QString &uuid,
            int &mainAction,
-           const std::vector<Core::Action> actions,
+           const std::vector<std::shared_ptr<Core::Action>> actions,
            const QString &state);
 
 
@@ -37,7 +37,7 @@ public:
     QString text() const override { return name_; }
     QString subtext() const override;
     QString iconPath() const override { return iconPath_; }
-    std::vector<Core::Action> actions() override { return actions_; }
+    std::vector<std::shared_ptr<Core::Action>> actions() override { return actions_; }
 
     /*
      * Item specific members
@@ -54,7 +54,7 @@ private:
     QString name_;
     QString uuid_;
     QString idstring_;
-    std::vector<Core::Action> actions_;
+    std::vector<std::shared_ptr<Core::Action>> actions_;
     int mainAction_;
 };
 

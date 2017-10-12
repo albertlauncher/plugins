@@ -32,16 +32,16 @@
 #include "configwidget.h"
 #include "enginesmodel.h"
 #include "extension.h"
+#include "util/standardactions.h"
 #include "util/standarditem.h"
 #include "xdg/iconlookup.h"
-using std::shared_ptr;
-using std::vector;
 using namespace Core;
+using namespace std;
 
 
 namespace {
 
-std::vector<Websearch::SearchEngine> defaultSearchEngines = {
+vector<Websearch::SearchEngine> defaultSearchEngines = {
     {"Google",        "gg ",  ":google",    "https://www.google.com/search?q=%s"},
     {"Youtube",       "yt ",  ":youtube",   "https://www.youtube.com/results?search_query=%s"},
     {"Amazon",        "ama ", ":amazon",    "http://www.amazon.com/s/?field-keywords=%s"},
@@ -58,12 +58,12 @@ shared_ptr<Core::Item> buildWebsearchItem(const Websearch::SearchEngine &se, con
     QUrl url = QUrl(urlString);
     QString desc = QString("Start %1 search in your browser").arg(se.name);
 
-    auto item = std::make_shared<StandardItem>(se.name);
+    auto item = make_shared<StandardItem>(se.name);
     item->setText(se.name);
     item->setSubtext(desc);
     item->setIconPath(se.iconPath);
-    item->setCompletionString(QString("%1%2").arg(se.trigger, searchterm));
-    item->emplaceAction(desc, [=](){ QDesktopServices::openUrl(url); });
+    item->setCompletion(QString("%1%2").arg(se.trigger, searchterm));
+    item->addAction(make_shared<UrlAction>("Open URL", url));
 
     return item;
 }
@@ -82,7 +82,7 @@ class Websearch::Private
 {
 public:
     QPointer<ConfigWidget> widget;
-    std::vector<SearchEngine> searchEngines;
+    vector<SearchEngine> searchEngines;
 };
 
 
@@ -174,15 +174,15 @@ void Websearch::Extension::handleQuery(Core::Query * query) const {
                                 query->string().startsWith("https://") ||  // explict scheme
                                 ( QRegularExpression(R"R(\S+\.\S+$)R").match(url.host()).hasMatch() &&
                                   !url.topLevelDomain().isNull()) ) ) {  // valid TLD
-            auto item = std::make_shared<StandardItem>("valid_url");
+            auto item = make_shared<StandardItem>("valid_url");
             item->setText(QString("Open url in browser"));
             item->setSubtext(QString("Visit %1").arg(url.authority()));
-            item->setCompletionString(query->string());
+            item->setCompletion(query->string());
             QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
             item->setIconPath(icon.isNull() ? ":favicon" : icon);
-            item->emplaceAction("Open URL", [url](){ QDesktopServices::openUrl(url); });
+            item->addAction(make_shared<UrlAction>("Open URL", url));
 
-            query->addMatch(std::move(item), UINT_MAX);
+            query->addMatch(move(item), UINT_MAX);
         }
     }
 }
@@ -200,14 +200,14 @@ vector<shared_ptr<Core::Item>> Websearch::Extension::fallbacks(const QString & s
 
 
 /** ***************************************************************************/
-const std::vector<Websearch::SearchEngine> &Websearch::Extension::engines() const {
+const vector<Websearch::SearchEngine> &Websearch::Extension::engines() const {
     return d->searchEngines;
 }
 
 
 
 /** ***************************************************************************/
-void Websearch::Extension::setEngines(const std::vector<Websearch::SearchEngine> &engines) {
+void Websearch::Extension::setEngines(const vector<Websearch::SearchEngine> &engines) {
     d->searchEngines = engines;
     emit enginesChanged(d->searchEngines);
 

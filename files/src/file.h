@@ -16,10 +16,10 @@ public:
     QString id() const override;
     QString text() const override;
     QString subtext() const override;
-    QString completionString() const override;
+    QString completion() const override;
     QString iconPath() const override;
     std::vector<Core::IndexableItem::IndexString> indexStrings() const override;
-    std::vector<Core::Action> actions() override;
+    std::vector<std::shared_ptr<Core::Action>> actions() override;
 
     /** Return the filename of the file */
     virtual QString name() const = 0;

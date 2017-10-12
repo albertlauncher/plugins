@@ -11,6 +11,7 @@
 #include "muParser.h"
 #include "core/query.h"
 #include "util/standarditem.h"
+#include "util/standardactions.h"
 #include "xdg/iconlookup.h"
 using namespace std;
 using namespace Core;
@@ -99,17 +100,12 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
         return;
     }
 
-    // Make an lvalue sthat can be captured by the lambda
-    QString equation = QString("%1 = %2").arg(query->string(), result);
-
     auto item = make_shared<StandardItem>("muparser");
     item->setText(result);
     item->setSubtext(QString("Result of '%1'").arg(query->string()));
     item->setIconPath(d->iconPath);
-    item->emplaceAction("Copy result to clipboard",
-                        [=](){ QApplication::clipboard()->setText(result); });
-    item->emplaceAction("Copy equation to clipboard",
-                        [=](){ QApplication::clipboard()->setText(equation); });
-
+    item->addAction(make_shared<ClipboardAction>("Copy result to clipboard", result));
+    item->addAction(make_shared<ClipboardAction>("Copy equation to clipboard",
+                                                 QString("%1 = %2").arg(query->string(), result)));
     query->addMatch(move(item), UINT_MAX);
 }

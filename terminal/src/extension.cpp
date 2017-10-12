@@ -30,6 +30,7 @@
 #include "extension.h"
 #include "configwidget.h"
 #include "util/shutil.h"
+#include "util/standardactions.h"
 #include "util/standarditem.h"
 #include "xdg/iconlookup.h"
 using namespace std;
@@ -129,19 +130,16 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
         item->setText(commandlineString);
         item->setSubtext(QString("Run '%1'").arg(commandlineString));
         item->setIconPath(d->iconPath);
-        item->setActions({
-            Action("Run", [commandlineString](){
-                QProcess::startDetached(commandlineString);
-            }),
-            Action("Run in a shell",[this, commandlineString](){
-                QProcess::startDetached(d->shell, {"-ic", commandlineString});
-            }),
-            Action("Run in a terminal", [this, commandlineString](){
+        item->addAction(make_shared<ProcAction>("Run", commandlineString));
+        item->addAction(make_shared<TermAction>("Run in a shell",
+                                                 QStringList({d->shell, "-ic", commandlineString})));
+        item->addAction(make_shared<FuncAction>("Run in a terminal",
+                                                 [this, commandlineString](){
                 QStringList tokens = Core::ShUtil::split(terminalCommand);
                 tokens << d->shell << "-ic" << QString("%1; exec %2").arg(commandlineString, d->shell);
                 QProcess::startDetached(tokens.takeFirst(), tokens);
             })
-        });
+        );
 
         results.emplace_back(item, 0);
         ++it;
@@ -150,7 +148,7 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
     // Apply completion string to items
     QString completion = QString(">%1").arg(commonPrefix);
     for (pair<shared_ptr<Core::Item>,short> &match: results)
-        std::static_pointer_cast<StandardItem>(match.first)->setCompletionString(completion);
+        std::static_pointer_cast<StandardItem>(match.first)->setCompletion(completion);
 
     // Build general item
     QString commandline = query->string();
@@ -158,21 +156,18 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
     auto item = make_shared<StandardItem>();
     item->setText(QString("I'm Feeling Lucky").arg(commandline));
     item->setSubtext(QString("Try running '%1'").arg(commandline));
-    item->setCompletionString(query->rawString());
+    item->setCompletion(query->rawString());
     item->setIconPath(d->iconPath);
-    item->setActions({
-        Action("Run", [commandline](){
-            QProcess::startDetached(commandline);
-        }),
-        Action("Run in a shell",[this, commandline](){
-            QProcess::startDetached(d->shell, {"-ic", commandline});
-        }),
-        Action("Run in a terminal", [this, commandline](){
+    item->addAction(make_shared<ProcAction>("Run", commandline));
+    item->addAction(make_shared<TermAction>("Run in a shell",
+                                             QStringList({d->shell, "-ic", commandline})));
+    item->addAction(make_shared<FuncAction>("Run in a terminal",
+                                             [this, commandline](){
             QStringList tokens = Core::ShUtil::split(terminalCommand);
             tokens << d->shell << "-ic" << QString("%1; exec %2").arg(commandline, d->shell);
             QProcess::startDetached(tokens.takeFirst(), tokens);
         })
-    });
+    );
 
     results.emplace_back(item, 0);
 

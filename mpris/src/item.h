@@ -37,7 +37,7 @@ public:
     QString text() const override { return text_; }
     QString subtext() const override { return subtext_; }
     QString iconPath() const override { return iconPath_; }
-    vector<Action> actions() override;
+    vector<shared_ptr<Action>> actions() override;
 
 private:
 
@@ -46,7 +46,7 @@ private:
     QString subtext_;
     QString iconPath_;
     QDBusMessage message_;
-    vector<Action> actions_;
+    vector<shared_ptr<Action>> actions_;
 
 };
 

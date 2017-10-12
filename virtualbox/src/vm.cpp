@@ -24,6 +24,7 @@
 #include <QRegularExpression>
 #include <nsString.h>
 #include <nsIServiceManager.h>
+#include <util/standardactions.h>
 using namespace Core;
 using namespace std;
 
@@ -96,7 +97,7 @@ VirtualBox::VMItem *VirtualBox::VM::produceItem() const {
     stopCmd = stopCmd.arg(uuid_);
     resetCmd = resetCmd.arg(uuid_);
     resumeCmd = resumeCmd.arg(uuid_);
-    vector<Action> actions;
+    vector<shared_ptr<Action>> actions;
     int mainAction = 0;
 
     PRUint32 state;
@@ -107,32 +108,32 @@ VirtualBox::VMItem *VirtualBox::VM::produceItem() const {
     case MachineState::Saving:
     case MachineState::Stopping:
         mainAction = VMItem::VM_STATE_CHANGING;
-        actions.emplace_back("Controls are disabled", [](){});
+        actions.push_back(make_shared<FuncAction>("Controls are disabled", [](){}));
         break;
     case MachineState::PoweredOff:
     case MachineState::Aborted:
         mainAction = VMItem::VM_START;
-        actions.emplace_back("Start", [startCmd](){ QProcess::startDetached(startCmd); });
+        actions.push_back(make_shared<ProcAction>("Start", startCmd));
         break;
     case MachineState::Saved:
         mainAction = VMItem::VM_START;
-        actions.emplace_back("Start", [startCmd](){ QProcess::startDetached(startCmd); });
+        actions.push_back(make_shared<ProcAction>("Start", startCmd));
         break;
     case MachineState::Running:
         mainAction = VMItem::VM_PAUSE;
-        actions.emplace_back("Pause", [pauseCmd](){ QProcess::startDetached(pauseCmd); });
-        actions.emplace_back("Save State", [saveCmd](){ QProcess::startDetached(saveCmd); });
-        actions.emplace_back("Stop", [stopCmd](){ QProcess::startDetached(stopCmd); });
+        actions.push_back(make_shared<ProcAction>("Pause", pauseCmd));
+        actions.push_back(make_shared<ProcAction>("Save State", saveCmd));
+        actions.push_back(make_shared<ProcAction>("Stop", stopCmd));
         break;
     case MachineState::Paused:
         mainAction = VMItem::VM_RESUME;
-        actions.emplace_back("Resume", [resumeCmd](){ QProcess::startDetached(resumeCmd); });
-        actions.emplace_back("Save State", [saveCmd](){ QProcess::startDetached(saveCmd); });
-        actions.emplace_back("Reset", [resetCmd](){ QProcess::startDetached(resetCmd); });
+        actions.push_back(make_shared<ProcAction>("Resume", resumeCmd));
+        actions.push_back(make_shared<ProcAction>("Save State", saveCmd));
+        actions.push_back(make_shared<ProcAction>("Reset", resetCmd));
         break;
     default:
         mainAction = VMItem::VM_DIFFERENT;
-        actions.emplace_back("Controls are disabled", [](){});
+        actions.push_back(make_shared<FuncAction>("Controls are disabled", [](){}));
     }
 
     return new VMItem(name_, uuid_, mainAction, actions, state_);

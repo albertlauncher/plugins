@@ -9,17 +9,18 @@
 #include <QSettings>
 #include <QStandardPaths>
 #include <QString>
+#include <memory>
 #include <stdexcept>
 #include <set>
 #include <unistd.h>
 #include <pwd.h>
 #include "extension.h"
 #include "configwidget.h"
+#include "util/standardactions.h"
 #include "util/standarditem.h"
 #include "util/shutil.h"
 #include "xdg/iconlookup.h"
-using std::shared_ptr;
-using std::vector;
+using namespace std;
 using namespace Core;
 
 extern QString terminalCommand;
@@ -159,14 +160,15 @@ void Ssh::Extension::handleQuery(Query * query) const {
             auto item  = std::make_shared<StandardItem>();
             item->setText(trimmed);
             item->setSubtext(QString("Quick connect to '%1' using ssh").arg(trimmed));
-            item->setCompletionString(QString("ssh %1").arg(trimmed));
+            item->setCompletion(QString("ssh %1").arg(trimmed));
             item->setIconPath(d->icon);
-            item->emplaceAction(QString("Connect to '%1' using ssh").arg(trimmed), [trimmed, this](){
+            item->addAction(make_shared<FuncAction>(QString("Connect to '%1' using ssh").arg(trimmed),
+                                                    [trimmed, this](){
                 QStringList tokens;
                 tokens << ShUtil::split(terminalCommand) << d->shell << "-c"
                        << QString(" ssh %1 || read -rsp $'\nPress enter to close the terminal.\n'").arg(trimmed);
                 QProcess::startDetached(tokens.takeFirst(), tokens);
-            });
+            }));
 
             query->addMatch(std::move(item));
         }
@@ -212,15 +214,16 @@ void Ssh::Extension::rescan() {
         auto item = std::make_shared<StandardItem>(host);
         item->setText(host);
         item->setSubtext(QString("Connect to '%1' using ssh").arg(host));
-        item->setCompletionString(QString("ssh %1").arg(host));
+        item->setCompletion(QString("ssh %1").arg(host));
         item->setIconPath(d->icon);
-        item->emplaceAction(QString("Connect to '%1' using ssh").arg(host), [host, this](){
+        item->addAction(make_shared<FuncAction>(QString("Connect to '%1' using ssh").arg(host),
+                                                [host, this](){
             QStringList tokens;
             tokens << ShUtil::split(terminalCommand)
                    << d->shell << "-c"
                    << QString(" ssh %1 || read -rsp $'\nPress enter to close the terminal.\n'").arg(host);
             QProcess::startDetached(tokens.takeFirst(), tokens);
-        });
+        }));
 
         sshHosts.push_back(std::move(item));
     }

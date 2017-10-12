@@ -6,6 +6,7 @@
 #include <QCryptographicHash>
 #include <stdexcept>
 #include "configwidget.h"
+#include "util/standardactions.h"
 #include "util/standarditem.h"
 #include "extension.h"
 using namespace std;
@@ -90,13 +91,13 @@ void HashGenerator::Extension::handleQuery(Core::Query * query) const {
         hash.addData(string.toUtf8());
         QByteArray hashString = hash.result().toHex();
 
-        auto item = std::make_shared<StandardItem>(algorithmNames[algorithm]);
+        auto item = make_shared<StandardItem>(algorithmNames[algorithm]);
         item->setText(QString("%1 of '%2'").arg(algorithmNames[algorithm], string));
         item->setSubtext(hashString);
         item->setIconPath(":hash");
-        item->setCompletionString(QString("%1 %2").arg(algorithmNames[algorithm].toLower(), string));
-        item->emplaceAction("Copy hash value to clipboard",
-                            [=](){ QApplication::clipboard()->setText(QString(hashString));});
+        item->setCompletion(QString("%1 %2").arg(algorithmNames[algorithm].toLower(), string));
+        item->addAction(make_shared<ClipboardAction>("Copy hash value to clipboard",
+                                                     QString(hashString)));
         return item;
     };
 
@@ -106,10 +107,10 @@ void HashGenerator::Extension::handleQuery(Core::Query * query) const {
             query->addMatch(buildItem(algorithm, query->string()));
     } else {
         // Output particular hash if name matches
-        auto it = std::find(algorithmNames.begin(), algorithmNames.end(),
+        auto it = find(algorithmNames.begin(), algorithmNames.end(),
                             query->trigger().trimmed().toUpper());
         if (it != algorithmNames.end()) {
-            int algorithm = static_cast<int>(std::distance(algorithmNames.begin(), it));
+            int algorithm = static_cast<int>(distance(algorithmNames.begin(), it));
             query->addMatch(buildItem(algorithm, query->string()));
         }
     }

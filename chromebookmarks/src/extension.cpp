@@ -25,12 +25,11 @@
 #include <vector>
 #include "configwidget.h"
 #include "extension.h"
+#include "util/standardactions.h"
 #include "util/standardindexitem.h"
 #include "util/offlineindex.h"
 #include "xdg/iconlookup.h"
-using std::shared_ptr;
-using std::vector;
-using std::pair;
+using namespace std;
 using namespace Core;
 
 namespace {
@@ -45,9 +44,12 @@ vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(const QString &bookma
     // Build a new index
     vector<shared_ptr<StandardIndexItem>> bookmarks;
 
+    QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
+    icon = icon.isEmpty() ? ":favicon" : icon;
+
     // Define a recursive bookmark indexing lambda
     std::function<void(const QJsonObject &json)> rec_bmsearch =
-            [&rec_bmsearch, &bookmarks](const QJsonObject &json) {
+            [&rec_bmsearch, &bookmarks, &icon](const QJsonObject &json) {
         QJsonValue type = json["type"];
         if (type == QJsonValue::Undefined)
             return;
@@ -60,30 +62,22 @@ vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(const QString &bookma
             QString name = json["name"].toString();
             QString urlstr = json["url"].toString();
 
-            vector<Action> actions;
-            actions.emplace_back("Open URL in your browser", [urlstr](){
-                QDesktopServices::openUrl(QUrl(urlstr));
-            });
-            actions.emplace_back("Copy URL to clipboard", [urlstr](){
-                QApplication::clipboard()->setText(urlstr);
-            });
-
             vector<IndexableItem::IndexString> indexStrings;
             QUrl url(urlstr);
             QString host = url.host();
             indexStrings.emplace_back(name, UINT_MAX);
             indexStrings.emplace_back(host.left(host.size()-url.topLevelDomain().size()), UINT_MAX/2);
 
-            shared_ptr<StandardIndexItem> ssii  = std::make_shared<StandardIndexItem>(json["id"].toString());
-            ssii->setText(name);
-            ssii->setCompletionString(name);
-            ssii->setSubtext(urlstr);
-            QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
-            ssii->setIconPath((icon.isEmpty()) ? ":favicon" : icon);
-            ssii->setIndexKeywords(std::move(indexStrings));
-            ssii->setActions(std::move(actions));
+            shared_ptr<StandardIndexItem> item = std::make_shared<StandardIndexItem>(json["id"].toString());
+            item->setText(name);
+            item->setCompletion(name);
+            item->setSubtext(urlstr);
+            item->setIconPath(icon);
+            item->setIndexKeywords(std::move(indexStrings));
+            item->addAction(make_shared<UrlAction>("Open URL in your browser", QUrl(urlstr)));
+            item->addAction(make_shared<ClipboardAction>("Copy URL to clipboard", urlstr));
 
-            bookmarks.push_back(std::move(ssii));
+            bookmarks.push_back(std::move(item));
         }
     };
 

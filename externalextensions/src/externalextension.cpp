@@ -12,6 +12,7 @@
 #include <QVBoxLayout>
 #include <functional>
 #include <vector>
+#include "util/standardactions.h"
 #include "util/standarditem.h"
 #include "xdg/iconlookup.h"
 using namespace std;
@@ -353,7 +354,7 @@ void ExternalExtensions::ExternalExtension::handleQuery(Core::Query* query) cons
         item = std::make_shared<StandardItem>(object["id"].toString());
         item->setText(object["name"].toString());
         item->setSubtext(object["description"].toString());
-        item->setCompletionString(object["completion"].toString());
+        item->setCompletion(object["completion"].toString());
         QString icon = XDG::IconLookup::iconPath({object["icon"].toString(), "unknown"});
         item->setIconPath(icon.isEmpty() ? ":unknown" : icon);
 
@@ -366,9 +367,8 @@ void ExternalExtensions::ExternalExtension::handleQuery(Core::Query* query) cons
             for (const QJsonValue & value : object["arguments"].toArray())
                  arguments.append(value.toString());
 
-            item->emplaceAction(object["name"].toString(), [command, arguments](){
-                QProcess::startDetached(command, arguments);
-            });
+            item->addAction(make_shared<ProcAction>(object["name"].toString(),
+                                                    QStringList(command)+arguments));
         }
         results.emplace_back(std::move(item), 0);
     }

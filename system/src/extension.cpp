@@ -7,6 +7,7 @@
 #include <vector>
 #include "configwidget.h"
 #include "extension.h"
+#include "util/standardactions.h"
 #include "util/standarditem.h"
 #include "xdg/iconlookup.h"
 using namespace std;
@@ -249,7 +250,7 @@ void System::Extension::handleQuery(Core::Query * query) const {
             item->setText(itemTitles[i]);
             item->setSubtext(itemDescriptions[i]);
             item->setIconPath(d->iconPaths[i]);
-            item->emplaceAction(itemDescriptions[i], [=](){ QProcess::startDetached(cmd); });
+            item->addAction(make_shared<ProcAction>(itemDescriptions[i], cmd));
 
             query->addMatch(std::move(item), static_cast<uint>(static_cast<float>(query->string().size())/itemTitles[i].size()*UINT_MAX));
         }

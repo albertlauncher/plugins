@@ -10,6 +10,7 @@
 #include <QCryptographicHash>
 #include <stdexcept>
 #include "configwidget.h"
+#include "util/standardactions.h"
 #include "util/standarditem.h"
 #include "extension.h"
 using namespace std;
@@ -91,8 +92,9 @@ void KeyValueStore::Extension::handleQuery(Core::Query * query) const {
             item->setText(QString("Set '%1': '%2'").arg(key, value));
             item->setSubtext(QString("Store this mapping in the database."));
             item->setIconPath(":kv");
-            item->setCompletionString(query->string());
-            item->emplaceAction("Add mapping to the database", [this, key, value](){
+            item->setCompletion(query->string());
+            item->addAction(make_shared<FuncAction>("Add mapping to the database",
+                                                    [this, key, value](){
                 QSqlQuery q(d->db);
                 q.prepare(insertStmt);
                 q.bindValue(":key", key);
@@ -100,7 +102,7 @@ void KeyValueStore::Extension::handleQuery(Core::Query * query) const {
                 q.exec();
                 if (this->d->widget)
                     this->d->widget->updateTable();
-            });
+            }));
 
             query->addMatch(move(item));
         }
@@ -117,15 +119,16 @@ void KeyValueStore::Extension::handleQuery(Core::Query * query) const {
                 item->setText(QString("Unset '%1': '%2'").arg(key, q.value(1).toString()));
                 item->setSubtext(QString("Remove this mapping from the database."));
                 item->setIconPath(":kv");
-                item->setCompletionString(QString("kv unset %1").arg(key));
-                item->emplaceAction("Remove mapping from database", [this, key](){
+                item->setCompletion(QString("kv unset %1").arg(key));
+                item->addAction(make_shared<FuncAction>("Remove mapping from database",
+                                                        [this, key](){
                     QSqlQuery q(d->db);
                     q.prepare(removeStmt);
                     q.bindValue(":key", key);
                     q.exec();
                     if (this->d->widget)
                         this->d->widget->updateTable();
-                });
+                }));
 
                 query->addMatch(move(item), static_cast<uint>(1.0/key.length()*searchterm.length()));
             }
@@ -148,9 +151,8 @@ void KeyValueStore::Extension::handleQuery(Core::Query * query) const {
         item->setText(value);
         item->setSubtext(QString("Value of '%1'").arg(key));
         item->setIconPath(":kv");
-        item->setCompletionString(QString("kv %1").arg(key));
-        item->emplaceAction("Copy value to clipboard",
-                            [=](){QApplication::clipboard()->setText(value);});
+        item->setCompletion(QString("kv %1").arg(key));
+        item->addAction(make_shared<ClipboardAction>("Copy value to clipboard", value));
 
         query->addMatch(move(item), static_cast<uint>(1.0/key.length()*query->string().length()));
     }
