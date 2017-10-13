@@ -152,7 +152,7 @@ void KeyValueStore::Extension::handleQuery(Core::Query * query) const {
         item->setSubtext(QString("Value of '%1'").arg(key));
         item->setIconPath(":kv");
         item->setCompletion(QString("kv %1").arg(key));
-        item->addAction(make_shared<ClipboardAction>("Copy value to clipboard", value));
+        item->addAction(make_shared<ClipAction>("Copy value to clipboard", value));
 
         query->addMatch(move(item), static_cast<uint>(1.0/key.length()*query->string().length()));
     }

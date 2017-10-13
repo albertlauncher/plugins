@@ -96,8 +96,8 @@ void HashGenerator::Extension::handleQuery(Core::Query * query) const {
         item->setSubtext(hashString);
         item->setIconPath(":hash");
         item->setCompletion(QString("%1 %2").arg(algorithmNames[algorithm].toLower(), string));
-        item->addAction(make_shared<ClipboardAction>("Copy hash value to clipboard",
-                                                     QString(hashString)));
+        item->addAction(make_shared<ClipAction>("Copy hash value to clipboard",
+                                                QString(hashString)));
         return item;
     };
 

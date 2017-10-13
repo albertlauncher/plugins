@@ -75,7 +75,7 @@ vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(const QString &bookma
             item->setIconPath(icon);
             item->setIndexKeywords(std::move(indexStrings));
             item->addAction(make_shared<UrlAction>("Open URL in your browser", QUrl(urlstr)));
-            item->addAction(make_shared<ClipboardAction>("Copy URL to clipboard", urlstr));
+            item->addAction(make_shared<ClipAction>("Copy URL to clipboard", urlstr));
 
             bookmarks.push_back(std::move(item));
         }

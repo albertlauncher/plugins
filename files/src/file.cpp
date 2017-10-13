@@ -128,7 +128,7 @@ vector<shared_ptr<Action>> Files::File::actions() {
         cb->setMimeData(newMimeData);
     }));
 
-    actions.push_back(make_shared<ClipboardAction>("Copy path to clipboard", filePath()));
+    actions.push_back(make_shared<ClipAction>("Copy path to clipboard", filePath()));
 
     return actions;
 }

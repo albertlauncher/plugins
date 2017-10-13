@@ -184,7 +184,7 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
                                                   QStringList({firefoxExecutable, "--new-window", urlstr})));
         actions.insert(openWithFirefox ? actions.end() : actions.begin(),
                        make_shared<UrlAction>("Open URL in your default browser", urlstr));
-        actions.push_back(make_shared<ClipboardAction>("Copy url to clipboard", urlstr));
+        actions.push_back(make_shared<ClipAction>("Copy url to clipboard", urlstr));
         item->setActions(move(actions));
 
         bookmarks.push_back(move(item));

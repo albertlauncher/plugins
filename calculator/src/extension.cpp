@@ -104,8 +104,8 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
     item->setText(result);
     item->setSubtext(QString("Result of '%1'").arg(query->string()));
     item->setIconPath(d->iconPath);
-    item->addAction(make_shared<ClipboardAction>("Copy result to clipboard", result));
-    item->addAction(make_shared<ClipboardAction>("Copy equation to clipboard",
-                                                 QString("%1 = %2").arg(query->string(), result)));
+    item->addAction(make_shared<ClipAction>("Copy result to clipboard", result));
+    item->addAction(make_shared<ClipAction>("Copy equation to clipboard",
+                                            QString("%1 = %2").arg(query->string(), result)));
     query->addMatch(move(item), UINT_MAX);
 }
