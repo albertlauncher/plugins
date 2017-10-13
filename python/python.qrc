@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="python_module">resources/text-x-python.svg</file>
+    </qresource>
+</RCC>

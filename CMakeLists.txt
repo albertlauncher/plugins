@@ -73,6 +73,11 @@ if (BUILD_MPRIS)
     add_subdirectory(mpris)
 endif()
 
+option(BUILD_PYTHON "Build the extension" ON)
+if (BUILD_PYTHON)
+    add_subdirectory(python)
+endif()
+
 option(BUILD_SSH "Build the extension" ON)
 if (BUILD_SSH)
     add_subdirectory(ssh)
