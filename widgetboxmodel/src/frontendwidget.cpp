@@ -557,7 +557,7 @@ void WidgetBoxModel::FrontendWidget::resizeEvent(QResizeEvent *event) {
 
         Region region = XCreateRegion();
         XRectangle rectangle;
-        double scalefactor = devicePixelRatioF();
+        int scalefactor = devicePixelRatio();  // TODO Qt>5.6 devicePixelRatioF
         rectangle.x      = static_cast<int16_t>(d->ui.frame->geometry().x()*scalefactor);
         rectangle.y      = static_cast<int16_t>(d->ui.frame->geometry().y()*scalefactor);
         rectangle.width  = static_cast<uint16_t>(d->ui.frame->geometry().width()*scalefactor);

@@ -133,7 +133,7 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
     m.def("warning", [](const py::str &str){ qWarning() << str.cast<QString>(); });
     m.def("critical", [](const py::str &str){ qCritical() << str.cast<QString>(); });
     m.def("iconLookup", [](const py::str &str){ return XDG::IconLookup::iconPath(str.cast<QString>()); });
-};
+}
 
 }
 
