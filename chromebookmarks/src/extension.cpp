@@ -39,7 +39,7 @@ const char* CFG_FUZZY = "fuzzy";
 const bool  DEF_FUZZY = false;
 
 /** ***************************************************************************/
-vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(const QString &bookmarksPath) {
+vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(QString executable, const QString &bookmarksPath) {
 
     // Build a new index
     vector<shared_ptr<StandardIndexItem>> bookmarks;
@@ -49,7 +49,7 @@ vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(const QString &bookma
 
     // Define a recursive bookmark indexing lambda
     std::function<void(const QJsonObject &json)> rec_bmsearch =
-            [&rec_bmsearch, &bookmarks, &icon](const QJsonObject &json) {
+            [&rec_bmsearch, &bookmarks, &icon, &executable](const QJsonObject &json) {
         QJsonValue type = json["type"];
         if (type == QJsonValue::Undefined)
             return;
@@ -74,7 +74,10 @@ vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(const QString &bookma
             item->setSubtext(urlstr);
             item->setIconPath(icon);
             item->setIndexKeywords(std::move(indexStrings));
-            item->addAction(make_shared<UrlAction>("Open URL in your browser", QUrl(urlstr)));
+            item->addAction(make_shared<ProcAction>("Open URL",
+                                                    QStringList() << executable << urlstr));
+            item->addAction(make_shared<ProcAction>("Open URL in new window",
+                                                    QStringList() << executable << "--new-window"  << urlstr));
             item->addAction(make_shared<ClipAction>("Copy URL to clipboard", urlstr));
 
             bookmarks.push_back(std::move(item));
@@ -116,6 +119,7 @@ public:
     QPointer<ConfigWidget> widget;
     QFileSystemWatcher fileSystemWatcher;
     QString bookmarksFile;
+    QString executable;
 
     vector<shared_ptr<Core::StandardIndexItem>> index;
     Core::OfflineIndex offlineIndex;
@@ -124,7 +128,6 @@ public:
     void finishIndexing();
     void startIndexing();
 };
-
 
 
 /** ***************************************************************************/
@@ -140,14 +143,13 @@ void ChromeBookmarks::Private::startIndexing() {
                      std::bind(&Private::finishIndexing, this));
 
     // Run the indexer thread
-    futureWatcher.setFuture(QtConcurrent::run(indexChromeBookmarks, bookmarksFile));
+    futureWatcher.setFuture(QtConcurrent::run(indexChromeBookmarks, executable, bookmarksFile));
 
     // Notification
     qInfo() << "Start indexing Chrome bookmarks.";
     emit q->statusInfo("Indexing bookmarks ...");
 
 }
-
 
 
 /** ***************************************************************************/
@@ -178,7 +180,6 @@ void ChromeBookmarks::Private::finishIndexing() {
 }
 
 
-
 /** ***************************************************************************/
 /** ***************************************************************************/
 /** ***************************************************************************/
@@ -188,7 +189,17 @@ ChromeBookmarks::Extension::Extension()
       Core::QueryHandler(Core::Plugin::id()),
       d(new Private(this)) {
 
-    registerQueryHandler(this);
+
+    // Find executable
+    d->executable = QStandardPaths::findExecutable("chromium");
+    if (d->executable.isEmpty())
+        d->executable = QStandardPaths::findExecutable("chromium-browser");
+    if (d->executable.isEmpty())
+        d->executable = QStandardPaths::findExecutable("chrome");
+    if (d->executable.isEmpty())
+        d->executable = QStandardPaths::findExecutable("chrome-browser");
+    if (d->executable.isEmpty())
+        throw "Chrome/ium executable not found.";
 
     // Load settings
     d->offlineIndex.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
@@ -215,15 +226,13 @@ ChromeBookmarks::Extension::Extension()
 
     // Trigger an initial update
     updateIndex();
-}
 
+    registerQueryHandler(this);
+}
 
 
 /** ***************************************************************************/
-ChromeBookmarks::Extension::~Extension() {
-
-}
-
+ChromeBookmarks::Extension::~Extension() {}
 
 
 /** ***************************************************************************/
@@ -250,7 +259,6 @@ QWidget *ChromeBookmarks::Extension::widget(QWidget *parent) {
 }
 
 
-
 /** ***************************************************************************/
 void ChromeBookmarks::Extension::handleQuery(Core::Query * query) const {
 
@@ -265,12 +273,10 @@ void ChromeBookmarks::Extension::handleQuery(Core::Query * query) const {
 }
 
 
-
 /** ***************************************************************************/
 const QString &ChromeBookmarks::Extension::path() {
     return d->bookmarksFile;
 }
-
 
 
 /** ***************************************************************************/
@@ -284,7 +290,6 @@ void ChromeBookmarks::Extension::setPath(const QString &path) {
 
     emit pathChanged(path);
 }
-
 
 
 /** ***************************************************************************/
@@ -301,19 +306,16 @@ void ChromeBookmarks::Extension::restorePath() {
 }
 
 
-
 /** ***************************************************************************/
 bool ChromeBookmarks::Extension::fuzzy() {
     return d->offlineIndex.fuzzy();
 }
 
 
-
 /** ***************************************************************************/
 void ChromeBookmarks::Extension::updateIndex() {
     d->startIndexing();
 }
-
 
 
 /** ***************************************************************************/
