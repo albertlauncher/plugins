@@ -63,11 +63,14 @@ public:
     bool hideOnFocusLoss() const;
     void setHideOnFocusLoss(bool hideOnFocusLoss);
 
-    bool alwaysOnTop() const;
-    void setAlwaysOnTop(bool alwaysOnTop);
-
     bool hideOnClose() const;
     void setHideOnClose(bool b = true);
+
+    bool clearOnHide() const;
+    void setClearOnHide(bool b = true);
+
+    bool alwaysOnTop() const;
+    void setAlwaysOnTop(bool alwaysOnTop);
 
 protected:
 
@@ -78,6 +81,7 @@ protected:
     bool showCentered_;
     bool hideOnFocusLoss_;
     bool hideOnClose_;
+    bool clearOnHide_;
     Core::History history_;
     QIdentityProxyModel model_;
     std::vector<QmlStyleSpec> styles_;

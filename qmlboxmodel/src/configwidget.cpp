@@ -53,6 +53,11 @@ QmlBoxModel::ConfigWidget::ConfigWidget(MainWindow *mainWindow, QWidget *parent,
     connect(ui.checkBox_hideOnClose, &QCheckBox::toggled,
             mainWindow_, &MainWindow::setHideOnClose);
 
+    // CLEAR ON HIDE
+    ui.checkBox_clearOnHide->setChecked(mainWindow_->clearOnHide());
+    connect(ui.checkBox_clearOnHide, &QCheckBox::toggled,
+            mainWindow_, &MainWindow::setClearOnHide);
+
 
     /*
      *  STYLES

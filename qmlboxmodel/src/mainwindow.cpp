@@ -49,6 +49,8 @@ const QString CFG_ALWAYS_ON_TOP   = "alwaysOnTop";
 const bool    DEF_ALWAYS_ON_TOP   = true;
 const char*   CFG_HIDE_ON_CLOSE   = "hideOnClose";
 const bool    DEF_HIDE_ON_CLOSE   = false;
+const char*   CFG_CLEAR_ON_HIDE   = "clearOnHide";
+const bool    DEF_CLEAR_ON_HIDE   = false;
 const QString CFG_STYLEPATH       = "stylePath";
 const QString CFG_WND_POS         = "windowPosition";
 const QString PLUGIN_ID           = "org.albert.frontend.boxmodel.qml";
@@ -133,6 +135,8 @@ QmlBoxModel::MainWindow::MainWindow(FrontendPlugin *plugin, QWindow *parent) : Q
                 setPosition(dw->availableGeometry(dw->screenNumber(QCursor::pos()))
                             .center()-QPoint(width()/2,256));
             }
+        if ( clearOnHide_ )
+            this->setInput("");
     });
 
     QStringList pluginDataPaths = QStandardPaths::locateAll(QStandardPaths::AppDataLocation,
@@ -188,6 +192,7 @@ QmlBoxModel::MainWindow::MainWindow(FrontendPlugin *plugin, QWindow *parent) : Q
     // Load window settings
     setPosition(plugin_->settings().value(CFG_WND_POS).toPoint());
     setShowCentered(plugin_->settings().value(CFG_CENTERED, DEF_CENTERED).toBool());
+    setClearOnHide(plugin_->settings().value(CFG_CLEAR_ON_HIDE, DEF_CLEAR_ON_HIDE).toBool());
     setHideOnFocusLoss(plugin_->settings().value(CFG_HIDEONFOCUSLOSS, DEF_HIDEONFOCUSLOSS).toBool());
     setAlwaysOnTop(plugin_->settings().value(CFG_ALWAYS_ON_TOP, DEF_ALWAYS_ON_TOP).toBool());
     setHideOnClose(plugin_->settings().value(CFG_HIDE_ON_CLOSE, DEF_HIDE_ON_CLOSE).toBool());
@@ -571,4 +576,17 @@ bool QmlBoxModel::MainWindow::hideOnClose() const {
 void QmlBoxModel::MainWindow::setHideOnClose(bool hideOnClose) {
     plugin_->settings().setValue(CFG_HIDE_ON_CLOSE, hideOnClose);
     hideOnClose_ = hideOnClose;
+}
+
+
+/** ***************************************************************************/
+bool QmlBoxModel::MainWindow::clearOnHide() const {
+    return clearOnHide_;
+}
+
+
+/** ***************************************************************************/
+void QmlBoxModel::MainWindow::setClearOnHide(bool b) {
+    plugin_->settings().setValue(CFG_CLEAR_ON_HIDE, b);
+    clearOnHide_ = b;
 }

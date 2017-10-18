@@ -111,6 +111,16 @@
       <item row="5" column="1">
        <widget class="QCheckBox" name="checkBox_hideOnClose"/>
       </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_clearOnHide">
+        <property name="text">
+         <string>Clear on hide:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QCheckBox" name="checkBox_clearOnHide"/>
+      </item>
      </layout>
     </widget>
    </item>
