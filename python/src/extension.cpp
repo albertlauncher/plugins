@@ -163,15 +163,7 @@ Python::Extension::Extension()
 
     try {
         d->albert_module = py::module::import("albertv0");
-
-        // Try to append scriptsPath to sys path
-        PyObject* syspath =  PySys_GetObject("path");
-        if (syspath != nullptr)  {
-            py::str modulesPath = dataLocation().filePath(MODULES_DIR).toUtf8().constData();
-            PyList_Insert(syspath, 0, modulesPath.ptr());
-        }
-    }
-    catch (exception &e){
+    } catch (exception &e) {
         throw e.what();
     }
 
@@ -181,6 +173,11 @@ Python::Extension::Extension()
                                                               QStandardPaths::LocateDirectory) ) {
         QString extensionDir = QDir(pluginDir).filePath(MODULES_DIR);
         if ( QFile::exists(extensionDir) ) {
+            try { // Append scriptsPath to sys.path
+                py::module::import("sys").attr("path").cast<py::list>().append(extensionDir);
+            } catch (exception &e) {
+                throw e.what();
+            }
             d->fileSystemWatcher.addPath(extensionDir);
             updateDirectory(extensionDir);
         }
