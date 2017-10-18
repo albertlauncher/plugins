@@ -21,3 +21,4 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib/albert/plugins)
+install(DIRECTORY "share/" DESTINATION "share/albert/org.albert.extension.python")
