@@ -15,7 +15,7 @@ ListView {
 
     Connections {
         target: model
-        onModelReset: currentIndex = -1
+        onModelReset: currentIndex = 0
     }
 
     Keys.onPressed: {

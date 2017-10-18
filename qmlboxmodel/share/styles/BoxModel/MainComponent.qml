@@ -183,7 +183,7 @@ Item {
     // Key handling
     Keys.onPressed: {
         event.accepted = true
-        if ( event.key === Qt.Key_Up && state === "" && resultsList.currentIndex === -1 ) {
+        if ( event.key === Qt.Key_Up && state === "" && resultsList.currentIndex === 0 ) {
             historyTextInput.nextIteration()
         }
         else if ( event.key === Qt.Key_Up && event.modifiers === Qt.ControlModifier ) {
