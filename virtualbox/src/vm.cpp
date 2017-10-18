@@ -85,18 +85,12 @@ VirtualBox::VM::~VM() {
 /** ***************************************************************************/
 VirtualBox::VMItem *VirtualBox::VM::produceItem() const {
 
-    QString pauseCmd = "VBoxManage controlvm %1 pause";
-    QString startCmd = "VBoxManage startvm %1";
-    QString saveCmd = "VBoxManage controlvm %1 savestate";
-    QString stopCmd = "VBoxManage controlvm %1 poweroff";
-    QString resetCmd = "VBoxManage controlvm %1 reset";
-    QString resumeCmd = "VBoxManage controlvm %1 resume";
-    pauseCmd = pauseCmd.arg(uuid_);
-    startCmd = startCmd.arg(uuid_);
-    saveCmd = saveCmd.arg(uuid_);
-    stopCmd = stopCmd.arg(uuid_);
-    resetCmd = resetCmd.arg(uuid_);
-    resumeCmd = resumeCmd.arg(uuid_);
+    QStringList pauseCommandline  = {"VBoxManage", "controlvm", uuid_, "pause"};
+    QStringList startCommandline  = {"VBoxManage", "startvm",   uuid_};
+    QStringList saveCommandline   = {"VBoxManage", "controlvm", uuid_, "savestate"};
+    QStringList stopCommandline   = {"VBoxManage", "controlvm", uuid_, "poweroff"};
+    QStringList resetCommandline  = {"VBoxManage", "controlvm", uuid_, "reset"};
+    QStringList resumeCommandline = {"VBoxManage", "controlvm", uuid_, "resume"};
     vector<shared_ptr<Action>> actions;
     int mainAction = 0;
 
@@ -113,23 +107,23 @@ VirtualBox::VMItem *VirtualBox::VM::produceItem() const {
     case MachineState::PoweredOff:
     case MachineState::Aborted:
         mainAction = VMItem::VM_START;
-        actions.push_back(make_shared<ProcAction>("Start", startCmd));
+        actions.push_back(make_shared<ProcAction>("Start", startCommandline));
         break;
     case MachineState::Saved:
         mainAction = VMItem::VM_START;
-        actions.push_back(make_shared<ProcAction>("Start", startCmd));
+        actions.push_back(make_shared<ProcAction>("Start", startCommandline));
         break;
     case MachineState::Running:
         mainAction = VMItem::VM_PAUSE;
-        actions.push_back(make_shared<ProcAction>("Pause", pauseCmd));
-        actions.push_back(make_shared<ProcAction>("Save State", saveCmd));
-        actions.push_back(make_shared<ProcAction>("Stop", stopCmd));
+        actions.push_back(make_shared<ProcAction>("Pause", pauseCommandline));
+        actions.push_back(make_shared<ProcAction>("Save State", saveCommandline));
+        actions.push_back(make_shared<ProcAction>("Stop", stopCommandline));
         break;
     case MachineState::Paused:
         mainAction = VMItem::VM_RESUME;
-        actions.push_back(make_shared<ProcAction>("Resume", resumeCmd));
-        actions.push_back(make_shared<ProcAction>("Save State", saveCmd));
-        actions.push_back(make_shared<ProcAction>("Reset", resetCmd));
+        actions.push_back(make_shared<ProcAction>("Resume", resumeCommandline));
+        actions.push_back(make_shared<ProcAction>("Save State", saveCommandline));
+        actions.push_back(make_shared<ProcAction>("Reset", resetCommandline));
         break;
     default:
         mainAction = VMItem::VM_DIFFERENT;

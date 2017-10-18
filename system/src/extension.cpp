@@ -243,15 +243,11 @@ void System::Extension::handleQuery(Core::Query * query) const {
 
     for (size_t i = 0; i < NUMCOMMANDS; ++i) {
         if ( itemTitles[i].startsWith(query->string(), Qt::CaseInsensitive) ) {
-
-            QString cmd = d->commands[i];
-
             auto item = std::make_shared<Core::StandardItem>(configNames[i]);
             item->setText(itemTitles[i]);
             item->setSubtext(itemDescriptions[i]);
             item->setIconPath(d->iconPaths[i]);
-            item->addAction(make_shared<ProcAction>(itemDescriptions[i], cmd));
-
+            item->addAction(make_shared<ProcAction>(itemDescriptions[i], QStringList(d->commands[i])));
             query->addMatch(std::move(item), static_cast<uint>(static_cast<float>(query->string().size())/itemTitles[i].size()*UINT_MAX));
         }
     }

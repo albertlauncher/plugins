@@ -76,31 +76,31 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
             ;
 
     py::class_<FuncAction, Action, shared_ptr<FuncAction>>(m, "FuncAction", "Executes the callable")
-            .def(py::init([](const QString& text, const py::object& callable) {
-                return std::make_shared<FuncAction>(text, [callable](){
+            .def(py::init([](QString text, const py::object& callable) {
+                return std::make_shared<FuncAction>(move(text), [callable](){
                     try{ callable(); } catch (exception &e) { qWarning() << e.what(); }
                 });
             }), py::arg("text"), py::arg("callable"))
             ;
 
     py::class_<ClipAction, Action, shared_ptr<ClipAction>>(m, "ClipAction", "Copies to clipboard")
-            .def(py::init<QString&&, QString&&>(), py::arg("text"), py::arg("clipboardText"))
+            .def(py::init<QString, QString>(), py::arg("text"), py::arg("clipboardText"))
             ;
 
     py::class_<UrlAction, Action, shared_ptr<UrlAction>>(m, "UrlAction", "Opens a URL")
-            .def(py::init<QString&&, QString&&>(), py::arg("text"), py::arg("url"))
+            .def(py::init<QString, QString>(), py::arg("text"), py::arg("url"))
             ;
 
     py::class_<ProcAction, Action, shared_ptr<ProcAction>>(m, "ProcAction", "Runs a process")
-            .def(py::init([](const QString& text, const py::list& commandline, const QString& workdir) {
-                return std::make_shared<ProcAction>(text, QStringList::fromStdList(commandline.cast<list<QString>>()), workdir);
+            .def(py::init([](QString text, list<QString> commandline, QString workdir) {
+                return std::make_shared<ProcAction>(move(text), QStringList::fromStdList(commandline), move(workdir));
             }), py::arg("text"), py::arg("commandline"), py::arg("cwd") = QString())
             ;
 
     py::class_<TermAction, Action, shared_ptr<TermAction>>(m, "TermAction", "Runs a command in terminal")
-            .def(py::init([](const QString& text, const py::list& commandline, const QString& workdir) {
-                return std::make_shared<TermAction>(text, QStringList::fromStdList(commandline.cast<list<QString>>()), workdir);
-            }), py::arg("text"), py::arg("commandline"), py::arg("cwd") = QString())
+            .def(py::init([](QString text, list<QString> commandline, QString workdir, bool shell) {
+                return std::make_shared<TermAction>(move(text), QStringList::fromStdList(commandline), move(workdir), shell);
+            }), py::arg("text"), py::arg("commandline"), py::arg("cwd") = QString(), py::arg("shell") = true)
             ;
 
     py::enum_<Item::Urgency>(iitem, "Urgency")
@@ -110,15 +110,8 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
             .export_values()
             ;
 
-
     py::class_<StandardItem, Item, shared_ptr<StandardItem>>(m, "Item", "A result item")
-            .def(py::init<const QString&,
-                          const QString&,
-                          const QString&,
-                          const QString&,
-                          const QString&,
-                          const Item::Urgency&,
-                          const vector<shared_ptr<Action>>&>(),
+            .def(py::init<QString,QString,QString,QString,QString,Item::Urgency,vector<shared_ptr<Action>>>(),
                  py::arg("id") = QString(),
                  py::arg("icon") = QString(":python_module"),
                  py::arg("text") = QString(),
@@ -126,19 +119,13 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
                  py::arg("completion") = QString(),
                  py::arg("urgency") = Item::Urgency::Normal,
                  py::arg("actions") = vector<shared_ptr<Action>>())
-            .def_property("id", &StandardItem::id,
-                          static_cast<void(StandardItem::*)(const QString&)>(&StandardItem::setId))
-            .def_property("icon", &StandardItem::iconPath,
-                          static_cast<void(StandardItem::*)(const QString&)>(&StandardItem::setIconPath))
-            .def_property("text", &StandardItem::text,
-                          static_cast<void(StandardItem::*)(const QString&)>(&StandardItem::setText))
-            .def_property("subtext", &StandardItem::subtext,
-                          static_cast<void(StandardItem::*)(const QString&)>(&StandardItem::setSubtext))
-            .def_property("completion", &StandardItem::completion,
-                          static_cast<void(StandardItem::*)(const QString&)>(&StandardItem::setCompletion))
-            .def_property("urgency", &StandardItem::urgency,
-                          static_cast<void(StandardItem::*)(const Item::Urgency&)>(&StandardItem::setUrgency))
-            .def("addAction", static_cast<void(StandardItem::*)(const shared_ptr<Action>& action)>(&StandardItem::addAction))
+            .def_property("id", &StandardItem::id, &StandardItem::setId)
+            .def_property("icon", &StandardItem::iconPath, &StandardItem::setIconPath)
+            .def_property("text", &StandardItem::text, &StandardItem::setText)
+            .def_property("subtext", &StandardItem::subtext, &StandardItem::setSubtext)
+            .def_property("completion", &StandardItem::completion, &StandardItem::setCompletion)
+            .def_property("urgency", &StandardItem::urgency, &StandardItem::setUrgency)
+            .def("addAction", &StandardItem::addAction)
             ;
 
     m.def("debug", [](const py::str &str){ qDebug() << str.cast<QString>(); });

@@ -25,8 +25,6 @@
 #include <QStringList>
 #include <QtConcurrent>
 #include <set>
-#include <pwd.h>
-#include <unistd.h>
 #include "extension.h"
 #include "configwidget.h"
 #include "util/shutil.h"
@@ -47,7 +45,6 @@ class Terminal::Private
 public:
     QPointer<ConfigWidget> widget;
     QString iconPath;
-    QString shell;
     QFileSystemWatcher watcher;
     set<QString> index;
     QFutureWatcher<set<QString>> futureWatcher;
@@ -69,12 +66,6 @@ Terminal::Extension::Extension()
     d->watcher.addPaths(QString(::getenv("PATH")).split(':', QString::SkipEmptyParts));
     connect(&d->watcher, &QFileSystemWatcher::directoryChanged,
             this, &Extension::rebuildIndex);
-
-    // passwd must not be freed
-    passwd *pwd = getpwuid(geteuid());
-    if (pwd == nullptr)
-        throw "Could not retrieve user shell";
-    d->shell = pwd->pw_shell;
 
     rebuildIndex();
 }
@@ -107,7 +98,7 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
 
     // Extract data from input string: [0] program. The rest: args
     QString potentialProgram = query->string().section(' ', 0, 0, QString::SectionSkipEmpty);
-    QString argsString = query->string().section(' ', 1, -1, QString::SectionSkipEmpty);
+    QStringList arguments = ShUtil::split(query->string().section(' ', 1, -1, QString::SectionSkipEmpty));
 
     // Iterate over matches
     set<QString>::iterator it = lower_bound(d->index.begin(), d->index.end(), potentialProgram);
@@ -124,22 +115,16 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
                                              commonPrefix.begin()+potentialProgram.size()-1);
         commonPrefix.resize(std::distance(it->begin(), mismatchindexes.first));
 
-        QString commandlineString = QString("%1 %2").arg(*it, argsString);
+        QStringList commandline(*it);
+        commandline << arguments;
 
         auto item = make_shared<StandardItem>(*it);
-        item->setText(commandlineString);
-        item->setSubtext(QString("Run '%1'").arg(commandlineString));
         item->setIconPath(d->iconPath);
-        item->addAction(make_shared<ProcAction>("Run", commandlineString));
-        item->addAction(make_shared<TermAction>("Run in a shell",
-                                                 QStringList({d->shell, "-ic", commandlineString})));
-        item->addAction(make_shared<FuncAction>("Run in a terminal",
-                                                 [this, commandlineString](){
-                QStringList tokens = Core::ShUtil::split(terminalCommand);
-                tokens << d->shell << "-ic" << QString("%1; exec %2").arg(commandlineString, d->shell);
-                QProcess::startDetached(tokens.takeFirst(), tokens);
-            })
-        );
+        item->setText(commandline.join(' '));
+        item->setSubtext(QString("Run '%1'").arg(item->text()));
+        item->setCompletion(item->text());
+        item->addAction(make_shared<ProcAction>("Run", commandline));
+        item->addAction(make_shared<TermAction>("Run in terminal", commandline));
 
         results.emplace_back(item, 0);
         ++it;
@@ -150,24 +135,16 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
     for (pair<shared_ptr<Core::Item>,short> &match: results)
         std::static_pointer_cast<StandardItem>(match.first)->setCompletion(completion);
 
-    // Build general item
-    QString commandline = query->string();
+    // Build generic item
+    QStringList commandline = ShUtil::split(query->string());
 
     auto item = make_shared<StandardItem>();
-    item->setText(QString("I'm Feeling Lucky").arg(commandline));
-    item->setSubtext(QString("Try running '%1'").arg(commandline));
-    item->setCompletion(query->rawString());
     item->setIconPath(d->iconPath);
+    item->setText("I'm Feeling Lucky");
+    item->setSubtext(QString("Try running '%1'").arg(query->string()));
+    item->setCompletion(query->rawString());
     item->addAction(make_shared<ProcAction>("Run", commandline));
-    item->addAction(make_shared<TermAction>("Run in a shell",
-                                             QStringList({d->shell, "-ic", commandline})));
-    item->addAction(make_shared<FuncAction>("Run in a terminal",
-                                             [this, commandline](){
-            QStringList tokens = Core::ShUtil::split(terminalCommand);
-            tokens << d->shell << "-ic" << QString("%1; exec %2").arg(commandline, d->shell);
-            QProcess::startDetached(tokens.takeFirst(), tokens);
-        })
-    );
+    item->addAction(make_shared<TermAction>("Run in terminal", commandline));
 
     results.emplace_back(item, 0);
 

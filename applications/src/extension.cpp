@@ -433,8 +433,8 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 
             // Default and root action
             if (term) {
-                item->addAction(make_shared<TermAction>("Run", commandline, workingDir));
-                item->addAction(make_shared<TermAction>("Run as root", QStringList("sudo")+commandline, workingDir));
+                item->addAction(make_shared<TermAction>("Run", commandline, workingDir, false));
+                item->addAction(make_shared<TermAction>("Run as root", QStringList("sudo")+commandline, workingDir, false));
             } else {
                 item->addAction(make_shared<ProcAction>("Run", commandline, workingDir));
                 item->addAction(make_shared<ProcAction>("Run as root", QStringList("gksudo")+commandline, workingDir));
@@ -461,7 +461,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                 QStringList commandline = expandedFieldCodes(Core::ShUtil::split(entryIterator->second),
                                                              icon, name, fIt.filePath());
                 if (term)
-                    item->addAction(make_shared<TermAction>(actionName, commandline, workingDir));
+                    item->addAction(make_shared<TermAction>(actionName, commandline, workingDir, false));
                 else
                     item->addAction(make_shared<ProcAction>(actionName, commandline, workingDir));
 
