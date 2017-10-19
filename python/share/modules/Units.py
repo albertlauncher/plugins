@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""This is extension lets your run zeal with a query using albert."""
+"""This is extension lets your lookup unit conversions with a query to units using albert."""
 
 from albertv0 import *
 import subprocess
@@ -39,5 +39,5 @@ def handleQuery(query):
             except subprocess.CalledProcessError as e:
                 item.text = e.stdout.decode('utf-8').strip().partition('\n')[0]
             item.subtext = "Result of 'units -t %s'" % query.string
-            item.addAction(Action("Copy to clipboard", lambda: setClipboard(item.text)))
+            item.addAction(FunAction("Copy to clipboard", lambda: setClipboard(item.text)))
         return [item]
