@@ -201,8 +201,8 @@ ExternalExtensions::ExternalExtension::ExternalExtension(const QString &path, co
 
     value = object["dependencies"];
     if ( value.isArray() )
-        for (const QJsonValue & value : value.toArray())
-            dependencies_.append(value.toString());
+        for (const QJsonValue & val : value.toArray())
+            dependencies_.append(val.toString());
 
 
     /*
