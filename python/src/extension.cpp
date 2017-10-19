@@ -23,28 +23,10 @@
 #include "extension.h"
 #include "modulesmodel.h"
 #include "configwidget.h"
+#include "cast_specialization.h"
 using namespace std;
 using namespace Core;
 namespace py = pybind11;
-
-//  Python string <-> QString conversion
-namespace pybind11 {
-namespace detail {
-    template <> struct type_caster<QString> {
-    public:
-        PYBIND11_TYPE_CASTER(QString, _("str"));
-        bool load(handle src, bool) {
-            PyObject *source = src.ptr();
-            if (!PyUnicode_Check(source)) return false;
-            value = PyUnicode_AsUTF8(source);
-            return true;
-        }
-        static handle cast(QString src, return_value_policy /* policy */, handle /* parent */) {
-            return PyUnicode_FromString(src.toUtf8().constData());
-        }
-    };
-}}
-
 
 namespace Python {
 

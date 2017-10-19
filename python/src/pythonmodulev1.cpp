@@ -21,6 +21,7 @@
 #include "core/query.h"
 #include "util/standarditem.h"
 #include "xdg/iconlookup.h"
+#include "cast_specialization.h"
 using namespace std;
 using namespace Core;
 namespace py = pybind11;
