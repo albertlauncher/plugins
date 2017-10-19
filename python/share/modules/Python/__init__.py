@@ -7,11 +7,6 @@ from albertv0 import *
 from math import *
 import os
 
-try:
-    import numpy as np
-except ImportError:
-    pass
-
 # math.pow doesn't support a 3rd argument
 from builtins import pow
 
@@ -33,7 +28,7 @@ def handleQuery(query):
 
         if stripped == '':
             item.text = "Enter a python expression"
-            item.subtext = "Math is in the namespace, if installed also Numpy as 'np'"
+            item.subtext = "Math is in the namespace"
             return [item]
         else:
             try:
