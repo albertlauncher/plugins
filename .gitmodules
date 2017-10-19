@@ -1,3 +1,6 @@
 [submodule "python/pybind11"]
 	path = python/pybind11
 	url = https://github.com/pybind/pybind11.git
+[submodule "python/share/modules"]
+	path = python/share/modules
+	url = git@github.com:albertlauncher/python.git
