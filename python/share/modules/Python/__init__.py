@@ -7,9 +7,12 @@ from albertv0 import *
 from math import *
 import os
 
+# math.pow doesn't support a 3rd argument
+from builtins import pow
+
 __iid__ = "PythonInterface/v0.1" 
 __prettyname__ = "Python Eval"
-__version__ = "1.0"
+__version__ = "1.0.1"
 __trigger__ = "py "
 __author__ = "Manuel Schneider"
 __dependencies__ = []
@@ -25,7 +28,7 @@ def handleQuery(query):
 
         if stripped == '':
             item.text = "Enter a python expression"
-            item.subtext = "Math is in the namespace, if installed also Numpy as 'np'"
+            item.subtext = "Math is in the namespace"
             return [item]
         else:
             try:
