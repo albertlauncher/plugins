@@ -7,9 +7,17 @@ from albertv0 import *
 from math import *
 import os
 
+try:
+    import numpy as np
+except ImportError:
+    pass
+
+# math.pow doesn't support a 3rd argument
+from builtins import pow
+
 __iid__ = "PythonInterface/v0.1" 
 __prettyname__ = "Python Eval"
-__version__ = "1.0"
+__version__ = "1.0.1"
 __trigger__ = "py "
 __author__ = "Manuel Schneider"
 __dependencies__ = []
