@@ -67,8 +67,7 @@ Python::PythonModuleV1::PythonModuleV1(const QString &path) : d(new PythonModule
 
 /** ***************************************************************************/
 Python::PythonModuleV1::~PythonModuleV1() {
-    if ( d->state != PythonModuleV1::State::Unloaded )
-        unload();
+    unload();
 }
 
 
@@ -152,27 +151,31 @@ void Python::PythonModuleV1::unload(){
     if (d->state == State::Unloaded)
         return;
 
-    qDebug() << "Unloading" << QFileInfo(d->path).fileName();
+    if (d->state == State::Loaded) {
 
-    try
-    {
-        if (py::hasattr(d->module, "finalize")) {
-            py::object fini = d->module.attr("finalize");
-            if (!py::isinstance<py::function>(fini))
-                fini();
+        qDebug() << "Unloading" << QFileInfo(d->path).fileName();
+
+        try
+        {
+            if (py::hasattr(d->module, "finalize")) {
+                py::object fini = d->module.attr("finalize");
+                if (!py::isinstance<py::function>(fini))
+                    fini();
+            }
+            d->module = py::object();
         }
-        d->module = py::object();
-    }
-    catch(std::exception const &e)
-    {
-        qWarning() << qPrintable(QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(e.what()));
+        catch(std::exception const &e)
+        {
+            qWarning() << qPrintable(QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(e.what()));
+        }
+
+        if (!d->fileSystemWatcher.files().isEmpty())
+            d->fileSystemWatcher.removePaths(d->fileSystemWatcher.files());
+        if (!d->fileSystemWatcher.files().isEmpty())
+            d->fileSystemWatcher.removePaths(d->fileSystemWatcher.directories());
     }
 
-    if (!d->fileSystemWatcher.files().isEmpty())
-        d->fileSystemWatcher.removePaths(d->fileSystemWatcher.files());
-    if (!d->fileSystemWatcher.files().isEmpty())
-        d->fileSystemWatcher.removePaths(d->fileSystemWatcher.directories());
-
+    d->errorString.clear();
     d->state = State::Unloaded;
     emit moduleChanged();
 }
