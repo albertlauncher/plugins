@@ -47,12 +47,6 @@ Calculator::Extension::Extension()
     // FIXME Qt6 Workaround for https://bugreports.qt.io/browse/QTBUG-58504
     d->locale = QLocale(QLocale::system().name());
 
-    // Load settings
-    d->locale.setNumberOptions(
-                (settings().value(CFG_SEPS, CFG_SEPS_DEF).toBool())
-                ? d->locale.numberOptions() & ~QLocale::OmitGroupSeparator
-                : d->locale.numberOptions() | QLocale::OmitGroupSeparator );
-
     QString iconPath = XDG::IconLookup::iconPath("calc");
     d->iconPath = iconPath.isNull() ? ":calc" : iconPath;
 
@@ -91,21 +85,27 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
 void Calculator::Extension::handleQuery(Core::Query * query) const {
 
     d->parser->SetExpr(query->string().toStdString());
-    QString result;
+    double result;
 
     // http://beltoforion.de/article.php?a=muparser&p=errorhandling
     try {
-        result = d->locale.toString(d->parser->Eval(), 'G', 16);
+        result = d->parser->Eval();
     } catch (mu::Parser::exception_type &) {
         return;
     }
 
     auto item = make_shared<StandardItem>("muparser");
-    item->setText(result);
-    item->setSubtext(QString("Result of '%1'").arg(query->string()));
     item->setIconPath(d->iconPath);
-    item->addAction(make_shared<ClipAction>("Copy result to clipboard", result));
+    d->locale.setNumberOptions(settings().value(CFG_SEPS, CFG_SEPS_DEF).toBool()
+                               ? d->locale.numberOptions() & ~QLocale::OmitGroupSeparator
+                               : d->locale.numberOptions() | QLocale::OmitGroupSeparator );
+    item->setText(d->locale.toString(result, 'G', 16));
+    item->setSubtext(QString("Result of '%1'").arg(query->string()));
+    item->setCompletion(item->text());
+    d->locale.setNumberOptions(d->locale.numberOptions() | QLocale::OmitGroupSeparator);
+    item->addAction(make_shared<ClipAction>("Copy result to clipboard",
+                                            d->locale.toString(result, 'G', 16)));
     item->addAction(make_shared<ClipAction>("Copy equation to clipboard",
-                                            QString("%1 = %2").arg(query->string(), result)));
+                                            QString("%1 = %2").arg(query->string(), item->text())));
     query->addMatch(move(item), UINT_MAX);
 }
