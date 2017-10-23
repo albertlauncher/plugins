@@ -2,7 +2,6 @@
 
 #include <QDebug>
 #include <QPointer>
-#include <QProcess>
 #include <QSettings>
 #include <vector>
 #include "configwidget.h"
@@ -247,7 +246,7 @@ void System::Extension::handleQuery(Core::Query * query) const {
             item->setText(itemTitles[i]);
             item->setSubtext(itemDescriptions[i]);
             item->setIconPath(d->iconPaths[i]);
-            item->addAction(make_shared<ProcAction>(itemDescriptions[i], QStringList(d->commands[i])));
+            item->addAction(make_shared<ProcAction>(itemDescriptions[i], QStringList(d->commands[i].split(" ", QString::SkipEmptyParts))));
             query->addMatch(std::move(item), static_cast<uint>(static_cast<float>(query->string().size())/itemTitles[i].size()*UINT_MAX));
         }
     }
