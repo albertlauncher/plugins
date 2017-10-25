@@ -20,5 +20,5 @@ target_link_libraries(${PROJECT_NAME}
         xdg
 )
 
-install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib/albert/plugins)
-install(DIRECTORY "share/" DESTINATION "share/albert/org.albert.extension.python")
+install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/albert/plugins)
+install(DIRECTORY "share/" DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/org.albert.extension.python")

@@ -16,4 +16,4 @@ target_link_libraries(${PROJECT_NAME}
         albertcore
 )
 
-install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib/albert/plugins)
+install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/albert/plugins)

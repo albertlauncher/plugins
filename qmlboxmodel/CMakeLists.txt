@@ -18,5 +18,5 @@ target_link_libraries(${PROJECT_NAME}
         albertcore
 )
 
-install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib/albert/plugins)
-install(DIRECTORY "share/" DESTINATION "share/albert/org.albert.frontend.boxmodel.qml")
+install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/albert/plugins)
+install(DIRECTORY "share/" DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/org.albert.frontend.boxmodel.qml")

@@ -10,8 +10,8 @@ add_library(${PROJECT_NAME} SHARED ${SRC} ${PROJECT_NAME}.qrc)
 
 add_definitions(-DRT_OS_LINUX)
 add_definitions(-DVBOX_WITH_XPCOM_NAMESPACE_CLEANUP)
-set(PATH_XPCOM /usr/lib/virtualbox/sdk/bindings/xpcom)
-set(PATH_BIN /usr/lib/virtualbox)
+set(PATH_XPCOM /usr/${CMAKE_INSTALL_LIBDIR}/virtualbox/sdk/bindings/xpcom)
+set(PATH_BIN /usr/${CMAKE_INSTALL_LIBDIR}/virtualbox)
 
 if(NOT EXISTS ${PATH_XPCOM}/include/VirtualBox_XPCOM.h)
     message("${PATH_XPCOM}/include/VirtualBox_XPCOM.h not found. Build will fail!")
@@ -38,4 +38,4 @@ target_link_libraries(${PROJECT_NAME}
         xdg
 )
 
-install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib/albert/plugins)
+install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/albert/plugins)
