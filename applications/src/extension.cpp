@@ -345,9 +345,11 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                 continue;
 
             // Try to get the localized icon, skip if empty
-            icon = xdgStringEscape(getLocalizedKey("Icon", entryMap, loc));
+            icon = XDG::IconLookup::iconPath(xdgStringEscape(getLocalizedKey("Icon", entryMap, loc)));
             if (icon.isNull())
-                continue;
+                icon = XDG::IconLookup::iconPath({"application-x-executable", "exec"});
+            if (icon.isNull())
+                icon = ":application-x-executable";
 
             // Check if this is a terminal app
             term = (entryIterator = entryMap.find("Terminal")) != entryMap.end()
@@ -387,6 +389,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 
             // Finally we got everything, build the item
             shared_ptr<StandardIndexItem> item = std::make_shared<StandardIndexItem>();
+            item->setIconPath(icon);
             item->setId(id);
             item->setText(name);
 
@@ -399,9 +402,6 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             else
                 item->setSubtext(comment);
 
-            // Set icon
-            icon = XDG::IconLookup::iconPath({icon, "exec"});
-            item->setIconPath(icon.isEmpty() ? ":application-x-executable" : icon);
 
             // Set keywords
             vector<IndexableItem::IndexString> indexStrings;
