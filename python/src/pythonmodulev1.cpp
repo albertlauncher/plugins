@@ -102,8 +102,11 @@ void Python::PythonModuleV1::load(){
         if (py::hasattr(d->module.ptr(), "__author__"))
             d->author = d->module.attr("__author__").cast<QString>();
 
-        if (py::hasattr(d->module.ptr(), "__doc__"))
-            d->description = d->module.attr("__doc__").cast<QString>();
+        if (py::hasattr(d->module.ptr(), "__doc__")){
+            py::object docString = d->module.attr("__doc__");
+            if (!docString.is_none())
+                d->description = docString.cast<QString>();
+        }
 
         if (py::hasattr(d->module.ptr(), "__trigger__"))
             d->trigger = d->module.attr("__trigger__").cast<QString>();
