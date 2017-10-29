@@ -37,6 +37,16 @@ namespace {
 const char* CFG_PATH  = "bookmarkfile";
 const char* CFG_FUZZY = "fuzzy";
 const bool  DEF_FUZZY = false;
+const char *potentialExecutableNames[] = {"chromium",
+                                          "chromium-browser",
+                                          "chrome",
+                                          "chrome-browser",
+                                          "google-chrome",
+                                          "google-chrome-beta",
+                                          "google-chrome-stable",
+                                          "google-chrome-unstable"};
+const char *potentialConfigLocations[] = {"chromium",
+                                          "google-chrome"};
 
 /** ***************************************************************************/
 vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(QString executable, const QString &bookmarksPath) {
@@ -192,12 +202,11 @@ ChromeBookmarks::Extension::Extension()
 
     // Find executable
     d->executable = QStandardPaths::findExecutable("chromium");
-    if (d->executable.isEmpty())
-        d->executable = QStandardPaths::findExecutable("chromium-browser");
-    if (d->executable.isEmpty())
-        d->executable = QStandardPaths::findExecutable("chrome");
-    if (d->executable.isEmpty())
-        d->executable = QStandardPaths::findExecutable("chrome-browser");
+    for (auto &name : potentialExecutableNames) {
+        d->executable = QStandardPaths::findExecutable(name);;
+        if (!d->executable.isEmpty())
+            break;
+    }
     if (d->executable.isEmpty())
         throw "Chrome/ium executable not found.";
 
@@ -295,7 +304,7 @@ void ChromeBookmarks::Extension::setPath(const QString &path) {
 /** ***************************************************************************/
 void ChromeBookmarks::Extension::restorePath() {
     // Find a bookmark file (Take first one)
-    for (const QString &browser : {"chromium","google-chrome"}){
+    for (const QString &browser : potentialConfigLocations){
         QString root = QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)).filePath(browser);
         QDirIterator it(root, {"Bookmarks"}, QDir::Files, QDirIterator::Subdirectories);
         while (it.hasNext()) {
