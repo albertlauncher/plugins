@@ -84,6 +84,7 @@ Item {
                     Connections {
                         target: historyTextInput
                         onTextChanged: { opacity=1; animation.restart() }
+                        onCursorPositionChanged: { opacity=1; animation.restart() }
                     }
                 }
                 onTextChanged: { root.state="" }
