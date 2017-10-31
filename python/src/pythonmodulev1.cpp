@@ -119,7 +119,7 @@ void Python::PythonModuleV1::load(){
 
         if (py::hasattr(d->module, "initialize")) {
             py::object init = d->module.attr("initialize");
-            if (!py::isinstance<py::function>(init))
+            if (py::isinstance<py::function>(init))
                 init();
         }
     }
@@ -162,7 +162,7 @@ void Python::PythonModuleV1::unload(){
         {
             if (py::hasattr(d->module, "finalize")) {
                 py::object fini = d->module.attr("finalize");
-                if (!py::isinstance<py::function>(fini))
+                if (py::isinstance<py::function>(fini))
                     fini();
             }
             d->module = py::object();
