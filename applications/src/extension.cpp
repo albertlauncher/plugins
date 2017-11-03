@@ -421,7 +421,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                 indexStrings.emplace_back(kw, UINT_MAX);
 
             if (!genericName.isEmpty())
-                indexStrings.emplace_back(genericName, UINT_MAX*0.7);
+                indexStrings.emplace_back(genericName, UINT_MAX*0.5);
 
             item->setIndexKeywords(std::move(indexStrings));
 
