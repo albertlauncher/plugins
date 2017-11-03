@@ -127,7 +127,6 @@ public:
     QFileSystemWatcher fileSystemWatcher;
     py::object albert_module;
     QStringList enabledModules;
-    py::scoped_interpreter guard{};
     QMutex pythonMutex;
 };
 
@@ -137,6 +136,9 @@ Python::Extension::Extension()
     : Core::Extension("org.albert.extension.python"), // Must match the id in metadata
       Core::QueryHandler(Core::Plugin::id()),
       d(new Private) {
+
+    if ( !Py_IsInitialized() )
+        Py_InitializeEx(0);
 
     d->enabledModules = settings().value(CFG_ENABLEDMODS).toStringList();
 
