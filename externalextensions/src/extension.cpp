@@ -142,5 +142,8 @@ void ExternalExtensions::Extension::reloadExtensions() {
         if ( script->state() == ExternalExtension::State::Initialized )
             registerQueryHandler(script.get());
 
+    std::sort(d->externalExtensions.begin(), d->externalExtensions.end(),
+              [](auto& lhs, auto& rhs){ return 0 > lhs->name().localeAwareCompare(rhs->name()); });
+
     emit extensionsUpdated();
 }
