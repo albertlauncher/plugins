@@ -290,6 +290,9 @@ void Python::Extension::updateDirectory(const QString &path) {
                 this, &Extension::modulesChanged);
     }
 
+    std::sort(d->modules.begin(), d->modules.end(),
+              [](auto& lhs, auto& rhs){ return 0 > lhs->name().localeAwareCompare(rhs->name()); });
+
     emit modulesChanged();
 }
 
