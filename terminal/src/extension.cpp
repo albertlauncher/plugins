@@ -60,7 +60,7 @@ Terminal::Extension::Extension()
 
     registerQueryHandler(this);
 
-    QString iconPath = XDG::IconLookup::iconPath("terminal");
+    QString iconPath = XDG::IconLookup::iconPath("utilities-terminal", "terminal");
     d->iconPath = iconPath.isNull() ? ":terminal" : iconPath;
 
     d->watcher.addPaths(QString(::getenv("PATH")).split(':', QString::SkipEmptyParts));
