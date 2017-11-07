@@ -52,7 +52,7 @@ std::set<QString> getSshHostsFromKnownHosts(const QString& path) {
     std::set<QString> hosts;
     QFile file(path);
     if ( file.open(QIODevice::ReadOnly | QIODevice::Text) ) {
-        QRegularExpression re ("^[a-zA-Z0-9\\.]*(?=(,.*)*\\s)");
+        QRegularExpression re ("^[a-zA-Z0-9\\-\\.]*(?=(,.*)*\\s)");
         QTextStream in(&file);
         while ( !in.atEnd() ) {
             QString line = in.readLine();
@@ -189,8 +189,8 @@ void Ssh::Extension::rescan() {
     if ( d->useKnownHosts ) {
         const QString& path = QDir::home().filePath(".ssh/known_hosts");
         if ( QFile::exists(path) )
-                for ( const QString& host : getSshHostsFromKnownHosts(path) )
-                    hosts.insert(host);
+            for ( const QString& host : getSshHostsFromKnownHosts(path) )
+                hosts.insert(host);
     }
 
 
