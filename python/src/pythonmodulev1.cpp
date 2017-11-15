@@ -77,6 +77,8 @@ void Python::PythonModuleV1::load(){
     if (d->state == State::Loaded)
         return;
 
+    py::gil_scoped_acquire acquire;
+
     QFileInfo fileInfo(d->path);
     try
     {
@@ -158,6 +160,8 @@ void Python::PythonModuleV1::unload(){
 
         qDebug() << "Unloading" << QFileInfo(d->path).fileName();
 
+        py::gil_scoped_acquire acquire;
+
         try
         {
             if (py::hasattr(d->module, "finalize")) {
@@ -186,6 +190,9 @@ void Python::PythonModuleV1::unload(){
 
 /** ***************************************************************************/
 void Python::PythonModuleV1::handleQuery(Query *query) const {
+
+    py::gil_scoped_acquire acquire;
+
     try {
         vector<pair<shared_ptr<Core::Item>,uint>> results;
         py::function f = py::function(d->module.attr("handleQuery"));

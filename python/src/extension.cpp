@@ -57,11 +57,25 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
     py::class_<Item, shared_ptr<Item>> iitem(m, "ItemBase", "An abstract item")
             ;
 
+    /* This is a bit more evolved. In this case a piece of python code is injected into C++ code and
+     * has to be handled with care. The GIL has to be locked whenever the code is touched, i.e. on
+     * execution and deletion. Further exceptions thrown from python have to be catched. */
     py::class_<FuncAction, Action, shared_ptr<FuncAction>>(m, "FuncAction", "Executes the callable")
             .def(py::init([](QString text, const py::object& callable) {
-                return std::make_shared<FuncAction>(move(text), [callable](){
-                    try{ callable(); } catch (exception &e) { qWarning() << e.what(); }
-                });
+                return shared_ptr<FuncAction>(
+                    new FuncAction(move(text), [callable](){
+                        py::gil_scoped_acquire acquire;
+                        try{
+                            callable();
+                        } catch (exception &e) {
+                            qWarning() << e.what();
+                        }
+                    }),
+                    [=](FuncAction *funcAction) {
+                        py::gil_scoped_acquire acquire;
+                        delete funcAction;
+                    }
+                );
             }), py::arg("text"), py::arg("callable"))
             ;
 
@@ -122,12 +136,11 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
 class Python::Private
 {
 public:
+    PyThreadState *tstate;
     QPointer<ConfigWidget> widget;
     vector<unique_ptr<PythonModuleV1>> modules;
     QFileSystemWatcher fileSystemWatcher;
-    py::object albert_module;
     QStringList enabledModules;
-    QMutex pythonMutex;
 };
 
 
@@ -137,19 +150,16 @@ Python::Extension::Extension()
       Core::QueryHandler(Core::Plugin::id()),
       d(new Private) {
 
+    /* The python interpreter is never unloaded once it has been loaded. This is working around the
+     * ugly segfault that occur when third-party libraries have been loaded an the interpreter is
+     * finalized and initialized. */
     if ( !Py_IsInitialized() )
-        Py_InitializeEx(0);
+        py::initialize_interpreter(false);
 
     d->enabledModules = settings().value(CFG_ENABLEDMODS).toStringList();
 
     if ( !dataLocation().exists(MODULES_DIR) )
         dataLocation().mkdir(MODULES_DIR);
-
-    try {
-        d->albert_module = py::module::import("albertv0");
-    } catch (exception &e) {
-        throw e.what();
-    }
 
     // Load the modules
     for (const QString &pluginDir : QStandardPaths::locateAll(QStandardPaths::DataLocation,
@@ -170,6 +180,9 @@ Python::Extension::Extension()
     connect(&d->fileSystemWatcher, &QFileSystemWatcher::directoryChanged,
             this, &Extension::updateDirectory);
 
+    // Release GIL to allow threading
+    d->tstate = PyEval_SaveThread();
+
     registerQueryHandler(this);
 }
 
@@ -178,7 +191,9 @@ Python::Extension::Extension()
 /** ***************************************************************************/
 Python::Extension::~Extension() {
     d->modules.clear();
-    d->albert_module.release();
+
+    // Acquire GIL for finalization in ~d
+    PyEval_RestoreThread(d->tstate);
 }
 
 
@@ -202,7 +217,6 @@ QWidget *Python::Extension::widget(QWidget *parent) {
 
 /** ***************************************************************************/
 void Python::Extension::handleQuery(Core::Query *query) const {
-    QMutexLocker lock(&d->pythonMutex);
     if ( query->isTriggered() ) {
         for ( auto & module : d->modules ) {
             if ( d->enabledModules.contains(module->id())
