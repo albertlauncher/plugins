@@ -73,7 +73,11 @@ void WidgetBoxModel::SettingsButton::paintEvent(QPaintEvent *event) {
     QRect contentRect = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this);
 
     // Prepare image in pixmap using mask
+#if QT_VERSION >= 0x050600  // TODO: Remove when 18.04 is released
     QPixmap gearPixmap(contentRect.size() * devicePixelRatioF());
+#else
+    QPixmap gearPixmap(contentRect.size());
+#endif
     gearPixmap.fill(Qt::transparent);
 
     QPointF rotationOrigin = QRectF(QPoint(), gearPixmap.size()).center();

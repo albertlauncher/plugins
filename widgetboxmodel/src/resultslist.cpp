@@ -188,7 +188,11 @@ void WidgetBoxModel::ResultsList::ItemDelegate::paint(QPainter *painter, const Q
         QString iconPath = index.data(Core::ItemRoles::DecorationRole).value<QString>();
         QString cacheKey = QString("%1%2%3").arg(option.decorationSize.width(), option.decorationSize.height()).arg(iconPath);
         if ( !QPixmapCache::find(cacheKey, &pixmap) ) {
+#if QT_VERSION >= 0x050600  // TODO: Remove when 18.04 is released
             pixmap = QPixmap(iconPath).scaled(option.decorationSize * option.widget->devicePixelRatioF(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+#else
+            pixmap = QPixmap(iconPath).scaled(option.decorationSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+#endif
             QPixmapCache::insert(cacheKey, pixmap);
         }
         painter->drawPixmap(iconRect, pixmap);
