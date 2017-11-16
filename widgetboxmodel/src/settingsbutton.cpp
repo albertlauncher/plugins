@@ -73,16 +73,19 @@ void WidgetBoxModel::SettingsButton::paintEvent(QPaintEvent *event) {
     QRect contentRect = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this);
 
     // Prepare image in pixmap using mask
-    QPixmap gearPixmap(contentRect.size());
-    QRectF pixmapRect(QPoint(), contentRect.size());
+    QPixmap gearPixmap(contentRect.size() * devicePixelRatioF());
     gearPixmap.fill(Qt::transparent);
+
+    QPointF rotationOrigin = QRectF(QPoint(), gearPixmap.size()).center();
+
     QPainter pixmapPainter(&gearPixmap);
-    pixmapPainter.translate(pixmapRect.center());
+    pixmapPainter.translate(rotationOrigin);
     pixmapPainter.rotate(angle_);
-    svgRenderer_->render(&pixmapPainter, pixmapRect.translated(-pixmapRect.center()));
+    pixmapPainter.translate(-rotationOrigin);
+    svgRenderer_->render(&pixmapPainter);
     pixmapPainter.resetTransform();
     pixmapPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-    pixmapPainter.fillRect(pixmapRect, option.palette.windowText().color());
+    pixmapPainter.fillRect(gearPixmap.rect(), option.palette.windowText().color());
 
     // Draw pixmap on button
     QPainter painter(this);
