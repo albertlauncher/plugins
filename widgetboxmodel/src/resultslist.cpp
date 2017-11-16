@@ -188,7 +188,7 @@ void WidgetBoxModel::ResultsList::ItemDelegate::paint(QPainter *painter, const Q
         QString iconPath = index.data(Core::ItemRoles::DecorationRole).value<QString>();
         QString cacheKey = QString("%1%2%3").arg(option.decorationSize.width(), option.decorationSize.height()).arg(iconPath);
         if ( !QPixmapCache::find(cacheKey, &pixmap) ) {
-            pixmap = QPixmap(iconPath).scaled(option.decorationSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            pixmap = QPixmap(iconPath).scaled(option.decorationSize * option.widget->devicePixelRatioF(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
             QPixmapCache::insert(cacheKey, pixmap);
         }
         painter->drawPixmap(iconRect, pixmap);
