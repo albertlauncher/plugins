@@ -198,6 +198,10 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
 
     if ( lastModified < fileInfo.lastModified() || indexSettings.forceUpdate() ) {
 
+        QString canonicalFilePath = fileInfo.canonicalFilePath();
+        indexedDirs.insert(canonicalFilePath);
+        qDebug() << "Indexing " << canonicalFilePath;
+
         lastModified = fileInfo.lastModified();
 
         items_.clear();
@@ -215,7 +219,7 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
         // Handle the directory contents
         // Prepare the iterator properties
         QDir::Filters entryListFilters = QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden;
-        const QFileInfoList &fil = QDir(fileInfo.filePath()).entryInfoList(entryListFilters, QDir::Name);
+        const QFileInfoList &fil = QDir(canonicalFilePath).entryInfoList(entryListFilters, QDir::Name);
         for ( const QFileInfo &fileInfo : fil ){
 
             bool isValid = true;
