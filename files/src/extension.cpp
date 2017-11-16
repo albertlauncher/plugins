@@ -266,9 +266,15 @@ Files::Extension::Extension()
                 d->indexTrees.back()->deserialize(value.toObject());
             }
             file.close();
+
+            // Build offline index
+            qDebug() << "Building offline index from cached files…";
+            OfflineIndexBuilderVisitor visitor(d->offlineIndex);
+            for (auto& tree : d->indexTrees)
+                tree->accept(visitor);
         }
         else
-            qWarning() << "Couldn't read from file:" << file.fileName();
+            qWarning() << "Could not read from file: " << file.fileName();
     }
 
     // Trigger an initial update
