@@ -94,8 +94,7 @@
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>If this option is enabled, albert displays 
-a scrollbar in the results list.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this option is enabled, albert displays a scrollbar in the results list.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -121,8 +120,7 @@ a scrollbar in the results list.</string>
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>If this option is enabled, albert displays 
-icons provided by the items.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this option is enabled, albert displays icons provided by the items.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -142,12 +140,7 @@ icons provided by the items.</string>
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>If this option is enabled, albert displays a
-shadow below the widget. Note that the
-shadow area appears to be transparent,
-but it is not for mouse clicks due to Qt
-limitations. However its just a handful of 
-pixels and you can use it to drag the window.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this option is enabled, albert displays a shadow below the widget. Note that the shadow area appears to be transparent, but it is not for mouse clicks due to Qt limitations. However its just a handful of  pixels and you can use it to drag the window.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -173,8 +166,7 @@ pixels and you can use it to drag the window.</string>
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string notr="true">If the user closes the main window, the main window
-gets hidden instead of the application getting quit.</string>
+           <string notr="true">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If the user closes the main window, the main window gets hidden instead of the application getting quit.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -200,9 +192,7 @@ gets hidden instead of the application getting quit.</string>
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>If this option is enabled, albert
-centers the main window in the
-screen where the pointer resides.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this option is enabled, albert centers the main window in the screen where the pointer resides.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -228,8 +218,7 @@ screen where the pointer resides.</string>
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>If this option is enabled, albert will
-stay on top of all top level windows.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If this option is enabled, albert will stay on top of all top level windows.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -255,11 +244,7 @@ stay on top of all top level windows.</string>
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>Hide the main window, if it lost keyboard focus, 
-e.g. by clicking on another app or changing the
-window with Alt+Tab. Note that this feature is
-automatically disabled as long as the settings
-widget is open.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hide the main window, if it lost keyboard focus,  e.g. by clicking on another app or changing the window with Alt+Tab. Note that this feature is automatically disabled as long as the settings widget is open.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -279,7 +264,7 @@ widget is open.</string>
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>Clear the input line when the window is hidden.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clear the input line when the window is hidden.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string/>

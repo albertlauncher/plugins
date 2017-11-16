@@ -86,9 +86,6 @@ Choose the MIME types you want to be indexed by the files extension. The left bo
       <layout class="QVBoxLayout" name="verticalLayout_5">
        <item>
         <widget class="QListView" name="listView_filters">
-         <property name="toolTip">
-          <string>Drop files into the list to add their mimetypes or choose a mimetype from the complete list using the &quot;Add mimetype&quot; button.</string>
-         </property>
          <property name="verticalScrollBarPolicy">
           <enum>Qt::ScrollBarAlwaysOn</enum>
          </property>
