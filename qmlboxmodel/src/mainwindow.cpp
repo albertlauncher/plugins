@@ -117,8 +117,7 @@ QmlBoxModel::MainWindow::MainWindow(FrontendPlugin *plugin, QWindow *parent) : Q
     });
 
     // Reload if source file changed
-    connect(&watcher_, &QFileSystemWatcher::fileChanged,
-            [this](){
+    connect(&watcher_, &QFileSystemWatcher::fileChanged, this, [this](){
         qDebug() << "QML file reloaded.";
         QUrl url = source();
         setSource(QUrl());
@@ -128,7 +127,7 @@ QmlBoxModel::MainWindow::MainWindow(FrontendPlugin *plugin, QWindow *parent) : Q
     });
 
     // Center window between each hide and show
-    connect(this, &QQuickView::visibilityChanged, [this](QWindow::Visibility visibility){
+    connect(this, &QQuickView::visibilityChanged, this, [this](QWindow::Visibility visibility){
         if ( visibility != QWindow::Visibility::Hidden )
             if ( showCentered_ ){
                 QDesktopWidget *dw = QApplication::desktop();
@@ -186,8 +185,8 @@ QmlBoxModel::MainWindow::MainWindow(FrontendPlugin *plugin, QWindow *parent) : Q
     auto storeWinPos = [this](){
         plugin_->settings().setValue(CFG_WND_POS, position());
     };
-    connect(this, &MainWindow::xChanged, storeWinPos);
-    connect(this, &MainWindow::yChanged, storeWinPos);
+    connect(this, &MainWindow::xChanged, this, storeWinPos);
+    connect(this, &MainWindow::yChanged, this, storeWinPos);
 
     // Load window settings
     setPosition(plugin_->settings().value(CFG_WND_POS).toPoint());
