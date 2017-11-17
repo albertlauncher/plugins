@@ -101,11 +101,16 @@ public:
     bool forceUpdate() const;
     void setForceUpdate(bool value);
 
+    bool fuzzy() const;
+    void setFuzzy(bool value);
+
+
 private:
 
     std::vector<QRegExp> mimefilters_;
     bool indexHidden_ = false;
     bool followSymlinks_ = false;
+    bool fuzzy_ = false;
     bool forceUpdate_ = false; // Ignore lastModified, force update
 
 };

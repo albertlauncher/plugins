@@ -288,35 +288,51 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
 const std::vector<QRegExp> &Files::IndexSettings::filters() const {
     return mimefilters_;
 }
+
 void Files::IndexSettings::setFilters(std::vector<QRegExp> value) {
     forceUpdate_= true;
     mimefilters_= value;
 }
+
 void Files::IndexSettings::setFilters(QStringList value) {
     forceUpdate_= true;
     mimefilters_.clear();
     for ( const QString &re : value )
         mimefilters_.emplace_back(re, Qt::CaseInsensitive, QRegExp::Wildcard);
 }
+
 bool Files::IndexSettings::indexHidden() const {
     return indexHidden_;
 }
+
 void Files::IndexSettings::setIndexHidden(bool value) {
     forceUpdate_= true;
     indexHidden_= value;
 }
+
 bool Files::IndexSettings::followSymlinks() const {
     return followSymlinks_;
 }
+
 void Files::IndexSettings::setFollowSymlinks(bool value) {
     forceUpdate_= true;
     followSymlinks_= value;
 }
+
 bool Files::IndexSettings::forceUpdate() const {
     return forceUpdate_;
 }
+
 void Files::IndexSettings::setForceUpdate(bool value) {
     forceUpdate_= value;
+}
+
+bool Files::IndexSettings::fuzzy() const {
+    return fuzzy_;
+}
+
+void Files::IndexSettings::setFuzzy(bool value) {
+    fuzzy_= value;
 }
 
 

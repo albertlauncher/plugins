@@ -198,8 +198,6 @@ OfflineIndex* Files::Private::indexFiles() {
             return nullptr;
     }
 
-    indexSettings.setForceUpdate(true);
-
     // Serialize data
     qDebug() << "Serializing index data…";
     emit q->statusInfo("Serializing index data…");
@@ -219,7 +217,7 @@ OfflineIndex* Files::Private::indexFiles() {
     // Build offline index
     qDebug() << "Building offline index…";
     emit q->statusInfo("Building offline index…");
-    Core::OfflineIndex *offline = new Core::OfflineIndex;
+    Core::OfflineIndex *offline = new Core::OfflineIndex(indexSettings.fuzzy());
     OfflineIndexBuilderVisitor visitor(*offline);
     for (auto& tree : this->indexTrees)
         tree->accept(visitor);
@@ -242,8 +240,9 @@ Files::Extension::Extension()
     d->indexSettings.setFilters(settings().value(CFG_FILTERS, DEF_FILTERS).toStringList());
     d->indexSettings.setIndexHidden(settings().value(CFG_INDEX_HIDDEN, DEF_INDEX_HIDDEN).toBool());
     d->indexSettings.setFollowSymlinks(settings().value(CFG_FOLLOW_SYMLINKS, DEF_FOLLOW_SYMLINKS).toBool());
+    d->indexSettings.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
     d->indexSettings.setForceUpdate(false);
-    d->offlineIndex.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
+    d->offlineIndex.setFuzzy(d->indexSettings.fuzzy());
     d->indexIntervalTimer.setInterval(settings().value(CFG_SCAN_INTERVAL, DEF_SCAN_INTERVAL).toInt()*60000); // Will be started in the initial index update
     d->indexRootDirs = settings().value(CFG_PATHS, QDir::homePath()).toStringList();
 
