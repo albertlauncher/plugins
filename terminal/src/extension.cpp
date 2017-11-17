@@ -160,7 +160,7 @@ void Terminal::Extension::rebuildIndex() {
         return;
 
     auto index = [](){
-        qDebug() << "Building $PATH index.";
+        qDebug() << "Indexing executables in $PATH.";
         set<QString> index;
         QStringList paths = QString(::getenv("PATH")).split(':', QString::SkipEmptyParts);
         for (const QString &path : paths) {
@@ -171,7 +171,7 @@ void Terminal::Extension::rebuildIndex() {
                     index.insert(file.fileName());
             }
         }
-        qDebug() << "Building $PATH index done.";
+        qDebug() << "Finished indexing executables in $PATH.";
         return index;
     };
 

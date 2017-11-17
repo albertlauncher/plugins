@@ -200,7 +200,7 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
 
         QString canonicalFilePath = fileInfo.canonicalFilePath();
         indexedDirs.insert(canonicalFilePath);
-        qDebug() << "Indexing " << canonicalFilePath;
+        qDebug() << "Indexing directory " << canonicalFilePath;
 
         lastModified = fileInfo.lastModified();
 

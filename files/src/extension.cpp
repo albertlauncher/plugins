@@ -180,7 +180,6 @@ OfflineIndex* Files::Private::indexFiles() {
     // Start the indexing
     for ( const QString &rootDir : indexRootDirs ) {
 
-        qDebug() << qPrintable(QString("Indexing %1…").arg(rootDir));
         emit q->statusInfo(QString("Indexing %1…").arg(rootDir));
 
         // If this root dir does not exist create it
@@ -199,7 +198,7 @@ OfflineIndex* Files::Private::indexFiles() {
     }
 
     // Serialize data
-    qDebug() << "Serializing index data…";
+    qDebug() << "Serializing files…";
     emit q->statusInfo("Serializing index data…");
     QFile file(q->cacheLocation().filePath("fileindex.json"));
     if (file.open(QIODevice::WriteOnly)) {
@@ -215,8 +214,8 @@ OfflineIndex* Files::Private::indexFiles() {
 
 
     // Build offline index
-    qDebug() << "Building offline index…";
-    emit q->statusInfo("Building offline index…");
+    qDebug() << "Building inverted file index…";
+    emit q->statusInfo("Building inverted index…");
     Core::OfflineIndex *offline = new Core::OfflineIndex(indexSettings.fuzzy());
     OfflineIndexBuilderVisitor visitor(*offline);
     for (auto& tree : this->indexTrees)
@@ -255,7 +254,7 @@ Files::Extension::Extension()
     });
 
     // Deserialize data
-    qDebug() << "Deserializing index data…";
+    qDebug() << "Loading file index from cache.";
     QFile file(cacheLocation().filePath("fileindex.json"));
     if ( file.exists() ) {
         if (file.open(QIODevice::ReadOnly)) {
@@ -267,7 +266,7 @@ Files::Extension::Extension()
             file.close();
 
             // Build offline index
-            qDebug() << "Building offline index from cached files…";
+            qDebug() << "Building inverted file index.";
             OfflineIndexBuilderVisitor visitor(d->offlineIndex);
             for (auto& tree : d->indexTrees)
                 tree->accept(visitor);

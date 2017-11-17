@@ -238,7 +238,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
         QDirIterator fIt(dir, QStringList("*.desktop"), QDir::Files,
                          QDirIterator::Subdirectories|QDirIterator::FollowSymlinks);
         while (fIt.hasNext()) {
-            fIt.next();
+            qDebug() << "Indexing desktop file:" << fIt.next();
 
             map<QString,map<QString,QString>> sectionMap;
             map<QString,map<QString,QString>>::iterator sectionIterator;
