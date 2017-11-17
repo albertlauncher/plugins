@@ -94,7 +94,7 @@ QJsonObject Files::IndexTreeNode::serialize(){
     QJsonObject jsonNode;
 
     jsonNode.insert("name", this->name);
-    jsonNode.insert("lastmodified", this->lastModified.toString());
+    jsonNode.insert("lastmodified", this->lastModified.toMSecsSinceEpoch());
 
     QJsonArray itemArray;
     for ( const shared_ptr<IndexFile> &file : items_ ) {
@@ -119,7 +119,7 @@ void Files::IndexTreeNode::deserialize(const QJsonObject &object, shared_ptr<Ind
 
     this->parent = parent;
     name = object["name"].toString();
-    lastModified = QDateTime::fromString(object["lastmodified"].toString());
+    lastModified = QDateTime::fromMSecsSinceEpoch(object["lastmodified"].toVariant().toLongLong());
 
     for (const QJsonValueRef child : object["children"].toArray()) {
         children.push_back(make_shared<IndexTreeNode>()); // Invalid node
