@@ -208,10 +208,12 @@ void Applications::Private::finishIndexing() {
         watcher.removePaths(watcher.directories());
     QStringList xdgAppDirs = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
     for (const QString &path : xdgAppDirs) {
-        watcher.addPath(path);
-        QDirIterator dit(path, QDir::Dirs|QDir::NoDotAndDotDot);
-        while (dit.hasNext())
-            watcher.addPath(dit.next());
+        if (QFile::exists(path)) {
+            watcher.addPath(path);
+            QDirIterator dit(path, QDir::Dirs|QDir::NoDotAndDotDot);
+            while (dit.hasNext())
+                watcher.addPath(dit.next());
+        }
     }
 
     // Notification
