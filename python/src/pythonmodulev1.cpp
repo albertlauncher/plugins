@@ -85,7 +85,7 @@ void Python::PythonModuleV1::load(){
         d->module = py::module::import(fileInfo.completeBaseName().toUtf8().data());
         d->module.reload();  // Drop cached module version
 
-        qDebug() << "Loading" << QFileInfo(d->path).fileName();
+        qDebug() << "Loading" << d->path;
 
         QString iid = d->module.attr("__iid__").cast<QString>();
         if (iid != PYTHON_IID){
@@ -158,7 +158,7 @@ void Python::PythonModuleV1::unload(){
 
     if (d->state == State::Loaded) {
 
-        qDebug() << "Unloading" << QFileInfo(d->path).fileName();
+        qDebug() << "Unloading" << d->path;
 
         py::gil_scoped_acquire acquire;
 
