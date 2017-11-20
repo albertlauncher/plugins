@@ -136,7 +136,7 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
 class Python::Private
 {
 public:
-    PyThreadState *tstate;
+    unique_ptr<py::gil_scoped_release> release;
     QPointer<ConfigWidget> widget;
     vector<unique_ptr<PythonModuleV1>> modules;
     QFileSystemWatcher fileSystemWatcher;
@@ -156,6 +156,8 @@ Python::Extension::Extension()
     if ( !Py_IsInitialized() )
         py::initialize_interpreter(false);
 
+    d->release.reset(new py::gil_scoped_release);
+
     d->enabledModules = settings().value(CFG_ENABLEDMODS).toStringList();
 
     if ( !dataLocation().exists(MODULES_DIR) )
@@ -168,6 +170,7 @@ Python::Extension::Extension()
         QString extensionDir = QDir(pluginDir).filePath(MODULES_DIR);
         if ( QFile::exists(extensionDir) ) {
             try { // Append scriptsPath to sys.path
+                py::gil_scoped_acquire acquire;
                 py::module::import("sys").attr("path").cast<py::list>().append(extensionDir);
             } catch (exception &e) {
                 throw e.what();
@@ -180,9 +183,6 @@ Python::Extension::Extension()
     connect(&d->fileSystemWatcher, &QFileSystemWatcher::directoryChanged,
             this, &Extension::updateDirectory);
 
-    // Release GIL to allow threading
-    d->tstate = PyEval_SaveThread();
-
     registerQueryHandler(this);
 }
 
@@ -191,9 +191,6 @@ Python::Extension::Extension()
 /** ***************************************************************************/
 Python::Extension::~Extension() {
     d->modules.clear();
-
-    // Acquire GIL for finalization in ~d
-    PyEval_RestoreThread(d->tstate);
 }
 
 
