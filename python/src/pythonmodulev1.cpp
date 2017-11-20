@@ -196,18 +196,26 @@ void Python::PythonModuleV1::handleQuery(Query *query) const {
     try {
         vector<pair<shared_ptr<Core::Item>,uint>> results;
         py::function f = py::function(d->module.attr("handleQuery"));
-        py::list pyresults = f(query);
+        py::object pythonResult = f(query);
 
         if ( !query->isValid() )
             return;
 
-        for(py::size_t i = 0; i < py::len(pyresults); ++i) {
-            py::object elem = pyresults[i];
-            results.emplace_back(elem.cast<shared_ptr<StandardItem>>(), 0);
+        if (py::isinstance<py::list>(pythonResult)) {
+
+            py::list list(pythonResult);
+            for(py::size_t i = 0; i < py::len(pythonResult); ++i) {
+                py::object elem = list[i];
+                results.emplace_back(elem.cast<shared_ptr<StandardItem>>(), 0);
+            }
+
+            query->addMatches(std::make_move_iterator(results.begin()),
+                              std::make_move_iterator(results.end()));
         }
 
-        query->addMatches(std::make_move_iterator(results.begin()),
-                          std::make_move_iterator(results.end()));
+        if (py::isinstance<Item>(pythonResult)) {
+            query->addMatch(pythonResult.cast<shared_ptr<StandardItem>>());
+        }
     }
     catch(const exception &e)
     {
