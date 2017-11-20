@@ -303,9 +303,14 @@ void Python::Extension::updateDirectory(const QString &path) {
     QDirIterator dirIterator(path, QDir::Files|QDir::Dirs|QDir::NoDotAndDotDot, QDirIterator::NoIteratorFlags);
     while (dirIterator.hasNext()) {
         QString path = dirIterator.next();
-        QString id = dirIterator.fileInfo().completeBaseName();
+        QFileInfo info = dirIterator.fileInfo();
+        QString id = info.completeBaseName();
 
         if (id == "__pycache__")
+            continue;
+
+        // Skip non-python files, e.g. README.md
+        if (info.isFile() && !id.endsWith(".py"))
             continue;
 
         // Skip if this id already exists
