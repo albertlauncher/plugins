@@ -15,9 +15,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <QApplication>
+#include <QDebug>
 #include <QKeyEvent>
 #include <QPainter>
 #include <QPixmapCache>
+#include <QTextDocument>
 #include "resultslist.h"
 #include "core/itemroles.h"
 
@@ -209,41 +211,59 @@ void WidgetBoxModel::ResultsList::ItemDelegate::paint(QPainter *painter, const Q
     contentRect.setTop(option.rect.y()+option.rect.height()/2-(fontMetrics1.height()+fontMetrics2.height())/2);
     contentRect.setBottom(option.rect.y()+option.rect.height()/2+(fontMetrics1.height()+fontMetrics2.height())/2);
     QRect textRect = contentRect.adjusted(0,-2,0,-fontMetrics2.height()-2);
-    QRect subTextRect = contentRect.adjusted(0,fontMetrics1.height()-2,0,-2);
 
     //    // Test
-    //    painter->fillRect(iconRect, Qt::magenta);
-    //    painter->fillRect(contentRect, Qt::red);
-    //    painter->fillRect(textRect, Qt::blue);
-    //    painter->fillRect(subTextRect, Qt::yellow);
-
+//    painter->drawRect(option.rect);
+//    painter->setPen(Qt::red);
+//    painter->drawRect(contentRect);
+//    painter->setPen(Qt::blue);
+//    painter->drawRect(textRect);
+//    painter->setPen(Qt::green);
+//    painter->drawRect(subTextRect);
+//    painter->fillRect(option.rect, Qt::magenta);
+//    painter->fillRect(contentRect, Qt::red);
+//    painter->fillRect(textRect, Qt::blue);
+//    painter->fillRect(subTextRect, Qt::yellow);
 
     // Draw display role
-    painter->setFont(font1);
-    QString text = fontMetrics1.elidedText(index.data(Core::ItemRoles::TextRole).toString(),
-                                           option.textElideMode,
-                                           textRect.width());
-    option.widget->style()->drawItemText(painter,
-                                         textRect,
-                                         option.displayAlignment,
-                                         option.palette,
-                                         option.state & QStyle::State_Enabled,
-                                         text,
-                                         (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::WindowText);
+    QTextDocument doc;
+//    QString text = fontMetrics1.elidedText(index.data(Core::ItemRoles::TextRole).toString(),
+//                                           option.textElideMode,
+//                                           textRect.width());
+//    painter->setFont(font1);
+//    option.widget->style()->drawItemText(painter,
+//                                         textRect,
+//                                         option.displayAlignment,
+//                                         option.palette,
+//                                         option.state & QStyle::State_Enabled,
+//                                         text,
+//                                         (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::WindowText);
+
+    doc.setHtml(index.data(Core::ItemRoles::TextRole).toString());
+    doc.setDefaultFont(font1);
+    painter->translate(textRect.left(), textRect.top());
+    doc.drawContents(painter);
 
     // Draw tooltip role
-    painter->setFont(font2);
-    text = fontMetrics2.elidedText(index.data(option.state.testFlag(QStyle::State_Selected)
-                                              ? subTextRole
-                                              : Core::ItemRoles::ToolTipRole).toString(),
-                                   option.textElideMode,
-                                   subTextRect.width());
-    option.widget->style()->drawItemText(painter,
-                                         subTextRect,
-                                         Qt::AlignBottom|Qt::AlignLeft,
-                                         option.palette,
-                                         option.state & QStyle::State_Enabled,
-                                         text,
-                                         (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::WindowText);
+//    text = fontMetrics2.elidedText(index.data(option.state.testFlag(QStyle::State_Selected)
+//                                              ? subTextRole
+//                                              : Core::ItemRoles::ToolTipRole).toString(),
+//                                   option.textElideMode,
+//                                   subTextRect.width());
+//    painter->setFont(font2);
+//    option.widget->style()->drawItemText(painter,
+//                                         subTextRect,
+//                                         Qt::AlignBottom|Qt::AlignLeft,
+//                                         option.palette,
+//                                         option.state & QStyle::State_Enabled,
+//                                         text,
+//                                         (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::WindowText);
+    doc.setHtml(index.data(option.state.testFlag(QStyle::State_Selected)
+                           ? subTextRole
+                           : Core::ItemRoles::ToolTipRole).toString());
+    doc.setDefaultFont(font2);
+    painter->translate(0, textRect.height()-4);
+    doc.drawContents(painter);
+
     painter->restore();
 }
