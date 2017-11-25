@@ -93,15 +93,16 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
             }), py::arg("text"), py::arg("commandline"), py::arg("cwd") = QString())
             ;
 
-    py::enum_<TermAction::CloseBehavior>(m, "CloseBehavior")
+    py::class_<TermAction, Action, shared_ptr<TermAction>>pyTermAction(m, "TermAction", "Runs a command in terminal");
+
+    py::enum_<TermAction::CloseBehavior>(pyTermAction, "CloseBehavior")
             .value("CloseOnSuccess", TermAction::CloseBehavior::CloseOnSuccess)
             .value("CloseOnExit", TermAction::CloseBehavior::CloseOnExit)
             .value("DoNotClose", TermAction::CloseBehavior::DoNotClose)
             .export_values()
             ;
 
-    py::class_<TermAction, Action, shared_ptr<TermAction>>(m, "TermAction", "Runs a command in terminal")
-            .def(py::init([](QString text, list<QString> commandline, QString workdir, bool shell, TermAction::CloseBehavior behavior) {
+    pyTermAction.def(py::init([](QString text, list<QString> commandline, QString workdir, bool shell, TermAction::CloseBehavior behavior) {
                 return std::make_shared<TermAction>(move(text), QStringList::fromStdList(commandline), move(workdir), shell, behavior);
             }), py::arg("text"), py::arg("commandline"), py::arg("cwd") = QString(), py::arg("shell") = true, py::arg("behavior") = TermAction::CloseBehavior::CloseOnSuccess)
             ;
