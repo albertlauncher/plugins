@@ -240,10 +240,11 @@ void System::Extension::handleQuery(Core::Query * query) const {
     if ( query->string().isEmpty())
         return;
 
+    QRegularExpression re(QString("(%1)").arg(query->string()), QRegularExpression::CaseInsensitiveOption);
     for (size_t i = 0; i < NUMCOMMANDS; ++i) {
         if ( itemTitles[i].startsWith(query->string(), Qt::CaseInsensitive) ) {
             auto item = std::make_shared<Core::StandardItem>(configNames[i]);
-            item->setText(itemTitles[i]);
+            item->setText(QString(itemTitles[i]).replace(re, "<u>\\1</u>"));
             item->setSubtext(itemDescriptions[i]);
             item->setIconPath(d->iconPaths[i]);
             item->addAction(make_shared<ProcAction>(itemDescriptions[i], QStringList(d->commands[i].split(" ", QString::SkipEmptyParts))));
