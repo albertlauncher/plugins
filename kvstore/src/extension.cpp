@@ -143,13 +143,14 @@ void KeyValueStore::Extension::handleQuery(Core::Query * query) const {
 
     QSqlQuery q(d->db);
     q.exec(QString("SELECT key, value FROM kv WHERE key LIKE '%1%'").arg(query->string()));
+    QRegularExpression re(QString("(%1)").arg(query->string()), QRegularExpression::CaseInsensitiveOption);
     while ( q.next() ){
         QString key = q.value(0).toString();
         QString value = q.value(1).toString();
 
         auto item = std::make_shared<StandardItem>(QString("kv_%1").arg(key));
         item->setText(value);
-        item->setSubtext(QString("Value of '%1'").arg(key));
+        item->setSubtext(QString("Value of '%1'").arg(QString(key).replace(re, "<u>\\1</u>")));
         item->setIconPath(":kv");
         item->setCompletion(QString("kv %1").arg(key));
         item->addAction(make_shared<ClipAction>("Copy value to clipboard", value));
