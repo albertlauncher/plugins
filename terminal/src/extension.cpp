@@ -124,7 +124,9 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
         item->setSubtext(QString("Run '%1'").arg(item->text()));
         item->setCompletion(item->text());
         item->addAction(make_shared<ProcAction>("Run", commandline));
-        item->addAction(make_shared<TermAction>("Run in terminal", commandline));
+        item->addAction(make_shared<TermAction>("Run in terminal", commandline,
+                                                QString(), true,
+                                                TermAction::CloseBehavior::DoNotClose));
 
         results.emplace_back(item, 0);
         ++it;
@@ -144,7 +146,9 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
     item->setSubtext(QString("Try running '%1'").arg(query->string()));
     item->setCompletion(query->rawString());
     item->addAction(make_shared<ProcAction>("Run", commandline));
-    item->addAction(make_shared<TermAction>("Run in terminal", commandline));
+    item->addAction(make_shared<TermAction>("Run in terminal", commandline,
+                                            QString(), true,
+                                            TermAction::CloseBehavior::DoNotClose));
 
     results.emplace_back(item, 0);
 
