@@ -75,7 +75,7 @@ public:
     QString icon;
     QPointer<ConfigWidget> widget;
     QFileSystemWatcher fileSystemWatcher;
-    vector<shared_ptr<StandardItem>> hosts;
+    set<QString> hosts;
 
     bool useKnownHosts;
 };
@@ -138,35 +138,38 @@ QWidget *Ssh::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Ssh::Extension::handleQuery(Query * query) const {
 
-    if ( query->isTriggered() ){
-
+    if ( !query->string().trimmed().isEmpty() || query->isTriggered() ) {
         // Add all hosts that the query is a prefix of
-        for ( shared_ptr<StandardItem>& host : d->hosts )
-            if ( host->text().startsWith(query->string()) )
-                query->addMatch(host, static_cast<uint>(1.0*query->string().size()/host->text().size()* UINT_MAX));
+        QRegularExpression re(QString("(%1)").arg(query->string()), QRegularExpression::CaseInsensitiveOption);
+        for ( const QString& host : d->hosts ) {
+            if ( host.startsWith(query->string()) ) {
 
-        if (!query->string().trimmed().isEmpty()) {
-            // Add the quick connect item
-            QString trimmed = query->string().trimmed();
-
-            auto item  = std::make_shared<StandardItem>();
-            item->setText(trimmed);
-            item->setSubtext(QString("Quick connect to '%1' using ssh").arg(trimmed));
-            item->setCompletion(QString("ssh %1").arg(trimmed));
-            item->setIconPath(d->icon);
-            item->addAction(make_shared<TermAction>(QString("Connect to '%1' using ssh").arg(trimmed),
-                                                    QStringList() << "ssh" << trimmed));
-            query->addMatch(std::move(item));
+                // Create item
+                auto item = std::make_shared<StandardItem>("ssh_"+host);
+                item->setText(QString(host).replace(re, "<u>\\1</u>"));
+                item->setSubtext(QString("Connect to '%1' using ssh").arg(host));
+                item->setCompletion(QString("ssh %1").arg(host));
+                item->setIconPath(d->icon);
+                item->addAction(make_shared<TermAction>(QString("Connect to '%1' using ssh").arg(host),
+                                                        QStringList() << "ssh" << host));
+                query->addMatch(item, static_cast<uint>(1.0*query->string().size()/host.size()* UINT_MAX));
+            }
         }
+    }
 
-    } else {
+    if ( query->isTriggered() ) {
 
-        // Add all hosts that the query is a prefix of
-        if ( !query->string().isEmpty())
-            for ( shared_ptr<StandardItem>& host : d->hosts )
-                if ( host->text().startsWith(query->string()) )
-                    query->addMatch(host, static_cast<uint>(1.0*query->string().size()/host->text().size()* UINT_MAX));
+        // Add the quick connect item
+        QString trimmed = query->string().trimmed();
 
+        auto item  = std::make_shared<StandardItem>();
+        item->setText(trimmed);
+        item->setSubtext(QString("Quick connect to '%1' using ssh").arg(trimmed));
+        item->setCompletion(QString("ssh %1").arg(trimmed));
+        item->setIconPath(d->icon);
+        item->addAction(make_shared<TermAction>(QString("Connect to '%1' using ssh").arg(trimmed),
+                                                QStringList() << "ssh" << trimmed));
+        query->addMatch(std::move(item));
     }
 }
 
@@ -175,11 +178,9 @@ void Ssh::Extension::handleQuery(Query * query) const {
 /** ***************************************************************************/
 void Ssh::Extension::rescan() {
 
-    // Build a new index
-    vector<shared_ptr<StandardItem>> sshHosts;
+    set<QString> hosts;
 
     // Get the hosts in config
-    std::set<QString> hosts;
     for ( const QString& path : {QString("/etc/ssh/config"), QDir::home().filePath(".ssh/config")} )
         if ( QFile::exists(path) )
             for ( const QString& host : getSshHostsFromConfig(path) )
@@ -193,21 +194,7 @@ void Ssh::Extension::rescan() {
                 hosts.insert(host);
     }
 
-
-    for ( const QString& host : hosts ){
-
-        // Create item
-        auto item = std::make_shared<StandardItem>(host);
-        item->setText(host);
-        item->setSubtext(QString("Connect to '%1' using ssh").arg(host));
-        item->setCompletion(QString("ssh %1").arg(host));
-        item->setIconPath(d->icon);
-        item->addAction(make_shared<TermAction>(QString("Connect to '%1' using ssh").arg(host),
-                                                QStringList() << "ssh" << host));
-        sshHosts.push_back(std::move(item));
-    }
-
-    d->hosts = std::move(sshHosts);
+    d->hosts = std::move(hosts);
 }
 
 
