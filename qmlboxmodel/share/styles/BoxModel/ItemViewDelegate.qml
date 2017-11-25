@@ -77,7 +77,6 @@ Item {
             id: textId
             width: parent.width
             text: itemTextRole
-            textFormat: Text.PlainText
             elide: Text.ElideRight
             color: listItem.ListView.isCurrentItem ? listItem.highlightColor : listItem.textColor
             font.family: listItem.fontName
@@ -88,7 +87,6 @@ Item {
             id: subTextId
             width: parent.width
             text: (listItem.ListView.isCurrentItem && root.state==="fallback") ? itemFallbackRole : itemToolTipRole
-            textFormat: Text.PlainText
             elide: Text.ElideRight
             color: listItem.ListView.isCurrentItem ? listItem.highlightColor : listItem.textColor
             font.family: listItem.fontName
