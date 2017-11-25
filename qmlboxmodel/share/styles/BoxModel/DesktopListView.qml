@@ -19,21 +19,24 @@ ListView {
     }
 
     Keys.onPressed: {
+        if ( count === 0 )
+            return
+
         event.accepted = true
-        if ( event.key === Qt.Key_Up && event.modifiers === Qt.NoModifier && count > 0 )
+
+        if ( event.key === Qt.Key_Up && event.modifiers === Qt.NoModifier
+             || event.key === Qt.Key_P && event.modifiers === Qt.ControlModifier )
             decrementCurrentIndex()
-        else if ( event.key === Qt.Key_Down && event.modifiers === Qt.NoModifier && count > 0 )
-            if (currentIndex === -1)
-                currentIndex = Math.min(1, count-1)
-            else
-                incrementCurrentIndex()
-        else if ( event.key === Qt.Key_PageUp && event.modifiers === Qt.NoModifier && count > 0 )
+        else if ( event.key === Qt.Key_Down && event.modifiers === Qt.NoModifier
+                  || event.key === Qt.Key_N && event.modifiers === Qt.ControlModifier )
+            incrementCurrentIndex()
+        else if ( event.key === Qt.Key_PageUp && event.modifiers === Qt.NoModifier)
             currentIndex = Math.max(currentIndex - itemCount, 0)
-        else if ( event.key === Qt.Key_PageDown && event.modifiers === Qt.NoModifier && count > 0 )
+        else if ( event.key === Qt.Key_PageDown && event.modifiers === Qt.NoModifier)
             currentIndex = Math.min(currentIndex + itemCount, count-1)
-        else if ( event.key === Qt.Key_Home && event.modifiers === Qt.ControlModifier && count > 0 )
+        else if ( event.key === Qt.Key_Home && event.modifiers === Qt.ControlModifier)
             currentIndex = 0
-        else if ( event.key === Qt.Key_End && event.modifiers === Qt.ControlModifier && count > 0 )
+        else if ( event.key === Qt.Key_End && event.modifiers === Qt.ControlModifier)
             currentIndex = count-1
         else
             event.accepted = false
