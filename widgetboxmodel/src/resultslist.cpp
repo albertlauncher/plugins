@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <QAbstractTextDocumentLayout>
 #include <QApplication>
 #include <QDebug>
 #include <QKeyEvent>
@@ -224,6 +225,29 @@ void WidgetBoxModel::ResultsList::ItemDelegate::paint(QPainter *painter, const Q
     contentRect.setBottom(option.rect.y()+option.rect.height()/2+(fontMetrics1.height()+fontMetrics2.height())/2);
     QRect textRect = contentRect.adjusted(0,-2,0,-fontMetrics2.height()-2);
 
+
+    QAbstractTextDocumentLayout::PaintContext ctx;
+    ctx.palette.setColor(QPalette::Text, option.widget->palette().color((option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::WindowText));
+
+    QTextDocument doc;
+    doc.setDefaultFont(font1);
+    painter->translate(textRect.left(), textRect.top());
+    doc.setHtml(index.data(Core::ItemRoles::TextRole).toString());
+    doc.documentLayout()->draw(painter, ctx);
+
+    doc.setDefaultFont(font2);
+    painter->translate(0, textRect.height()-4);
+    doc.setHtml(index.data(option.state.testFlag(QStyle::State_Selected)
+                           ? subTextRole
+                           : Core::ItemRoles::ToolTipRole).toString());
+    doc.documentLayout()->draw(painter, ctx);
+
+
+
+//    painter->setPen(( option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::WindowText);
+//    doc.drawContents(painter);
+//    doc.drawContents(painter);
+
     //    // Test
 //    painter->drawRect(option.rect);
 //    painter->setPen(Qt::red);
@@ -238,7 +262,6 @@ void WidgetBoxModel::ResultsList::ItemDelegate::paint(QPainter *painter, const Q
 //    painter->fillRect(subTextRect, Qt::yellow);
 
     // Draw display role
-    QTextDocument doc;
 //    QString text = fontMetrics1.elidedText(index.data(Core::ItemRoles::TextRole).toString(),
 //                                           option.textElideMode,
 //                                           textRect.width());
@@ -250,11 +273,6 @@ void WidgetBoxModel::ResultsList::ItemDelegate::paint(QPainter *painter, const Q
 //                                         option.state & QStyle::State_Enabled,
 //                                         text,
 //                                         (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::WindowText);
-
-    doc.setHtml(index.data(Core::ItemRoles::TextRole).toString());
-    doc.setDefaultFont(font1);
-    painter->translate(textRect.left(), textRect.top());
-    doc.drawContents(painter);
 
     // Draw tooltip role
 //    text = fontMetrics2.elidedText(index.data(option.state.testFlag(QStyle::State_Selected)
@@ -270,12 +288,7 @@ void WidgetBoxModel::ResultsList::ItemDelegate::paint(QPainter *painter, const Q
 //                                         option.state & QStyle::State_Enabled,
 //                                         text,
 //                                         (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::WindowText);
-    doc.setHtml(index.data(option.state.testFlag(QStyle::State_Selected)
-                           ? subTextRole
-                           : Core::ItemRoles::ToolTipRole).toString());
-    doc.setDefaultFont(font2);
-    painter->translate(0, textRect.height()-4);
-    doc.drawContents(painter);
+
 
     painter->restore();
 }
