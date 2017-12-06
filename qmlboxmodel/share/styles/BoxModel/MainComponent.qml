@@ -1,13 +1,14 @@
 ﻿import QtQuick 2.5
 import QtQuick.Controls 1.0
 import QtGraphicalEffects 1.0
+import QtQuick.Window 2.0
 import "themes.js" as Themes
 
 Item {
 
     id: root
     width: frame.width+2*preferences.shadow_size
-    height: frame.height+2*preferences.shadow_size
+    height: Screen.height * 0.7
 
     layer.enabled: true
     layer.effect: DropShadow {
