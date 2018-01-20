@@ -110,8 +110,11 @@ void Python::PythonModuleV1::load(){
                 d->description = docString.cast<QString>();
         }
 
-        if (py::hasattr(d->module.ptr(), "__trigger__"))
-            d->trigger = d->module.attr("__trigger__").cast<QString>();
+        if (py::hasattr(d->module.ptr(), "__trigger__")){
+            py::object trigger = d->module.attr("__trigger__");
+            if (!trigger.is_none())
+                d->trigger = trigger.cast<QString>();
+        }
 
         if (py::hasattr(d->module.ptr(), "__dependencies__")){
             py::list deps = d->module.attr("__dependencies__").cast<py::list>();

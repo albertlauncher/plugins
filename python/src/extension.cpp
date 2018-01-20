@@ -41,6 +41,10 @@ const constexpr char* CFG_ENABLEDMODS = "enabled_modules";
 
 PYBIND11_EMBEDDED_MODULE(albertv0, m)
 {
+    /*
+     * 0.1
+     */
+
     m.doc() = "pybind11 example module";
 
     py::class_<Core::Query, std::unique_ptr<Query, py::nodelete>>(m, "Query", "The query object to handle for a user input")
@@ -137,6 +141,16 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
     m.def("warning", [](const py::str &str){ qWarning() << str.cast<QString>(); });
     m.def("critical", [](const py::str &str){ qCritical() << str.cast<QString>(); });
     m.def("iconLookup", [](const py::str &str){ return XDG::IconLookup::iconPath(str.cast<QString>()); });
+
+    /*
+     * 0.2
+     */
+
+    m.def("configLocation", [](){ return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation); });
+    m.def("dataLocation", [](){ return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation); });
+    m.def("cacheLocation", [](){ return QStandardPaths::writableLocation(QStandardPaths::CacheLocation); });
+
+
 }
 
 }
@@ -235,8 +249,7 @@ void Python::Extension::handleQuery(Core::Query *query) const {
     else {
         for ( auto & module : d->modules ) {
             if ( d->enabledModules.contains(module->id())
-                 && module->state() == PythonModuleV1::State::Loaded
-                 && module->trigger().isEmpty() ) {
+                 && module->state() == PythonModuleV1::State::Loaded) {
                 module->handleQuery(query);
                 if ( !query->isValid() )
                     return;
