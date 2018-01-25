@@ -15,6 +15,7 @@
 #include <QJsonObject>
 #include <QLabel>
 #include <QProcess>
+#include <QRegularExpression>
 #include <QVBoxLayout>
 #include <functional>
 #include <vector>
@@ -26,8 +27,10 @@ using namespace std;
 using namespace Core;
 namespace py = pybind11;
 
-
-#define PYTHON_IID "PythonInterface/v0.1"
+namespace {
+uint majorInterfaceVersion = 0;
+uint minorInterfaceVersion = 2;
+}
 
 class Python::PythonModuleV1Private
 {
@@ -88,8 +91,26 @@ void Python::PythonModuleV1::load(){
         qDebug() << "Loading" << d->path;
 
         QString iid = d->module.attr("__iid__").cast<QString>();
-        if (iid != PYTHON_IID){
+        QRegularExpression re("^PythonInterface\\/v(\\d)\\.(\\d)$");
+        QRegularExpressionMatch match = re.match(iid);
+        if (!match.hasMatch()) {
             d->errorString = "Incompatible interface id";
+            d->state = State::Error;
+            qWarning() << qPrintable(QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString));
+            return;
+        }
+
+        uint maj = match.captured(1).toUInt();
+        if (maj != majorInterfaceVersion) {
+            d->errorString = QString("Incompatible major interface version. Expected %1, got %2").arg(majorInterfaceVersion).arg(maj);
+            d->state = State::Error;
+            qWarning() << qPrintable(QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString));
+            return;
+        }
+
+        uint min = match.captured(2).toUInt();
+        if (min > minorInterfaceVersion) {
+            d->errorString = QString("Incompatible minor interface version. Up to %1 supported, got %2").arg(minorInterfaceVersion).arg(min);
             d->state = State::Error;
             qWarning() << qPrintable(QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString));
             return;
