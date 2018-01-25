@@ -36,6 +36,9 @@ Choose the MIME types you want to be indexed by the files extension. The left bo
      <property name="wordWrap">
       <bool>true</bool>
      </property>
+     <property name="openExternalLinks">
+      <bool>true</bool>
+     </property>
     </widget>
    </item>
    <item>
