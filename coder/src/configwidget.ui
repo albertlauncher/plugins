@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Coder::ConfigWidget</class>
+ <widget class="QWidget" name="Coder::ConfigWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>480</width>
+    <height>320</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout">
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_vscode">
+       <property name="text">
+        <string>VSCode</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_subl">
+       <property name="text">
+        <string>Sublime</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QCheckBox" name="checkBox_fuzzy">
+       <property name="text">
+        <string>Fuzzy</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLineEdit" name="lineEdit_vscodepath"/>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="lineEdit_subpath"/>
+     </item>
+     <item row="4" column="1">
+      <widget class="QLabel" name="label_text">
+       <property name="lineWidth">
+        <number>10</number>
+       </property>
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When you open the search box, you can use &lt;span style=&quot; color:#ef2929;&quot;&gt;`&amp;amp;c`&lt;/span&gt; to find a sublime or vscode project. Then you can open the project by simply pressing the &lt;span style=&quot; color:#ef2929;&quot;&gt;enter&lt;/span&gt; button. For different locations of vscode or sublime, you can specify your own parameters.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="textFormat">
+        <enum>Qt::AutoText</enum>
+       </property>
+       <property name="scaledContents">
+        <bool>false</bool>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

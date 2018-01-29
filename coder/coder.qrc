@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="coder-vscode">resources/vscode-icon.svg</file>
+        <file alias="coder-sublime">resources/sublime-icon.svg</file>
+    </qresource>
+</RCC>
