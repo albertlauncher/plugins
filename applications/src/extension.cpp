@@ -394,6 +394,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             item->setIconPath(icon);
             item->setId(id);
             item->setText(name);
+            item->setCompletion(name);
 
             // Set subtext/tootip
             if (comment.isEmpty())
