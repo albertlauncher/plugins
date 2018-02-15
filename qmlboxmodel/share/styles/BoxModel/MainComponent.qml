@@ -108,7 +108,7 @@ Item {
                         animationDuration: preferences.animation_duration
                     }
                 }
-                Keys.onEnterPressed: (event.modifiers===Qt.NoModifier) ? activate() : activate(-event.modifiers)
+                Keys.onEnterPressed: (event.modifiers===Qt.KeypadModifier) ? activate() : activate(-event.modifiers)
                 Keys.onReturnPressed: (event.modifiers===Qt.NoModifier) ? activate() : activate(-event.modifiers)
                 onCurrentIndexChanged: if (root.state==="detailsView") root.state=""
             }  // resultsList (ListView)
