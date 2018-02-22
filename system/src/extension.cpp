@@ -3,9 +3,10 @@
 #include <QDebug>
 #include <QPointer>
 #include <QSettings>
-#include <vector>
+#include <array>
 #include "configwidget.h"
 #include "extension.h"
+#include "util/shutil.h"
 #include "util/standardactions.h"
 #include "util/standarditem.h"
 #include "xdg/iconlookup.h"
@@ -15,6 +16,8 @@ using namespace Core;
 
 namespace {
 
+const uint NUMCOMMANDS = 6;
+
 enum SupportedCommands {
     LOCK,
     LOGOUT,
@@ -22,130 +25,111 @@ enum SupportedCommands {
     HIBERNATE,
     REBOOT,
     POWEROFF,
-    NUMCOMMANDS
 };
 
-vector<QString> configNames = {
+array<const QString, 6> configNames{{
     "lock",
     "logout",
     "suspend",
     "hibernate",
     "reboot",
     "shutdown"
-};
+}};
 
-vector<QString> itemTitles = {
+array<const QString, 6> itemTitles{{
     "Lock",
     "Log out",
     "Suspend",
     "Hibernate",
     "Restart",
     "Shut down"
-};
+}};
 
-vector<QString> itemDescriptions = {
+array<const QString, 6> itemDescriptions{{
     "Lock the session.",
     "Quit the session.",
     "Suspend the machine.",
     "Hibernate the machine.",
     "Reboot the machine.",
     "Shutdown the machine.",
-};
+}};
 
-vector<QString> iconNames = {
+array<const QString, 6> iconNames{{
     "system-lock-screen",
     "system-log-out",
     "system-suspend",
     "system-suspend-hibernate",
     "system-reboot",
     "system-shutdown"
-};
+}};
 
 
 QString defaultCommand(SupportedCommands command){
 
-    QString de = getenv("XDG_CURRENT_DESKTOP");
+    for (const QString &de : QString(::getenv("XDG_CURRENT_DESKTOP")).split(":")) {
 
-    switch (command) {
-    case LOCK:
         if (de == "Unity" || de == "Pantheon" || de == "GNOME")
-            return "gnome-screensaver-command --lock";
+            switch (command) {
+            case LOCK:      return "gnome-screensaver-command --lock";
+            case LOGOUT:    return "gnome-session-quit --logout";
+            case SUSPEND:   break ;
+            case HIBERNATE: break ;
+            case REBOOT:    return "gnome-session-quit --reboot";
+            case POWEROFF:  return "gnome-session-quit --power-off";
+            }
+
         else if (de == "kde-plasma" || de == "KDE")
-            return "dbus-send --dest=org.freedesktop.ScreenSaver --type=method_call /ScreenSaver org.freedesktop.ScreenSaver.Lock";
-        else if (de == "XFCE")
-            return "xflock4";
+            switch (command) {
+            case LOCK:      return "dbus-send --dest=org.freedesktop.ScreenSaver --type=method_call /ScreenSaver org.freedesktop.ScreenSaver.Lock";
+            case LOGOUT:    return "qdbus org.kde.ksmserver /KSMServer logout 0 0 0";
+            case SUSPEND:   break ;
+            case HIBERNATE: break ;
+            case REBOOT:    return "qdbus org.kde.ksmserver /KSMServer logout 0 1 0";
+            case POWEROFF:  return "qdbus org.kde.ksmserver /KSMServer logout 0 2 0";
+            }
+
         else if (de == "X-Cinnamon" || de == "Cinnamon")
-            return "cinnamon-screensaver-command --lock";
-        else if (de == "MATE")
-            return "mate-screensaver-command --lock";
-        else
-            return "xdg-screensaver lock";
+            switch (command) {
+            case LOCK:      return "cinnamon-screensaver-command --lock";
+            case LOGOUT:    return "cinnamon-session-quit --logout";
+            case SUSPEND:   break ;
+            case HIBERNATE: break ;
+            case REBOOT:    return "cinnamon-session-quit --reboot";
+            case POWEROFF:  return "cinnamon-session-quit --power-off";
+            }
 
-    case LOGOUT:
-        if (de == "Unity" || de == "Pantheon" || de == "GNOME")
-            return "gnome-session-quit --logout";
-        else if (de == "kde-plasma" || de == "KDE")
-            return "qdbus org.kde.ksmserver /KSMServer logout 0 0 0";
-        else if (de == "X-Cinnamon")
-            return "cinnamon-session-quit --logout";
+        else if (de == "MATE")
+            switch (command) {
+            case LOCK:      return "mate-screensaver-command --lock";
+            case LOGOUT:    return "mate-session-save --logout";
+            case SUSPEND:   return "sh -c \"mate-screensaver-command --lock && systemctl suspend -i\"";
+            case HIBERNATE: return "sh -c \"mate-screensaver-command --lock && systemctl hibernate -i\"";
+            case REBOOT:    return "mate-session-save --shutdown-dialog";
+            case POWEROFF:  return "mate-session-save --shutdown-dialog";
+            }
+
         else if (de == "XFCE")
-            return "xfce4-session-logout --logout";
-        else if (de == "MATE")
-            return "mate-session-save --logout";
-        else
-            return "notify-send \"Error.\" \"Logout command is not set.\" --icon=system-log-out";
-
-    case SUSPEND:
-        if (de == "XFCE")
-            return "xfce4-session-logout --suspend";
-        else if (de == "MATE")
-            return "sh -c \"mate-screensaver-command --lock && systemctl suspend -i\"";
-        else
-            return "systemctl suspend -i";
-
-    case HIBERNATE:
-        if (de == "XFCE")
-            return "xfce4-session-logout --hibernate";
-        else if (de == "MATE")
-            return "sh -c \"mate-screensaver-command --lock && systemctl hibernate -i\"";
-        else
-            return "systemctl hibernate -i";
-
-    case REBOOT:
-        if (de == "Unity" || de == "Pantheon" || de == "GNOME")
-            return "gnome-session-quit --reboot";
-        else if (de == "kde-plasma" || de == "KDE")
-            return "qdbus org.kde.ksmserver /KSMServer logout 0 1 0";
-        else if (de == "X-Cinnamon")
-            return "cinnamon-session-quit --reboot";
-        else if (de == "XFCE")
-            return "xfce4-session-logout --reboot";
-        else if (de == "MATE")
-            return "mate-session-save --shutdown-dialog";
-        else
-            return "notify-send \"Error.\" \"Reboot command is not set.\" --icon=system-reboot";
-
-    case POWEROFF:
-        if (de == "Unity" || de == "Pantheon" || de == "GNOME")
-            return "gnome-session-quit --power-off";
-        else if (de == "kde-plasma" || de == "KDE")
-            return "qdbus org.kde.ksmserver /KSMServer logout 0 2 0";
-        else if (de == "X-Cinnamon")
-            return "cinnamon-session-quit --power-off";
-        else if (de == "XFCE")
-            return "xfce4-session-logout --halt";
-        else if (de == "MATE")
-            return "mate-session-save --shutdown-dialog";
-        else
-            return "notify-send \"Error.\" \"Poweroff command is not set.\" --icon=system-shutdown";
-
-    case NUMCOMMANDS:
-        // NEVER REACHED;
-        return "";
+            switch (command) {
+            case LOCK:      return "xflock4";
+            case LOGOUT:    return "xfce4-session-logout --logout";
+            case SUSPEND:   return "xfce4-session-logout --suspend";
+            case HIBERNATE: return "xfce4-session-logout --hibernate";
+            case REBOOT:    return "xfce4-session-logout --reboot";
+            case POWEROFF:  return "xfce4-session-logout --halt";
+            }
     }
 
-    // NEVER REACHED;
-    return "";
+    switch (command) {
+    case LOCK:      return "xdg-screensaver lock";
+    case LOGOUT:    return "notify-send \"Error.\" \"Logout command is not set.\" --icon=system-log-out";
+    case SUSPEND:   return "systemctl suspend -i";
+    case HIBERNATE: return "systemctl hibernate -i";
+    case REBOOT:    return "notify-send \"Error.\" \"Reboot command is not set.\" --icon=system-reboot";
+    case POWEROFF:  return "notify-send \"Error.\" \"Poweroff command is not set.\" --icon=system-shutdown";
+    }
+
+    // NEVER REACHED
+    return QString();
 }
 
 }
@@ -247,7 +231,7 @@ void System::Extension::handleQuery(Core::Query * query) const {
             item->setText(QString(itemTitles[i]).replace(re, "<u>\\1</u>"));
             item->setSubtext(itemDescriptions[i]);
             item->setIconPath(d->iconPaths[i]);
-            item->addAction(make_shared<ProcAction>(itemDescriptions[i], QStringList(d->commands[i].split(" ", QString::SkipEmptyParts))));
+            item->addAction(make_shared<ProcAction>(itemDescriptions[i], QStringList(Core::ShUtil::split(d->commands[i]))));
             query->addMatch(std::move(item), static_cast<uint>(static_cast<float>(query->string().size())/itemTitles[i].size()*UINT_MAX));
         }
     }
