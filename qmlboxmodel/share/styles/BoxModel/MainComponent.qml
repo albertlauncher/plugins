@@ -201,7 +201,7 @@ Item {
                 resultsList.currentIndex = 0
             state="fallback"
         }
-        else if ( event.key === Qt.Key_Comma && event.modifiers === Qt.AltModifier ) {
+        else if ( event.key === Qt.Key_Comma && (event.modifiers === Qt.AltModifier || event.modifiers === Qt.ControlModifier) ) {
             settingsWidgetRequested()
         }
         else if ( event.key === Qt.Key_Alt && resultsList.count > 0 ) {
