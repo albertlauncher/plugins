@@ -60,7 +60,7 @@ KeyValueStore::Extension::Extension()
 
 /** ***************************************************************************/
 KeyValueStore::Extension::~Extension() {
-
+    d->db.close();
 }
 
 
