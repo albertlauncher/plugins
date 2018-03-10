@@ -105,3 +105,8 @@ option(BUILD_WEBSEARCH "Build the extension" ON)
 if (BUILD_WEBSEARCH)
     add_subdirectory(websearch)
 endif()
+
+option(BUILD_QALCULATE "Build the extension" ON)
+if (BUILD_QALCULATE)
+    add_subdirectory(q_calculator)
+endif()
