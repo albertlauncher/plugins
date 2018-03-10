@@ -1,0 +1,10 @@
+{
+    "id" :              "org.albert.extension.q_calculator",
+    "name" :            "Qalculate",
+    "version" :         "1.0",
+    "platform" :        "All",
+    "group" :           "Extensions",
+    "author" :          "Jakob Riepler",
+    "dependencies" :    ["libqalculate"],
+    "enabledbydefault": false
+}
