@@ -144,10 +144,11 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
 
     QSqlQuery result(database);
 
-    if ( !result.exec("SELECT b.guid, b.title, p.url "
-                      "FROM moz_bookmarks b "
-                      "JOIN moz_places p ON b.fk = p.id " // attach place (which has the url)
-                      "WHERE p.url NOT LIKE 'place%'") ) {  // Those with place:... will not work with xdg-open
+    if ( !result.exec("SELECT bookmarks.guid, bookmarks.title, places.url "
+                      "FROM moz_bookmarks bookmarks "
+                      "JOIN moz_bookmarks parents ON bookmarks.parent = parents.id AND parents.parent <> 4  "
+                      "JOIN moz_places places ON bookmarks.fk = places.id "
+                      "WHERE NOT hidden") ) {  // Those with place:... will not work with xdg-open
         qWarning() << qPrintable(QString("Querying Firefox bookmarks failed: %1").arg(result.lastError().text()));
         return vector<shared_ptr<Core::StandardIndexItem>>();
     }
