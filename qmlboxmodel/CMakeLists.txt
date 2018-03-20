@@ -16,6 +16,7 @@ target_link_libraries(${PROJECT_NAME}
         ${Qt5Qml_LIBRARIES}
         ${Qt5Quick_LIBRARIES}
         albertcore
+        Xext
 )
 
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/albert/plugins)
