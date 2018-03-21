@@ -61,11 +61,6 @@ if (BUILD_HASHGENERATOR)
     add_subdirectory(hashgenerator)
 endif()
 
-option(BUILD_KVSTORE "Build the extension" ON)
-if (BUILD_KVSTORE)
-    add_subdirectory(kvstore)
-endif()
-
 option(BUILD_MPRIS "Build the extension" ON)
 if (BUILD_MPRIS)
     add_subdirectory(mpris)
@@ -74,6 +69,11 @@ endif()
 option(BUILD_PYTHON "Build the extension" ON)
 if (BUILD_PYTHON)
     add_subdirectory(python)
+endif()
+
+option(BUILD_SNIPPETS "Build the extension" ON)
+if (BUILD_SNIPPETS)
+    add_subdirectory(snippets)
 endif()
 
 option(BUILD_SSH "Build the extension" ON)

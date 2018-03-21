@@ -1,6 +1,6 @@
 {
-    "id" :              "org.albert.extension.kvstore",
-    "name" :            "Key Value Store",
+    "id" :              "org.albert.extension.snippets",
+    "name" :            "Snippets",
     "version" :         "1.0",
     "platform" :        "All",
     "group" :           "Extensions",
