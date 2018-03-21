@@ -47,7 +47,6 @@ vector<Websearch::SearchEngine> defaultSearchEngines = {
     {"Amazon",        "ama ", ":amazon",    "http://www.amazon.com/s/?field-keywords=%s"},
     {"Ebay",          "eb ",  ":ebay",      "http://www.ebay.com/sch/i.html?_nkw=%s"},
     {"GitHub",        "gh ",  ":github",    "https://github.com/search?utf8=✓&q=%s"},
-    {"Wikipedia",     "wiki ",":wikipedia", "https://en.wikipedia.org/w/index.php?search=%s"},
     {"Wolfram Alpha", "=",    ":wolfram",   "https://www.wolframalpha.com/input/?i=%s"},
     {"DuckDuckGo",    "dd ",  ":duckduckgo","https://duckduckgo.com/?q=%s"},
 };
