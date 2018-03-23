@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QSqlTableModel>
 #include <QSqlDatabase>
+#include <QSortFilterProxyModel>
 #include "ui_configwidget.h"
 
 namespace Snippets {
@@ -17,8 +18,6 @@ public:
     ~ConfigWidget();
     Ui::ConfigWidget ui;
 
-    void updateTable();
-
 private:
 
     void onItemActivated(QModelIndex);
@@ -26,6 +25,7 @@ private:
     void onRemoveClicked();
 
     QSqlTableModel *model;
+    QSortFilterProxyModel *proxyModel;
 
 };
 }

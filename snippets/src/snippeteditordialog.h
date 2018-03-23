@@ -14,5 +14,9 @@ public:
     ~SnippetEditorDialog();
     Ui::SnippetEditorDialog ui;
 
+protected:
+
+    void accept() override;
+
 };
 }
