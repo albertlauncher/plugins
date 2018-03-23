@@ -39,6 +39,8 @@ const char* CFG_FUZZY            = "fuzzy";
 const bool  DEF_FUZZY            = false;
 const char* CFG_IGNORESHOWINKEYS = "ignore_show_in_keys";
 const bool  DEF_IGNORESHOWINKEYS = false;
+const char* CFG_USEKEYWORDS      = "use_keywords";
+const bool  DEF_USEKEYWORDS      = false;
 
 /******************************************************************************/
 QStringList expandedFieldCodes(const QStringList & unexpandedFields,
@@ -160,6 +162,7 @@ public:
     QFutureWatcher<vector<shared_ptr<Core::StandardIndexItem>>> futureWatcher;
     bool rerun = false;
     bool ignoreShowInKeys;
+    bool useKeywords;
 
     void finishIndexing();
     void startIndexing();
@@ -347,9 +350,9 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                 continue;
 
             // Try to get the localized icon, skip if empty
-            icon = XDG::IconLookup::iconPath(xdgStringEscape(getLocalizedKey("Icon", entryMap, loc)));
-            if (icon.isNull())
-                icon = XDG::IconLookup::iconPath({"application-x-executable", "exec"});
+            icon = XDG::IconLookup::iconPath({xdgStringEscape(getLocalizedKey("Icon", entryMap, loc)),
+                                              "application-x-executable",
+                                              "exec"});
             if (icon.isNull())
                 icon = ":application-x-executable";
 
@@ -420,11 +423,12 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                  && !exec.startsWith("/") )
                 indexStrings.emplace_back(commandline[0], UINT_MAX);  // safe since (1)
 
-            for (auto & kw : keywords)
-                indexStrings.emplace_back(kw, UINT_MAX);
+            if (useKeywords)
+                for (auto & kw : keywords)
+                    indexStrings.emplace_back(kw, UINT_MAX/2);
 
             if (!genericName.isEmpty())
-                indexStrings.emplace_back(genericName, UINT_MAX*0.5);
+                indexStrings.emplace_back(genericName, UINT_MAX/2   );
 
             item->setIndexKeywords(std::move(indexStrings));
 
@@ -500,6 +504,7 @@ Applications::Extension::Extension()
     // Load settings
     d->offlineIndex.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
     d->ignoreShowInKeys = settings().value(CFG_IGNORESHOWINKEYS, DEF_IGNORESHOWINKEYS).toBool();
+    d->useKeywords = settings().value(CFG_USEKEYWORDS, DEF_USEKEYWORDS).toBool();
 
     // If the filesystem changed, trigger the scan
     connect(&d->watcher, &QFileSystemWatcher::directoryChanged,
@@ -527,6 +532,15 @@ QWidget *Applications::Extension::widget(QWidget *parent) {
         d->widget->ui.checkBox_fuzzy->setChecked(d->offlineIndex.fuzzy());
         connect(d->widget->ui.checkBox_fuzzy, &QCheckBox::toggled,
                  this, &Extension::setFuzzy);
+
+        // Use keywords
+        d->widget->ui.checkBox_useKeywords->setChecked(d->useKeywords);
+        connect(d->widget->ui.checkBox_useKeywords, &QCheckBox::toggled,
+                this, [this](bool checked){
+            settings().setValue(CFG_USEKEYWORDS, checked);
+            d->useKeywords = checked ;
+            d->startIndexing();
+        });
 
         // Ignore onlyshowin notshowin keys
         d->widget->ui.checkBox_ignoreShowInKeys->setChecked(d->ignoreShowInKeys);

@@ -46,6 +46,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="checkBox_useKeywords">
+         <property name="text">
+          <string>Use keywords for lookup</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="checkBox_fuzzy">
          <property name="text">
           <string>Fuzzy</string>
