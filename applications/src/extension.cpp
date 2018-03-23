@@ -41,6 +41,9 @@ const char* CFG_IGNORESHOWINKEYS = "ignore_show_in_keys";
 const bool  DEF_IGNORESHOWINKEYS = false;
 const char* CFG_USEKEYWORDS      = "use_keywords";
 const bool  DEF_USEKEYWORDS      = false;
+const char* CFG_USEGENERICNAME   = "use_generic_name";
+const bool  DEF_USEGENERICNAME   = false;
+
 
 /******************************************************************************/
 QStringList expandedFieldCodes(const QStringList & unexpandedFields,
@@ -163,6 +166,7 @@ public:
     bool rerun = false;
     bool ignoreShowInKeys;
     bool useKeywords;
+    bool useGenericName;
 
     void finishIndexing();
     void startIndexing();
@@ -409,7 +413,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                 item->setSubtext(comment);
 
 
-            // Set keywords
+            // Set index strings
             vector<IndexableItem::IndexString> indexStrings;
             indexStrings.emplace_back(name, UINT_MAX);
 
@@ -427,7 +431,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                 for (auto & kw : keywords)
                     indexStrings.emplace_back(kw, UINT_MAX/2);
 
-            if (!genericName.isEmpty())
+            if (!genericName.isEmpty() && useGenericName)
                 indexStrings.emplace_back(genericName, UINT_MAX/2   );
 
             item->setIndexKeywords(std::move(indexStrings));
@@ -504,6 +508,7 @@ Applications::Extension::Extension()
     // Load settings
     d->offlineIndex.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
     d->ignoreShowInKeys = settings().value(CFG_IGNORESHOWINKEYS, DEF_IGNORESHOWINKEYS).toBool();
+    d->useGenericName = settings().value(CFG_USEGENERICNAME, DEF_USEGENERICNAME).toBool();
     d->useKeywords = settings().value(CFG_USEKEYWORDS, DEF_USEKEYWORDS).toBool();
 
     // If the filesystem changed, trigger the scan
@@ -538,7 +543,16 @@ QWidget *Applications::Extension::widget(QWidget *parent) {
         connect(d->widget->ui.checkBox_useKeywords, &QCheckBox::toggled,
                 this, [this](bool checked){
             settings().setValue(CFG_USEKEYWORDS, checked);
-            d->useKeywords = checked ;
+            d->useKeywords = checked;
+            d->startIndexing();
+        });
+
+        // Use generic name
+        d->widget->ui.checkBox_useGenericName->setChecked(d->useGenericName);
+        connect(d->widget->ui.checkBox_useGenericName, &QCheckBox::toggled,
+                this, [this](bool checked){
+            settings().setValue(CFG_USEGENERICNAME, checked);
+            d->useGenericName= checked;
             d->startIndexing();
         });
 
@@ -547,7 +561,7 @@ QWidget *Applications::Extension::widget(QWidget *parent) {
         connect(d->widget->ui.checkBox_ignoreShowInKeys, &QCheckBox::toggled,
                 this, [this](bool checked){
             settings().setValue(CFG_IGNORESHOWINKEYS, checked);
-            d->ignoreShowInKeys = checked ;
+            d->ignoreShowInKeys = checked;
             d->startIndexing();
         });
 

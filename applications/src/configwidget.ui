@@ -53,6 +53,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="checkBox_useGenericName">
+         <property name="text">
+          <string>Use generic name for lookup</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="checkBox_fuzzy">
          <property name="text">
           <string>Fuzzy</string>
