@@ -310,8 +310,8 @@ void Python::Extension::updateDirectory(const QString &path) {
             continue;
 
         // Skip non-python files, e.g. README.md
-        if (info.isFile() && !id.endsWith(".py"))
-            continue;
+        if (info.isFile() && !path.endsWith(".py"))
+             continue;
 
         // Skip if this id already exists
         if ( find_if(d->modules.begin(), d->modules.end(),
