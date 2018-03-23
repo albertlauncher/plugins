@@ -70,8 +70,8 @@ private:
     void updateRecursion(const bool &abort,
                          const QMimeDatabase &mimeDatabase,
                          const IndexSettings &indexSettings,
-                         std::set<QString> &indexedDirs,
-                         const std::vector<IgnoreEntry> &ignoreEntries);
+                         std::set<QString> *indexedDirs,
+                         const std::vector<IgnoreEntry> &ignoreEntries = std::vector<IgnoreEntry>());
 
     std::shared_ptr<IndexTreeNode> parent;
     std::vector<std::shared_ptr<IndexTreeNode>> children;
@@ -80,7 +80,6 @@ private:
     std::vector<std::shared_ptr<Files::IndexFile>> items_;
 
     static constexpr const char* IGNOREFILE = ".albertignore";
-
 };
 
 

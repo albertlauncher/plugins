@@ -76,15 +76,9 @@ QString Files::IndexTreeNode::path() const {
 
 /**************************************************************************************************/
 void Files::IndexTreeNode::update(const bool  &abort, IndexSettings indexSettings) {
-
     set<QString> indexedDirs;
     QMimeDatabase mimeDatabase;
-    // ignore ignorefile by default
-    vector<IgnoreEntry> ignoreEntries = {IgnoreEntry(
-                                         QRegularExpression(QString("%1$").arg(IGNOREFILE)),
-                                         PatternType::Exclude)};
-    // Start the indexing
-    updateRecursion(abort, mimeDatabase, indexSettings, indexedDirs, ignoreEntries);
+    updateRecursion(abort, mimeDatabase, indexSettings, &indexedDirs);
 }
 
 
@@ -146,7 +140,7 @@ const std::vector<std::shared_ptr<Files::IndexFile> > &Files::IndexTreeNode::ite
 void Files::IndexTreeNode::updateRecursion(const bool &abort,
                                            const QMimeDatabase &mimeDatabase,
                                            const IndexSettings &indexSettings,
-                                           set<QString> &indexedDirs,
+                                           std::set<QString> *indexedDirs,
                                            const vector<IgnoreEntry> &ignoreEntries){
 
     if (abort) return;
@@ -154,9 +148,8 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
     const QFileInfo fileInfo(path());
 
     // Skip if this dir has already been indexed (loop detection)
-    if ( indexedDirs.count(fileInfo.canonicalFilePath()) )
+    if ( indexedDirs->count(fileInfo.canonicalFilePath()) )
         return;
-
 
     // Read the ignore file, see http://doc.qt.io/qt-5/qregexp.html#wildcard-matching
     vector<IgnoreEntry> localIgnoreEntries = ignoreEntries;
@@ -199,7 +192,7 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
     if ( lastModified < fileInfo.lastModified() || indexSettings.forceUpdate() ) {
 
         QString canonicalFilePath = fileInfo.canonicalFilePath();
-        indexedDirs.insert(canonicalFilePath);
+        indexedDirs->insert(canonicalFilePath);
         qDebug() << "Indexing directory " << canonicalFilePath;
 
         lastModified = fileInfo.lastModified();
