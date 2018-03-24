@@ -75,7 +75,7 @@ void QalculateEngine::updateResult(QNetworkReply* reply)
 
     if(reply->error() == QNetworkReply::NoError) {
         int httpstatuscode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toUInt();
-	if (httpstatuscode == 200) {
+    if (httpstatuscode == 200) {
             QFile file(dest.fileName());
             if (!file.open(QIODevice::WriteOnly)) {
                 qDebug() << "Could not open " << qPrintable(dest.fileName()) << " for writing: " << qPrintable(file.errorString()) << "\n";
@@ -87,9 +87,9 @@ void QalculateEngine::updateResult(QNetworkReply* reply)
 
             // the exchange rates have been successfully updated, now load them
             CALCULATOR->loadExchangeRates();
-	} else {
+    } else {
              qDebug() << "The exchange rates could not be updated. The following error has been reported: HTTP " << httpstatuscode << "\n";
-	}
+    }
     } else {
         qDebug() << "The exchange rates could not be updated. The following error has been reported: " << reply->errorString() << "\n";
     }

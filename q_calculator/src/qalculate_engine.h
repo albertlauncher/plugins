@@ -30,29 +30,29 @@ class KJob;
 
 class QalculateEngine : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	explicit QalculateEngine(QObject* parent = nullptr);
-	~QalculateEngine() override;
+    explicit QalculateEngine(QObject* parent = nullptr);
+    ~QalculateEngine() override;
 
-	QString lastResult() const { return m_lastResult; }
+    QString lastResult() const { return m_lastResult; }
 
 public Q_SLOTS:
     QString evaluate(const QString& expression, bool *isApproximate = nullptr);
-	void updateExchangeRates();
+    void updateExchangeRates();
 
-	void copyToClipboard(bool flag = true);
+    void copyToClipboard(bool flag = true);
 
 protected Q_SLOTS:
         void updateResult(QNetworkReply*);
 
 Q_SIGNALS:
-	void resultReady(const QString&);
-	void formattedResultReady(const QString&);
+    void resultReady(const QString&);
+    void formattedResultReady(const QString&);
 
 private:
-	QString m_lastResult;
-	static QAtomicInt s_counter;
+    QString m_lastResult;
+    static QAtomicInt s_counter;
 };
 
 #endif // QALCULATEENGINE_H
