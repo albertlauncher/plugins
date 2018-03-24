@@ -88,9 +88,9 @@ void Qalculate::Extension::handleQuery(Core::Query * query) const {
     if (cmd.toLower() == QLatin1String("universe") || cmd.toLower() == QLatin1String("life") || cmd.toLower() == QLatin1String("everything")) {
         auto life = make_shared<StandardItem>("qalculate");
         life->setIconPath(d->iconPath);
-	life->setText(QString("42"));
+    life->setText(QString("42"));
         life->setSubtext(QString("The answer to life, the universe and everything."));
-	life->setCompletion(life->text());
+    life->setCompletion(life->text());
         query->addMatch(move(life), 42);
         return;
     }
@@ -140,16 +140,16 @@ void Qalculate::Extension::handleQuery(Core::Query * query) const {
 
         auto item = make_shared<StandardItem>("qalculate");
         
-	item->setIconPath(d->iconPath);
-	item->setText(result);
-	if (!isApproximate) {
-	    item->setSubtext(QString("Result of '%1'").arg(cmd));
-	} else {
-	    item->setSubtext(QString("Approximate result of '%1'").arg(cmd));
-	}
-	item->setCompletion(item->text());
+    item->setIconPath(d->iconPath);
+    item->setText(result);
+    if (!isApproximate) {
+        item->setSubtext(QString("Result of '%1'").arg(cmd));
+    } else {
+        item->setSubtext(QString("Approximate result of '%1'").arg(cmd));
+    }
+    item->setCompletion(item->text());
         item->addAction(make_shared<ClipAction>("Copy result to clipboard", result));
-	item->addAction(make_shared<ClipAction>("Copy equation to clipboard", QString("%1 = %2").arg(cmd, item->text())));
-	query->addMatch(move(item), UINT_MAX);
+    item->addAction(make_shared<ClipAction>("Copy equation to clipboard", QString("%1 = %2").arg(cmd, item->text())));
+    query->addMatch(move(item), UINT_MAX);
     }
 }
