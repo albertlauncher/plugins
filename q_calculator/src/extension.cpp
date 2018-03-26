@@ -1,17 +1,10 @@
 /*
- *   Copyright (C) 2014-2017 Manuel Schneider
+ *   Copyright (C) 2014-2018 Manuel Schneider
  *   Copyright (C) 2018 Jakob Riepler
- *   Copyright (C) 2007 Barış Metin <baris@pardus.org.tr>
- *   Copyright (C) 2006 David Faure <faure@kde.org>
- *   Copyright (C) 2007 Richard Moore <rich@kde.org>
- *   Copyright (C) 2010 Matteo Agostinelli <agostinelli@gmail.com>
- *   
- *   https://github.com/KDE/plasma-workspace/blob/master/runners/calculator/calculatorrunner.cpp
  */
 
 #include <QClipboard>
 #include <QDebug>
-#include <QLocale>
 #include <QPointer>
 #include <QSettings>
 #include <vector>
@@ -22,7 +15,7 @@
 #include "util/standardactions.h"
 #include "xdg/iconlookup.h"
 
-#include "qalculate_engine.h"
+#include <libqalculate/Calculator.h>
 
 using namespace std;
 using namespace Core;
@@ -31,9 +24,10 @@ class Qalculate::Private
 {
 public:
     QPointer<ConfigWidget> widget;
-    QalculateEngine* engine;
-    QLocale locale;
     QString iconPath;
+    unique_ptr<Calculator> calculator;
+    EvaluationOptions eo;
+    PrintOptions po;
 };
 
 
@@ -46,20 +40,37 @@ Qalculate::Extension::Extension()
 
     registerQueryHandler(this);
 
-    // FIXME Qt6 Workaround for https://bugreports.qt.io/browse/QTBUG-58504
-    d->locale = QLocale(QLocale::system().name());
-
     QString iconPath = XDG::IconLookup::iconPath("calc");
     d->iconPath = iconPath.isNull() ? ":calc" : iconPath;
 
-    d->engine = new QalculateEngine;
+    d->calculator.reset(new Calculator());
+    d->calculator->loadGlobalDefinitions();
+    d->calculator->loadLocalDefinitions();
+    d->calculator->loadGlobalCurrencies();
+    d->calculator->loadExchangeRates();
+//    d->calculator->setPrecision(17);
+
+    // Set evaluation options
+//    d->eo.parse_options.variables_enabled = false ;
+//    d->eo.parse_options.functions_enabled = false;
+    d->eo.parse_options.unknowns_enabled = false;
+    d->eo.parse_options.angle_unit = ANGLE_UNIT_RADIANS;
+    d->eo.structuring = STRUCTURING_SIMPLIFY;
+    d->eo.auto_post_conversion = POST_CONVERSION_OPTIMAL;
+    d->eo.keep_zero_units = false;
+
+    // Set print options
+    d->po.lower_case_e = true;
+    d->po.preserve_precision = true;
+    d->po.use_unicode_signs = true;
+    d->po.indicate_infinite_series = true;
 }
 
 
 
 /** ***************************************************************************/
 Qalculate::Extension::~Extension() {
-    delete d->engine;
+
 }
 
 
@@ -77,79 +88,49 @@ QWidget *Qalculate::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Qalculate::Extension::handleQuery(Core::Query * query) const {
 
-    QString cmd = query->string();
-
-    cmd = cmd.trimmed().remove(QLatin1Char(' '));
-
-    if (cmd.length() < 3) {
+    if (query->string().isEmpty())
         return;
-    }
 
-    if (cmd.toLower() == QLatin1String("universe") || cmd.toLower() == QLatin1String("life") || cmd.toLower() == QLatin1String("everything")) {
-        auto life = make_shared<StandardItem>("qalculate");
-        life->setIconPath(d->iconPath);
-    life->setText(QString("42"));
-        life->setSubtext(QString("The answer to life, the universe and everything."));
-    life->setCompletion(life->text());
-        query->addMatch(move(life), 42);
-        return;
-    }
+//    d->eo.parse_options.variables_enabled = query->isTriggered();
+//    d->eo.parse_options.functions_enabled = query->isTriggered();
+    d->eo.parse_options.units_enabled = query->isTriggered();
 
-    bool toHex = cmd.startsWith(QLatin1String("hex="));
-    bool startsWithEquals = !toHex && cmd[0] == QLatin1Char('=');
-
-
-    if (toHex || startsWithEquals) {
-        cmd.remove(0, cmd.indexOf(QLatin1Char('=')) + 1);
-    } else if (cmd.endsWith(QLatin1Char('='))) {
-        cmd.chop(1);
-    } else {
-        bool foundDigit = false;
-        for (int i = 0; i < cmd.length(); ++i) {
-            QChar c = cmd.at(i);
-            if (c.isLetter()) {
-                // not just numbers and symbols, so we return
-                return;
-            }
-            if (c.isDigit()) {
-                foundDigit = true;
-            }
-        }
-        if (!foundDigit) {
-            return;
-        }
-    }
-
-    if (cmd.isEmpty()) {
-        return;
-    }
-
-    bool isApproximate = false;
-
-    QString result;
+    QString result, error, cmd = query->string().trimmed();
+    MathStructure mathStructure;
     try {
-        result = d->engine->evaluate(cmd, &isApproximate);
+        string expr = d->calculator->unlocalizeExpression(query->string().toStdString());
+        mathStructure = d->calculator->calculate(expr, d->eo);
+        while (d->calculator->message()) {
+            error.append(d->calculator->message()->c_message());
+            d->calculator->nextMessage();
+        }
     } catch(std::exception& e) {
         qDebug() << "qalculate error: " << e.what();
     }
 
-    if (!result.isEmpty() && result != cmd) {
-        if (toHex) {
-            result = QStringLiteral("0x") + QString::number(result.toInt(), 16).toUpper();
-        }
-
-        auto item = make_shared<StandardItem>("qalculate");
-        
-    item->setIconPath(d->iconPath);
-    item->setText(result);
-    if (!isApproximate) {
-        item->setSubtext(QString("Result of '%1'").arg(cmd));
-    } else {
-        item->setSubtext(QString("Approximate result of '%1'").arg(cmd));
-    }
-    item->setCompletion(item->text());
+    if (error.isNull()){
+        result = QString::fromStdString(mathStructure.print(d->po));
+        auto item = make_shared<StandardItem>(Plugin::id());
+        item->setIconPath(d->iconPath);
+        item->setText(result);
+        if ( mathStructure.isApproximate() )
+            item->setSubtext(QString("Approximate result of '%1'").arg(cmd));
+        else
+            item->setSubtext(QString("Result of '%1'").arg(cmd));
+        item->setCompletion(QString("=%1").arg(result));
         item->addAction(make_shared<ClipAction>("Copy result to clipboard", result));
-    item->addAction(make_shared<ClipAction>("Copy equation to clipboard", QString("%1 = %2").arg(cmd, item->text())));
-    query->addMatch(move(item), UINT_MAX);
+        item->addAction(make_shared<ClipAction>("Copy equation to clipboard", QString("%1 = %2").arg(cmd, item->text())));
+        query->addMatch(move(item), UINT_MAX);
+    }
+    else {
+        if (query->isTriggered()){
+            result = QString::fromStdString(mathStructure.print(d->po));
+            auto item = make_shared<StandardItem>(Plugin::id());
+            item->setIconPath(d->iconPath);
+            item->setText("Evaluation error.");
+            item->setSubtext(error);
+            item->setCompletion(query->string());
+            query->addMatch(move(item), UINT_MAX);
+        }
     }
 }
