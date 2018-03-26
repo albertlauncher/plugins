@@ -1,5 +1,5 @@
 {
-    "id" :              "org.albert.extension.q_calculator",
+    "id" :              "org.albert.extension.qalculate",
     "name" :            "Qalculate",
     "version" :         "1.0",
     "platform" :        "All",

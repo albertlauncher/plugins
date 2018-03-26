@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1.3)
 
-project(q_calculator)
+project(qalculate)
 
 file(GLOB_RECURSE SRC src/* metadata.json)
 
