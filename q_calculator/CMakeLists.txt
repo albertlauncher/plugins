@@ -17,7 +17,6 @@ target_link_libraries(${PROJECT_NAME}
         ${Qt5Widgets_LIBRARIES}
         ${Qt5Network_LIBRARIES}
         ${QALCULATE_LIBRARIES}
-        ${CLN_LIBRARIES}
         albertcore
         xdg
 )
