@@ -162,7 +162,7 @@ void Snippets::Extension::handleQuery(Core::Query * query) const {
     // LOOKUP
 
     // Allow empty lookup only for triggered queries
-    if (query->string().isEmpty() && !query->isTriggered())
+    if (query->string().trimmed().isEmpty() && !query->isTriggered())
         return;
 
     QSqlQuery q(d->db);
