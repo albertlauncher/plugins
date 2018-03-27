@@ -6,7 +6,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is a Qalculate! extension. It lets you evaluate basic math expressions. Check the &lt;a href=&quot;https://qalculate.github.io/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Qalculate! docs&lt;/span&gt;&lt;/a&gt; for built-in fuctions and operators. Trigger it with &amp;quot;=&amp;quot; to enable unit evaluation.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is a math expression evaluation extension based on the powerful qalculate library. Check the &lt;a href=&quot;https://qalculate.github.io/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Qalculate! docs&lt;/span&gt;&lt;/a&gt; for built-in fuctions and operators. Basic math expressions are always evaluated. To enable sophisticated features like units, functions and equation solving trigger the extension with &amp;quot;=&amp;quot;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -15,6 +15,41 @@
       <bool>true</bool>
      </property>
     </widget>
+   </item>
+   <item>
+    <layout class="QFormLayout" name="formLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="angleUnitLabel">
+       <property name="text">
+        <string>Angle unit:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="angleUnitComboBox">
+       <item>
+        <property name="text">
+         <string>None</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Radian</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Degree</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Gradian</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <spacer name="verticalSpacer">

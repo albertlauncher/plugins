@@ -18,6 +18,13 @@
 using namespace std;
 using namespace Core;
 
+namespace {
+
+const char* CFG_ANGLEUNIT = "angle_unit";
+const uint  DEF_ANGLEUNIT = 1;
+
+}
+
 class Qalculate::Private
 {
 public:
@@ -52,13 +59,16 @@ Qalculate::Extension::Extension()
     d->eo.structuring = STRUCTURING_SIMPLIFY;
     d->eo.auto_post_conversion = POST_CONVERSION_OPTIMAL;
     d->eo.keep_zero_units = false;
+    d->eo.parse_options.limit_implicit_multiplication = true;
 
     // Set print options
     d->po.lower_case_e = true;
     d->po.preserve_precision = true;
     d->po.use_unicode_signs = true;
     d->po.indicate_infinite_series = true;
-    d->po.indicate_infinite_series = true;
+
+    // Load settings
+    d->eo.parse_options.angle_unit = static_cast<AngleUnit>(settings().value(CFG_ANGLEUNIT, DEF_ANGLEUNIT).toInt());
 }
 
 
@@ -74,6 +84,15 @@ Qalculate::Extension::~Extension() {
 QWidget *Qalculate::Extension::widget(QWidget *parent) {
     if (d->widget.isNull()){
         d->widget = new ConfigWidget(parent);
+
+        // Angle unit
+        d->widget->ui.angleUnitComboBox->setCurrentIndex(d->eo.parse_options.angle_unit);
+        connect(d->widget->ui.angleUnitComboBox,
+                static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+                this, [this](int index){
+            settings().setValue(CFG_ANGLEUNIT, index);
+            d->eo.parse_options.angle_unit = static_cast<AngleUnit>(index);
+        });
     }
     return d->widget;
 }
@@ -86,11 +105,9 @@ void Qalculate::Extension::handleQuery(Core::Query * query) const {
     if (query->string().trimmed().isEmpty())
         return;
 
-//    d->eo.parse_options.variables_enabled = query->isTriggered();
     d->eo.parse_options.functions_enabled = query->isTriggered();
     d->eo.parse_options.units_enabled = query->isTriggered();
     d->eo.parse_options.unknowns_enabled = query->isTriggered();
-    d->eo.parse_options.limit_implicit_multiplication = !query->isTriggered();
 
     QString result, error, cmd = query->string().trimmed();
     MathStructure mathStructure;
