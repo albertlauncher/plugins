@@ -20,8 +20,14 @@
     <layout class="QFormLayout" name="formLayout">
      <item row="0" column="0">
       <widget class="QLabel" name="angleUnitLabel">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The angle unit for trigonometric functions.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Angle unit:</string>
+       </property>
+       <property name="buddy">
+        <cstring>angleUnitComboBox</cstring>
        </property>
       </widget>
      </item>
@@ -51,8 +57,14 @@
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="precisionLabel">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Precision for approximate calculations.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Precision:</string>
+       </property>
+       <property name="buddy">
+        <cstring>precisionSpinBox</cstring>
        </property>
       </widget>
      </item>
@@ -68,8 +80,14 @@
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="parsingModeLabel">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The default adaptive mode works as the &amp;quot;parse implicit multiplication first&amp;quot; mode, unless spaces are found (1/5x = 1/(5*x), but 1/5 x = (1/5)*x). In the adaptive mode unit expressions are parsed separately (5 m/5 m/s = (5*m)/(5*(m/s)) = 1 s).&lt;/p&gt;&lt;p&gt;In the &amp;quot;parse implicit multiplication first&amp;quot; mode, implicit multiplication is parsed before explicit multiplication (12/2(1+2) = 12/(2*3) = 2, 5x/5y = (5*x)/(5*y) = x/y). &lt;/p&gt;&lt;p&gt;In the conventional mode implicit multiplication does not differ from explicit multiplication (12/2(1+2) = 12/2*3 = 18, 5x/5y = 5*x/5*y = xy).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Parsing mode:</string>
+       </property>
+       <property name="buddy">
+        <cstring>parsingModeComboBox</cstring>
        </property>
       </widget>
      </item>
