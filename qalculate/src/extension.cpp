@@ -22,6 +22,8 @@ namespace {
 
 const char* CFG_ANGLEUNIT = "angle_unit";
 const uint  DEF_ANGLEUNIT = 1;
+const char* CFG_PARSINGMODE = "parsing_mode";
+const uint  DEF_PARSINGMODE = 0;
 const char* CFG_PRECISION = "precision";
 const uint  DEF_PRECISION = 16;
 
@@ -71,6 +73,7 @@ Qalculate::Extension::Extension()
 
     // Load settings
     d->eo.parse_options.angle_unit = static_cast<AngleUnit>(settings().value(CFG_ANGLEUNIT, DEF_ANGLEUNIT).toInt());
+    d->eo.parse_options.parsing_mode = static_cast<ParsingMode>(settings().value(CFG_PARSINGMODE, DEF_PARSINGMODE).toInt());
     d->calculator->setPrecision(settings().value(CFG_PRECISION, DEF_PRECISION).toInt());
 }
 
@@ -95,6 +98,15 @@ QWidget *Qalculate::Extension::widget(QWidget *parent) {
                 this, [this](int index){
             settings().setValue(CFG_ANGLEUNIT, index);
             d->eo.parse_options.angle_unit = static_cast<AngleUnit>(index);
+        });
+
+        // Parsing mode
+        d->widget->ui.parsingModeComboBox->setCurrentIndex(d->eo.parse_options.parsing_mode);
+        connect(d->widget->ui.parsingModeComboBox,
+                static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+                this, [this](int index){
+            settings().setValue(CFG_PARSINGMODE, index);
+            d->eo.parse_options.parsing_mode = static_cast<ParsingMode>(index);
         });
 
         // Precision
