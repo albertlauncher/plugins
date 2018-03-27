@@ -22,6 +22,8 @@ namespace {
 
 const char* CFG_ANGLEUNIT = "angle_unit";
 const uint  DEF_ANGLEUNIT = 1;
+const char* CFG_PRECISION = "precision";
+const uint  DEF_PRECISION = 16;
 
 }
 
@@ -69,6 +71,7 @@ Qalculate::Extension::Extension()
 
     // Load settings
     d->eo.parse_options.angle_unit = static_cast<AngleUnit>(settings().value(CFG_ANGLEUNIT, DEF_ANGLEUNIT).toInt());
+    d->calculator->setPrecision(settings().value(CFG_PRECISION, DEF_PRECISION).toInt());
 }
 
 
@@ -92,6 +95,15 @@ QWidget *Qalculate::Extension::widget(QWidget *parent) {
                 this, [this](int index){
             settings().setValue(CFG_ANGLEUNIT, index);
             d->eo.parse_options.angle_unit = static_cast<AngleUnit>(index);
+        });
+
+        // Precision
+        d->widget->ui.precisionSpinBox->setValue(d->calculator->getPrecision());
+        connect(d->widget->ui.precisionSpinBox,
+                static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+                this, [this](int value){
+            settings().setValue(CFG_PRECISION, value);
+            d->calculator->setPrecision(value);
         });
     }
     return d->widget;
