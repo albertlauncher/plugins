@@ -138,11 +138,13 @@ void Qalculate::Extension::handleQuery(Core::Query * query) const {
         result = QString::fromStdString(mathStructure.print(d->po));
         auto item = make_shared<StandardItem>(Plugin::id());
         item->setIconPath(d->iconPath);
-        item->setText(result);
-        if ( mathStructure.isApproximate() )
+        if ( mathStructure.isApproximate() ) {
             item->setSubtext(QString("Approximate result of '%1'").arg(cmd));
-        else
+            result.prepend("≈");
+        } else {
             item->setSubtext(QString("Result of '%1'").arg(cmd));
+        }
+        item->setText(result);
         item->setCompletion(QString("=%1").arg(result));
         item->addAction(make_shared<ClipAction>("Copy result to clipboard", result));
         item->addAction(make_shared<ClipAction>("Copy equation to clipboard", QString("%1 = %2").arg(cmd, item->text())));
