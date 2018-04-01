@@ -123,9 +123,11 @@ void Qalculate::Extension::handleQuery(Core::Query * query) const {
 
     QString result, error, cmd = query->string().trimmed();
     MathStructure mathStructure;
+
     try {
         string expr = d->calculator->unlocalizeExpression(query->string().toStdString(), d->eo.parse_options);
         mathStructure = d->calculator->calculate(expr, d->eo);
+        mathStructure.setPrecision(d->calculator->getPrecision());
         while (d->calculator->message()) {
             error.append(d->calculator->message()->c_message());
             d->calculator->nextMessage();
