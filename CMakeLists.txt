@@ -71,9 +71,9 @@ if (BUILD_PYTHON)
     add_subdirectory(python)
 endif()
 
-option(BUILD_QALCULATE "Build the extension" ON)
-if (BUILD_QALCULATE)
-    add_subdirectory(qalculate)
+option(BUILD_QALCULATOR "Build the extension" ON)
+if (BUILD_QALCULATOR)
+    add_subdirectory(qalculator)
 endif()
 
 option(BUILD_SNIPPETS "Build the extension" ON)

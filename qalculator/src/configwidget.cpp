@@ -3,7 +3,7 @@
 #include "configwidget.h"
 
 /** ***************************************************************************/
-Qalculate::ConfigWidget::ConfigWidget(QWidget *parent) : QWidget(parent) {
+Qalculator::ConfigWidget::ConfigWidget(QWidget *parent) : QWidget(parent) {
     ui.setupUi(this);
 }
 
