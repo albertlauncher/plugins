@@ -6,7 +6,7 @@
 #include "core/extension.h"
 #include "core/queryhandler.h"
 
-namespace Qalculate {
+namespace Qalculator {
 
 class Private;
 
@@ -22,7 +22,7 @@ public:
     Extension();
     ~Extension();
 
-    QString name() const override { return "Qalculate"; }
+    QString name() const override { return "Qalculator"; }
     QWidget *widget(QWidget *parent = nullptr) override;
     QStringList triggers() const override { return {"="}; }
     void handleQuery(Core::Query * query) const override;

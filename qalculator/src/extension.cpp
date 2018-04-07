@@ -29,7 +29,7 @@ const uint  DEF_PRECISION = 16;
 
 }
 
-class Qalculate::Private
+class Qalculator::Private
 {
 public:
     QPointer<ConfigWidget> widget;
@@ -42,8 +42,8 @@ public:
 
 
 /** ***************************************************************************/
-Qalculate::Extension::Extension()
-    : Core::Extension("org.albert.extension.qalculate"),
+Qalculator::Extension::Extension()
+    : Core::Extension("org.albert.extension.qalculator"),
       Core::QueryHandler(Core::Plugin::id()),
       d(new Private){
 
@@ -80,14 +80,14 @@ Qalculate::Extension::Extension()
 
 
 /** ***************************************************************************/
-Qalculate::Extension::~Extension() {
+Qalculator::Extension::~Extension() {
 
 }
 
 
 
 /** ***************************************************************************/
-QWidget *Qalculate::Extension::widget(QWidget *parent) {
+QWidget *Qalculator::Extension::widget(QWidget *parent) {
     if (d->widget.isNull()){
         d->widget = new ConfigWidget(parent);
 
@@ -124,7 +124,7 @@ QWidget *Qalculate::Extension::widget(QWidget *parent) {
 
 
 /** ***************************************************************************/
-void Qalculate::Extension::handleQuery(Core::Query * query) const {
+void Qalculator::Extension::handleQuery(Core::Query * query) const {
 
     if (query->string().trimmed().isEmpty())
         return;
