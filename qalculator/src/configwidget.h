@@ -4,7 +4,7 @@
 #include <QWidget>
 #include "ui_configwidget.h"
 
-namespace Qalculate {
+namespace Qalculator {
 
 class ConfigWidget final : public QWidget
 {

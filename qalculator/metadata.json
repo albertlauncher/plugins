@@ -1,10 +1,10 @@
 {
-    "id" :              "org.albert.extension.qalculate",
-    "name" :            "Qalculate",
+    "id" :              "org.albert.extension.qalculator",
+    "name" :            "Qalculator",
     "version" :         "1.0",
     "platform" :        "All",
     "group" :           "Extensions",
-    "author" :          "Jakob Riepler",
+    "author" :          "Jakob Riepler, Manuel Schneider",
     "dependencies" :    ["libqalculate"],
     "enabledbydefault": false
 }
