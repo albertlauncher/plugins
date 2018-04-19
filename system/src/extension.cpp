@@ -2,6 +2,7 @@
 
 #include <QDebug>
 #include <QPointer>
+#include <QRegularExpression>
 #include <QSettings>
 #include <array>
 #include "configwidget.h"
