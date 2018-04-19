@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QPointer>
 #include <QProcess>
+#include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QString>
