@@ -21,6 +21,8 @@ public:
     std::vector<Core::IndexableItem::IndexString> indexStrings() const override;
     std::vector<std::shared_ptr<Core::Action>> actions() override;
 
+    static std::vector<std::shared_ptr<Core::Action>> buildFileActions(const QString &filePath);
+
     /** Return the filename of the file */
     virtual QString name() const = 0;
 

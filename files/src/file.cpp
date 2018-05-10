@@ -59,30 +59,35 @@ QString Files::File::iconPath() const {
 
 /** ***************************************************************************/
 vector<shared_ptr<Action>> Files::File::actions() {
+    return buildFileActions(filePath());
+}
 
+/** ***************************************************************************/
+std::vector<std::shared_ptr<Action> > Files::File::buildFileActions(const QString &filePath)
+{
     vector<shared_ptr<Action>> actions;
 
     actions.push_back(make_shared<UrlAction>("Open with default application",
-                                             QUrl::fromLocalFile(filePath())));
+                                             QUrl::fromLocalFile(filePath)));
 
-    QFileInfo fileInfo(filePath());
+    QFileInfo fileInfo(filePath);
     if ( fileInfo.isFile() && fileInfo.isExecutable() )
-        actions.push_back(make_shared<ProcAction>("Execute file", QStringList{filePath()}));
+        actions.push_back(make_shared<ProcAction>("Execute file", QStringList{filePath}));
 
 
     actions.push_back(make_shared<UrlAction>("Reveal in file browser",
-                                             QUrl::fromLocalFile(QFileInfo(filePath()).path())));
+                                             QUrl::fromLocalFile(QFileInfo(filePath).path())));
 
 
-    actions.push_back(make_shared<FuncAction>("Open terminal at this path", [this](){
-        QFileInfo fileInfo(filePath());
+    actions.push_back(make_shared<FuncAction>("Open terminal at this path", [filePath](){
+        QFileInfo fileInfo(filePath);
         QStringList commandLine = terminalCommand.trimmed().split(' ');
         if ( commandLine.size() == 0 )
             return;
         QProcess::startDetached(commandLine[0], {}, fileInfo.isDir() ? fileInfo.filePath() : fileInfo.path());
     }));
 
-    actions.push_back(make_shared<FuncAction>("Copy file to clipboard", [this](){
+    actions.push_back(make_shared<FuncAction>("Copy file to clipboard", [filePath](){
         //  Get clipboard
         QClipboard *cb = QApplication::clipboard();
 
@@ -95,7 +100,7 @@ vector<shared_ptr<Action>> Files::File::actions() {
             newMimeData->setData(f, oldMimeData->data(f));
 
         // Copy path of file
-        QString filePath = this->filePath();
+        QString filePath = filePath;
         newMimeData->setText(filePath);
 
         // Copy file
@@ -109,12 +114,11 @@ vector<shared_ptr<Action>> Files::File::actions() {
         cb->setMimeData(newMimeData);
     }));
 
-    actions.push_back(make_shared<ClipAction>("Copy path to clipboard", filePath()));
+    actions.push_back(make_shared<ClipAction>("Copy path to clipboard", filePath));
 
     return actions;
+
 }
-
-
 
 /** ***************************************************************************/
 vector<IndexableItem::IndexString> Files::File::indexStrings() const {
