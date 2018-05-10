@@ -15,8 +15,6 @@ using namespace std;
 using namespace Core;
 extern QString terminalCommand;
 
-map<QString,QString> Files::File::iconCache_;
-
 
 /** ***************************************************************************/
 QString Files::File::id() const {
@@ -50,29 +48,12 @@ QString Files::File::completion() const {
 
 /** ***************************************************************************/
 QString Files::File::iconPath() const {
-
-    const QString xdgIconName = mimetype().iconName();
-
-    // First check if icon exists
-    auto search = iconCache_.find(xdgIconName);
-    if(search != iconCache_.end())
-        return search->second;
-
-    QString icon = XDG::IconLookup::iconPath({xdgIconName, mimetype().genericIconName(), "unknown"});
-    if ( !icon.isEmpty() ) {
-        iconCache_.emplace(xdgIconName, icon);
+    QString icon = XDG::IconLookup::iconPath({mimetype().iconName(), mimetype().genericIconName(), "unknown"});
+    if ( !icon.isEmpty() )
         return icon;
-    }
 
     // Nothing found, return a fallback icon
-    if ( xdgIconName == "inode-directory" ) {
-        icon = ":directory";
-        iconCache_.emplace(xdgIconName, icon);
-    } else {
-        icon = ":unknown";
-        iconCache_.emplace(xdgIconName, icon);
-    }
-    return icon;
+    return (mimetype().iconName() == "inode-directory") ? ":directory" : ":unknown";
 }
 
 

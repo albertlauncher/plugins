@@ -33,10 +33,6 @@ public:
     /** Return the mimetype of the file */
     virtual const QMimeType &mimetype() const = 0;
 
-private:
-
-    static std::map<QString,QString> iconCache_;
-
 };
 
 }
