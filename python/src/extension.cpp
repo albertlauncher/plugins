@@ -133,7 +133,7 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
             .def_property("subtext", &StandardItem::subtext, &StandardItem::setSubtext)
             .def_property("completion", &StandardItem::completion, &StandardItem::setCompletion)
             .def_property("urgency", &StandardItem::urgency, &StandardItem::setUrgency)
-            .def("addAction", &StandardItem::addAction)
+            .def("addAction", static_cast<void (StandardItem::*)(const std::shared_ptr<Action> &)>(&StandardItem::addAction))
             ;
 
     m.def("debug", [](const py::str &str){ qDebug() << str.cast<QString>(); });
