@@ -52,6 +52,7 @@ void Snippets::ConfigWidget::onItemActivated(QModelIndex index) {
     if (editor.exec()) {
         proxyModel->setData(keywordIdx, editor.ui.lineEdit->text());
         proxyModel->setData(snippetIdx, editor.ui.plainTextEdit->toPlainText());
+        model->submitAll();
     }
 }
 
