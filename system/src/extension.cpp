@@ -46,13 +46,22 @@ array<const QString, 6> itemTitles{{
     "Shut down"
 }};
 
+array<vector<QString>, 6> aliases{{
+    {"lock"},
+    {"log out, logout", "leave"},
+    {"suspend", "sleep"},
+    {"suspend", "hibernate"},
+    {"restart", "reboot"},
+    {"shut down", "shutdown", "poweroff", "halt", "fuck you"}
+}};
+
 array<const QString, 6> itemDescriptions{{
     "Lock the session.",
     "Quit the session.",
-    "Suspend the machine.",
-    "Hibernate the machine.",
-    "Reboot the machine.",
-    "Shutdown the machine.",
+    "Suspend to memory.",
+    "Suspend to disk.",
+    "Restart the machine.",
+    "Shut down the machine.",
 }};
 
 array<const QString, 6> iconNames{{
@@ -227,13 +236,16 @@ void System::Extension::handleQuery(Core::Query * query) const {
 
     QRegularExpression re(QString("(%1)").arg(query->string()), QRegularExpression::CaseInsensitiveOption);
     for (size_t i = 0; i < NUMCOMMANDS; ++i) {
-        if ( itemTitles[i].startsWith(query->string(), Qt::CaseInsensitive) ) {
-            auto item = std::make_shared<Core::StandardItem>(configNames[i]);
-            item->setText(QString(itemTitles[i]).replace(re, "<u>\\1</u>"));
-            item->setSubtext(itemDescriptions[i]);
-            item->setIconPath(d->iconPaths[i]);
-            item->addAction(make_shared<ProcAction>(itemDescriptions[i], QStringList(Core::ShUtil::split(d->commands[i]))));
-            query->addMatch(std::move(item), static_cast<uint>(static_cast<float>(query->string().size())/itemTitles[i].size()*UINT_MAX));
+        for (auto &alias : aliases[i]) {
+            if ( alias.startsWith(query->string(), Qt::CaseInsensitive) ) {
+                auto item = std::make_shared<Core::StandardItem>(configNames[i]);
+                item->setText(QString(itemTitles[i]).replace(re, "<u>\\1</u>"));
+                item->setSubtext(itemDescriptions[i]);
+                item->setIconPath(d->iconPaths[i]);
+                item->addAction(make_shared<ProcAction>(itemDescriptions[i], QStringList(Core::ShUtil::split(d->commands[i]))));
+                query->addMatch(std::move(item), static_cast<uint>(static_cast<float>(query->string().size())/itemTitles[i].size()*UINT_MAX));
+                break;
+            }
         }
     }
 }
