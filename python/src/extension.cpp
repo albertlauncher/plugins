@@ -136,10 +136,10 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
             .def("addAction", static_cast<void (StandardItem::*)(const std::shared_ptr<Action> &)>(&StandardItem::addAction))
             ;
 
-    m.def("debug", [](const py::str &str){ qDebug() << str.cast<QString>(); });
-    m.def("info", [](const py::str &str){ qInfo() << str.cast<QString>(); });
-    m.def("warning", [](const py::str &str){ qWarning() << str.cast<QString>(); });
-    m.def("critical", [](const py::str &str){ qCritical() << str.cast<QString>(); });
+    m.def("debug", [](const py::str &str){ qDebug().noquote() << str.cast<QString>(); });
+    m.def("info", [](const py::str &str){ qInfo().noquote() << str.cast<QString>(); });
+    m.def("warning", [](const py::str &str){ qWarning().noquote() << str.cast<QString>(); });
+    m.def("critical", [](const py::str &str){ qCritical().noquote() << str.cast<QString>(); });
     m.def("iconLookup", [](const py::str &str){ return XDG::IconLookup::iconPath(str.cast<QString>()); });
 
     /*
