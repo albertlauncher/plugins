@@ -30,10 +30,10 @@ ListView {
         else if ( event.key === Qt.Key_Down && event.modifiers === Qt.NoModifier
                   || event.key === Qt.Key_N && event.modifiers === Qt.ControlModifier )
             incrementCurrentIndex()
-        else if ( event.key === Qt.Key_PageUp && event.modifiers === Qt.NoModifier)
-            currentIndex = Math.max(currentIndex - itemCount, 0)
-        else if ( event.key === Qt.Key_PageDown && event.modifiers === Qt.NoModifier)
-            currentIndex = Math.min(currentIndex + itemCount, count-1)
+        else if ( event.key === Qt.Key_PageUp)
+            currentIndex = Math.max(currentIndex - (itemCount-1), 0)
+        else if ( event.key === Qt.Key_PageDown)
+            currentIndex = Math.min(currentIndex + (itemCount-1), count-1)
         else if ( event.key === Qt.Key_Home && event.modifiers === Qt.ControlModifier)
             currentIndex = 0
         else if ( event.key === Qt.Key_End && event.modifiers === Qt.ControlModifier)
