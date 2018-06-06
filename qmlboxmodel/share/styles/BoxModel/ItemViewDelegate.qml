@@ -16,7 +16,7 @@ Item {
     property int animationDuration: 150
 
     width: parent.width
-    height: Math.max(listItemIcon.height, listItemTextArea.height)
+    height: Math.max(listItemIconArea.height, listItemTextArea.height)
 
     MouseArea {
         anchors.fill: parent
@@ -24,51 +24,57 @@ Item {
         onDoubleClicked:  (mouse.modifiers===Qt.NoModifier) ? root.activate() : root.activate(-mouse.modifiers)
     }
 
-    Image {
-        id: listItemIcon
-        asynchronous: true
-        source: {
-            var path = itemDecorationRole
-            return ( path[0] === ":" ) ? "qrc"+path : path
+    Item {
+        id: listItemIconArea
+        width: iconSize
+        height: iconSize + spacing
+
+        Image {
+            id: listItemIcon
+            asynchronous: true
+            source: {
+                var path = itemDecorationRole
+                return ( path[0] === ":" ) ? "qrc"+path : path
+            }
+            width: listItem.iconSize
+            height: listItem.iconSize
+            sourceSize.width: listItem.iconSize*2
+            sourceSize.height: listItem.iconSize*2
+            cache: true
+            fillMode: Image.PreserveAspectFit
+            visible: false
         }
-        width: listItem.iconSize
-        height: listItem.iconSize
-        sourceSize.width: listItem.iconSize*2
-        sourceSize.height: listItem.iconSize*2
-        cache: true
-        fillMode: Image.PreserveAspectFit
-        visible: false
-    }
-    InnerShadow  {
-        id: sunkenListItemIcon
-        width: source.width
-        height: source.height
-        horizontalOffset: listItem.ListView.isCurrentItem ? 0 : 2
-        verticalOffset: listItem.ListView.isCurrentItem ? 0 : 2
-        radius: listItem.ListView.isCurrentItem ? 0 : 4
-        samples: 8
-        color: "#80000000"
-        visible: false
-        Behavior on verticalOffset { NumberAnimation{ duration: animationDuration } }
-        Behavior on horizontalOffset { NumberAnimation{ duration: animationDuration } }
-        Behavior on radius { NumberAnimation{ duration: animationDuration } }
-        source: listItemIcon
-    }
-    Desaturate {
-        id: desaturatedSunkenListItemIcon
-        anchors.verticalCenter: parent.verticalCenter
-        width: source.width
-        height: source.height
-        desaturation: listItem.ListView.isCurrentItem ? 0 : 0.25
-        Behavior on desaturation { NumberAnimation{ duration: animationDuration } }
-        source: sunkenListItemIcon
+        InnerShadow  {
+            id: sunkenListItemIcon
+            width: source.width
+            height: source.height
+            horizontalOffset: listItem.ListView.isCurrentItem ? 0 : 2
+            verticalOffset: listItem.ListView.isCurrentItem ? 0 : 2
+            radius: listItem.ListView.isCurrentItem ? 0 : 4
+            samples: 8
+            color: "#80000000"
+            visible: false
+            Behavior on verticalOffset { NumberAnimation{ duration: animationDuration } }
+            Behavior on horizontalOffset { NumberAnimation{ duration: animationDuration } }
+            Behavior on radius { NumberAnimation{ duration: animationDuration } }
+            source: listItemIcon
+        }
+        Desaturate {
+            id: desaturatedSunkenListItemIcon
+            anchors.centerIn: parent
+            width: source.width
+            height: source.height
+            desaturation: listItem.ListView.isCurrentItem ? 0 : 0.25
+            Behavior on desaturation { NumberAnimation{ duration: animationDuration } }
+            source: sunkenListItemIcon
+        }
     }
 
 
     Column {
         id: listItemTextArea
         anchors {
-            left: desaturatedSunkenListItemIcon.right
+            left: listItemIconArea.right
             leftMargin: listItem.spacing
             right: parent.right
             verticalCenter: parent.verticalCenter
@@ -82,7 +88,7 @@ Item {
             font.family: listItem.fontName
             font.pixelSize: listItem.textSize
             Behavior on color { ColorAnimation{ duration: animationDuration } }
-         }
+        }
         Text {
             id: subTextId
             width: parent.width
@@ -102,6 +108,21 @@ Item {
         }
     }  // listItemTextArea (Column)
 
+    Text {
+        id: shortcutId
+        horizontalAlignment: Text.AlignHCenter
+        width: listItemTextArea.height
+        height: listItemTextArea.height
+        anchors.right: listItemTextArea.right
+        text: {
+            var num = 1 + index - Math.max(0, listItem.ListView.view.indexAt(1, listItem.ListView.view.contentY+1))
+            return (num < 10) ? num : ''
+        }
+        color: root.ctrl ? listItem.textColor : frame.color
+        font.family: listItem.fontName
+        font.pixelSize: listItem.textSize
+        Behavior on color { ColorAnimation{ duration: animationDuration } }
+    }
 
     /*
      * The function to activate an item

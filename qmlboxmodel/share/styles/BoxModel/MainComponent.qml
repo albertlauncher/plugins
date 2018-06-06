@@ -6,6 +6,9 @@ import "themes.js" as Themes
 Item {
 
     id: root
+
+    property bool ctrl: false
+
     width: frame.width+2*preferences.shadow_size
     height: frame.height+2*preferences.shadow_size
 
@@ -95,7 +98,6 @@ Item {
                 width: parent.width
                 model: resultsModel
                 itemCount: preferences.max_items
-                spacing: preferences.spacing
                 delegate: Component {
                     ItemViewDelegate{
                         iconSize: preferences.icon_size
@@ -108,8 +110,8 @@ Item {
                         animationDuration: preferences.animation_duration
                     }
                 }
-                Keys.onEnterPressed: (event.modifiers===Qt.KeypadModifier) ? activate() : activate(-event.modifiers)
-                Keys.onReturnPressed: (event.modifiers===Qt.NoModifier) ? activate() : activate(-event.modifiers)
+                Keys.onEnterPressed: (event.modifiers===Qt.KeypadModifier) ? root.activate(resultsList.currentIndex) : root.activate(resultsList.currentIndex,-event.modifiers)
+                Keys.onReturnPressed: (event.modifiers===Qt.NoModifier) ? root.activate(resultsList.currentIndex) : root.activate(resultsList.currentIndex,-event.modifiers)
                 onCurrentIndexChanged: if (root.state==="detailsView") root.state=""
             }  // resultsList (ListView)
 
@@ -138,12 +140,12 @@ Item {
                     MouseArea {
                         anchors.fill: parent
                         onClicked: actionsListView.currentIndex = index
-                        onDoubleClicked: activate(index)
+                        onDoubleClicked: root.activate(resultsList.currentIndex, actionsListView.currentIndex)
                     }
                 }
                 visible: false
-                Keys.onEnterPressed: activate(currentIndex)
-                Keys.onReturnPressed: activate(currentIndex)
+                Keys.onEnterPressed: root.activate(resultsList.currentIndex, actionsListView.currentIndex)
+                Keys.onReturnPressed: root.activate(resultsList.currentIndex, actionsListView.currentIndex)
             }  // actionsListView (ListView)
         }  // content (Column)
 
@@ -209,6 +211,19 @@ Item {
                 resultsList.currentIndex = 0
             state = "detailsView"
         }
+        else if ( 48 <= event.key && event.key <= 57 && event.modifiers === Qt.ControlModifier ){
+            var num = 9
+            if (event.key !== Qt.Key_0)
+                num = event.key - 49
+            if (num < preferences.max_items && num < resultsList.count) {
+                var index = resultsList.indexAt(0, resultsList.contentY)
+                index += num
+                resultsList.currentIndex = index
+                root.activate(resultsList.currentIndex)
+            }
+        }
+        else if ( event.key === Qt.Key_Control )
+            ctrl = true
         else if ( event.key === Qt.Key_Tab && resultsList.count > 0 ) {
             if ( resultsList.currentIndex === -1 )
                 resultsList.currentIndex = 0
@@ -221,6 +236,8 @@ Item {
             state=""
         else if ( event.key === Qt.Key_Alt )
             state=""
+        else if ( event.key === Qt.Key_Control )
+            ctrl = false
         else event.accepted = false
 
     }
@@ -295,8 +312,9 @@ Item {
     property alias inputText: historyTextInput.text
     signal settingsWidgetRequested()
 
-    function activate(/*optional*/ action) {
+    function activate(index, action) {
         if ( resultsList.count > 0 ) {
+            resultsList.currentIndex = index
             if ( resultsList.currentIndex === -1 )
                 resultsList.currentIndex = 0
             resultsList.currentItem.activate(action)
