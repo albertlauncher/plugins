@@ -53,7 +53,7 @@ const char*   CFG_CLEAR_ON_HIDE   = "clearOnHide";
 const bool    DEF_CLEAR_ON_HIDE   = false;
 const QString CFG_STYLEPATH       = "stylePath";
 const QString CFG_WND_POS         = "windowPosition";
-const QString PLUGIN_ID           = "org.albert.frontend.boxmodel.qml";
+const QString PLUGIN_ID           = "org.albert.frontend.qmlboxmodel";
 const QString STYLE_MAIN_NAME     = "MainComponent.qml";
 const QString STYLE_CONFIG_NAME   = "style_properties.ini";
 const QString PREF_OBJ_NAME       = "preferences";
@@ -139,7 +139,7 @@ QmlBoxModel::MainWindow::MainWindow(FrontendPlugin *plugin, QWindow *parent) : Q
     });
 
     QStringList pluginDataPaths = QStandardPaths::locateAll(QStandardPaths::AppDataLocation,
-                                                            "org.albert.frontend.boxmodel.qml",
+                                                            plugin->id(),
                                                             QStandardPaths::LocateDirectory);
 
 //    // Add the shared modules to the lookup path
