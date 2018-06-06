@@ -228,6 +228,12 @@ Item {
     states : [
         State {
             name: ""
+            StateChangeScript {
+                name: "defaultStateScript"
+                script: {
+                    actionsModel.clear()
+                }
+            }
         },
         State {
             name: "fallback"
@@ -237,13 +243,11 @@ Item {
             PropertyChanges { target: actionsListView; visible: true  }
             PropertyChanges { target: historyTextInput; Keys.forwardTo: [root, actionsListView] }
             StateChangeScript {
-                name: "actionLoaderScript"
+                name: "detailsViewStateScript"
                 script: {
-                    actionsModel.clear()
                     var actionTexts = resultsList.currentItem.actionsList();
                     for ( var i = 0; i < actionTexts.length; i++ )
                         actionsModel.append({"name": actionTexts[i]});
-                    actionsListView.currentIndex = 0
                 }
             }
         }
