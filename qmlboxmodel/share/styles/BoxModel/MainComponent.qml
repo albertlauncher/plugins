@@ -185,7 +185,7 @@ Item {
     Keys.onPressed: {
         event.accepted = true
         if ( (event.key === Qt.Key_Up || event.key === Qt.Key_P && event.modifiers === Qt.ControlModifier )
-                && state === "" && resultsList.currentIndex === 0 ) {
+                && state === "" && resultsList.currentIndex === 0 && !event.isAutoRepeat) {
             historyTextInput.nextIteration()
         }
         else if ( event.key === Qt.Key_Up && event.modifiers === Qt.ControlModifier ) {
