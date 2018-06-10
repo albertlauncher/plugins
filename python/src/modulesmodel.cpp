@@ -118,7 +118,7 @@ QVariant Python::ModulesModel::data(const QModelIndex &index, int role) const {
         QString toolTip;
         const PythonModuleV1 *module = extension->modules()[static_cast<size_t>(index.row())].get();
 
-        toolTip = QString("<p><b>Name:</b> %1</p>").arg(module->name());
+        toolTip = QString("<p><b>Name:</b> %1</p>").arg(module->name().toHtmlEscaped());
 
 //        if (!module->version().isEmpty())
 //            toolTip.append(QString("\nVersion: %1").arg(module->version()));
@@ -127,15 +127,15 @@ QVariant Python::ModulesModel::data(const QModelIndex &index, int role) const {
 //            toolTip.append(QString("\nAuthor: %1").arg(module->author()));
 
         if (!module->dependencies().empty())
-            toolTip.append(QString("<p><b>Dependencies:</b> %1</p>").arg(module->dependencies().join(", ")));
+            toolTip.append(QString("<p><b>Dependencies:</b> %1</p>").arg(module->dependencies().join(", ").toHtmlEscaped()));
 
-        toolTip.append(QString("<p><b>Path:</b>%1</p>").arg(module->path()));
+        toolTip.append(QString("<p><b>Path:</b>%1</p>").arg(module->path().toHtmlEscaped()));
 
         if (!module->description().isEmpty())
-            toolTip.append(QString("<p><b>Description:</b> %1</p>").arg(module->description()));
+            toolTip.append(QString("<p><b>Description:</b> %1</p>").arg(QString(module->description().toHtmlEscaped()).replace("\n","<br>")));
 
         if (module->state() == PythonModuleV1::State::Error && !module->errorString().isEmpty())
-            toolTip.append(QString("<p><font color=red><b>ERROR:</b>%1</font></p>").arg(QString(module->errorString()).replace("\n","<br>")));
+            toolTip.append(QString("<p><font color=red><b>ERROR:</b>%1</font></p>").arg(QString(module->errorString().toHtmlEscaped()).replace("\n","<br>")));
 
         return QString("<html><head/><body>%1</body></html>").arg(toolTip);
     }
