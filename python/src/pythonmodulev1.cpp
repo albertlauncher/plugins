@@ -139,6 +139,7 @@ void Python::PythonModuleV1::load(){
 
         if (py::hasattr(d->module.ptr(), "__dependencies__")){
             py::list deps = d->module.attr("__dependencies__").cast<py::list>();
+            d->dependencies.clear();
             for(py::size_t i = 0; i < py::len(deps); i++)
                 d->dependencies.append(deps[i].cast<QString>());
         }
