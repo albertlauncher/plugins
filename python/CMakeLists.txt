@@ -5,6 +5,8 @@ PROJECT(python)
 FILE(GLOB_RECURSE SRC src/* metadata.json)
 
 find_package(Qt5 5.5.0 REQUIRED COMPONENTS Widgets)
+find_package(PythonLibs)
+include_directories(${PYTHON_INCLUDE_DIRS})
 add_subdirectory(pybind11)
 
 add_library(${PROJECT_NAME} SHARED ${SRC} ${PROJECT_NAME}.qrc)
@@ -14,6 +16,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE src/)
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         ${Qt5Widgets_LIBRARIES}
+        ${PYTHON_LIBRARIES}
     PRIVATE
         pybind11::embed
         albertcore
