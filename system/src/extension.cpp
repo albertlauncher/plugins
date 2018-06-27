@@ -111,7 +111,7 @@ QString defaultCommand(SupportedCommands command){
         else if (de == "MATE")
             switch (command) {
             case LOCK:      return "mate-screensaver-command --lock";
-            case LOGOUT:    return "mate-session-save --logout";
+            case LOGOUT:    return "mate-session-save --logout-dialog";
             case SUSPEND:   return "sh -c \"mate-screensaver-command --lock && systemctl suspend -i\"";
             case HIBERNATE: return "sh -c \"mate-screensaver-command --lock && systemctl hibernate -i\"";
             case REBOOT:    return "mate-session-save --shutdown-dialog";
