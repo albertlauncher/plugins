@@ -127,6 +127,12 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
         item->addAction(make_shared<TermAction>("Run in terminal", commandline,
                                                 QString(), true,
                                                 TermAction::CloseBehavior::DoNotClose));
+        item->addAction(make_shared<TermAction>("Run in terminal and close on exit", commandline,
+                                                QString(), true,
+                                                TermAction::CloseBehavior::CloseOnExit));
+        item->addAction(make_shared<TermAction>("Run in terminal and close on success", commandline,
+                                                QString(), true,
+                                                TermAction::CloseBehavior::CloseOnSuccess));
 
         results.emplace_back(item, 0);
         ++it;
@@ -149,6 +155,12 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
     item->addAction(make_shared<TermAction>("Run in terminal", commandline,
                                             QString(), true,
                                             TermAction::CloseBehavior::DoNotClose));
+    item->addAction(make_shared<TermAction>("Run in terminal and close on exit", commandline,
+                                            QString(), true,
+                                            TermAction::CloseBehavior::CloseOnExit));
+    item->addAction(make_shared<TermAction>("Run in terminal and close on success", commandline,
+                                            QString(), true,
+                                            TermAction::CloseBehavior::CloseOnSuccess));
 
     results.emplace_back(item, 0);
 
