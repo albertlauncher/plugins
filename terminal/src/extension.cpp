@@ -123,10 +123,10 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
         item->setText(commandline.join(' '));
         item->setSubtext(QString("Run '%1'").arg(item->text()));
         item->setCompletion(item->text());
-        item->addAction(make_shared<ProcAction>("Run", commandline));
         item->addAction(make_shared<TermAction>("Run in terminal", commandline,
                                                 QString(), true,
                                                 TermAction::CloseBehavior::DoNotClose));
+        item->addAction(make_shared<ProcAction>("Execute (without terminal)", commandline));
         item->addAction(make_shared<TermAction>("Run in terminal and close on exit", commandline,
                                                 QString(), true,
                                                 TermAction::CloseBehavior::CloseOnExit));
