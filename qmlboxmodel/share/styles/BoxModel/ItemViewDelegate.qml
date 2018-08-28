@@ -21,7 +21,7 @@ Item {
     MouseArea {
         anchors.fill: parent
         onClicked: resultsList.currentIndex = index
-        onDoubleClicked:  (mouse.modifiers===Qt.NoModifier) ? root.activate() : root.activate(-mouse.modifiers)
+        onDoubleClicked:  (mouse.modifiers===Qt.NoModifier) ? root.activate(resultsList.currentIndex) : root.activate(resultsList.currentIndex, -mouse.modifiers)
     }
 
     Item {
