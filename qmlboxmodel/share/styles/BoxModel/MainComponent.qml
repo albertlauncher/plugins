@@ -276,6 +276,7 @@ Item {
             state=""
             historyTextInput.selectAll()
             historyTextInput.clearIterator()
+            ctrl=false
         }
     }
 
