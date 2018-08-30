@@ -110,19 +110,28 @@ Item {
 
     Text {
         id: shortcutId
-        horizontalAlignment: Text.AlignHCenter
-        width: listItemTextArea.height
-        height: listItemTextArea.height
         anchors.right: listItemTextArea.right
+        anchors.verticalCenter: listItemTextArea.verticalCenter
         text: {
             var num = 1 + index - Math.max(0, listItem.ListView.view.indexAt(1, listItem.ListView.view.contentY+1))
-            return (num < 10) ? num : ''
+            return (num < 10) ? "Ctrl+" + num : ''
         }
-        color: root.ctrl ? listItem.textColor : frame.color
         font.family: listItem.fontName
         font.pixelSize: listItem.textSize
+        color: root.ctrl ? listItem.textColor : Qt.rgba(listItem.textColor.r, listItem.textColor.g, listItem.textColor.b, 0)
         Behavior on color { ColorAnimation{ duration: animationDuration } }
     }
+
+    Glow {
+        anchors.fill: shortcutId
+        source: shortcutId
+        color: root.ctrl ? frame.color : Qt.rgba(frame.color.r, frame.color.g, frame.color.b, 0)
+        Behavior on color { ColorAnimation{ duration: animationDuration } }
+        radius: 8
+        samples: 17
+        spread: 0.7
+    }
+
 
     /*
      * The function to activate an item
