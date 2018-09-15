@@ -37,6 +37,7 @@ public:
     unique_ptr<Calculator> calculator;
     EvaluationOptions eo;
     PrintOptions po;
+    PrintOptions po_clip;
 };
 
 
@@ -70,6 +71,12 @@ Qalculator::Extension::Extension()
     d->po.preserve_precision = true;
     d->po.use_unicode_signs = true;
     d->po.indicate_infinite_series = true;
+
+    d->po_clip.lower_case_e = true;
+    d->po_clip.preserve_precision = true;
+    d->po_clip.use_unicode_signs = false;
+    d->po_clip.indicate_infinite_series = false;
+    d->po_clip.spacious = false;
 
     // Load settings
     d->eo.parse_options.angle_unit = static_cast<AngleUnit>(settings().value(CFG_ANGLEUNIT, DEF_ANGLEUNIT).toInt());
@@ -133,7 +140,7 @@ void Qalculator::Extension::handleQuery(Core::Query * query) const {
     d->eo.parse_options.units_enabled = query->isTriggered();
     d->eo.parse_options.unknowns_enabled = query->isTriggered();
 
-    QString result, error, cmd = query->string().trimmed();
+    QString clipresult, result, error, cmd = query->string().trimmed();
     MathStructure mathStructure;
     try {
         string expr = d->calculator->unlocalizeExpression(query->string().toStdString(), d->eo.parse_options);
@@ -148,6 +155,7 @@ void Qalculator::Extension::handleQuery(Core::Query * query) const {
 
     if (error.isNull()){
         result = QString::fromStdString(mathStructure.print(d->po));
+	clipresult = QString::fromStdString(mathStructure.print(d->po_clip));
         auto item = make_shared<StandardItem>(Plugin::id());
         item->setIconPath(d->iconPath);
         item->setText(result);
@@ -156,7 +164,7 @@ void Qalculator::Extension::handleQuery(Core::Query * query) const {
         else
             item->setSubtext(QString("Result of '%1'").arg(cmd));
         item->setCompletion(QString("=%1").arg(result));
-        item->addAction(make_shared<ClipAction>("Copy result to clipboard", result));
+        item->addAction(make_shared<ClipAction>("Copy result to clipboard", clipresult));
         item->addAction(make_shared<ClipAction>("Copy equation to clipboard", QString("%1 = %2").arg(cmd, item->text())));
         query->addMatch(move(item), UINT_MAX);
     }
