@@ -88,7 +88,7 @@ WidgetBoxModel::ConfigWidget::ConfigWidget(FrontendWidget *frontend, QWidget *pa
 
     // THEMES
     QStringList pluginDataPaths = QStandardPaths::locateAll(QStandardPaths::AppDataLocation,
-                                                            "org.albert.frontend.boxmodel.widgets",
+                                                            "org.albert.frontend.widgetboxmodel",
                                                             QStandardPaths::LocateDirectory);
 
     QFileInfoList themes;

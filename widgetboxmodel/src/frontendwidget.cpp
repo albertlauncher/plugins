@@ -347,7 +347,7 @@ bool WidgetBoxModel::FrontendWidget::setTheme(const QString &theme) {
 
 
     QStringList pluginDataPaths = QStandardPaths::locateAll(QStandardPaths::AppDataLocation,
-                                                            "org.albert.frontend.boxmodel.widgets",
+                                                            "org.albert.frontend.widgetboxmodel",
                                                             QStandardPaths::LocateDirectory);
 
     for (const QString &pluginDataPath : pluginDataPaths)

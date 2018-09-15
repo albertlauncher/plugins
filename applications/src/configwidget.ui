@@ -48,14 +48,14 @@
        <item>
         <widget class="QCheckBox" name="checkBox_useKeywords">
          <property name="text">
-          <string>Use keywords for lookup</string>
+          <string>Additionaly use keywords for lookup</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QCheckBox" name="checkBox_useGenericName">
          <property name="text">
-          <string>Use generic name for lookup</string>
+          <string>Additionally use generic name for lookup</string>
          </property>
         </widget>
        </item>

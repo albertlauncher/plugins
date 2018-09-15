@@ -76,6 +76,7 @@ public:
     QString firefoxExecutable;
     QString profilesIniPath;
     QString currentProfileId;
+    QString dbPath;
     QFileSystemWatcher databaseWatcher;
 
     vector<shared_ptr<Core::StandardIndexItem>> index;
@@ -131,65 +132,71 @@ void FirefoxBookmarks::Private::finishIndexing() {
 /** ***************************************************************************/
 vector<shared_ptr<Core::StandardIndexItem>>
 FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
-
-    QSqlDatabase database = QSqlDatabase::database(q->Core::Plugin::id());
-
-    if (!database.open()) {
-        qWarning() << qPrintable(QString("Could not open Firefox database: %1").arg(database.databaseName()));
-        return vector<shared_ptr<Core::StandardIndexItem>>();
-    }
-
     // Build a new index
     vector<shared_ptr<StandardIndexItem>> bookmarks;
 
-    QSqlQuery result(database);
+    {
+        QSqlDatabase database = QSqlDatabase::addDatabase("QSQLITE", q->Core::Plugin::id());;
+        database.setDatabaseName(dbPath);
 
-    if ( !result.exec("SELECT bookmarks.guid, bookmarks.title, places.url "
-                      "FROM moz_bookmarks bookmarks "
-                      "JOIN moz_bookmarks parents ON bookmarks.parent = parents.id AND parents.parent <> 4  "
-                      "JOIN moz_places places ON bookmarks.fk = places.id "
-                      "WHERE NOT hidden") ) {  // Those with place:... will not work with xdg-open
-        qWarning() << qPrintable(QString("Querying Firefox bookmarks failed: %1").arg(result.lastError().text()));
-        return vector<shared_ptr<Core::StandardIndexItem>>();
+        if (!database.open()) {
+            qWarning() << qPrintable(QString("Could not open Firefox database: %1").arg(database.databaseName()));
+            return vector<shared_ptr<Core::StandardIndexItem>>();
+        }
+
+        QSqlQuery result(database);
+
+        if ( !result.exec("SELECT bookmarks.guid, bookmarks.title, places.url "
+                          "FROM moz_bookmarks bookmarks "
+                          "JOIN moz_bookmarks parents ON bookmarks.parent = parents.id AND parents.parent <> 4  "
+                          "JOIN moz_places places ON bookmarks.fk = places.id "
+                          "WHERE NOT hidden") ) {  // Those with place:... will not work with xdg-open
+            qWarning() << qPrintable(QString("Querying Firefox bookmarks failed: %1").arg(result.lastError().text()));
+            return vector<shared_ptr<Core::StandardIndexItem>>();
+        }
+
+        // Find an appropriate icon
+        QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
+        icon = icon.isEmpty() ? ":favicon" : icon;
+
+        while (result.next()) {
+
+            // Url will be used more often
+            QString urlstr = result.value(2).toString();
+
+            // Create item
+            shared_ptr<StandardIndexItem> item  = make_shared<StandardIndexItem>(result.value(0).toString());
+            item->setText(result.value(1).toString());
+            item->setSubtext(urlstr);
+            item->setIconPath(icon);
+
+            // Add severeal secondary index keywords
+            vector<IndexableItem::IndexString> indexStrings;
+            QUrl url(urlstr);
+            QString host = url.host();
+            indexStrings.emplace_back(item->text(), UINT_MAX);
+            indexStrings.emplace_back(host.left(host.size()-url.topLevelDomain().size()), UINT_MAX/2);
+            indexStrings.emplace_back(result.value(2).toString(), UINT_MAX/4); // parent dirname
+            item->setIndexKeywords(move(indexStrings));
+
+            // Add actions
+            vector<shared_ptr<Action>> actions;
+            actions.push_back(make_shared<ProcAction>("Open URL in Firefox",
+                                                      QStringList({firefoxExecutable, urlstr})));
+            actions.push_back(make_shared<ProcAction>("Open URL in new Firefox window",
+                                                      QStringList({firefoxExecutable, "--new-window", urlstr})));
+            actions.insert(openWithFirefox ? actions.end() : actions.begin(),
+                           make_shared<UrlAction>("Open URL in your default browser", urlstr));
+            actions.push_back(make_shared<ClipAction>("Copy url to clipboard", urlstr));
+            item->setActions(move(actions));
+
+            bookmarks.push_back(move(item));
+        }
+
+        database.close();
     }
 
-    // Find an appropriate icon
-    QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
-    icon = icon.isEmpty() ? ":favicon" : icon;
-
-    while (result.next()) {
-
-        // Url will be used more often
-        QString urlstr = result.value(2).toString();
-
-        // Create item
-        shared_ptr<StandardIndexItem> item  = make_shared<StandardIndexItem>(result.value(0).toString());
-        item->setText(result.value(1).toString());
-        item->setSubtext(urlstr);
-        item->setIconPath(icon);
-
-        // Add severeal secondary index keywords
-        vector<IndexableItem::IndexString> indexStrings;
-        QUrl url(urlstr);
-        QString host = url.host();
-        indexStrings.emplace_back(item->text(), UINT_MAX);
-        indexStrings.emplace_back(host.left(host.size()-url.topLevelDomain().size()), UINT_MAX/2);
-        indexStrings.emplace_back(result.value(2).toString(), UINT_MAX/4); // parent dirname
-        item->setIndexKeywords(move(indexStrings));
-
-        // Add actions
-        vector<shared_ptr<Action>> actions;
-        actions.push_back(make_shared<ProcAction>("Open URL in Firefox",
-                                                  QStringList({firefoxExecutable, urlstr})));
-        actions.push_back(make_shared<ProcAction>("Open URL in new Firefox window",
-                                                  QStringList({firefoxExecutable, "--new-window", urlstr})));
-        actions.insert(openWithFirefox ? actions.end() : actions.begin(),
-                       make_shared<UrlAction>("Open URL in your default browser", urlstr));
-        actions.push_back(make_shared<ClipAction>("Copy url to clipboard", urlstr));
-        item->setActions(move(actions));
-
-        bookmarks.push_back(move(item));
-    }
+    QSqlDatabase::removeDatabase(q->Core::Plugin::id());
 
     return bookmarks;
 }
@@ -208,11 +215,14 @@ FirefoxBookmarks::Extension::Extension()
     registerQueryHandler(this);
 
     // Add a sqlite database connection for this extension, check requirements
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", Core::Plugin::id());
-    if ( !db.isValid() )
-        throw "Firefox executable not found.";
-    if (!db.driver()->hasFeature(QSqlDriver::Transactions))
-        throw "Firefox executable not found.";
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", Core::Plugin::id());
+        if ( !db.isValid() )
+            throw "Invalid Database.";
+        if (!db.driver()->hasFeature(QSqlDriver::Transactions))
+            throw "DB Driver does not support transactions.";
+    }
+    QSqlDatabase::removeDatabase(Core::Plugin::id());
 
     // Find firefox executable
     d->firefoxExecutable = QStandardPaths::findExecutable("firefox");
@@ -393,8 +403,7 @@ void FirefoxBookmarks::Extension::setProfile(const QString& profile) {
     QString dbPath = QString("%1/places.sqlite").arg(profilePath);
 
     // Set the databases path
-    QSqlDatabase db = QSqlDatabase::database(Core::Plugin::id());
-    db.setDatabaseName(dbPath);
+    d->dbPath = dbPath;
 
     // Set a file system watcher on the database monitoring changes
     if (!d->databaseWatcher.files().isEmpty())

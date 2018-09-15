@@ -24,6 +24,7 @@
 #include "util/offlineindex.h"
 #include "util/standarditem.h"
 #include "util/standardactions.h"
+#include "xdg/iconlookup.h"
 using namespace Core;
 using namespace std;
 
@@ -318,15 +319,45 @@ void Files::Extension::handleQuery(Core::Query * query) const {
         // Get all matching files
         QFileInfo pathInfo(queryFileInfo.path());
         if ( pathInfo.exists() && pathInfo.isDir() ) {
+
             QMimeDatabase mimeDatabase;
             QDir dir(pathInfo.filePath());
-            for (const QFileInfo& fileinfo : dir.entryInfoList(QDir::AllEntries|QDir::Hidden|QDir::NoDotAndDotDot,
+            QString commonPrefix;
+            QString queryFileName = queryFileInfo.fileName();
+            vector<shared_ptr<StandardItem>> items;
+
+            for (const QFileInfo& fileInfo : dir.entryInfoList(QDir::AllEntries|QDir::Hidden|QDir::NoDotAndDotDot,
                                                                QDir::DirsFirst|QDir::Name|QDir::IgnoreCase) ) {
-                if ( fileinfo.fileName().startsWith(queryFileInfo.fileName()) ) {
-                    QMimeType mimetype = mimeDatabase.mimeTypeForFile(fileinfo.filePath());
-                    query->addMatch(make_shared<StandardFile>(fileinfo.filePath(), mimetype),
-                                    static_cast<uint>(UINT_MAX * static_cast<float>(queryFileInfo.fileName().size()) / fileinfo.fileName().size()));
+                QString fileName = fileInfo.fileName();
+
+                if ( fileName.startsWith(queryFileName) ) {
+
+                    if (fileInfo.isDir())
+                        fileName.append(QDir::separator());
+
+                    if (commonPrefix.isNull())
+                        commonPrefix = fileName;
+                    else {
+                        auto pair = mismatch(commonPrefix.begin() , commonPrefix.end(), fileName.begin(), fileName.end());
+                        commonPrefix.resize(distance(commonPrefix.begin(), pair.first));
+                    }
+
+                    QMimeType mimetype = mimeDatabase.mimeTypeForFile(fileInfo.filePath());
+                    QString icon = XDG::IconLookup::iconPath({mimetype.iconName(), mimetype.genericIconName(), "unknown"});
+                    if (icon.isEmpty())
+                        icon = (mimetype.iconName() == "inode-directory") ? ":directory" : ":unknown";
+
+                    auto item = make_shared<StandardItem>(fileInfo.filePath(),
+                                                          icon,
+                                                          fileName,
+                                                          fileInfo.filePath());
+                    item->setActions(File::buildFileActions(fileInfo.filePath()));
+                    items.push_back(move(item));
                 }
+            }
+            for (auto &item : items) {
+                item->setCompletion(dir.filePath(commonPrefix));
+                query->addMatch(std::move(item));
             }
         }
     }
