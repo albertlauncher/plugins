@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Manuel Schneider
+// Copyright (c) 2017-2018 Manuel Schneider
 
 #pragma once
 #include <QAbstractTableModel>

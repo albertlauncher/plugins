@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Manuel Schneider
+// Copyright (c) 2017-2018 Manuel Schneider
 
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
