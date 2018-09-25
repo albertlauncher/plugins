@@ -109,17 +109,13 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
         item->setText(commandline.join(' '));
         item->setSubtext(QString("Run '%1'").arg(item->text()));
         item->setCompletion(item->text());
-        item->addAction(make_shared<TermAction>("Run in terminal", commandline,
-                                                QString(), true,
-                                                TermAction::CloseBehavior::DoNotClose));
+        item->addAction(make_shared<TermAction>("Run in terminal", commandline, QString(),
+                                                true, TermAction::CloseBehavior::DoNotClose));
         item->addAction(make_shared<ProcAction>("Execute (without terminal)", commandline));
-        item->addAction(make_shared<TermAction>("Run in terminal and close on exit", commandline,
-                                                QString(), true,
-                                                TermAction::CloseBehavior::CloseOnExit));
-        item->addAction(make_shared<TermAction>("Run in terminal and close on success", commandline,
-                                                QString(), true,
-                                                TermAction::CloseBehavior::CloseOnSuccess));
-
+        item->addAction(make_shared<TermAction>("Run in terminal and close on exit", commandline, QString(),
+                                                true, TermAction::CloseBehavior::CloseOnExit));
+        item->addAction(make_shared<TermAction>("Run in terminal and close on success", commandline, QString(),
+                                                true, TermAction::CloseBehavior::CloseOnSuccess));
         results.emplace_back(item, 0);
         ++it;
     }
@@ -137,17 +133,13 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
     item->setText("I'm Feeling Lucky");
     item->setSubtext(QString("Try running '%1'").arg(query->string()));
     item->setCompletion(query->rawString());
-    item->addAction(make_shared<ProcAction>("Run", commandline));
-    item->addAction(make_shared<TermAction>("Run in terminal", commandline,
-                                            QString(), true,
-                                            TermAction::CloseBehavior::DoNotClose));
-    item->addAction(make_shared<TermAction>("Run in terminal and close on exit", commandline,
-                                            QString(), true,
-                                            TermAction::CloseBehavior::CloseOnExit));
-    item->addAction(make_shared<TermAction>("Run in terminal and close on success", commandline,
-                                            QString(), true,
-                                            TermAction::CloseBehavior::CloseOnSuccess));
-
+    item->addAction(make_shared<TermAction>("Run in terminal", commandline, QString(),
+                                            true, TermAction::CloseBehavior::DoNotClose));
+    item->addAction(make_shared<ProcAction>("Execute (without terminal)", commandline));
+    item->addAction(make_shared<TermAction>("Run in terminal and close on exit", commandline, QString(),
+                                            true, TermAction::CloseBehavior::CloseOnExit));
+    item->addAction(make_shared<TermAction>("Run in terminal and close on success", commandline, QString(),
+                                            true, TermAction::CloseBehavior::CloseOnSuccess));
     results.emplace_back(item, 0);
 
     // Add results to query
