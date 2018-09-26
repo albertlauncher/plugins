@@ -167,7 +167,7 @@ Item {
             Menu {
                 id: menu
                 MenuItem {
-                    text: "Preferences"
+                    text: "Settings"
                     shortcut: "Alt+,"
                     onTriggered: settingsWidgetRequested()
                 }
