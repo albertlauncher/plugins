@@ -139,38 +139,70 @@ QWidget *Ssh::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Ssh::Extension::handleQuery(Query * query) const {
 
-    if ( !query->string().trimmed().isEmpty() || query->isTriggered() ) {
-        // Add all hosts that the query is a prefix of
-        QRegularExpression re(QString("(%1)").arg(query->string()), QRegularExpression::CaseInsensitiveOption);
-        for ( const QString& host : d->hosts ) {
-            if ( host.startsWith(query->string()) ) {
+    QString trimmed = query->string().trimmed();
 
-                // Create item
+    if (trimmed.isEmpty())
+    {
+        if (query->isTriggered())
+        {
+            // Show all hosts
+            for (const QString& host : d->hosts) {
                 auto item = std::make_shared<StandardItem>("ssh_"+host);
-                item->setText(QString(host).replace(re, "<u>\\1</u>"));
+                item->setText(host);
                 item->setSubtext(QString("Connect to '%1' using ssh").arg(host));
                 item->setCompletion(QString("ssh %1").arg(host));
                 item->setIconPath(d->icon);
-                item->addAction(make_shared<TermAction>(QString("Connect to '%1' using ssh").arg(host),
-                                                        QStringList() << "ssh" << host));
-                query->addMatch(item, static_cast<uint>(1.0*query->string().size()/host.size()* UINT_MAX));
+                item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(host), QStringList() << "ssh" << host));
+                query->addMatch(std::move(item), static_cast<uint>(1.0*query->string().size()/host.size()* UINT_MAX));
             }
         }
     }
+    else
+    {
+        // Check sanity of input
+        QRegularExpression re("^(\\w+@)?([\\w.]*)$");
+        QRegularExpressionMatch match = re.match(trimmed);
 
-    if ( query->isTriggered() ) {
+        if (match.hasMatch())
+        {
+            QString q_user = match.captured(1);
+            QString q_host = match.captured(2);
 
-        // Add the quick connect item
-        QString trimmed = query->string().trimmed();
+            // Show all hosts matching the query
+            for (const QString& host : d->hosts)
+            {
+                if (host.startsWith(q_host, Qt::CaseInsensitive))
+                {
+                    auto item = std::make_shared<StandardItem>("ssh_"+host);
+                    item->setText(host);
+                    item->setIconPath(d->icon);
+                    if (q_user.isEmpty())
+                    {
+                        item->setSubtext(QString("Connect to '%1'").arg(host));
+                        item->setCompletion(QString("ssh %1").arg(host));
+                        item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(host), QStringList() << "ssh" << host));
+                    }
+                    else
+                    {
+                        item->setSubtext(QString("Connect to '%1' as '%2'").arg(host, q_user.chopped(1)));
+                        item->setCompletion(QString("ssh %1%2").arg(q_user, host));
+                        item->addAction(make_shared<TermAction>(QString("Connect to '%1' as '%2'").arg(host, q_user.chopped(1)), QStringList() << "ssh" << QString("%1%2").arg(q_user, host)));
+                    }
+                    query->addMatch(std::move(item), static_cast<uint>(1.0*q_host.size()/host.size()* UINT_MAX));
+                }
+            }
 
-        auto item  = std::make_shared<StandardItem>();
-        item->setText(trimmed);
-        item->setSubtext(QString("Quick connect to '%1' using ssh").arg(trimmed));
-        item->setCompletion(QString("ssh %1").arg(trimmed));
-        item->setIconPath(d->icon);
-        item->addAction(make_shared<TermAction>(QString("Connect to '%1' using ssh").arg(trimmed),
-                                                QStringList() << "ssh" << trimmed));
-        query->addMatch(std::move(item));
+            if (query->isTriggered()) {
+                // Add the quick connect item
+                auto item  = std::make_shared<StandardItem>();
+                item->setText(trimmed);
+                item->setSubtext("Quick connect to a host not listed in config");
+                item->setCompletion(QString("ssh %1").arg(trimmed));
+                item->setIconPath(d->icon);
+                item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(match.captured(0)), QStringList() << "ssh" << trimmed));
+                query->addMatch(std::move(item));
+            }
+        }
     }
 }
 
