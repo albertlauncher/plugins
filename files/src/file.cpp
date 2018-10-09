@@ -100,7 +100,6 @@ std::vector<std::shared_ptr<Action> > Files::File::buildFileActions(const QStrin
             newMimeData->setData(f, oldMimeData->data(f));
 
         // Copy path of file
-        QString filePath = filePath;
         newMimeData->setText(filePath);
 
         // Copy file
