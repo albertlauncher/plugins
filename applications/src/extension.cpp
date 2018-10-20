@@ -242,41 +242,43 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
     QLocale loc;
     QStringList xdgAppDirs = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
 
-    // Iterate over all desktop files
+    /*
+     * Create a list of desktop files to index (unique ids)
+     * To determine the ID of a desktop file, make its full path relative to
+     * the $XDG_DATA_DIRS component in which the desktop file is installed,
+     * remove the "applications/" prefix, and turn '/' into '-'.
+     */
+
+    map<QString /*desktop file id*/, QString /*path*/> desktopFiles;
     for ( const QString &dir : xdgAppDirs ) {
         QDirIterator fIt(dir, QStringList("*.desktop"), QDir::Files,
                          QDirIterator::Subdirectories|QDirIterator::FollowSymlinks);
-        while (fIt.hasNext()) {
-            qDebug() << "Indexing desktop file:" << fIt.next();
+        while (!fIt.next().isEmpty()) {
+            QString desktopFileId = fIt.filePath().remove(QRegularExpression("^.*applications/")).replace("/","-");
+            const auto &pair = desktopFiles.emplace(desktopFileId, fIt.filePath());
+            if (!pair.second)
+                qInfo().noquote() << QString("Desktop file skipped: '%1' overwritten in '%2'").arg(fIt.filePath(), desktopFiles[desktopFileId]);
+        }
+    }
 
-            map<QString,map<QString,QString>> sectionMap;
-            map<QString,map<QString,QString>>::iterator sectionIterator;
+    // Iterate over all desktop files
+    for (const auto &id_path_pair : desktopFiles) {
 
-            // Build the id
+        const QString &id = id_path_pair.first;
+        const QString &path = id_path_pair.second;
 
-            QString id;
+        qDebug() << "Indexing desktop file:" << id;
 
-            // If file is in standard path use standard method else filename to build id
-            if ( std::any_of(xdgAppDirs.begin(), xdgAppDirs.end(),
-                             [&fIt](const QString &dir){ return fIt.filePath().startsWith(dir); }) )
-                id = fIt.filePath().remove(QRegularExpression("^.*applications/")).replace("/","-");
-            else
-                id = fIt.fileName();
+        map<QString,map<QString,QString>> sectionMap;
+        map<QString,map<QString,QString>>::iterator sectionIterator;
 
-            // Skip duplicate ids
-            if ( std::find_if(desktopEntries.begin(), desktopEntries.end(),
-                              [&id](const shared_ptr<StandardIndexItem> & desktopEntry){
-                                  return id == desktopEntry->id();
-                              }) != desktopEntries.end())
-                continue;
+        /*
+         * Get the data from the desktop file
+         */
 
-            /*
-             * Get the data from the desktop file
-             */
-
-            // Read the file into a map
-            {
-            QFile file(fIt.filePath());
+        // Read the file into a map
+        {
+            QFile file(path);
             if (!file.open(QIODevice::ReadOnly| QIODevice::Text)) continue;
             QTextStream stream(&file);
             QString currentGroup;
@@ -292,199 +294,198 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                                                  line.section('=', 1, -1).trimmed());
             }
             file.close();
-            }
+        }
 
 
-            // Skip if there is no "Desktop Entry" section
-            if ((sectionIterator = sectionMap.find("Desktop Entry")) == sectionMap.end())
-                continue;
+        // Skip if there is no "Desktop Entry" section
+        if ((sectionIterator = sectionMap.find("Desktop Entry")) == sectionMap.end())
+            continue;
 
-            map<QString,QString> const &entryMap = sectionIterator->second;
-            map<QString,QString>::const_iterator entryIterator;
+        map<QString,QString> const &entryMap = sectionIterator->second;
+        map<QString,QString>::const_iterator entryIterator;
 
-            // Skip, if type is not found or not application
-            if ((entryIterator = entryMap.find("Type")) == entryMap.end() ||
-                    entryIterator->second != "Application")
-                continue;
+        // Skip, if type is not found or not application
+        if ((entryIterator = entryMap.find("Type")) == entryMap.end() ||
+                entryIterator->second != "Application")
+            continue;
 
-            // Skip, if this desktop entry must not be shown
-            if ((entryIterator = entryMap.find("NoDisplay")) != entryMap.end()
-                    && entryIterator->second == "true")
-                continue;
+        // Skip, if this desktop entry must not be shown
+        if ((entryIterator = entryMap.find("NoDisplay")) != entryMap.end()
+                && entryIterator->second == "true")
+            continue;
 
-            if (!ignoreShowInKeys) {
-                // Skip if the current desktop environment is specified in "NotShowIn"
-                if ((entryIterator = entryMap.find("NotShowIn")) != entryMap.end())
-                    for (const QString &str : entryIterator->second.split(';',QString::SkipEmptyParts))
-                        if (xdg_current_desktop.contains(str))
-                            continue;
-
-                // Skip if the current desktop environment is not specified in "OnlyShowIn"
-                if ((entryIterator = entryMap.find("OnlyShowIn")) != entryMap.end()) {
-                    bool found = false;
-                    for (const QString &str : entryIterator->second.split(';',QString::SkipEmptyParts))
-                        if (xdg_current_desktop.contains(str)){
-                            found = true;
-                            break;
-                        }
-                    if (!found)
+        if (!ignoreShowInKeys) {
+            // Skip if the current desktop environment is specified in "NotShowIn"
+            if ((entryIterator = entryMap.find("NotShowIn")) != entryMap.end())
+                for (const QString &str : entryIterator->second.split(';',QString::SkipEmptyParts))
+                    if (xdg_current_desktop.contains(str))
                         continue;
-                }
+
+            // Skip if the current desktop environment is not specified in "OnlyShowIn"
+            if ((entryIterator = entryMap.find("OnlyShowIn")) != entryMap.end()) {
+                bool found = false;
+                for (const QString &str : entryIterator->second.split(';',QString::SkipEmptyParts))
+                    if (xdg_current_desktop.contains(str)){
+                        found = true;
+                        break;
+                    }
+                if (!found)
+                    continue;
             }
+        }
 
-            bool term;
-            QString name;
-            QString genericName;
-            QString comment;
-            QString icon;
-            QString exec;
-            QString workingDir;
-            QStringList keywords;
-            QStringList actionIdentifiers;
+        bool term;
+        QString name;
+        QString genericName;
+        QString comment;
+        QString icon;
+        QString exec;
+        QString workingDir;
+        QStringList keywords;
+        QStringList actionIdentifiers;
 
-            // Try to get the localized name, skip if empty
-            name = xdgStringEscape(getLocalizedKey("Name", entryMap, loc));
-            if (name.isNull())
-                continue;
+        // Try to get the localized name, skip if empty
+        name = xdgStringEscape(getLocalizedKey("Name", entryMap, loc));
+        if (name.isNull())
+            continue;
 
-            // Try to get the exec key, skip if not existant
-            if ((entryIterator = entryMap.find("Exec")) != entryMap.end())
-                exec = xdgStringEscape(entryIterator->second);
-            else
-                continue;
+        // Try to get the exec key, skip if not existant
+        if ((entryIterator = entryMap.find("Exec")) != entryMap.end())
+            exec = xdgStringEscape(entryIterator->second);
+        else
+            continue;
 
-            // Try to get the localized icon, skip if empty
-            icon = XDG::IconLookup::iconPath({xdgStringEscape(getLocalizedKey("Icon", entryMap, loc)),
-                                              "application-x-executable",
-                                              "exec"});
-            if (icon.isNull())
-                icon = ":application-x-executable";
+        // Try to get the localized icon, skip if empty
+        icon = XDG::IconLookup::iconPath({xdgStringEscape(getLocalizedKey("Icon", entryMap, loc)),
+                                          "application-x-executable",
+                                          "exec"});
+        if (icon.isNull())
+            icon = ":application-x-executable";
 
-            // Check if this is a terminal app
-            term = (entryIterator = entryMap.find("Terminal")) != entryMap.end()
-                    && entryIterator->second=="true";
+        // Check if this is a terminal app
+        term = (entryIterator = entryMap.find("Terminal")) != entryMap.end()
+                && entryIterator->second=="true";
 
-            // Try to get the localized genericName
-            genericName = xdgStringEscape(getLocalizedKey("GenericName", entryMap, loc));
+        // Try to get the localized genericName
+        genericName = xdgStringEscape(getLocalizedKey("GenericName", entryMap, loc));
 
-            // Try to get the localized comment
-            comment = xdgStringEscape(getLocalizedKey("Comment", entryMap, loc));
+        // Try to get the localized comment
+        comment = xdgStringEscape(getLocalizedKey("Comment", entryMap, loc));
 
-            // Try to get the keywords
-            keywords = xdgStringEscape(getLocalizedKey("Keywords", entryMap, loc)).split(';',QString::SkipEmptyParts);
+        // Try to get the keywords
+        keywords = xdgStringEscape(getLocalizedKey("Keywords", entryMap, loc)).split(';',QString::SkipEmptyParts);
 
-            // Try to get the workindir
-            if ((entryIterator = entryMap.find("Path")) != entryMap.end())
-                workingDir = xdgStringEscape(entryIterator->second);
+        // Try to get the workindir
+        if ((entryIterator = entryMap.find("Path")) != entryMap.end())
+            workingDir = xdgStringEscape(entryIterator->second);
 
-            // Try to get the keywords
-            if ((entryIterator = entryMap.find("Actions")) != entryMap.end())
-                actionIdentifiers = xdgStringEscape(entryIterator->second).split(';',QString::SkipEmptyParts);
+        // Try to get the keywords
+        if ((entryIterator = entryMap.find("Actions")) != entryMap.end())
+            actionIdentifiers = xdgStringEscape(entryIterator->second).split(';',QString::SkipEmptyParts);
 
 //            // Try to get the mimetypes
 //            if ((valueIterator = entryMap.find("MimeType")) != entryMap.end())
 //                keywords = xdgStringEscape(valueIterator->second).split(';',QString::SkipEmptyParts);
 
-            /*
-             * Build the item
-             */
+        /*
+         * Build the item
+         */
 
-            // Unquote arguments and expand field codes
-            QStringList commandline = expandedFieldCodes(Core::ShUtil::split(exec),
-                                                         icon, name, fIt.filePath());
-            // Malformed exec line. Constraint (1)
-            if (commandline.isEmpty())
+        // Unquote arguments and expand field codes
+        QStringList commandline = expandedFieldCodes(Core::ShUtil::split(exec),
+                                                     icon, name, path);
+        // Malformed exec line. Constraint (1)
+        if (commandline.isEmpty())
+            continue;
+
+        // Finally we got everything, build the item
+        shared_ptr<StandardIndexItem> item = std::make_shared<StandardIndexItem>();
+        item->setIconPath(icon);
+        item->setId(id);
+        item->setText(name);
+        item->setCompletion(name);
+
+        // Set subtext/tootip
+        if (comment.isEmpty())
+            if (genericName.isEmpty())
+                item->setSubtext(exec);
+            else
+                item->setSubtext(genericName);
+        else
+            item->setSubtext(comment);
+
+
+        // Set index strings
+        vector<IndexableItem::IndexString> indexStrings;
+        indexStrings.emplace_back(name, UINT_MAX);
+
+        if ( !exec.startsWith("java ")
+             && !exec.startsWith("ruby ")
+             && !exec.startsWith("python ")
+             && !exec.startsWith("perl ")
+             && !exec.startsWith("bash ")
+             && !exec.startsWith("sh ")
+             && !exec.startsWith("dbus-send ")
+             && !exec.startsWith("/") )
+            indexStrings.emplace_back(commandline[0], UINT_MAX);  // safe since (1)
+
+        if (useKeywords)
+            for (auto & kw : keywords)
+                indexStrings.emplace_back(kw, UINT_MAX/2);
+
+        if (!genericName.isEmpty() && useGenericName)
+            indexStrings.emplace_back(genericName, UINT_MAX/2   );
+
+        item->setIndexKeywords(std::move(indexStrings));
+
+
+
+        /*
+         * Build actions
+         */
+
+        // Default and root action
+        if (term) {
+            item->addAction(make_shared<TermAction>("Run", commandline, workingDir, false));
+            item->addAction(make_shared<TermAction>("Run as root", QStringList("sudo")+commandline, workingDir, false));
+        } else {
+            item->addAction(make_shared<ProcAction>("Run", commandline, workingDir));
+            item->addAction(make_shared<ProcAction>("Run as root", QStringList("gksudo")+commandline, workingDir));
+        }
+
+        // Desktop Actions
+        for (const QString &actionIdentifier: actionIdentifiers){
+
+            // Get iterator to action section
+            if ((sectionIterator = sectionMap.find(QString("Desktop Action %1").arg(actionIdentifier))) == sectionMap.end())
+                continue;
+            map<QString,QString> &valueMap = sectionIterator->second;
+
+            // Try to get the localized action name
+            QString actionName = xdgStringEscape(getLocalizedKey("Name", valueMap, loc));
+            if (actionName.isNull())
                 continue;
 
-            // Finally we got everything, build the item
-            shared_ptr<StandardIndexItem> item = std::make_shared<StandardIndexItem>();
-            item->setIconPath(icon);
-            item->setId(id);
-            item->setText(name);
-            item->setCompletion(name);
+            // Get action command
+            if ((entryIterator = valueMap.find("Exec")) == valueMap.end())
+                continue;
 
-            // Set subtext/tootip
-            if (comment.isEmpty())
-                if (genericName.isEmpty())
-                    item->setSubtext(exec);
-                else
-                    item->setSubtext(genericName);
+            // Unquote arguments and expand field codes
+            QStringList commandline = expandedFieldCodes(Core::ShUtil::split(entryIterator->second),
+                                                         icon, name, path);
+            if (term)
+                item->addAction(make_shared<TermAction>(actionName, commandline, workingDir, false));
             else
-                item->setSubtext(comment);
+                item->addAction(make_shared<ProcAction>(actionName, commandline, workingDir));
 
-
-            // Set index strings
-            vector<IndexableItem::IndexString> indexStrings;
-            indexStrings.emplace_back(name, UINT_MAX);
-
-            if ( !exec.startsWith("java ")
-                 && !exec.startsWith("ruby ")
-                 && !exec.startsWith("python ")
-                 && !exec.startsWith("perl ")
-                 && !exec.startsWith("bash ")
-                 && !exec.startsWith("sh ")
-                 && !exec.startsWith("dbus-send ")
-                 && !exec.startsWith("/") )
-                indexStrings.emplace_back(commandline[0], UINT_MAX);  // safe since (1)
-
-            if (useKeywords)
-                for (auto & kw : keywords)
-                    indexStrings.emplace_back(kw, UINT_MAX/2);
-
-            if (!genericName.isEmpty() && useGenericName)
-                indexStrings.emplace_back(genericName, UINT_MAX/2   );
-
-            item->setIndexKeywords(std::move(indexStrings));
-
-
-
-            /*
-             * Build actions
-             */
-
-            // Default and root action
-            if (term) {
-                item->addAction(make_shared<TermAction>("Run", commandline, workingDir, false));
-                item->addAction(make_shared<TermAction>("Run as root", QStringList("sudo")+commandline, workingDir, false));
-            } else {
-                item->addAction(make_shared<ProcAction>("Run", commandline, workingDir));
-                item->addAction(make_shared<ProcAction>("Run as root", QStringList("gksudo")+commandline, workingDir));
-            }
-
-            // Desktop Actions
-            for (const QString &actionIdentifier: actionIdentifiers){
-
-                // Get iterator to action section
-                if ((sectionIterator = sectionMap.find(QString("Desktop Action %1").arg(actionIdentifier))) == sectionMap.end())
-                    continue;
-                map<QString,QString> &valueMap = sectionIterator->second;
-
-                // Try to get the localized action name
-                QString actionName = xdgStringEscape(getLocalizedKey("Name", valueMap, loc));
-                if (actionName.isNull())
-                    continue;
-
-                // Get action command
-                if ((entryIterator = valueMap.find("Exec")) == valueMap.end())
-                    continue;
-
-                // Unquote arguments and expand field codes
-                QStringList commandline = expandedFieldCodes(Core::ShUtil::split(entryIterator->second),
-                                                             icon, name, fIt.filePath());
-                if (term)
-                    item->addAction(make_shared<TermAction>(actionName, commandline, workingDir, false));
-                else
-                    item->addAction(make_shared<ProcAction>(actionName, commandline, workingDir));
-
-            }
-
-
-            /*
-             * Add item
-             */
-
-            desktopEntries.push_back(std::move(item));
         }
+
+
+        /*
+         * Add item
+         */
+
+        desktopEntries.push_back(std::move(item));
     }
     return desktopEntries;
 }
