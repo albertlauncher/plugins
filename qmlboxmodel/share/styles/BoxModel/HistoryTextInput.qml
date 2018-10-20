@@ -1,41 +1,34 @@
-import QtQuick 2.0
+import QtQuick 2.9 // Min Qt version 5.9 since ubuntu 18.04 LTS was released, needed for textEdited signal
 
 TextInput {
 
-    function clearLine() {
-        text = ""
-    }
+    property string userText
 
     function pushTextToHistory() {
         history.add(text)
-        clearLine()
-        clearIterator()
+        text = ""
+        resetHistoryMode()
     }
 
-    function clearIterator() {
-        return history.resetIterator()
+    function resetHistoryMode() {
+        history.resetIterator()
     }
 
-    function nextIteration() {
-        var entry = history.next()
-        if ( entry.length !== 0 ){
-            textChanged.disconnect(clearIterator)
-            text = entry
-            textChanged.connect(clearIterator)
-        }
+    function forwardSearchHistory() {
+        var match = history.next(userText)
+        if (match)
+            text = match
     }
 
-    function prevIteration() {
-        var entry = history.prev()
-        if (entry.length!==0) {
-            textChanged.disconnect(clearIterator)
-            text = entry
-            textChanged.connect(clearIterator)
-        }
+    function backwardSearchHistory() {
+        var match = history.prev(userText)
+        if (match)
+            text = match
     }
 
-    Component.onCompleted: {
-        textChanged.connect(clearIterator)
+    onTextEdited: {
+        console.log("Text edited: " + text)
+        userText = text
+        history.resetIterator()
     }
-
 }

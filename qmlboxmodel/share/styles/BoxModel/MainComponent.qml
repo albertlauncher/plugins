@@ -186,32 +186,30 @@ Item {
     // Key handling
     Keys.onPressed: {
         event.accepted = true
-        if ( (event.key === Qt.Key_Up || event.key === Qt.Key_P && event.modifiers === Qt.ControlModifier )
-                && state === "" && resultsList.currentIndex === 0 && !event.isAutoRepeat) {
-            historyTextInput.nextIteration()
-        }
-        else if ( event.key === Qt.Key_Up && event.modifiers === Qt.ControlModifier ) {
+        if (state === ""
+                && ((event.key === Qt.Key_Up && resultsList.currentIndex === 0 && !event.isAutoRepeat)  // top item selected
+                        || (event.modifiers === Qt.ControlModifier && (event.key === Qt.Key_P || event.key === Qt.Key_Up)))){ // whatever item, using control modifier
             state == ""
-            historyTextInput.nextIteration()
+            historyTextInput.forwardSearchHistory()
         }
-        else if ( event.key === Qt.Key_Down && event.modifiers === Qt.ControlModifier ) {
+        else if (event.modifiers === Qt.ControlModifier && (event.key === Qt.Key_Down || event.key === Qt.Key_N)) {
             state == ""
-            historyTextInput.prevIteration()
+            historyTextInput.backwardSearchHistory()
         }
-        else if ( event.key === Qt.Key_Meta ) {
+        else if (event.key === Qt.Key_Meta) {
             if (resultsList.currentIndex === -1)
                 resultsList.currentIndex = 0
             state="fallback"
         }
-        else if ( event.key === Qt.Key_Comma && (event.modifiers === Qt.AltModifier || event.modifiers === Qt.ControlModifier) ) {
+        else if (event.key === Qt.Key_Comma && (event.modifiers === Qt.AltModifier || event.modifiers === Qt.ControlModifier)) {
             settingsWidgetRequested()
         }
-        else if ( event.key === Qt.Key_Alt && resultsList.count > 0 ) {
+        else if (event.key === Qt.Key_Alt && resultsList.count > 0) {
             if (resultsList.currentIndex === -1)
                 resultsList.currentIndex = 0
             state = "detailsView"
         }
-        else if ( 48 <= event.key && event.key <= 57 && event.modifiers === Qt.ControlModifier ){
+        else if (48 <= event.key && event.key <= 57 && event.modifiers === Qt.ControlModifier){
             var num = 9
             if (event.key !== Qt.Key_0)
                 num = event.key - 49
@@ -275,7 +273,7 @@ Item {
         onVisibilityChanged: {
             state=""
             historyTextInput.selectAll()
-            historyTextInput.clearIterator()
+            historyTextInput.resetHistoryMode()
             ctrl=false
         }
     }
@@ -301,7 +299,6 @@ Item {
      *   - setTheme(str)
      *
      * These signals must exist in root:
-     *   - inputChanged(str)
      *   - settingsWidgetRequested()
      *
      * These object names with must exist somewhere:
