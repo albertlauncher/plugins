@@ -100,8 +100,13 @@ void FirefoxBookmarks::Private::startIndexing() {
 /** ***************************************************************************/
 void FirefoxBookmarks::Private::finishIndexing() {
 
+    auto result = futureWatcher.future().result();
+
+    if ( result.empty() )
+        return;
+
     // Get the thread results
-    index = futureWatcher.future().result();
+    index = std::move(result);
 
     // Rebuild the offline index
     offlineIndex.clear();
