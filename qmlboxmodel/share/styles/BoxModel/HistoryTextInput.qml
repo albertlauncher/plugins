@@ -27,7 +27,6 @@ TextInput {
     }
 
     onTextEdited: {
-        console.log("Text edited: " + text)
         userText = text
         history.resetIterator()
     }
