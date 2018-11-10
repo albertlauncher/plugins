@@ -53,6 +53,7 @@ Calculator::Extension::Extension()
     d->parser.reset(new mu::Parser);
     d->parser->SetDecSep(d->locale.decimalPoint().toLatin1());
     d->parser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
+    d->parser->SetArgSep(';');
 }
 
 
@@ -84,13 +85,20 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Calculator::Extension::handleQuery(Core::Query * query) const {
 
-    d->parser->SetExpr(query->string().toStdString());
+    try {
+        d->parser->SetExpr(query->string().toStdString());
+    } catch (mu::Parser::exception_type &exception) {
+        qWarning() << "Muparser SetExpr exception: " << exception.GetMsg().c_str();
+        return;
+    }
     double result;
 
     // http://beltoforion.de/article.php?a=muparser&p=errorhandling
     try {
         result = d->parser->Eval();
     } catch (mu::Parser::exception_type &) {
+        // Expected exception in case of invalid input
+        // qDebug() << "Muparser Eval exception: " << exception.GetMsg().c_str();
         return;
     }
 
