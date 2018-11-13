@@ -48,11 +48,11 @@ array<const QString, 6> itemTitles{{
 
 array<vector<QString>, 6> aliases{{
     {"lock"},
-    {"log out, logout", "leave"},
+    {"log out", "logout", "leave"},
     {"suspend", "sleep"},
     {"suspend", "hibernate"},
     {"restart", "reboot"},
-    {"shut down", "shutdown", "poweroff", "halt", "fuck you"}
+    {"shut down", "shutdown", "poweroff", "halt"}
 }};
 
 array<const QString, 6> itemDescriptions{{
