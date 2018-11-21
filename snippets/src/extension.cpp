@@ -13,11 +13,13 @@
 #include "util/standardactions.h"
 #include "util/standarditem.h"
 #include "extension.h"
+#include <mutex>
 using namespace std;
 using namespace Core;
 
 namespace {
 const QString trigger = "snip ";
+mutex db_mutex;
 }
 
 
@@ -164,6 +166,8 @@ void Snippets::Extension::handleQuery(Core::Query * query) const {
     // Allow empty lookup only for triggered queries
     if (query->string().trimmed().isEmpty() && !query->isTriggered())
         return;
+
+    unique_lock<mutex> lock(db_mutex);
 
     QSqlQuery q(d->db);
     q.exec(QString("SELECT * FROM snippets WHERE title LIKE '%%%1%%'").arg(query->string()));
