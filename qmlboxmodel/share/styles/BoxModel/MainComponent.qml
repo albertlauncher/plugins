@@ -325,7 +325,10 @@ Item {
             if ( resultsList.currentIndex === -1 )
                 resultsList.currentIndex = 0
             resultsList.currentItem.activate(action)
+
+            // Order important below! (hide triggers root.onVisibleChanged())
             mainWindow.hide()
+            historyTextInput.text = ""
         }
     }
 
