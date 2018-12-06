@@ -326,7 +326,8 @@ Item {
                 resultsList.currentIndex = 0
             resultsList.currentItem.activate(action)
 
-            // Order important below! (hide triggers root.onVisibleChanged())
+            // Order important! (hide triggers root.onVisibleChanged())
+            historyTextInput.pushTextToHistory()
             mainWindow.hide()
             historyTextInput.text = ""
         }
