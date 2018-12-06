@@ -270,11 +270,20 @@ Item {
 
     Connections {
         target: mainWindow
-        onVisibilityChanged: {
-            state=""
-            historyTextInput.selectAll()
-            historyTextInput.resetHistoryMode()
-            ctrl=false
+        onVisibleChanged: {
+            if (!arg) {
+
+                // Save the text if the text displayed has been entered by the user
+                if (historyTextInput.userText === historyTextInput.text)
+                    historyTextInput.pushTextToHistory()
+
+                // Reset state
+                state=""
+                ctrl=false
+                historyTextInput.selectAll()
+                historyTextInput.userText = null
+                historyTextInput.resetHistoryMode()
+            }
         }
     }
 
@@ -316,7 +325,6 @@ Item {
             if ( resultsList.currentIndex === -1 )
                 resultsList.currentIndex = 0
             resultsList.currentItem.activate(action)
-            historyTextInput.pushTextToHistory()
             mainWindow.hide()
         }
     }
