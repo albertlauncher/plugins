@@ -180,7 +180,7 @@ void Snippets::Extension::handleQuery(Core::Query * query) const {
         item->setText(QString("Text snippet '%1'").arg(QString(key).replace(re, "<u>\\1</u>")));
         item->setSubtext("Copy the snippet to clipboard");
         item->setIconPath(":snippet");
-        item->setCompletion(QString("%1 %2").arg(trigger, key));
+        item->setCompletion(QString("%1%2").arg(trigger, key));
         item->addAction(make_shared<ClipAction>("Copy value to clipboard", value));
 
         query->addMatch(move(item), static_cast<uint>(1.0/key.length()*query->string().length()));
