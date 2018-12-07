@@ -83,6 +83,19 @@ bool WidgetBoxModel::ResultsList::eventFilter(QObject*, QEvent *event) {
             }
             return false;
 
+        case Qt::Key_P:
+            if ( keyEvent->modifiers() == Qt::ControlModifier ){
+                setCurrentIndex(model()->index(std::max(currentIndex().row() - 1, 0), 0));
+                return true;
+            }
+            return false;
+        case Qt::Key_N:
+            if ( keyEvent->modifiers() == Qt::ControlModifier ){
+                setCurrentIndex(model()->index(std::min(currentIndex().row() + 1, model()->rowCount()-1), 0));
+                return true;
+            }
+            return false;
+
         // Navigation
         case Qt::Key_Up:
         case Qt::Key_Down:
@@ -114,18 +127,6 @@ bool WidgetBoxModel::ResultsList::eventFilter(QObject*, QEvent *event) {
                 break;
             }
             update();
-            return false;
-        case Qt::Key_P:
-            if ( keyEvent->modifiers() == Qt::ControlModifier ){
-                setCurrentIndex(model()->index(std::max(currentIndex().row() - 1, 0), 0));
-                return true;
-            }
-            return false;
-        case Qt::Key_N:
-            if ( keyEvent->modifiers() == Qt::ControlModifier ){
-                setCurrentIndex(model()->index(std::min(currentIndex().row() + 1, model()->rowCount()-1), 0));
-                return true;
-            }
             return false;
         }
     }
