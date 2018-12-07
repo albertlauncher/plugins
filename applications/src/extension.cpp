@@ -35,15 +35,16 @@ extern QString terminalCommand;
 
 namespace {
 
-const char* CFG_FUZZY            = "fuzzy";
-const bool  DEF_FUZZY            = false;
-const char* CFG_IGNORESHOWINKEYS = "ignore_show_in_keys";
-const bool  DEF_IGNORESHOWINKEYS = false;
-const char* CFG_USEKEYWORDS      = "use_keywords";
-const bool  DEF_USEKEYWORDS      = false;
-const char* CFG_USEGENERICNAME   = "use_generic_name";
-const bool  DEF_USEGENERICNAME   = false;
-
+const char* CFG_FUZZY                = "fuzzy";
+const bool  DEF_FUZZY                = false;
+const char* CFG_IGNORESHOWINKEYS     = "ignore_show_in_keys";
+const bool  DEF_IGNORESHOWINKEYS     = false;
+const char* CFG_USEKEYWORDS          = "use_keywords";
+const bool  DEF_USEKEYWORDS          = false;
+const char* CFG_USEGENERICNAME       = "use_generic_name";
+const bool  DEF_USEGENERICNAME       = false;
+const char* CFG_USENONLOCALIZEDNAME  = "use_non_localized_name";
+const bool  DEF_USENONLOCALIZEDNAME  = false;
 
 /******************************************************************************/
 QStringList expandedFieldCodes(const QStringList & unexpandedFields,
@@ -167,6 +168,7 @@ public:
     bool ignoreShowInKeys;
     bool useKeywords;
     bool useGenericName;
+    bool useNonLocalizedName;
 
     void finishIndexing();
     void startIndexing();
@@ -336,6 +338,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 
         bool term;
         QString name;
+        QString nonLocalizedName;
         QString genericName;
         QString comment;
         QString icon;
@@ -368,6 +371,10 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 
         // Try to get the localized genericName
         genericName = xdgStringEscape(getLocalizedKey("GenericName", entryMap, loc));
+
+        // Try to get the non-localized name
+        if ((entryIterator = entryMap.find("Name")) != entryMap.end())
+            nonLocalizedName = xdgStringEscape(entryIterator->second);
 
         // Try to get the localized comment
         comment = xdgStringEscape(getLocalizedKey("Comment", entryMap, loc));
@@ -406,13 +413,14 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
         item->setCompletion(name);
 
         // Set subtext/tootip
-        if (comment.isEmpty())
-            if (genericName.isEmpty())
-                item->setSubtext(exec);
-            else
-                item->setSubtext(genericName);
-        else
+        if (!comment.isEmpty())
             item->setSubtext(comment);
+        else if(useGenericName && !genericName.isEmpty())
+            item->setSubtext(genericName);
+        else if(useNonLocalizedName && !nonLocalizedName.isEmpty())
+            item->setSubtext(nonLocalizedName);
+        else
+            item->setSubtext(exec);
 
 
         // Set index strings
@@ -433,8 +441,11 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             for (auto & kw : keywords)
                 indexStrings.emplace_back(kw, UINT_MAX/2);
 
-        if (!genericName.isEmpty() && useGenericName)
+        if (useGenericName && !genericName.isEmpty())
             indexStrings.emplace_back(genericName, UINT_MAX/2   );
+
+        if (useNonLocalizedName && !nonLocalizedName.isEmpty())
+            indexStrings.emplace_back(nonLocalizedName, UINT_MAX/2   );
 
         item->setIndexKeywords(std::move(indexStrings));
 
@@ -510,6 +521,7 @@ Applications::Extension::Extension()
     d->offlineIndex.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
     d->ignoreShowInKeys = settings().value(CFG_IGNORESHOWINKEYS, DEF_IGNORESHOWINKEYS).toBool();
     d->useGenericName = settings().value(CFG_USEGENERICNAME, DEF_USEGENERICNAME).toBool();
+    d->useNonLocalizedName = settings().value(CFG_USENONLOCALIZEDNAME, DEF_USENONLOCALIZEDNAME).toBool();
     d->useKeywords = settings().value(CFG_USEKEYWORDS, DEF_USEKEYWORDS).toBool();
 
     // If the filesystem changed, trigger the scan
@@ -553,7 +565,16 @@ QWidget *Applications::Extension::widget(QWidget *parent) {
         connect(d->widget->ui.checkBox_useGenericName, &QCheckBox::toggled,
                 this, [this](bool checked){
             settings().setValue(CFG_USEGENERICNAME, checked);
-            d->useGenericName= checked;
+            d->useGenericName = checked;
+            d->startIndexing();
+        });
+
+        // Use non-localized name
+        d->widget->ui.checkBox_useNonLocalizedName->setChecked(d->useNonLocalizedName);
+        connect(d->widget->ui.checkBox_useNonLocalizedName, &QCheckBox::toggled,
+                this, [this](bool checked){
+            settings().setValue(CFG_USENONLOCALIZEDNAME, checked);
+            d->useNonLocalizedName = checked;
             d->startIndexing();
         });
 
