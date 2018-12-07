@@ -128,9 +128,6 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
                                            const IndexSettings &indexSettings,
                                            std::set<QString> *indexedDirs,
                                            const vector<IgnoreEntry> &ignoreEntries){
-
-    if (abort) return;
-
     const QFileInfo fileInfo(path());
 
     // Skip if this dir has already been indexed (loop detection)
@@ -249,8 +246,8 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
     }
 
     // Recursively check all childnodes too
-    for ( const shared_ptr<IndexTreeNode> &child : children )
-        child->updateRecursion(abort, mimeDatabase, indexSettings, indexedDirs, localIgnoreEntries);
+    for ( auto it = children.begin(); !abort && it < children.end(); ++it)
+        (*it)->updateRecursion(abort, mimeDatabase, indexSettings, indexedDirs, localIgnoreEntries);
 
 }
 
