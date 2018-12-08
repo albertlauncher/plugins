@@ -174,13 +174,12 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
 
     if ( lastModified < fileInfo.lastModified() || indexSettings.forceUpdate() ) {
 
-        QString canonicalFilePath = fileInfo.canonicalFilePath();
-        indexedDirs->insert(canonicalFilePath);
-        qDebug() << "Indexing directory " << canonicalFilePath;
+        indexedDirs->insert(fileInfo.canonicalFilePath());
+
+        QString absFilePath = fileInfo.absoluteFilePath();
+        qDebug() << "Indexing directory " << absFilePath;
 
         lastModified = fileInfo.lastModified();
-
-        items_.clear();
 
         // Drop nonexistant child nodes
         decltype(children)::iterator childIt = children.begin();
@@ -193,10 +192,9 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
 
 
         // Handle the directory contents
-        // Prepare the iterator properties
-        QDir::Filters entryListFilters = QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden;
-        const QFileInfoList &fil = QDir(canonicalFilePath).entryInfoList(entryListFilters, QDir::Name);
-        for ( const QFileInfo &fileInfo : fil ){
+        items_.clear();
+        auto filters = QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden;
+        for ( const QFileInfo &fileInfo : QDir(absFilePath).entryInfoList(filters, QDir::Name) ){
 
             // Skip check if this file should be excluded
             PatternType patternType = PatternType::Include;
