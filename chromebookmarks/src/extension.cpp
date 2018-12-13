@@ -34,6 +34,7 @@ using namespace Core;
 
 namespace {
 
+const char* EXT_ID = "org.albert.extension.chromebookmarks";
 const char* CFG_PATH  = "bookmarkfile";
 const char* CFG_FUZZY = "fuzzy";
 const bool  DEF_FUZZY = false;
@@ -65,7 +66,7 @@ vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(QString executable, c
             return;
         if (type.toString() == "folder"){
             QJsonArray jarr = json["children"].toArray();
-            for (const QJsonValue &i : jarr)
+            for (const QJsonValueRef i : jarr)
                 rec_bmsearch(i.toObject());
         }
         if (type.toString() == "url") {
@@ -78,7 +79,7 @@ vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(QString executable, c
             indexStrings.emplace_back(name, UINT_MAX);
             indexStrings.emplace_back(host.left(host.size()-url.topLevelDomain().size()), UINT_MAX/2);
 
-            shared_ptr<StandardIndexItem> item = std::make_shared<StandardIndexItem>(json["id"].toString());
+            shared_ptr<StandardIndexItem> item = std::make_shared<StandardIndexItem>(QString("%1.%2").arg(EXT_ID, json["id"].toString()));
             item->setText(name);
             item->setCompletion(name);
             item->setSubtext(urlstr);
@@ -195,7 +196,7 @@ void ChromeBookmarks::Private::finishIndexing() {
 /** ***************************************************************************/
 /** ***************************************************************************/
 ChromeBookmarks::Extension::Extension()
-    : Core::Extension("org.albert.extension.chromebookmarks"),
+    : Core::Extension(EXT_ID),
       Core::QueryHandler(Core::Plugin::id()),
       d(new Private(this)) {
 
