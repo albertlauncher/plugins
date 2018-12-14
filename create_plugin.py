@@ -1,128 +1,76 @@
-#!/usr/bin/python
+#! /usr/bin/env python3
 
 import os
 import re
-import sys
+import shutil
 import string
-from shutil import copyfile
+import sys
 
-ID_KEYWORD = "projectid"
-NAMESPACE_KEYWORD = "ProjectNamespace"
-PRETTYNAME_KEYWORD = "Template"
-ID_PATTERN = "^([a-z0-9]+)$"
-NAMESPACE_PATTERN = "^([A-Za-z][A-Za-z0-9]+)$"
-PRETTYNAME_PATTERN = "^([A-Za-z0-9 _\\-]+)$"
-TEMPLATE_EXTENSION_BASE = "templateExtension/"
-CMAKE_PATTERN = "^add_subdirectory\(([^\)]+)\)$"
+TEMPLATE_EXTENSION_ID = "projectid"
+TEMPLATE_EXTENSION_NAMESPACE = "ProjectNamespace"
+TEMPLATE_EXTENSION_PRETTYNAME = "Template"
+TEMPLATE_EXTENSION_DIRNAME = "templateExtension"
+
+RE_ID = "^([a-z0-9]+)$"
+RE_NAMESPACE = "^([A-Za-z][A-Za-z0-9]+)$"
+RE_PRETTYNAME = "^([A-Za-z0-9 _\\-]+)$"
+
+
+# Check sanity of input
 
 if len(sys.argv) != 4:
-    u = "Usage: create_plugin.py <id [a-z0-9]> <namespace> <Pretty Name>\n"
+    u = "Usage: create_plugin.py <id [a-z0-9]> <namespace> <Pretty Name>\n"\
+        "e.g. create_plugin.py applications applicatoins Applications"
     sys.stderr.write(u)
     sys.exit(1)
 
-id_regex = re.compile(ID_PATTERN)
-namespace_regex = re.compile(NAMESPACE_PATTERN)
-prettyname_regex = re.compile(PRETTYNAME_PATTERN)
-cmake_regex = re.compile(CMAKE_PATTERN)
+new_id, new_namespace, new_prettyname = sys.argv[1:]
 
-id_string = sys.argv[1]
-namespace_string = sys.argv[2]
-prettyname_string = sys.argv[3]
-
-if not id_regex.match(id_string):
-    e = "ID has to match " + ID_PATTERN + "\n"
+if not re.match(RE_ID, new_id):
+    e = "ID has to match " + RE_ID + "\n"
     sys.stderr.write(e)
     sys.exit(1)
 
-if not namespace_regex.match(namespace_string):
-    e = "Namespace has to match " + NAMESPACE_PATTERN + "\n"
+if not re.match(RE_NAMESPACE, new_namespace):
+    e = "Namespace has to match " + RE_NAMESPACE + "\n"
     sys.stderr.write(e)
     sys.exit(1)
 
-if not prettyname_regex.match(prettyname_string):
-    e = "Pretty Name has to match " + PRETTYNAME_PATTERN + "\n"
+if not re.match(RE_PRETTYNAME, new_prettyname):
+    e = "Pretty Name has to match " + RE_PRETTYNAME + "\n"
     sys.stderr.write(e)
     sys.exit(1)
 
-raw_input("Are we in the src/plugins directory? If not do not proceed because it won't work! ")
+if not os.path.isdir(TEMPLATE_EXTENSION_DIRNAME):
+    e = "Template extension missing. Are we in the src/plugins directory?"
+    sys.stderr.write(e)
+    sys.exit(1)
 
-print("Creating directory . . .")
-os.mkdir(id_string)
-os.chdir(id_string)
 
-baseDir = os.path.join("..", TEMPLATE_EXTENSION_BASE)
-filesToPrepare = []
+print("Copying template extension.")
+shutil.copytree(TEMPLATE_EXTENSION_DIRNAME, new_id)
 
-def scanDir(toscan):
-    global filesToPrepare
-    global baseDir
-    if toscan:
-        template = os.path.join(baseDir, toscan)
-    else:
-        template = baseDir
-    ext = toscan
-    files = os.listdir(template)
-    for nextFile in files:
-        path = os.path.join(template, nextFile)
-        pathNew = os.path.join(ext, nextFile)
-        if os.path.isdir(path):
-            print("Creating directory " + pathNew)
-            os.mkdir(pathNew)
-            scanDir(os.path.join(toscan, nextFile))
-        else:
-            print("Copying file " + pathNew)
-            copyfile(path, pathNew)
-            filesToPrepare.append(pathNew)
 
-scanDir("")
-
-for localFile in filesToPrepare:
-    print("Preparing file " + localFile)
-    with open(localFile) as fd:
-        tmpfile = localFile + ".tmp"
-        tmp = open(tmpfile, "w")
-        for line in fd:
-            tmp.write(re.sub(ID_KEYWORD, id_string, 
-                    re.sub(NAMESPACE_KEYWORD, namespace_string, 
-                            re.sub(PRETTYNAME_KEYWORD, prettyname_string, line))))
-        tmp.close()
-        os.rename(tmpfile, localFile)
-
-print("Leaving directory . . .")
+print("Adjusting file contents…")
+os.chdir(new_id)
+for root, dirs, files in os.walk("."):
+    for name in files:
+        relative_file_path = os.path.join(root, name)
+        print("\t%s" % relative_file_path)
+        with open(relative_file_path) as file:
+            content = file.read()
+            content = re.sub(TEMPLATE_EXTENSION_ID, new_id, content)
+            content = re.sub(TEMPLATE_EXTENSION_NAMESPACE, new_namespace, content)
+            content = re.sub(TEMPLATE_EXTENSION_PRETTYNAME, new_prettyname, content)
+        with open(relative_file_path, "w") as file:
+            file.write(content)
 os.chdir("..")
-print("Updating CMakeLists.txt . . . ")
-existingExtensions = []
-preLines = []
-postLines = []
-preSubdir = True
-postSubdir = False
-with open("CMakeLists.txt", "r") as makelist:
-    for line in makelist:
-        match = cmake_regex.match(line)
-        if match:
-            preSubdir = False
-            existingExtensions.append(match.group(1))
-        else:
-            postSubdir = not preSubdir
-        
-        if preSubdir:
-            preLines.append(line)
-        elif postSubdir:
-            postLines.append(line)
 
-existingExtensions.append(id_string)
-existingExtensions.sort()
 
-cmakefile = open("CMakeLists.txt", "w")
-for line in preLines:
-    cmakefile.write(line) # The newline is already in the line, because it didn't get stripped
-
-for ext in existingExtensions:
-    cmakefile.write("add_subdirectory(")
-    cmakefile.write(ext)
-    cmakefile.write(")\n")
-
-for line in postLines:
-    cmakefile.write(line) # The newline is already in the line, because it didn't get stripped
-
-cmakefile.close()
+print("Adding 'add_subdirectory' section to the CMakeLists.txt in the root dir.")
+with open("CMakeLists.txt", "a") as file:
+    cmake_hunk = '\noption(BUILD_{0} "Build the extension" ON)\n'\
+                 'if (BUILD_{0})\n'\
+                 '    add_subdirectory({1})\n'\
+                 'endif()\n'.format(new_id.upper(), new_id)
+    file.write(cmake_hunk)
