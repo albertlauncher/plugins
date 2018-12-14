@@ -12,7 +12,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE src/)
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        ${Qt5Widgets_LIBRARIES}
+        Qt5::Widgets
         albertcore
         muparser
         xdg

@@ -13,7 +13,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE src/)
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-        ${Qt5Widgets_LIBRARIES}
+        Qt5::Widgets
     PRIVATE
         pybind11::embed
         albertcore

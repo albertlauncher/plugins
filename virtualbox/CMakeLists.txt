@@ -31,8 +31,8 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        ${Qt5Widgets_LIBRARIES}
-        ${Qt5Xml_LIBRARIES}
+        Qt5::Widgets
+        Qt5::Xml
         albertcore
         ${PATH_BIN}/VBoxXPCOM.so
         xdg

@@ -12,9 +12,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE src/)
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        ${Qt5Widgets_LIBRARIES}
-        ${Qt5Qml_LIBRARIES}
-        ${Qt5Quick_LIBRARIES}
+        Qt5::Qml
+        Qt5::Quick
+        Qt5::Widgets
         albertcore
         Xext
 )
