@@ -9,7 +9,7 @@ class ConfigWidget final : public QWidget
 {
     Q_OBJECT
 public:
-    explicit ConfigWidget(QWidget *parent = 0);
+    explicit ConfigWidget(QWidget *parent = nullptr);
     ~ConfigWidget();
     Ui::ConfigWidget ui;
 };

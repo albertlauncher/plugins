@@ -20,7 +20,7 @@ class Extension final :
 public:
 
     Extension();
-    ~Extension();
+    ~Extension() override;
 
     QString name() const override { return "Template"; }
     QWidget *widget(QWidget *parent = nullptr) override;
