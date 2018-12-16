@@ -119,15 +119,6 @@ VirtualBox::VMItem *VirtualBox::VM::produceItem() const {
     return new VMItem(name_, uuid_, mainAction, actions, state_);
 }
 
-
-
-/** ***************************************************************************/
-bool VirtualBox::VM::startsWith(QString other) const {
-    return name_.startsWith(other, Qt::CaseInsensitive);
-}
-
-
-
 /** ***************************************************************************
 void VirtualBox::VM::probeState() const {
     QProcess *process = new QProcess;

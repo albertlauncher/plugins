@@ -14,7 +14,6 @@ public:
     VM(IMachine *machine);
     virtual ~VM();
     VMItem* produceItem() const;
-    bool startsWith(QString other) const;
     const QString &uuid() const { return uuid_; }
     const QString &name() const { return name_; }
 

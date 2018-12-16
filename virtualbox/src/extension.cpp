@@ -116,7 +116,7 @@ void VirtualBox::Private::pollMachines() {
     vms.clear();
 
     nsresult rc;
-    IMachine **machines = NULL;
+    IMachine **machines = nullptr;
     PRUint32 machineCnt = 0;
 
     rc = virtualBox->GetMachines(&machineCnt, &machines);
@@ -162,7 +162,7 @@ VirtualBox::Extension::Extension()
     if (NS_FAILED(rc))
         throw("Error: could not get component manager.");
 
-    rc = d->manager->CreateInstanceByContractID(NS_VIRTUALBOX_CONTRACTID, nsnull,
+    rc = d->manager->CreateInstanceByContractID(NS_VIRTUALBOX_CONTRACTID, nullptr,
                                              NS_GET_IID(IVirtualBox),
                                              getter_AddRefs(d->virtualBox));
     if (NS_FAILED(rc))
@@ -186,8 +186,8 @@ VirtualBox::Extension::Extension()
 
 /** ***************************************************************************/
 VirtualBox::Extension::~Extension() {
-    d->virtualBox = nsnull;
-    NS_ShutdownXPCOM(nsnull);
+    d->virtualBox = nullptr;
+    NS_ShutdownXPCOM(nullptr);
 }
 
 
@@ -220,7 +220,7 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
         return;
 
     for (VM* vm : d->vms) {
-        if (vm->startsWith(query->string()))
+        if (vm->name().contains(query->string(), Qt::CaseInsensitive))
             query->addMatch(std::shared_ptr<Item>(vm->produceItem())); // Implicit move
     }
 }
