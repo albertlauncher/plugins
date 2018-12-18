@@ -18,7 +18,9 @@ Files::MimeTypeDialog::MimeTypeDialog(const QStringList &filters, QWidget *paren
     // Populate a standard itemmodel with mime types
     QStandardItemModel *standardItemModel = new QStandardItemModel(this);
     for (QMimeType mimeType : QMimeDatabase().allMimeTypes()) {
-         QStandardItem *item = new QStandardItem;
+        QStandardItem *item = new QStandardItem;
+        static QIcon static_fallback = QIcon::fromTheme("unknown"); // TODO: resource fallback
+        item->setIcon(QIcon::fromTheme(mimeType.iconName(), static_fallback));
         item->setText(mimeType.name());
         item->setToolTip(mimeType.filterString());
         standardItemModel->appendRow(item);
