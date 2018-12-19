@@ -7,7 +7,7 @@
 #include <QSqlDriver>
 #include <QSqlError>
 #include <QSqlQuery>
-#include <QCryptographicHash>
+#include <QStandardPaths>
 #include <stdexcept>
 #include "configwidget.h"
 #include "util/standardactions.h"
