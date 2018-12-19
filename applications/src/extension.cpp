@@ -427,14 +427,17 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
         vector<IndexableItem::IndexString> indexStrings;
         indexStrings.emplace_back(name, UINT_MAX);
 
-        if ( !exec.startsWith("java ")
-             && !exec.startsWith("ruby ")
-             && !exec.startsWith("python ")
-             && !exec.startsWith("perl ")
-             && !exec.startsWith("bash ")
-             && !exec.startsWith("sh ")
-             && !exec.startsWith("dbus-send ")
-             && !exec.startsWith("/") )
+        QStringList excludes = {
+            "java ",
+            "ruby ",
+            "python ",
+            "perl ",
+            "bash ",
+            "sh ",
+            "dbus-send ",
+            "/"
+        };
+        if (std::none_of(excludes.begin(), excludes.end(), [&exec](const QString &str){ return exec.startsWith(str); }))
             indexStrings.emplace_back(commandline[0], UINT_MAX);  // safe since (1)
 
         if (useKeywords)
