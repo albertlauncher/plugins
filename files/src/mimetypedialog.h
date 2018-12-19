@@ -2,6 +2,7 @@
 
 #pragma once
 #include <QDialog>
+#include <QFuture>
 #include <QStringListModel>
 
 namespace Files{
@@ -15,8 +16,8 @@ class MimeTypeDialog : public QDialog
 
 public:
 
-    explicit MimeTypeDialog(const QStringList &filters, QWidget *parent = 0);
-    ~MimeTypeDialog();
+    explicit MimeTypeDialog(const QStringList &filters, QWidget *parent = nullptr);
+    ~MimeTypeDialog() override;
 
     QStringList filters() const;
 
@@ -27,6 +28,8 @@ protected:
 
     QStringListModel *filtersModel;
     Ui::MimeTypeDialog *ui;
+    bool exit_thread;
+    QFuture<void> future;
 
 };
 }
