@@ -1,7 +1,7 @@
 {
     "id" :              "org.albert.extension.python",
     "name" :            "Python",
-    "version" :         "0.1",
+    "version" :         "1.0",
     "platform" :        "All",
     "group" :           "Extensions",
     "author" :          "Manuel Schneider",

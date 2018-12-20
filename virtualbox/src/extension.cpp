@@ -1,5 +1,4 @@
-// Copyright (C) 2014-2018 Manuel Schneider
-// Contributed to by 2016-2017 Martin Buergmann
+// Copyright (C) 2014-2019 Manuel Schneider
 
 #include <QListWidget>
 #include <QLoggingCategory>
