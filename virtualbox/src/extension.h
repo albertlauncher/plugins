@@ -3,9 +3,12 @@
 
 #pragma once
 #include <QObject>
+#include <QLoggingCategory>
 #include <memory>
 #include "core/extension.h"
 #include "core/queryhandler.h"
+
+Q_DECLARE_LOGGING_CATEGORY(qlc_virtualbox)
 
 namespace VirtualBox {
 
