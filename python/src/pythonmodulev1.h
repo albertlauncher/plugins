@@ -1,9 +1,12 @@
 // Copyright (c) 2017-2018 Manuel Schneider
 
 #pragma once
+#include <QLoggingCategory>
 #include <QObject>
 #include <QStringList>
 #include <memory>
+
+Q_DECLARE_LOGGING_CATEGORY(qlc_python_modulev1)
 
 namespace Core {
 class Query;

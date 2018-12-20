@@ -1,10 +1,13 @@
 // Copyright (c) 2017-2018 Manuel Schneider
 
 #pragma once
+#include <QLoggingCategory>
 #include <QObject>
 #include <memory>
 #include "core/extension.h"
 #include "core/queryhandler.h"
+
+Q_DECLARE_LOGGING_CATEGORY(qlc_python)
 
 namespace Python {
 

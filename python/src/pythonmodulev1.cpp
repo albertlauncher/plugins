@@ -3,29 +3,35 @@
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
 #include "pythonmodulev1.h"
-#include <QProcess>
-#include <QFileSystemWatcher>
-#include <QMutex>
 #include <QByteArray>
-#include <QFileInfo>
 #include <QDebug>
 #include <QDirIterator>
+#include <QFileInfo>
+#include <QFileSystemWatcher>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
+#include <QMutex>
+#include <QProcess>
 #include <QProcess>
 #include <QRegularExpression>
 #include <QVBoxLayout>
 #include <functional>
 #include <vector>
+#include "cast_specialization.h"
 #include "core/query.h"
 #include "util/standarditem.h"
 #include "xdg/iconlookup.h"
-#include "cast_specialization.h"
 using namespace std;
 using namespace Core;
 namespace py = pybind11;
+
+Q_LOGGING_CATEGORY(qlc_python_modulev1, "python.modulev1")
+#define DEBUG qCDebug(qlc_python_modulev1).noquote()
+#define INFO qCInfo(qlc_python_modulev1).noquote()
+#define WARNING qCWarning(qlc_python_modulev1).noquote()
+#define CRITICAL qCCritical(qlc_python_modulev1).noquote()
 
 namespace {
 uint majorInterfaceVersion = 0;
@@ -88,7 +94,7 @@ void Python::PythonModuleV1::load(){
         d->module = py::module::import(fileInfo.completeBaseName().toUtf8().data());
         d->module.reload();  // Drop cached module version
 
-        qDebug() << "Loading" << d->path;
+        DEBUG << "Loading" << d->path;
 
         QString iid = d->module.attr("__iid__").cast<QString>();
         QRegularExpression re("^PythonInterface\\/v(\\d)\\.(\\d)$");
@@ -96,7 +102,7 @@ void Python::PythonModuleV1::load(){
         if (!match.hasMatch()) {
             d->errorString = "Incompatible interface id";
             d->state = State::Error;
-            qWarning() << qPrintable(QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString));
+            WARNING << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString);
             return;
         }
 
@@ -104,7 +110,7 @@ void Python::PythonModuleV1::load(){
         if (maj != majorInterfaceVersion) {
             d->errorString = QString("Incompatible major interface version. Expected %1, got %2").arg(majorInterfaceVersion).arg(maj);
             d->state = State::Error;
-            qWarning() << qPrintable(QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString));
+            WARNING << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString);
             return;
         }
 
@@ -112,7 +118,7 @@ void Python::PythonModuleV1::load(){
         if (min > minorInterfaceVersion) {
             d->errorString = QString("Incompatible minor interface version. Up to %1 supported, got %2").arg(minorInterfaceVersion).arg(min);
             d->state = State::Error;
-            qWarning() << qPrintable(QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString));
+            WARNING << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString);
             return;
         }
 
@@ -153,7 +159,7 @@ void Python::PythonModuleV1::load(){
     catch(std::exception const &e)
     {
         d->errorString = e.what();
-        qWarning() << qPrintable(QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString));
+        WARNING << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString);
         d->module = py::object();
         d->state = State::Error;
         return;
@@ -183,7 +189,7 @@ void Python::PythonModuleV1::unload(){
 
     if (d->state == State::Loaded) {
 
-        qDebug() << "Unloading" << d->path;
+        DEBUG << "Unloading" << d->path;
 
         py::gil_scoped_acquire acquire;
 
@@ -198,7 +204,7 @@ void Python::PythonModuleV1::unload(){
         }
         catch(std::exception const &e)
         {
-            qWarning() << qPrintable(QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(e.what()));
+            WARNING << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(e.what());
         }
 
         if (!d->fileSystemWatcher.files().isEmpty())
@@ -244,7 +250,7 @@ void Python::PythonModuleV1::handleQuery(Query *query) const {
     }
     catch(const exception &e)
     {
-        qWarning() << qPrintable(QString("[%1] %2.").arg(d->id).arg(e.what()));
+        WARNING << QString("[%1] %2.").arg(d->id).arg(e.what());
     }
 }
 
