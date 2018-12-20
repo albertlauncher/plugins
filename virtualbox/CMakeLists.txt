@@ -26,7 +26,6 @@ target_include_directories(${PROJECT_NAME}
         ${PATH_XPCOM}/include/nsprpub
         ${PATH_XPCOM}/include/string
         ${PATH_XPCOM}/include/xpcom
-        ${PATH_XPCOM}/include/ipcd
 )
 
 target_link_libraries(${PROJECT_NAME}

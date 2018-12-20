@@ -21,7 +21,7 @@ class Extension final :
 public:
 
     Extension();
-    ~Extension();
+    ~Extension() override;
 
     QString name() const override { return tr("VirtualBox"); }
     QWidget *widget(QWidget *parent = nullptr) override;
