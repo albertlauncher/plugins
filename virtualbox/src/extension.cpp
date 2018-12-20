@@ -137,7 +137,7 @@ void VirtualBox::Extension::setupSession() {
 /** ***************************************************************************/
 void VirtualBox::Extension::handleQuery(Core::Query * query) const {
 
-    if ( query->string().isEmpty() )
+    if ( query->string().trimmed().isEmpty() )
         return;
 
     for (auto &pair : d->virtualMachines) {
