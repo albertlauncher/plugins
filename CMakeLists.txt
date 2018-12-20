@@ -46,7 +46,7 @@ if (BUILD_DEBUG)
     add_subdirectory(debug)
 endif()
 
-option(BUILD_FILES "Build the extension" ON)
+option(BUILD_FILES "Build the extension" ON)  # Deprecated
 if (BUILD_FILES)
     add_subdirectory(files)
 endif()
@@ -96,7 +96,7 @@ if (BUILD_TERMINAL)
     add_subdirectory(terminal)
 endif()
 
-option(BUILD_VIRTUALBOX "Build the extension" ON)
+option(BUILD_VIRTUALBOX "Build the extension" OFF)  # Deprecated
 if (BUILD_VIRTUALBOX)
     add_subdirectory(virtualbox)
 endif()
