@@ -32,7 +32,7 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE
         Qt5::Widgets
         Qt5::Xml
-        albertcore
+        albert::lib
         ${PATH_BIN}/VBoxXPCOM.so
         xdg
 )

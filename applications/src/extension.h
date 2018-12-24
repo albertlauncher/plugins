@@ -1,18 +1,16 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2019 Manuel Schneider
 
 #pragma once
 #include <QObject>
 #include <memory>
-#include "core/extension.h"
-#include "core/queryhandler.h"
+#include "albert/extension.h"
+#include "albert/queryhandler.h"
 
 namespace Applications {
 
 class Private;
 
-class Extension final :
-        public Core::Extension,
-        public Core::QueryHandler
+class Extension final : public Core::Extension, public Core::QueryHandler
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID ALBERT_EXTENSION_IID FILE "metadata.json")
@@ -20,7 +18,7 @@ class Extension final :
 public:
 
     Extension();
-    ~Extension();
+    ~Extension() override;
 
     QString name() const override { return "Applications"; }
     QWidget *widget(QWidget *parent = nullptr) override;

@@ -4,7 +4,7 @@
 #include <QDBusMessage>
 #include <QVariant>
 #include <vector>
-#include "util/standarditem.h"
+#include "albert/util/standarditem.h"
 #include "player.h"
 using std::vector;
 using std::shared_ptr;

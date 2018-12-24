@@ -18,8 +18,8 @@
 #include "configwidget.h"
 #include "enginesmodel.h"
 #include "extension.h"
-#include "util/standardactions.h"
-#include "util/standarditem.h"
+#include "albert/util/standardactions.h"
+#include "albert/util/standarditem.h"
 #include "xdg/iconlookup.h"
 using namespace Core;
 using namespace std;

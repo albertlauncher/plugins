@@ -25,9 +25,9 @@
 #include <vector>
 #include "configwidget.h"
 #include "extension.h"
-#include "util/standardactions.h"
-#include "util/standardindexitem.h"
-#include "util/offlineindex.h"
+#include "albert/util/standardactions.h"
+#include "albert/util/standardindexitem.h"
+#include "albert/util/offlineindex.h"
 #include "xdg/iconlookup.h"
 using namespace std;
 using namespace Core;

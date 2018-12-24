@@ -5,7 +5,7 @@
 #include <QMimeType>
 #include <map>
 #include <vector>
-#include "core/indexable.h"
+#include "albert/indexable.h"
 
 namespace Files {
 

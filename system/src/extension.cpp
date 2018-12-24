@@ -7,9 +7,9 @@
 #include <array>
 #include "configwidget.h"
 #include "extension.h"
-#include "util/shutil.h"
-#include "util/standardactions.h"
-#include "util/standarditem.h"
+#include "albert/util/shutil.h"
+#include "albert/util/standardactions.h"
+#include "albert/util/standarditem.h"
 #include "xdg/iconlookup.h"
 using namespace std;
 using namespace Core;

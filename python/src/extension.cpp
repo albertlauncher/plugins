@@ -14,11 +14,11 @@
 #include <QUrl>
 #include <memory>
 #include "xdg/iconlookup.h"
-#include "core/query.h"
-#include "core/item.h"
-#include "core/action.h"
-#include "util/standardactions.h"
-#include "util/standarditem.h"
+#include "albert/query.h"
+#include "albert/item.h"
+#include "albert/action.h"
+#include "albert/util/standardactions.h"
+#include "albert/util/standarditem.h"
 #include "extension.h"
 #include "modulesmodel.h"
 #include "configwidget.h"

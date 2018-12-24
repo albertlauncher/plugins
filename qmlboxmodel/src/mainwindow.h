@@ -6,7 +6,7 @@
 #include <QPoint>
 #include <QFileSystemWatcher>
 #include <QIdentityProxyModel>
-#include "core/history.h"
+#include "albert/util/history.h"
 
 namespace QmlBoxModel {
 

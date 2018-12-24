@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2017 Martin Buergmann
 
 #include "item.h"
-#include "util/standardactions.h"
+#include "albert/util/standardactions.h"
 #include <QDBusConnection>
 
 

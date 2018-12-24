@@ -27,10 +27,10 @@
 #include <map>
 #include "extension.h"
 #include "configwidget.h"
-#include "core/extension.h"
-#include "util/offlineindex.h"
-#include "util/standardindexitem.h"
-#include "util/standardactions.h"
+#include "albert/extension.h"
+#include "albert/util/offlineindex.h"
+#include "albert/util/standardindexitem.h"
+#include "albert/util/standardactions.h"
 #include "xdg/iconlookup.h"
 using namespace std;
 using namespace Core;

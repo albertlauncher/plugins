@@ -8,7 +8,7 @@
 #include <QPixmapCache>
 #include <QTextDocument>
 #include "resultslist.h"
-#include "core/itemroles.h"
+#include "albert/util/itemroles.h"
 
 /** ***************************************************************************/
 class WidgetBoxModel::ResultsList::ItemDelegate final : public QStyledItemDelegate

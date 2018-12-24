@@ -6,8 +6,8 @@
 #include <QCryptographicHash>
 #include <stdexcept>
 #include "configwidget.h"
-#include "util/standardactions.h"
-#include "util/standarditem.h"
+#include "albert/util/standardactions.h"
+#include "albert/util/standarditem.h"
 #include "extension.h"
 using namespace std;
 using namespace Core;

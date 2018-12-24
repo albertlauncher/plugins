@@ -3,8 +3,7 @@
 #pragma once
 #include <QAbstractItemModel>
 #include <memory>
-#include "core_globals.h"
-#include "core/frontend.h"
+#include "albert/frontend.h"
 
 namespace QmlBoxModel {
 

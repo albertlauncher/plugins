@@ -9,9 +9,9 @@
 #include "configwidget.h"
 #include "extension.h"
 #include "muParser.h"
-#include "core/query.h"
-#include "util/standarditem.h"
-#include "util/standardactions.h"
+#include "albert/query.h"
+#include "albert/util/standarditem.h"
+#include "albert/util/standardactions.h"
 #include "xdg/iconlookup.h"
 using namespace std;
 using namespace Core;

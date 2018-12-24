@@ -20,8 +20,8 @@
 #include <functional>
 #include <vector>
 #include "cast_specialization.h"
-#include "core/query.h"
-#include "util/standarditem.h"
+#include "albert/query.h"
+#include "albert/util/standarditem.h"
 #include "xdg/iconlookup.h"
 using namespace std;
 using namespace Core;

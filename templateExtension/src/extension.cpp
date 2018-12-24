@@ -3,7 +3,7 @@
 #include <QDebug>
 #include <QPointer>
 #include <stdexcept>
-#include "util/standarditem.h"
+#include "albert/util/standarditem.h"
 #include "xdg/iconlookup.h"
 #include "configwidget.h"
 #include "extension.h"

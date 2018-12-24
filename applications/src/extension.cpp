@@ -21,11 +21,11 @@
 #include <vector>
 #include "configwidget.h"
 #include "extension.h"
-#include "core/queryhandler.h"
-#include "util/offlineindex.h"
-#include "util/standardactions.h"
-#include "util/standardindexitem.h"
-#include "util/shutil.h"
+#include "albert/queryhandler.h"
+#include "albert/util/offlineindex.h"
+#include "albert/util/standardactions.h"
+#include "albert/util/standardindexitem.h"
+#include "albert/util/shutil.h"
 #include "xdg/iconlookup.h"
 using namespace Core;
 using namespace std;
