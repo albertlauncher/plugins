@@ -8,7 +8,6 @@ Python::ConfigWidget::ConfigWidget(QWidget *parent) : QWidget(parent) {
     ui.tableView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui.tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui.tableView->horizontalHeader()->setStretchLastSection(true);
-    ui.tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 }
 
 
