@@ -1,10 +1,13 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
 #pragma once
+#include <QLoggingCategory>
 #include <QObject>
 #include <memory>
 #include "albert/extension.h"
 #include "albert/queryhandler.h"
+
+Q_DECLARE_LOGGING_CATEGORY(qlc_calculator)
 
 namespace Calculator {
 
@@ -20,7 +23,7 @@ class Extension final :
 public:
 
     Extension();
-    ~Extension();
+    ~Extension() override;
 
     QString name() const override { return "Calculator"; }
     QWidget *widget(QWidget *parent = nullptr) override;
