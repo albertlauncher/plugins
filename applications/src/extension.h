@@ -1,10 +1,13 @@
 // Copyright (C) 2014-2019 Manuel Schneider
 
 #pragma once
+#include <QLoggingCategory>
 #include <QObject>
 #include <memory>
 #include "albert/extension.h"
 #include "albert/queryhandler.h"
+
+Q_DECLARE_LOGGING_CATEGORY(qlc_applications)
 
 namespace Applications {
 

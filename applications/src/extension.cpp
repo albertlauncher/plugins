@@ -3,7 +3,6 @@
 #include <QApplication>
 #include <QDir>
 #include <QDirIterator>
-#include <QDebug>
 #include <QFile>
 #include <QFileSystemWatcher>
 #include <QPointer>
@@ -29,6 +28,12 @@
 #include "xdg/iconlookup.h"
 using namespace Core;
 using namespace std;
+
+Q_LOGGING_CATEGORY(qlc_applications, "applications")
+#define DEBUG qCDebug(qlc_applications).noquote()
+#define INFO qCInfo(qlc_applications).noquote()
+#define WARNING qCWarning(qlc_applications).noquote()
+#define CRITICAL qCCritical(qlc_applications).noquote()
 
 extern QString terminalCommand;
 
@@ -195,7 +200,7 @@ void Applications::Private::startIndexing() {
     futureWatcher.setFuture(QtConcurrent::run(this, &Private::indexApplications));
 
     // Notification
-    qInfo() << "Start indexing applications.";
+    INFO << "Start indexing applications.";
     emit q->statusInfo("Indexing applications ...");
 }
 
@@ -226,7 +231,7 @@ void Applications::Private::finishIndexing() {
     }
 
     // Notification
-    qInfo() << qPrintable(QString("Indexed %1 applications.").arg(index.size()));
+    INFO << QString("Indexed %1 applications.").arg(index.size());
     emit q->statusInfo(QString("%1 applications indexed.").arg(index.size()));
 
     if ( rerun ) {
@@ -259,7 +264,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             QString desktopFileId = fIt.filePath().remove(QRegularExpression("^.*applications/")).replace("/","-");
             const auto &pair = desktopFiles.emplace(desktopFileId, fIt.filePath());
             if (!pair.second)
-                qInfo().noquote() << QString("Desktop file skipped: '%1' overwritten in '%2'").arg(fIt.filePath(), desktopFiles[desktopFileId]);
+                INFO << QString("Desktop file skipped: '%1' overwritten in '%2'").arg(fIt.filePath(), desktopFiles[desktopFileId]);
         }
     }
 
@@ -269,7 +274,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
         const QString &id = id_path_pair.first;
         const QString &path = id_path_pair.second;
 
-        qDebug() << "Indexing desktop file:" << id;
+        DEBUG << "Indexing desktop file:" << id;
 
         map<QString,map<QString,QString>> sectionMap;
         map<QString,map<QString,QString>>::iterator sectionIterator;
