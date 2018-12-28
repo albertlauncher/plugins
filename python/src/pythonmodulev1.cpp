@@ -33,44 +33,206 @@ Q_LOGGING_CATEGORY(qlc_python_modulev1, "python.modulev1")
 #define WARNING qCWarning(qlc_python_modulev1).noquote()
 #define CRITICAL qCCritical(qlc_python_modulev1).noquote()
 
+
+
 namespace {
 uint majorInterfaceVersion = 0;
 uint minorInterfaceVersion = 2;
+
+enum Target { IID, NAME, VERSION, TRIGGER, AUTHOR, DEPS};
+const QStringList targetNames = {
+    "__iid__",
+    "__prettyname__",
+    "__version__",
+    "__trigger__",
+    "__author__",
+    "__dependencies__"
+};
 }
 
 class Python::PythonModuleV1Private
 {
 public:
     QString path;
-    QString name;
-    QString id;  // Effectively the module name
+    QString sourceFilePath;
+    QString id;  // id, __name__, Effectively the module name
+
     PythonModuleV1::State state;
     QString errorString;
-    QString author;
-    QString version;
-    QString trigger;
-    QString description;
-    QStringList dependencies;
-    QFileSystemWatcher fileSystemWatcher;
+
     py::module module;
+
+    struct Spec {
+        QString iid;
+        QString prettyName;
+        QString author;
+        QString version;
+        QString trigger;
+        QString description;
+        QStringList dependencies;
+
+    } spec;
 };
 
 /** ***************************************************************************/
 Python::PythonModuleV1::PythonModuleV1(const QString &path) : d(new PythonModuleV1Private) {
+
     d->path = path;
-    d->id = d->name = QFileInfo(d->path).completeBaseName();
-    d->state = State::Unloaded;
+    QFileInfo fileInfo{d->path};
 
-    connect(&d->fileSystemWatcher, &QFileSystemWatcher::fileChanged,
-            this, &PythonModuleV1::unload);
-    connect(&d->fileSystemWatcher, &QFileSystemWatcher::fileChanged,
-            this, &PythonModuleV1::load);
+    if (!fileInfo.exists())
+        throw std::runtime_error("Path does not exist");
+    else if (fileInfo.isDir()){
+        QDir dir{path};
+        if (dir.exists("__init__.py"))
+            d->sourceFilePath = dir.filePath("__init__.py");
+        else
+            throw std::runtime_error("Dir does not contain an init file");
+    }
+    else if (fileInfo.isFile())
+        d->sourceFilePath = fileInfo.absoluteFilePath();
+    else
+        qFatal("This should never happen");
 
-    connect(&d->fileSystemWatcher, &QFileSystemWatcher::directoryChanged,
-            this, &PythonModuleV1::unload);
-    connect(&d->fileSystemWatcher, &QFileSystemWatcher::directoryChanged,
-            this, &PythonModuleV1::load);
+    d->spec.prettyName = d->id = fileInfo.completeBaseName();
+    d->state = State::InvalidMetadata;
 
+    readMetadata();
+}
+
+void Python::PythonModuleV1::readMetadata() {
+
+    DEBUG << "Reading metadata of python module:" << QFileInfo(d->path).fileName();
+
+    py::gil_scoped_acquire acquire;
+
+    try {
+
+        // Get the extension spec source code
+
+        QFile file(d->sourceFilePath);
+        if(!file.open(QIODevice::ReadOnly))
+            throw QString("Cant open init file: %1").arg(d->sourceFilePath);
+        QString source = QTextStream(&file).readAll();
+        file.close();
+
+        // Parse it with ast
+
+        py::module ast = py::module::import("ast");
+        py::object ast_root = ast.attr("parse")(source.toStdString());
+
+        // Get all FunctionDef and Assign ast nodes
+
+        std::map<QString, py::object> metadata_values;
+        for (auto node : ast_root.attr("body")){
+
+            if (py::isinstance(node, ast.attr("FunctionDef")))
+                metadata_values.emplace(node.attr("name").cast<QString>(), node.attr("args").attr("args"));
+
+            if (py::isinstance(node, ast.attr("Assign"))){
+                py::list targets = node.attr("targets");
+                if (py::len(targets) == 1 && py::isinstance(targets[0], ast.attr("Name"))){
+                    QString targetName = targets[0].attr("id").cast<QString>();
+                    if (targetNames.contains(targetName))
+                        metadata_values.emplace(targetName, node.attr("value"));
+                }
+            }
+        }
+
+        // Check interface id
+
+        QString targetName = targetNames[Target::IID];
+        if (!metadata_values.count(targetName))
+            throw QString("Module has no %1 specified").arg(targetName);
+
+        py::object astStringType = py::module::import("ast").attr("Str");
+        py::object obj = metadata_values[targetName];
+        if (!py::isinstance(obj, astStringType))
+            throw QString("%1 is not of type ast.Str").arg(targetName);
+
+        d->spec.iid = obj.attr("s").cast<py::str>().cast<QString>();
+
+        QRegularExpression re("^PythonInterface\\/v(\\d)\\.(\\d)$");
+        QRegularExpressionMatch match = re.match(d->spec.iid);
+        if (!match.hasMatch())
+            throw QString("Invalid interface id: %1").arg(d->spec.iid);
+
+        uint maj = match.captured(1).toUInt();
+        if (maj != majorInterfaceVersion)
+            throw QString("Incompatible major interface version. Expected %1, got %2").arg(majorInterfaceVersion).arg(maj);
+
+        uint min = match.captured(2).toUInt();
+        if (min > minorInterfaceVersion)
+            throw QString("Incompatible minor interface version. Up to %1 supported, got %2").arg(minorInterfaceVersion).arg(min);
+
+        // Check mandatory handleQuery
+
+        if (!metadata_values.count("handleQuery"))
+            throw QString("Modules does not contain a function definition for 'handleQuery'");
+
+        if (py::len(metadata_values.at("handleQuery")) != 1)
+            throw QString("handleQuery function definition does not take exactly one argument");
+
+        // Extract mandatory metadata
+
+        obj = ast.attr("get_docstring")(ast_root);
+        if (py::isinstance<py::str>(obj))
+            d->spec.description = obj.cast<py::str>().cast<QString>();
+        else
+            throw QString("Module does not contain a docstring");
+
+        map<Target, QString&> zip{{Target::NAME, d->spec.prettyName},
+                                  {Target::VERSION, d->spec.version},
+                                  {Target::AUTHOR, d->spec.author}};
+        for (const auto &pair : zip) {
+            targetName = targetNames[pair.first];
+            if (metadata_values.count(targetName)){
+                obj = metadata_values[targetName];
+                if (py::isinstance(obj, astStringType))
+                    pair.second = obj.attr("s").cast<py::str>().cast<QString>();
+                else
+                    throw QString("%1 is not of type ast.Str").arg(targetName);
+            }
+            else
+                throw QString("Module has no %1 specified").arg(targetName);
+        }
+
+        // Extract optional metadata
+
+        targetName = targetNames[Target::TRIGGER];
+        if (metadata_values.count(targetName)){
+            obj = metadata_values[targetName];
+            if (py::isinstance(obj, astStringType))
+                d->spec.trigger = obj.attr("s").cast<py::str>().cast<QString>();
+            else
+                throw QString("%1 is not of type ast.Str").arg(targetName);
+        }
+
+        targetName = targetNames[Target::DEPS];
+        if (metadata_values.count(targetName)) {
+            py::list deps = metadata_values[targetName].attr("elts").cast<py::list>();
+            for (const py::handle dep : deps) {
+                if (py::isinstance(dep, astStringType))
+                    d->spec.dependencies.append(dep.attr("s").cast<py::str>().cast<QString>());
+                else
+                    throw QString("Dependencies contain non string values");
+            }
+        }
+
+        d->state = State::Unloaded;
+    }
+    catch(const QString &error)
+    {
+        d->errorString = error;
+        WARNING << QString("[%1] %2").arg(d->id).arg(d->errorString);
+        d->state = State::InvalidMetadata;
+    }
+    catch(const std::exception &e)
+    {
+        d->errorString = e.what();
+        WARNING << QString("[%1] %2").arg(d->id).arg(d->errorString);
+        d->state = State::InvalidMetadata;
+    }
 }
 
 
@@ -83,80 +245,27 @@ Python::PythonModuleV1::~PythonModuleV1() {
 /** ***************************************************************************/
 void Python::PythonModuleV1::load(){
 
-    if (d->state == State::Loaded)
+    if (d->state == State::Loaded || d->state == State::InvalidMetadata)
         return;
 
     py::gil_scoped_acquire acquire;
 
-    QFileInfo fileInfo(d->path);
     try
     {
-        d->module = py::module::import(fileInfo.completeBaseName().toUtf8().data());
-        d->module.reload();  // Drop cached module version
-
         DEBUG << "Loading" << d->path;
 
-        QString iid = d->module.attr("__iid__").cast<QString>();
-        QRegularExpression re("^PythonInterface\\/v(\\d)\\.(\\d)$");
-        QRegularExpressionMatch match = re.match(iid);
-        if (!match.hasMatch()) {
-            d->errorString = "Incompatible interface id";
-            d->state = State::Error;
-            WARNING << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString);
-            return;
-        }
+        py::module importlib = py::module::import("importlib");
+        py::module importli_util = py::module::import("importlib.util");
+        py::object spec = importli_util.attr("spec_from_file_location")(QString("albert.%1").arg(d->id), d->sourceFilePath); // Prefix to avoid conflicts
+        d->module = importli_util.attr("module_from_spec")(spec);
+        spec.attr("loader").attr("exec_module")(d->module);
 
-        uint maj = match.captured(1).toUInt();
-        if (maj != majorInterfaceVersion) {
-            d->errorString = QString("Incompatible major interface version. Expected %1, got %2").arg(majorInterfaceVersion).arg(maj);
-            d->state = State::Error;
-            WARNING << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString);
-            return;
-        }
-
-        uint min = match.captured(2).toUInt();
-        if (min > minorInterfaceVersion) {
-            d->errorString = QString("Incompatible minor interface version. Up to %1 supported, got %2").arg(minorInterfaceVersion).arg(min);
-            d->state = State::Error;
-            WARNING << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString);
-            return;
-        }
-
-        if (py::hasattr(d->module, "__prettyname__"))
-            d->name = d->module.attr("__prettyname__").cast<QString>();
-
-        if (py::hasattr(d->module.ptr(), "__version__"))
-            d->version = d->module.attr("__version__").cast<QString>();
-
-        if (py::hasattr(d->module.ptr(), "__author__"))
-            d->author = d->module.attr("__author__").cast<QString>();
-
-        if (py::hasattr(d->module.ptr(), "__doc__")){
-            py::object docString = d->module.attr("__doc__");
-            if (!docString.is_none())
-                d->description = docString.cast<QString>();
-        }
-
-        if (py::hasattr(d->module.ptr(), "__trigger__")){
-            py::object trigger = d->module.attr("__trigger__");
-            if (!trigger.is_none())
-                d->trigger = trigger.cast<QString>();
-        }
-
-        if (py::hasattr(d->module.ptr(), "__dependencies__")){
-            py::list deps = d->module.attr("__dependencies__").cast<py::list>();
-            d->dependencies.clear();
-            for(py::size_t i = 0; i < py::len(deps); i++)
-                d->dependencies.append(deps[i].cast<QString>());
-        }
-
-        if (py::hasattr(d->module, "initialize")) {
-            py::object init = d->module.attr("initialize");
-            if (py::isinstance<py::function>(init))
-                init();
-        }
+        // Call init function, if exists
+        if (py::hasattr(d->module, "initialize"))
+            if (py::isinstance<py::function>(d->module.attr("initialize")))
+                d->module.attr("initialize")();
     }
-    catch(std::exception const &e)
+    catch(const std::exception &e)
     {
         d->errorString = e.what();
         WARNING << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString);
@@ -165,19 +274,7 @@ void Python::PythonModuleV1::load(){
         return;
     }
 
-    if (fileInfo.isDir()) {
-        QDirIterator dit(d->path, QDir::Dirs|QDir::NoDotDot, QDirIterator::Subdirectories);
-        while (dit.hasNext())
-            if (dit.next() != "__pycache__")
-                d->fileSystemWatcher.addPath(dit.path());
-        QDirIterator fit(d->path, {"*.py"}, QDir::Files, QDirIterator::Subdirectories);
-        while (fit.hasNext())
-            d->fileSystemWatcher.addPath(fit.next());
-    } else
-        d->fileSystemWatcher.addPath(d->path);
-
     d->state = State::Loaded;
-    emit moduleChanged();
 }
 
 
@@ -195,27 +292,22 @@ void Python::PythonModuleV1::unload(){
 
         try
         {
-            if (py::hasattr(d->module, "finalize")) {
-                py::object fini = d->module.attr("finalize");
-                if (py::isinstance<py::function>(fini))
-                    fini();
-            }
+            // Call fini function, if exists
+            if (py::hasattr(d->module, "finalize"))
+                if (py::isinstance<py::function>(d->module.attr("finalize")))
+                    d->module.attr("finalize")();
+
+            // Dereference module, unloads hopefully
             d->module = py::object();
         }
         catch(std::exception const &e)
         {
             WARNING << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(e.what());
         }
-
-        if (!d->fileSystemWatcher.files().isEmpty())
-            d->fileSystemWatcher.removePaths(d->fileSystemWatcher.files());
-        if (!d->fileSystemWatcher.files().isEmpty())
-            d->fileSystemWatcher.removePaths(d->fileSystemWatcher.directories());
     }
 
     d->errorString.clear();
     d->state = State::Unloaded;
-    emit moduleChanged();
 }
 
 
@@ -259,13 +351,14 @@ void Python::PythonModuleV1::handleQuery(Query *query) const {
 Python::PythonModuleV1::State Python::PythonModuleV1::state() const { return d->state; }
 const QString &Python::PythonModuleV1::errorString() const { return d->errorString; }
 const QString &Python::PythonModuleV1::path() const { return d->path; }
+const QString &Python::PythonModuleV1::sourcePath() const { return d->sourceFilePath; }
 const QString &Python::PythonModuleV1::id() const { return d->id; }
-const QString &Python::PythonModuleV1::name() const { return d->name; }
-const QString &Python::PythonModuleV1::author() const { return d->author; }
-const QString &Python::PythonModuleV1::version() const { return d->version; }
-const QString &Python::PythonModuleV1::description() const { return d->description; }
-const QString &Python::PythonModuleV1::trigger() const { return d->trigger; }
-const QStringList &Python::PythonModuleV1::dependencies() const { return d->dependencies; }
+const QString &Python::PythonModuleV1::name() const { return d->spec.prettyName; }
+const QString &Python::PythonModuleV1::author() const { return d->spec.author; }
+const QString &Python::PythonModuleV1::version() const { return d->spec.version; }
+const QString &Python::PythonModuleV1::description() const { return d->spec.description; }
+const QString &Python::PythonModuleV1::trigger() const { return d->spec.trigger; }
+const QStringList &Python::PythonModuleV1::dependencies() const { return d->spec.dependencies; }
 
 
 

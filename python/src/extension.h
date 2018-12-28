@@ -24,7 +24,7 @@ class Extension final :
 public:
 
     Extension();
-    ~Extension();
+    ~Extension() override;
 
     QString name() const override { return "Python extensions"; }
     QWidget *widget(QWidget *parent = nullptr) override;
@@ -40,7 +40,7 @@ private:
 
     std::unique_ptr<Private> d;
 
-    void updateDirectory(const QString &path);
+    void reloadModules();
 
 signals:
 

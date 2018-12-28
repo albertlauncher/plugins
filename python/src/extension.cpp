@@ -167,7 +167,8 @@ public:
     unique_ptr<py::gil_scoped_release> release;
     QPointer<ConfigWidget> widget;
     vector<unique_ptr<PythonModuleV1>> modules;
-    QFileSystemWatcher fileSystemWatcher;
+    QFileSystemWatcher extensionDirectoryWatcher;
+    QFileSystemWatcher sourcesWatcher;
     QStringList enabledModules;
 };
 
@@ -178,12 +179,13 @@ Python::Extension::Extension()
       Core::QueryHandler(Core::Plugin::id()),
       d(new Private) {
 
-    /* The python interpreter is never unloaded once it has been loaded. This is working around the
+    /*
+     * The python interpreter is never unloaded once it has been loaded. This is working around the
      * ugly segfault that occur when third-party libraries have been loaded an the interpreter is
-     * finalized and initialized. */
+     * finalized and initialized.
+     */
     if ( !Py_IsInitialized() )
         py::initialize_interpreter(false);
-
     d->release.reset(new py::gil_scoped_release);
 
     d->enabledModules = settings().value(CFG_ENABLEDMODS).toStringList();
@@ -191,25 +193,22 @@ Python::Extension::Extension()
     if ( !dataLocation().exists(MODULES_DIR) )
         dataLocation().mkdir(MODULES_DIR);
 
-    // Load the modules
-    for (const QString &pluginDir : QStandardPaths::locateAll(QStandardPaths::DataLocation,
-                                                              Core::Plugin::id(),
-                                                              QStandardPaths::LocateDirectory) ) {
-        QString extensionDir = QDir(pluginDir).filePath(MODULES_DIR);
-        if ( QFile::exists(extensionDir) ) {
-            try { // Append scriptsPath to sys.path
-                py::gil_scoped_acquire acquire;
-                py::module::import("sys").attr("path").cast<py::list>().append(extensionDir);
-            } catch (exception &e) {
-                throw e.what();
-            }
-            d->fileSystemWatcher.addPath(extensionDir);
-            updateDirectory(extensionDir);
-        }
+    // Watch the modules directories for changes
+    for (const QString &dataDir : QStandardPaths::locateAll(QStandardPaths::DataLocation,
+                                                            Core::Plugin::id(),
+                                                            QStandardPaths::LocateDirectory) ) {
+        QDir dir{dataDir};
+        if (dir.cd(MODULES_DIR))
+            d->extensionDirectoryWatcher.addPath(dir.path());
     }
 
-    connect(&d->fileSystemWatcher, &QFileSystemWatcher::directoryChanged,
-            this, &Extension::updateDirectory);
+    connect(&d->extensionDirectoryWatcher, &QFileSystemWatcher::directoryChanged,
+            this, &Extension::reloadModules);
+
+    connect(&d->sourcesWatcher, &QFileSystemWatcher::fileChanged,
+            this, &Extension::reloadModules);
+
+    reloadModules();
 
     registerQueryHandler(this);
 }
@@ -298,45 +297,59 @@ void Python::Extension::setEnabled(Python::PythonModuleV1 &module, bool enable) 
 
 
 /** ***************************************************************************/
-void Python::Extension::updateDirectory(const QString &path) {
+void Python::Extension::reloadModules() {
 
-    // Remove deleted modules, yes deletes in other dirs too whatever… it has been deleted
-    for ( auto it = d->modules.begin(); it != d->modules.end(); ++it)
-        if ( !QFile::exists((*it)->path()) )
-             it = --d->modules.erase(it);
+    // Reset
 
-    // Add new modules
-    QDirIterator dirIterator(path, QDir::Files|QDir::Dirs|QDir::NoDotAndDotDot, QDirIterator::NoIteratorFlags);
-    while (dirIterator.hasNext()) {
-        QString path = dirIterator.next();
-        QFileInfo info = dirIterator.fileInfo();
-        QString id = info.completeBaseName();
+    d->modules.clear();
+    d->sourcesWatcher.removePaths(d->sourcesWatcher.files());
 
-        if (id == "__pycache__")
-            continue;
+    // Get all module source paths
 
-        // Skip non-python files, e.g. README.md
-        if (info.isFile() && !path.endsWith(".py"))
-             continue;
+    QStringList paths;
+    for (const QString &dataDir : QStandardPaths::locateAll(QStandardPaths::DataLocation,
+                                                            Core::Plugin::id(),
+                                                            QStandardPaths::LocateDirectory) ) {
+        QDir dir{dataDir};
+        if (dir.cd(MODULES_DIR)) {
+            for(const QFileInfo &fileInfo : dir.entryInfoList(QDir::Dirs|QDir::NoDotAndDotDot)) {
+                QDir dir{fileInfo.filePath()};
+                if (dir.exists("__init__.py"))
+                    paths.append(dir.absolutePath());
+            }
+            for(const QFileInfo &fileInfo : dir.entryInfoList({"*.py"}, QDir::Files))
+                paths.append(fileInfo.absoluteFilePath());
+        }
+    }
 
-        // Skip if this id already exists
-        if ( find_if(d->modules.begin(), d->modules.end(),
-                     [&id](const unique_ptr<PythonModuleV1> &rhs){return id == rhs->id();})
-             != d->modules.end() )
-            continue;
+    // Read metada, ignore dup ids, load id enabled, source file watcher
 
-        PythonModuleV1 *module = new PythonModuleV1(path);
-        d->modules.emplace_back(module);
-        if (d->enabledModules.contains(module->id()))
-            module->load();
-        connect(module, &PythonModuleV1::moduleChanged,
-                this, &Extension::modulesChanged);
+    for(const QString &path : paths){
+        try {
+            auto module = make_unique<PythonModuleV1>(path);
+
+            // Skip if this id already exists
+            if ( find_if(d->modules.begin(), d->modules.end(),
+                         [&module](const unique_ptr<PythonModuleV1> &rhs){return module->id() == rhs->id();})
+                 != d->modules.end() )
+                continue;
+
+            if (d->enabledModules.contains(module->id()))
+                module->load();
+
+            d->sourcesWatcher.addPath(module->sourcePath());
+            d->modules.emplace_back(move(module));
+
+        } catch (const std::exception &e) {
+            WARNING << e.what() << path;
+        }
     }
 
     std::sort(d->modules.begin(), d->modules.end(),
               [](auto& lhs, auto& rhs){ return 0 > lhs->name().localeAwareCompare(rhs->name()); });
 
     emit modulesChanged();
+
 }
 
 
