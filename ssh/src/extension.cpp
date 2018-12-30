@@ -35,7 +35,7 @@ public:
     QString icon;
     QPointer<ConfigWidget> widget;
     QFileSystemWatcher fileSystemWatcher;
-    map<QString, QString> hosts;
+    vector<pair<QString, QString>> hosts;
     bool useKnownHosts;
 };
 
@@ -122,7 +122,7 @@ void Ssh::Extension::handleQuery(Query * query) const {
     else
     {
         // Check sanity of input
-        QRegularExpression re("^(?:(\\w+)@)?([\\w\\–\\.]*)(?::(\\d+))?$");
+        QRegularExpression re(R"raw(^(?:(\w+)@)?\[?((?:\w[\w:]*|[\w\.]*))\]?(?::(\d+))?$)raw");
         QRegularExpressionMatch match = re.match(trimmed);
 
         if (match.hasMatch())
@@ -180,7 +180,7 @@ void Ssh::Extension::handleQuery(Query * query) const {
 /** ***************************************************************************/
 void Ssh::Extension::rescan() {
 
-    d->hosts.clear();
+    map<QString, QString> hosts;
 
     // Get the hosts in config
     for (const QString& path : { QString("/etc/ssh/config"), QDir::home().filePath(".ssh/config") }) {
@@ -193,7 +193,7 @@ void Ssh::Extension::rescan() {
                     if ( fields.size() > 1 && fields[0] == "Host")
                         for ( int i = 1; i < fields.size(); ++i )
                             if ( !(fields[i].contains('*') || fields[i].contains('?')) )
-                                d->hosts.emplace(fields[i], "");
+                                hosts.emplace(fields[i], QString());
                 }
                 file.close();
             }
@@ -206,17 +206,25 @@ void Ssh::Extension::rescan() {
         if (QFile::exists(path)){
             QFile file(path);
             if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                QRegularExpression re("^\\[?([\\w\\-\\.\\:]+)\\]?(?::(\\d+))?");
+                QRegularExpression re(R"raw(^\[?([\w\-\.\:]+)\]?(?::(\d+))?)raw");
                 QTextStream in(&file);
                 while (!in.atEnd()) {
                     QRegularExpressionMatch match = re.match(in.readLine());
                     if (match.hasMatch())
-                        d->hosts.emplace(match.captured(1), match.captured(2));
+                        hosts.emplace(match.captured(1), match.captured(2));
                 }
                 file.close();
             }
         }
     }
+
+    d->hosts = vector<pair<QString, QString>>{hosts.begin(), hosts.end()};
+
+    // Sort by length and lexical
+    std::sort(d->hosts.begin(), d->hosts.end(),
+              [](const auto &li, const auto &ri){ return li.first < ri.first; });
+    std::stable_sort(d->hosts.begin(), d->hosts.end(),
+                    [](const auto &li, const auto &ri){ return li.first.size() < ri.first.size(); });
 }
 
 
