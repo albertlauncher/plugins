@@ -112,7 +112,8 @@ void Ssh::Extension::handleQuery(Query * query) const {
                 item->setSubtext(QString("Connect to '%1'").arg(target));
                 item->setCompletion(QString("ssh %1").arg(target));
                 item->setIconPath(d->icon);
-                item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(target), QStringList() << "ssh" << QString("ssh://%1").arg(target)));
+                item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(target),
+                                                        QStringList{"ssh", target}));
 
                 query->addMatch(std::move(item));
             }
@@ -149,12 +150,11 @@ void Ssh::Extension::handleQuery(Query * query) const {
                         target = QString("[%1]:%2").arg(target, port);
                     if (!q_user.isEmpty())
                         target = QString("%1@%2").arg(q_user, target);
-
                     QString subtext = QString("Connect to '%1'").arg(target);
 
                     item->setSubtext(subtext);
                     item->setCompletion(QString("ssh %1").arg(target));
-                    item->addAction(make_shared<TermAction>(subtext, QStringList{"ssh", QString("ssh://%1").arg(target)}));
+                    item->addAction(make_shared<TermAction>(subtext, QStringList{"ssh", target}));
 
                     query->addMatch(std::move(item), static_cast<uint>(1.0*q_host.size()/host.size()* UINT_MAX));
                 }
@@ -167,7 +167,8 @@ void Ssh::Extension::handleQuery(Query * query) const {
                 item->setSubtext("Quick connect to an unknown host");
                 item->setCompletion(QString("ssh %1").arg(trimmed));
                 item->setIconPath(d->icon);
-                item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(match.captured(0)), QStringList() << "ssh" << trimmed));
+                item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(match.captured(0)),
+                                                        QStringList{"ssh", trimmed}));
                 query->addMatch(std::move(item));
             }
         }
