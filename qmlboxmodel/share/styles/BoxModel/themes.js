@@ -190,7 +190,7 @@ function themes() {
     themes.Spotlight.input_color = "#303030"
     themes.Spotlight.cursor_color = "#303030"
     themes.Spotlight.selection_color = "#c0c0c0"
-    themes.Spotlight.settingsbutton_color = "#ffffff"
+    themes.Spotlight.settingsbutton_color = "#00000000"
     themes.Spotlight.settingsbutton_hover_color = "#a0a0a0"
     themes.Spotlight.shadow_color = "#70000000"
 
@@ -216,8 +216,8 @@ function themes() {
     themes.ArcDark.input_color = "#ffffff"
     themes.ArcDark.cursor_color = "#ffffff"
     themes.ArcDark.selection_color = "#c0c0c0"
-    themes.ArcDark.settingsbutton_color = "#666A73"
-    themes.ArcDark.settingsbutton_hover_color = "#ffffff"
+    themes.ArcDark.settingsbutton_color = "#00000000"
+    themes.ArcDark.settingsbutton_hover_color = "#666A73"
     themes.ArcDark.shadow_color = "#70000000"
 
     themes.ArcGreyDark = {}
