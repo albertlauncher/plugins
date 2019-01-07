@@ -1,10 +1,13 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
 #pragma once
+#include <QString>
 #include <QWidget>
-#include <QStringListModel>
 #include <memory>
 #include "albert/frontend.h"
+
+class QByteArray;
+class QAbstractItemModel;
 
 namespace WidgetBoxModel {
 
@@ -17,7 +20,7 @@ class FrontendWidget final : public QWidget
 public:
 
     FrontendWidget(QSettings*);
-    ~FrontendWidget();
+    ~FrontendWidget() override;
 
     bool isVisible();
     void setVisible(bool visible) override;

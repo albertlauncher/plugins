@@ -1,9 +1,9 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
 #include <QAbstractItemModel>
-#include <QGraphicsDropShadowEffect>
 #include <QAction>
 #include <QApplication>
+#include <QByteArray>
 #include <QCloseEvent>
 #include <QCursor>
 #include <QDebug>
@@ -11,8 +11,10 @@
 #include <QDir>
 #include <QEvent>
 #include <QFile>
-#include <QStandardPaths>
+#include <QGraphicsDropShadowEffect>
 #include <QSettings>
+#include <QStandardPaths>
+#include <QStringListModel>
 #include <QTimer>
 #include <QVBoxLayout>
 #include "albert/util/history.h"
