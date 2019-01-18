@@ -9,11 +9,11 @@
 #include <set>
 #include <QFileSystemWatcher>
 #include <QRegularExpression>
-#include "util/standarditem.h"
-#include "util/standardactions.h"
+#include "albert/util/standarditem.h"
+#include "albert/util/standardactions.h"
 #include "xdg/iconlookup.h"
 #include "configwidget.h"
-#include "util/offlineindex.h"
+#include "albert/util/offlineindex.h"
 #include "extension.h"
 
 using namespace Core;
