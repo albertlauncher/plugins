@@ -324,7 +324,7 @@ void Files::Extension::handleQuery(Core::Query * query) const {
             QDir dir(pathInfo.filePath());
             QString commonPrefix;
             QString queryFileName = queryFileInfo.fileName();
-            vector<shared_ptr<StandardItem>> items;
+            vector<pair<shared_ptr<Core::StandardItem>,uint>> results;
 
             for (const QFileInfo& fileInfo : dir.entryInfoList(QDir::AllEntries|QDir::Hidden|QDir::NoDotAndDotDot,
                                                                QDir::DirsFirst|QDir::Name|QDir::IgnoreCase) ) {
@@ -350,15 +350,19 @@ void Files::Extension::handleQuery(Core::Query * query) const {
                     auto item = make_shared<StandardItem>(fileInfo.filePath(),
                                                           icon,
                                                           fileName,
-                                                          fileInfo.filePath());
+                                                          fileInfo.filePath(),
+                                                          dir.filePath(fileName));
                     item->setActions(File::buildFileActions(fileInfo.filePath()));
-                    items.push_back(move(item));
+                    results.emplace_back(move(item), 0);
                 }
             }
-            for (auto &item : items) {
-                item->setCompletion(dir.filePath(commonPrefix));
-                query->addMatch(std::move(item));
-            }
+
+            if (!commonPrefix.isEmpty())
+                for (auto &item : results)
+                    item.first->setCompletion(dir.filePath(commonPrefix));
+
+            query->addMatches(make_move_iterator(results.begin()),
+                              make_move_iterator(results.end()));
         }
     }
     else
