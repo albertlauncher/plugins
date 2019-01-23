@@ -37,7 +37,7 @@ Q_LOGGING_CATEGORY(qlc_python_modulev1, "python.modulev1")
 
 namespace {
 uint majorInterfaceVersion = 0;
-uint minorInterfaceVersion = 2;
+uint minorInterfaceVersion = 3;
 
 enum Target { IID, NAME, VERSION, TRIGGER, AUTHOR, DEPS};
 const QStringList targetNames = {
