@@ -143,7 +143,7 @@ void getVSCodeProjs(const QString& path, std::map<QString, Coder::ProjItem>& ret
         const QJsonObject& jsonObj = doc.object();
 
         const QJsonObject& jOpenedPathList = jsonObj["openedPathsList"].toObject();
-        const QJsonArray& jWorkspaces = jOpenedPathList["workspaces2"].toArray();
+        const QJsonArray& jWorkspaces = jOpenedPathList["workspaces3"].toArray();
 
         qDebug() << "[Coder]: The path size is " << jWorkspaces.size();
         QJsonArray::const_iterator it;
