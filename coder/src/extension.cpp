@@ -258,7 +258,7 @@ void Coder::Extension::handleQuery(Core::Query *query) const {
         for(auto proj: d->projsMap) {
             const ProjItem& pItem = proj.second;
 
-            if (pItem.name.startsWith(query->string()) ) {
+            if (pItem.name.startsWith(query->string(), Qt::CaseSensitivity::CaseInsensitive) ) {
                 // create item
                 auto item = std::make_shared<StandardItem>("vscode_" + pItem.path);
                 qDebug() << pItem.name << " " << pItem.path;
