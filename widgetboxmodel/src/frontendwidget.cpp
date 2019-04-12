@@ -1,7 +1,7 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
+#include "frontendwidget.h"
 #include <QAbstractItemModel>
-#include <QGraphicsDropShadowEffect>
 #include <QAction>
 #include <QApplication>
 #include <QCloseEvent>
@@ -11,14 +11,15 @@
 #include <QDir>
 #include <QEvent>
 #include <QFile>
-#include <QStandardPaths>
+#include <QGraphicsDropShadowEffect>
+#include <QGuiApplication>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QTimer>
 #include <QVBoxLayout>
 #include "albert/util/history.h"
 #include "albert/util/itemroles.h"
 #include "configwidget.h"
-#include "frontendwidget.h"
 #include "resultslist.h"
 #include "settingsbutton.h"
 #include "ui_frontend.h"
@@ -538,20 +539,22 @@ void WidgetBoxModel::FrontendWidget::resizeEvent(QResizeEvent *event) {
     d->settingsButton_->move(d->ui.frame->geometry().topRight() - QPoint(d->settingsButton_->width()-1,0));
 
 #ifdef __unix__
-    // Keep the input shape consistent
-    int shape_event_base, shape_error_base;
-    if (XShapeQueryExtension(QX11Info::display(), &shape_event_base, &shape_error_base)) {
+    if (QGuiApplication::platformName() != "wayland") {
+        // Keep the input shape consistent
+        int shape_event_base, shape_error_base;
 
-        Region region = XCreateRegion();
-        XRectangle rectangle;
-        int scalefactor = devicePixelRatio();  // TODO Qt>5.6 devicePixelRatioF
-        rectangle.x      = static_cast<int16_t>(d->ui.frame->geometry().x()*scalefactor);
-        rectangle.y      = static_cast<int16_t>(d->ui.frame->geometry().y()*scalefactor);
-        rectangle.width  = static_cast<uint16_t>(d->ui.frame->geometry().width()*scalefactor);
-        rectangle.height = static_cast<uint16_t>(d->ui.frame->geometry().height()*scalefactor);
-        XUnionRectWithRegion(&rectangle, region, region);
-        XShapeCombineRegion(QX11Info::display(), winId(), ShapeInput, 0, 0, region, ShapeSet);
-        XDestroyRegion(region);
+        if (XShapeQueryExtension(QX11Info::display(), &shape_event_base, &shape_error_base)) {
+            Region region = XCreateRegion();
+            XRectangle rectangle;
+            int scalefactor = devicePixelRatio();  // TODO Qt>5.6 devicePixelRatioF
+            rectangle.x = static_cast<int16_t>(d->ui.frame->geometry().x() * scalefactor);
+            rectangle.y = static_cast<int16_t>(d->ui.frame->geometry().y() * scalefactor);
+            rectangle.width = static_cast<uint16_t>(d->ui.frame->geometry().width() * scalefactor);
+            rectangle.height = static_cast<uint16_t>(d->ui.frame->geometry().height() * scalefactor);
+            XUnionRectWithRegion(&rectangle, region, region);
+            XShapeCombineRegion(QX11Info::display(), winId(), ShapeInput, 0, 0, region, ShapeSet);
+            XDestroyRegion(region);
+        }
     }
 #endif
 
