@@ -52,13 +52,12 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
 
     m.doc() = "pybind11 example module";
 
-    py::class_<Core::Query, std::unique_ptr<Query, py::nodelete>>(m, "Query", "The query object to handle for a user input")
-            .def_property_readonly("string", &Query::string)
-            .def_property_readonly("rawString", &Query::rawString)
-            .def_property_readonly("trigger", &Query::trigger)
-            .def_property_readonly("isTriggered", &Query::isTriggered)
-            .def_property_readonly("isValid", &Query::isValid)
-            ;
+    py::class_<Core::Query, std::unique_ptr<Query, py::nodelete>> query(m, "Query", "The query object to handle for a user input");
+    query.def_property_readonly("string", &Query::string);
+    query.def_property_readonly("rawString", &Query::rawString);
+    query.def_property_readonly("trigger", &Query::trigger);
+    query.def_property_readonly("isTriggered", &Query::isTriggered);
+    query.def_property_readonly("isValid", &Query::isValid);
 
     py::class_<Action, shared_ptr<Action>>(m, "ActionBase", "An abstract action")
             ;
@@ -156,6 +155,11 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
     m.def("dataLocation", [](){ return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation); });
     m.def("cacheLocation", [](){ return QStandardPaths::writableLocation(QStandardPaths::CacheLocation); });
 
+    /*
+     * 0.3
+     */
+
+    query.def("disableSort", &Query::disableSort);
 
 }
 

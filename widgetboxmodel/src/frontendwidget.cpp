@@ -4,6 +4,7 @@
 #include <QAbstractItemModel>
 #include <QAction>
 #include <QApplication>
+#include <QByteArray>
 #include <QCloseEvent>
 #include <QCursor>
 #include <QDebug>
