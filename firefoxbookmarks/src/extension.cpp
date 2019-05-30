@@ -63,6 +63,7 @@ public:
     QString profilesIniPath;
     QString currentProfileId;
     QString dbPath;
+    QString tempDbPath;
     QFileSystemWatcher databaseWatcher;
 
     vector<shared_ptr<Core::StandardIndexItem>> index;
@@ -78,6 +79,8 @@ public:
 
 /** ***************************************************************************/
 void FirefoxBookmarks::Private::startIndexing() {
+
+    QFile::copy(dbPath, tempDbPath);
 
     // Never run concurrent
     if ( futureWatcher.future().isRunning() )
@@ -123,7 +126,7 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
 
     {
         QSqlDatabase database = QSqlDatabase::addDatabase("QSQLITE", q->Core::Plugin::id());;
-        database.setDatabaseName(dbPath);
+        database.setDatabaseName(tempDbPath);
 
         if (!database.open()) {
             qWarning() << qPrintable(QString("Could not open Firefox database: %1").arg(database.databaseName()));
@@ -380,6 +383,7 @@ void FirefoxBookmarks::Extension::setProfile(const QString& profile) {
         return;
     }
 
+
     // Get the correct absolute profile path
     QString profilePath = ( profilesIni.contains("IsRelative") && profilesIni.value("IsRelative").toBool())
             ? QFileInfo(d->profilesIniPath).dir().absoluteFilePath(profilesIni.value("Path").toString())
@@ -388,8 +392,14 @@ void FirefoxBookmarks::Extension::setProfile(const QString& profile) {
     // Build the database path
     QString dbPath = QString("%1/places.sqlite").arg(profilePath);
 
+    // Build the cache dir because FF database is locked
+    QDir cacheDir = Core::Plugin::cacheLocation();
+    QFile cacheFile(cacheDir.filePath("places_albert.sqlite"));
+    QString tempDbPath = cacheFile.fileName();
+
     // Set the databases path
     d->dbPath = dbPath;
+    d->tempDbPath = tempDbPath;
 
     // Set a file system watcher on the database monitoring changes
     if (!d->databaseWatcher.files().isEmpty())
