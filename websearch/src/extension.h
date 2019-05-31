@@ -2,9 +2,9 @@
 
 #pragma once
 #include <memory>
-#include "core/extension.h"
-#include "core/queryhandler.h"
-#include "core/fallbackprovider.h"
+#include "albert/extension.h"
+#include "albert/queryhandler.h"
+#include "albert/fallbackprovider.h"
 #include "searchengine.h"
 
 namespace Websearch {

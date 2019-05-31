@@ -58,6 +58,13 @@
           <string>Additionally use generic name for lookup</string>
          </property>
         </widget>
+      </item>
+      <item>
+        <widget class="QCheckBox" name="checkBox_useNonLocalizedName">
+         <property name="text">
+          <string>Additionally use non-localized name for lookup</string>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QCheckBox" name="checkBox_fuzzy">

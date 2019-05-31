@@ -12,8 +12,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE src/)
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        ${Qt5Widgets_LIBRARIES}
-        albertcore
+        Qt5::Widgets
+        albert::lib
 )
 
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib/albert/plugins)

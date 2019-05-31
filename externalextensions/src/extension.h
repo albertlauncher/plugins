@@ -3,7 +3,7 @@
 #pragma once
 #include <QObject>
 #include <memory>
-#include "core/extension.h"
+#include "albert/extension.h"
 #include "externalextension.h"
 
 namespace ExternalExtensions {

@@ -128,9 +128,6 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
                                            const IndexSettings &indexSettings,
                                            std::set<QString> *indexedDirs,
                                            const vector<IgnoreEntry> &ignoreEntries){
-
-    if (abort) return;
-
     const QFileInfo fileInfo(path());
 
     // Skip if this dir has already been indexed (loop detection)
@@ -177,13 +174,12 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
 
     if ( lastModified < fileInfo.lastModified() || indexSettings.forceUpdate() ) {
 
-        QString canonicalFilePath = fileInfo.canonicalFilePath();
-        indexedDirs->insert(canonicalFilePath);
-        qDebug() << "Indexing directory " << canonicalFilePath;
+        indexedDirs->insert(fileInfo.canonicalFilePath());
+
+        QString absFilePath = fileInfo.absoluteFilePath();
+        qDebug() << "Indexing directory " << absFilePath;
 
         lastModified = fileInfo.lastModified();
-
-        items_.clear();
 
         // Drop nonexistant child nodes
         decltype(children)::iterator childIt = children.begin();
@@ -196,28 +192,15 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
 
 
         // Handle the directory contents
-        // Prepare the iterator properties
-        QDir::Filters entryListFilters = QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden;
-        const QFileInfoList &fil = QDir(canonicalFilePath).entryInfoList(entryListFilters, QDir::Name);
-        for ( const QFileInfo &fileInfo : fil ){
-
-            bool isValid = true;
+        items_.clear();
+        auto filters = QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden;
+        for ( const QFileInfo &fileInfo : QDir(absFilePath).entryInfoList(filters, QDir::Name) ){
 
             // Skip check if this file should be excluded
             PatternType patternType = PatternType::Include;
             for ( const IgnoreEntry &ignoreEntry : localIgnoreEntries )
                 if ( ignoreEntry.regex.match(fileInfo.filePath()).hasMatch() )
                     patternType = ignoreEntry.type;
-            if ( patternType == PatternType::Exclude )
-                isValid &= false;
-
-            // Invalidate if this file is a symlink and we should skip symlinks
-            if ( fileInfo.isSymLink() && !indexSettings.followSymlinks() )
-                isValid &= false;
-
-            // Invalidate if this file is hidden we should skip hidden files
-            if ( fileInfo.isHidden() && !indexSettings.indexHidden() )
-                isValid &= false;
 
             // Add directories as nodes
             if ( fileInfo.isDir() ) {
@@ -229,12 +212,17 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
                     return child->name < name;
                 });
 
-                // If does not exist and is valid insert
                 if ( lb == children.end() || (*lb)->name != fileInfo.fileName() ) {
-                    if (isValid)
+                    // If does not exist and is valid insert
+                    if (!( patternType == PatternType::Exclude  // Skip check if this file should be excluded
+                           || ( fileInfo.isSymLink() && !indexSettings.followSymlinks() )  // Skip if symlink and we should skip these
+                           || ( fileInfo.isHidden() && !indexSettings.indexHidden() )))  // Skip if hidden and we should skip these
                         children.insert(lb, make_shared<IndexTreeNode>(fileInfo.fileName(), shared_from_this()));
+                }
+                else if (patternType == PatternType::Exclude  // Skip check if this file should be excluded
+                         || ( fileInfo.isSymLink() && !indexSettings.followSymlinks() )  // Skip if symlink and we should skip these
+                         || ( fileInfo.isHidden() && !indexSettings.indexHidden() )) {  // Skip if hidden and we should skip these
                     // If does exist and is invalid remove node
-                } else if (!isValid){
                     (*lb)->removeDownlinks();
                     children.erase(lb);
                 }
@@ -245,8 +233,10 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
             const QString mimeName = mimetype.name();
 
             // If the entry is valid and a mime filter matches add it to the items
-            if (isValid && any_of(indexSettings.filters().begin(), indexSettings.filters().end(),
-                                  [&](const QRegExp &re){ return re.exactMatch(mimeName); }) )
+            if (!( patternType == PatternType::Exclude     // Skip check if this file should be excluded
+                  || ( fileInfo.isHidden() && !indexSettings.indexHidden()) )  // Skip if hidden and we should skip these
+                  && any_of(indexSettings.filters().begin(), indexSettings.filters().end(),
+                            [&](const QRegExp &re){ return re.exactMatch(mimeName); }) )
                 items_.push_back(make_shared<Files::IndexFile>(fileInfo.fileName(),
                                                                shared_from_this(),
                                                                mimetype));
@@ -254,8 +244,8 @@ void Files::IndexTreeNode::updateRecursion(const bool &abort,
     }
 
     // Recursively check all childnodes too
-    for ( const shared_ptr<IndexTreeNode> &child : children )
-        child->updateRecursion(abort, mimeDatabase, indexSettings, indexedDirs, localIgnoreEntries);
+    for ( auto it = children.begin(); !abort && it < children.end(); ++it)
+        (*it)->updateRecursion(abort, mimeDatabase, indexSettings, indexedDirs, localIgnoreEntries);
 
 }
 

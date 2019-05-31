@@ -3,7 +3,6 @@
 #include <QApplication>
 #include <QDir>
 #include <QDirIterator>
-#include <QDebug>
 #include <QFile>
 #include <QFileSystemWatcher>
 #include <QPointer>
@@ -21,29 +20,36 @@
 #include <vector>
 #include "configwidget.h"
 #include "extension.h"
-#include "core/queryhandler.h"
-#include "util/offlineindex.h"
-#include "util/standardactions.h"
-#include "util/standardindexitem.h"
-#include "util/shutil.h"
+#include "albert/queryhandler.h"
+#include "albert/util/offlineindex.h"
+#include "albert/util/standardactions.h"
+#include "albert/util/standardindexitem.h"
+#include "albert/util/shutil.h"
 #include "xdg/iconlookup.h"
 using namespace Core;
 using namespace std;
+
+Q_LOGGING_CATEGORY(qlc_applications, "applications")
+#define DEBUG qCDebug(qlc_applications).noquote()
+#define INFO qCInfo(qlc_applications).noquote()
+#define WARNING qCWarning(qlc_applications).noquote()
+#define CRITICAL qCCritical(qlc_applications).noquote()
 
 extern QString terminalCommand;
 
 
 namespace {
 
-const char* CFG_FUZZY            = "fuzzy";
-const bool  DEF_FUZZY            = false;
-const char* CFG_IGNORESHOWINKEYS = "ignore_show_in_keys";
-const bool  DEF_IGNORESHOWINKEYS = false;
-const char* CFG_USEKEYWORDS      = "use_keywords";
-const bool  DEF_USEKEYWORDS      = false;
-const char* CFG_USEGENERICNAME   = "use_generic_name";
-const bool  DEF_USEGENERICNAME   = false;
-
+const char* CFG_FUZZY                = "fuzzy";
+const bool  DEF_FUZZY                = false;
+const char* CFG_IGNORESHOWINKEYS     = "ignore_show_in_keys";
+const bool  DEF_IGNORESHOWINKEYS     = false;
+const char* CFG_USEKEYWORDS          = "use_keywords";
+const bool  DEF_USEKEYWORDS          = false;
+const char* CFG_USEGENERICNAME       = "use_generic_name";
+const bool  DEF_USEGENERICNAME       = false;
+const char* CFG_USENONLOCALIZEDNAME  = "use_non_localized_name";
+const bool  DEF_USENONLOCALIZEDNAME  = false;
 
 /******************************************************************************/
 QStringList expandedFieldCodes(const QStringList & unexpandedFields,
@@ -167,6 +173,7 @@ public:
     bool ignoreShowInKeys;
     bool useKeywords;
     bool useGenericName;
+    bool useNonLocalizedName;
 
     void finishIndexing();
     void startIndexing();
@@ -193,7 +200,7 @@ void Applications::Private::startIndexing() {
     futureWatcher.setFuture(QtConcurrent::run(this, &Private::indexApplications));
 
     // Notification
-    qInfo() << "Start indexing applications.";
+    INFO << "Start indexing applications.";
     emit q->statusInfo("Indexing applications ...");
 }
 
@@ -224,7 +231,7 @@ void Applications::Private::finishIndexing() {
     }
 
     // Notification
-    qInfo() << qPrintable(QString("Indexed %1 applications.").arg(index.size()));
+    INFO << QString("Indexed %1 applications.").arg(index.size());
     emit q->statusInfo(QString("%1 applications indexed.").arg(index.size()));
 
     if ( rerun ) {
@@ -257,7 +264,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             QString desktopFileId = fIt.filePath().remove(QRegularExpression("^.*applications/")).replace("/","-");
             const auto &pair = desktopFiles.emplace(desktopFileId, fIt.filePath());
             if (!pair.second)
-                qInfo().noquote() << QString("Desktop file skipped: '%1' overwritten in '%2'").arg(fIt.filePath(), desktopFiles[desktopFileId]);
+                INFO << QString("Desktop file skipped: '%1' overwritten in '%2'").arg(fIt.filePath(), desktopFiles[desktopFileId]);
         }
     }
 
@@ -267,7 +274,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
         const QString &id = id_path_pair.first;
         const QString &path = id_path_pair.second;
 
-        qDebug() << "Indexing desktop file:" << id;
+        DEBUG << "Indexing desktop file:" << id;
 
         map<QString,map<QString,QString>> sectionMap;
         map<QString,map<QString,QString>>::iterator sectionIterator;
@@ -336,6 +343,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 
         bool term;
         QString name;
+        QString nonLocalizedName;
         QString genericName;
         QString comment;
         QString icon;
@@ -368,6 +376,10 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 
         // Try to get the localized genericName
         genericName = xdgStringEscape(getLocalizedKey("GenericName", entryMap, loc));
+
+        // Try to get the non-localized name
+        if ((entryIterator = entryMap.find("Name")) != entryMap.end())
+            nonLocalizedName = xdgStringEscape(entryIterator->second);
 
         // Try to get the localized comment
         comment = xdgStringEscape(getLocalizedKey("Comment", entryMap, loc));
@@ -406,35 +418,42 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
         item->setCompletion(name);
 
         // Set subtext/tootip
-        if (comment.isEmpty())
-            if (genericName.isEmpty())
-                item->setSubtext(exec);
-            else
-                item->setSubtext(genericName);
-        else
+        if (!comment.isEmpty())
             item->setSubtext(comment);
+        else if(useGenericName && !genericName.isEmpty())
+            item->setSubtext(genericName);
+        else if(useNonLocalizedName && !nonLocalizedName.isEmpty())
+            item->setSubtext(nonLocalizedName);
+        else
+            item->setSubtext(exec);
 
 
         // Set index strings
         vector<IndexableItem::IndexString> indexStrings;
         indexStrings.emplace_back(name, UINT_MAX);
 
-        if ( !exec.startsWith("java ")
-             && !exec.startsWith("ruby ")
-             && !exec.startsWith("python ")
-             && !exec.startsWith("perl ")
-             && !exec.startsWith("bash ")
-             && !exec.startsWith("sh ")
-             && !exec.startsWith("dbus-send ")
-             && !exec.startsWith("/") )
+        QStringList excludes = {
+            "java ",
+            "ruby ",
+            "python ",
+            "perl ",
+            "bash ",
+            "sh ",
+            "dbus-send ",
+            "/"
+        };
+        if (std::none_of(excludes.begin(), excludes.end(), [&exec](const QString &str){ return exec.startsWith(str); }))
             indexStrings.emplace_back(commandline[0], UINT_MAX);  // safe since (1)
 
         if (useKeywords)
             for (auto & kw : keywords)
                 indexStrings.emplace_back(kw, UINT_MAX/2);
 
-        if (!genericName.isEmpty() && useGenericName)
+        if (useGenericName && !genericName.isEmpty())
             indexStrings.emplace_back(genericName, UINT_MAX/2   );
+
+        if (useNonLocalizedName && !nonLocalizedName.isEmpty())
+            indexStrings.emplace_back(nonLocalizedName, UINT_MAX/2   );
 
         item->setIndexKeywords(std::move(indexStrings));
 
@@ -510,6 +529,7 @@ Applications::Extension::Extension()
     d->offlineIndex.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
     d->ignoreShowInKeys = settings().value(CFG_IGNORESHOWINKEYS, DEF_IGNORESHOWINKEYS).toBool();
     d->useGenericName = settings().value(CFG_USEGENERICNAME, DEF_USEGENERICNAME).toBool();
+    d->useNonLocalizedName = settings().value(CFG_USENONLOCALIZEDNAME, DEF_USENONLOCALIZEDNAME).toBool();
     d->useKeywords = settings().value(CFG_USEKEYWORDS, DEF_USEKEYWORDS).toBool();
 
     // If the filesystem changed, trigger the scan
@@ -553,7 +573,16 @@ QWidget *Applications::Extension::widget(QWidget *parent) {
         connect(d->widget->ui.checkBox_useGenericName, &QCheckBox::toggled,
                 this, [this](bool checked){
             settings().setValue(CFG_USEGENERICNAME, checked);
-            d->useGenericName= checked;
+            d->useGenericName = checked;
+            d->startIndexing();
+        });
+
+        // Use non-localized name
+        d->widget->ui.checkBox_useNonLocalizedName->setChecked(d->useNonLocalizedName);
+        connect(d->widget->ui.checkBox_useNonLocalizedName, &QCheckBox::toggled,
+                this, [this](bool checked){
+            settings().setValue(CFG_USENONLOCALIZEDNAME, checked);
+            d->useNonLocalizedName = checked;
             d->startIndexing();
         });
 

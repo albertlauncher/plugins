@@ -3,8 +3,8 @@
 #pragma once
 #include <QObject>
 #include <memory>
-#include "core/extension.h"
-#include "core/queryhandler.h"
+#include "albert/extension.h"
+#include "albert/queryhandler.h"
 
 namespace ProjectNamespace {
 
@@ -20,7 +20,7 @@ class Extension final :
 public:
 
     Extension();
-    ~Extension();
+    ~Extension() override;
 
     QString name() const override { return "Template"; }
     QWidget *widget(QWidget *parent = nullptr) override;

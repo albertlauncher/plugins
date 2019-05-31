@@ -1,9 +1,9 @@
-// Copyright (C) 2014-2017 Manuel Schneider
+// Copyright (C) 2014-2018 Manuel Schneider
 
 #include <QDebug>
 #include <QPointer>
 #include <stdexcept>
-#include "util/standarditem.h"
+#include "albert/util/standarditem.h"
 #include "xdg/iconlookup.h"
 #include "configwidget.h"
 #include "extension.h"
@@ -26,11 +26,11 @@ ProjectNamespace::Extension::Extension()
     registerQueryHandler(this);
 
     // You can throw in the constructor if something fatal happened
-    throw std::runtime_error( "Description of error." );
-    throw std::string( "Description of error." );
-    throw QString( "Description of error." );
-    throw "Description of error.";
-    throw; // Whatever prints "unknown error"
+    // throw std::runtime_error( "Description of error." );
+    // throw std::string( "Description of error." );
+    // throw QString( "Description of error." );
+    // throw "Description of error.";
+    // throw; // Whatever prints "unknown error"
 }
 
 

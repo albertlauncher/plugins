@@ -22,8 +22,8 @@
 #include <thread>
 #include "configwidget.h"
 #include "extension.h"
-#include "core/query.h"
-#include "util/standarditem.h"
+#include "albert/query.h"
+#include "albert/util/standarditem.h"
 using Core::StandardItem;
 
 

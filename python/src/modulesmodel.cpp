@@ -98,6 +98,7 @@ QVariant Python::ModulesModel::data(const QModelIndex &index, int role) const {
                 return QIcon(":plugin_notloaded");
             case PythonModuleV1::State::Loaded:
                 return QIcon(":plugin_loaded");
+            case PythonModuleV1::State::InvalidMetadata:
             case PythonModuleV1::State::Error:
                 return QIcon(":plugin_error");
             }
@@ -120,33 +121,25 @@ QVariant Python::ModulesModel::data(const QModelIndex &index, int role) const {
 
         toolTip = QString("<p><b>Name:</b> %1</p>").arg(module->name().toHtmlEscaped());
 
+        if (!module->dependencies().empty())
+            toolTip.append(QString("<p><b>Dependencies:</b> %1</p>").arg(module->dependencies().join(", ").toHtmlEscaped()));
+
+        if (!module->description().isEmpty())
+            toolTip.append(QString("<p><b>Description:</b> %1</p>").arg(QString(module->description().toHtmlEscaped()).replace("\n","<br>")));
+
 //        if (!module->version().isEmpty())
 //            toolTip.append(QString("\nVersion: %1").arg(module->version()));
 
 //        if (!module->author().isEmpty())
 //            toolTip.append(QString("\nAuthor: %1").arg(module->author()));
 
-        if (!module->dependencies().empty())
-            toolTip.append(QString("<p><b>Dependencies:</b> %1</p>").arg(module->dependencies().join(", ").toHtmlEscaped()));
-
         toolTip.append(QString("<p><b>Path:</b>%1</p>").arg(module->path().toHtmlEscaped()));
 
-        if (!module->description().isEmpty())
-            toolTip.append(QString("<p><b>Description:</b> %1</p>").arg(QString(module->description().toHtmlEscaped()).replace("\n","<br>")));
-
-        if (module->state() == PythonModuleV1::State::Error && !module->errorString().isEmpty())
+        if ((module->state() == PythonModuleV1::State::Error || module->state() == PythonModuleV1::State::InvalidMetadata)
+                && !module->errorString().isEmpty())
             toolTip.append(QString("<p><font color=red><b>ERROR:</b>%1</font></p>").arg(QString(module->errorString().toHtmlEscaped()).replace("\n","<br>")));
 
         return QString("<html><head/><body>%1</body></html>").arg(toolTip);
-    }
-    case Qt::TextAlignmentRole:{
-        switch (static_cast<Section>(index.column())) {
-        case Section::Trigger:
-        case Section::Version: return Qt::AlignCenter; break;
-        case Section::Name:
-        case Section::Author:
-        default: return QVariant();
-        }
     }
     case Qt::CheckStateRole:
         if ( static_cast<Section>(index.column()) == Section::Name )
@@ -180,6 +173,7 @@ bool Python::ModulesModel::setData(const QModelIndex &index, const QVariant &val
 Qt::ItemFlags Python::ModulesModel::flags(const QModelIndex &index) const {
     if (!index.isValid() || index.row() >= static_cast<int>(extension->modules().size()) )
         return Qt::NoItemFlags;
+
     return Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemNeverHasChildren;
 }
 

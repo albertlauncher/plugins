@@ -15,13 +15,14 @@
 #include <QSettings>
 #include <QTimer>
 #include <QVBoxLayout>
-#include "core/history.h"
-#include "core/itemroles.h"
+#include "albert/util/history.h"
+#include "albert/util/itemroles.h"
 #include "configwidget.h"
 #include "frontendwidget.h"
 #include "resultslist.h"
 #include "settingsbutton.h"
 #include "ui_frontend.h"
+
 #ifdef __unix__
 #include "xcb/xcb.h"
 #include <X11/extensions/shape.h>

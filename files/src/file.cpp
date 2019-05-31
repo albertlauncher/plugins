@@ -10,7 +10,7 @@
 #include <QProcess>
 #include <QUrl>
 #include "xdg/iconlookup.h"
-#include "util/standardactions.h"
+#include "albert/util/standardactions.h"
 using namespace std;
 using namespace Core;
 extern QString terminalCommand;

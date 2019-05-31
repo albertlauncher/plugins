@@ -9,13 +9,14 @@
 #include "configwidget.h"
 #include "extension.h"
 #include "muParser.h"
-#include "core/query.h"
-#include "util/standarditem.h"
-#include "util/standardactions.h"
+#include "albert/query.h"
+#include "albert/util/standarditem.h"
+#include "albert/util/standardactions.h"
 #include "xdg/iconlookup.h"
 using namespace std;
 using namespace Core;
 
+Q_LOGGING_CATEGORY(qlc_calculator, "calculator")
 
 
 namespace {
@@ -53,6 +54,7 @@ Calculator::Extension::Extension()
     d->parser.reset(new mu::Parser);
     d->parser->SetDecSep(d->locale.decimalPoint().toLatin1());
     d->parser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
+    d->parser->SetArgSep(';');
 }
 
 
@@ -84,13 +86,20 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Calculator::Extension::handleQuery(Core::Query * query) const {
 
-    d->parser->SetExpr(query->string().toStdString());
+    try {
+        d->parser->SetExpr(query->string().toStdString());
+    } catch (mu::Parser::exception_type &exception) {
+        qCWarning(qlc_calculator).noquote() << "Muparser SetExpr exception: " << exception.GetMsg().c_str();
+        return;
+    }
     double result;
 
     // http://beltoforion.de/article.php?a=muparser&p=errorhandling
     try {
         result = d->parser->Eval();
     } catch (mu::Parser::exception_type &) {
+        // Expected exception in case of invalid input
+        // qDebug() << "Muparser Eval exception: " << exception.GetMsg().c_str();
         return;
     }
 

@@ -2,8 +2,8 @@
 
 #pragma once
 #include <QObject>
-#include "core/extension.h"
-#include "core/queryhandler.h"
+#include "albert/extension.h"
+#include "albert/queryhandler.h"
 #include <memory>
 
 namespace FirefoxBookmarks {

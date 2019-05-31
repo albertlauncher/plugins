@@ -15,9 +15,9 @@
 #include <set>
 #include "extension.h"
 #include "configwidget.h"
-#include "util/standardactions.h"
-#include "util/standarditem.h"
-#include "util/shutil.h"
+#include "albert/util/standardactions.h"
+#include "albert/util/standarditem.h"
+#include "albert/util/shutil.h"
 #include "xdg/iconlookup.h"
 using namespace std;
 using namespace Core;
@@ -35,7 +35,7 @@ public:
     QString icon;
     QPointer<ConfigWidget> widget;
     QFileSystemWatcher fileSystemWatcher;
-    map<QString, QString> hosts;
+    vector<pair<QString, QString>> hosts;
     bool useKnownHosts;
 };
 
@@ -112,7 +112,8 @@ void Ssh::Extension::handleQuery(Query * query) const {
                 item->setSubtext(QString("Connect to '%1'").arg(target));
                 item->setCompletion(QString("ssh %1").arg(target));
                 item->setIconPath(d->icon);
-                item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(target), QStringList() << "ssh" << QString("ssh://%1").arg(target)));
+                item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(target),
+                                                        QStringList{"ssh", target}));
 
                 query->addMatch(std::move(item));
             }
@@ -121,7 +122,7 @@ void Ssh::Extension::handleQuery(Query * query) const {
     else
     {
         // Check sanity of input
-        QRegularExpression re("^(?:(\\w+)@)?([\\w\\–\\.]*)(?::(\\d+))?$");
+        QRegularExpression re(R"raw(^(?:(\w+)@)?\[?((?:\w[\w:]*|[\w\.]*))\]?(?::(\d+))?$)raw");
         QRegularExpressionMatch match = re.match(trimmed);
 
         if (match.hasMatch())
@@ -149,12 +150,11 @@ void Ssh::Extension::handleQuery(Query * query) const {
                         target = QString("[%1]:%2").arg(target, port);
                     if (!q_user.isEmpty())
                         target = QString("%1@%2").arg(q_user, target);
-
                     QString subtext = QString("Connect to '%1'").arg(target);
 
                     item->setSubtext(subtext);
                     item->setCompletion(QString("ssh %1").arg(target));
-                    item->addAction(make_shared<TermAction>(subtext, QStringList{"ssh", QString("ssh://%1").arg(target)}));
+                    item->addAction(make_shared<TermAction>(subtext, QStringList{"ssh", target}));
 
                     query->addMatch(std::move(item), static_cast<uint>(1.0*q_host.size()/host.size()* UINT_MAX));
                 }
@@ -167,7 +167,8 @@ void Ssh::Extension::handleQuery(Query * query) const {
                 item->setSubtext("Quick connect to an unknown host");
                 item->setCompletion(QString("ssh %1").arg(trimmed));
                 item->setIconPath(d->icon);
-                item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(match.captured(0)), QStringList() << "ssh" << trimmed));
+                item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(match.captured(0)),
+                                                        QStringList{"ssh", trimmed}));
                 query->addMatch(std::move(item));
             }
         }
@@ -179,7 +180,7 @@ void Ssh::Extension::handleQuery(Query * query) const {
 /** ***************************************************************************/
 void Ssh::Extension::rescan() {
 
-    d->hosts.clear();
+    map<QString, QString> hosts;
 
     // Get the hosts in config
     for (const QString& path : { QString("/etc/ssh/config"), QDir::home().filePath(".ssh/config") }) {
@@ -192,7 +193,7 @@ void Ssh::Extension::rescan() {
                     if ( fields.size() > 1 && fields[0] == "Host")
                         for ( int i = 1; i < fields.size(); ++i )
                             if ( !(fields[i].contains('*') || fields[i].contains('?')) )
-                                d->hosts.emplace(fields[i], "");
+                                hosts.emplace(fields[i], QString());
                 }
                 file.close();
             }
@@ -205,17 +206,25 @@ void Ssh::Extension::rescan() {
         if (QFile::exists(path)){
             QFile file(path);
             if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                QRegularExpression re("^\\[?([\\w\\-\\.\\:]+)\\]?(?::(\\d+))?");
+                QRegularExpression re(R"raw(^\[?([\w\-\.\:]+)\]?(?::(\d+))?)raw");
                 QTextStream in(&file);
                 while (!in.atEnd()) {
                     QRegularExpressionMatch match = re.match(in.readLine());
                     if (match.hasMatch())
-                        d->hosts.emplace(match.captured(1), match.captured(2));
+                        hosts.emplace(match.captured(1), match.captured(2));
                 }
                 file.close();
             }
         }
     }
+
+    d->hosts = vector<pair<QString, QString>>{hosts.begin(), hosts.end()};
+
+    // Sort by length and lexical
+    std::sort(d->hosts.begin(), d->hosts.end(),
+              [](const auto &li, const auto &ri){ return li.first < ri.first; });
+    std::stable_sort(d->hosts.begin(), d->hosts.end(),
+                    [](const auto &li, const auto &ri){ return li.first.size() < ri.first.size(); });
 }
 
 

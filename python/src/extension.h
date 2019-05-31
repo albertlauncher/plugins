@@ -1,10 +1,13 @@
 // Copyright (c) 2017-2018 Manuel Schneider
 
 #pragma once
+#include <QLoggingCategory>
 #include <QObject>
 #include <memory>
-#include "core/extension.h"
-#include "core/queryhandler.h"
+#include "albert/extension.h"
+#include "albert/queryhandler.h"
+
+Q_DECLARE_LOGGING_CATEGORY(qlc_python)
 
 namespace Python {
 
@@ -21,7 +24,7 @@ class Extension final :
 public:
 
     Extension();
-    ~Extension();
+    ~Extension() override;
 
     QString name() const override { return "Python extensions"; }
     QWidget *widget(QWidget *parent = nullptr) override;
@@ -37,7 +40,7 @@ private:
 
     std::unique_ptr<Private> d;
 
-    void updateDirectory(const QString &path);
+    void reloadModules();
 
 signals:
 

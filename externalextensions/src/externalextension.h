@@ -5,7 +5,7 @@
 #include <QProcess>
 #include <QMutex>
 #include <map>
-#include "core/queryhandler.h"
+#include "albert/queryhandler.h"
 
 namespace ExternalExtensions {
 

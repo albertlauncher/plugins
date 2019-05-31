@@ -21,9 +21,9 @@
 #include "standardfile.h"
 #include "extension.h"
 #include "indextreenode.h"
-#include "util/offlineindex.h"
-#include "util/standarditem.h"
-#include "util/standardactions.h"
+#include "albert/util/offlineindex.h"
+#include "albert/util/standarditem.h"
+#include "albert/util/standardactions.h"
 #include "xdg/iconlookup.h"
 using namespace Core;
 using namespace std;

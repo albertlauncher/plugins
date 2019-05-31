@@ -3,9 +3,11 @@
 #include <QDebug>
 #include <QKeyEvent>
 #include <QMimeDatabase>
+#include <QSortFilterProxyModel>
 #include <QStandardItemModel>
 #include <QStringListModel>
-#include <QSortFilterProxyModel>
+#include <QtConcurrent>
+#include <thread>
 #include "mimetypedialog.h"
 #include "ui_mimetypedialog.h"
 
@@ -17,13 +19,29 @@ Files::MimeTypeDialog::MimeTypeDialog(const QStringList &filters, QWidget *paren
 
     // Populate a standard itemmodel with mime types
     QStandardItemModel *standardItemModel = new QStandardItemModel(this);
+    QList<QStandardItem*> items;
     for (QMimeType mimeType : QMimeDatabase().allMimeTypes()) {
-         QStandardItem *item = new QStandardItem;
-        item->setText(mimeType.name());
+        QStandardItem *item = new QStandardItem(mimeType.name());
         item->setToolTip(mimeType.filterString());
-        standardItemModel->appendRow(item);
+        item->setData(mimeType.iconName());
+        items.append(item);
     }
+    standardItemModel->appendColumn(items);
     standardItemModel->sort(0);
+
+    // Get the images in background
+    auto bg_task = [this, standardItemModel](){
+        static QIcon fallback = QIcon::fromTheme("unknown"); // TODO: resource fallback
+        for (int i = 0; i < standardItemModel->rowCount(); ++i) {
+            QStandardItem *item = standardItemModel->item(i);
+            item->setIcon(QIcon::fromTheme(item->data().toString(), fallback));
+            if (exit_thread)
+                break;
+        }
+        qDebug() << "DONE";
+    };
+
+    future = QtConcurrent::run(bg_task);
 
     // Add a proxy model for mimtype filtering
     QSortFilterProxyModel *mimeFilterModel = new QSortFilterProxyModel(this);
@@ -74,6 +92,8 @@ Files::MimeTypeDialog::MimeTypeDialog(const QStringList &filters, QWidget *paren
 
 /** ***************************************************************************/
 Files::MimeTypeDialog::~MimeTypeDialog() {
+    exit_thread = true;
+    future.waitForFinished();
     delete ui;
 }
 

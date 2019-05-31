@@ -26,14 +26,13 @@ target_include_directories(${PROJECT_NAME}
         ${PATH_XPCOM}/include/nsprpub
         ${PATH_XPCOM}/include/string
         ${PATH_XPCOM}/include/xpcom
-        ${PATH_XPCOM}/include/ipcd
 )
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        ${Qt5Widgets_LIBRARIES}
-        ${Qt5Xml_LIBRARIES}
-        albertcore
+        Qt5::Widgets
+        Qt5::Xml
+        albert::lib
         ${PATH_BIN}/VBoxXPCOM.so
         xdg
 )

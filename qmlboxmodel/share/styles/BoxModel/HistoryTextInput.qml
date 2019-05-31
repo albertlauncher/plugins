@@ -5,9 +5,8 @@ TextInput {
     property string userText
 
     function pushTextToHistory() {
-        history.add(text)
-        text = ""
-        resetHistoryMode()
+        if (text.trim() !== "")
+            history.add(text)
     }
 
     function resetHistoryMode() {
@@ -16,18 +15,21 @@ TextInput {
 
     function forwardSearchHistory() {
         var match = history.next(userText)
+        if (match === text)  // Simple hack to avoid the seemingly-noop-on-first-history-iteration on disabled clear-on-hide
+            match = history.next(userText)
         if (match)
             text = match
     }
 
     function backwardSearchHistory() {
         var match = history.prev(userText)
+        if (match === text)  // Simple hack to avoid the seemingly-noop-on-first-history-iteration on disabled clear-on-hide
+            match = history.prev(userText)
         if (match)
             text = match
     }
 
     onTextEdited: {
-        console.log("Text edited: " + text)
         userText = text
         history.resetIterator()
     }

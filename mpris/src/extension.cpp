@@ -8,7 +8,7 @@
 #include <QMap>
 #include <QPointer>
 #include <QStringList>
-#include "core/query.h"
+#include "albert/query.h"
 #include "xdg/iconlookup.h"
 #include "command.h"
 #include "configwidget.h"
