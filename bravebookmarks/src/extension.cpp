@@ -34,23 +34,15 @@ using namespace Core;
 
 namespace {
 
-const char* EXT_ID = "org.albert.extension.chromebookmarks";
+const char* EXT_ID = "org.albert.extension.bravebookmarks";
 const char* CFG_PATH  = "bookmarkfile";
 const char* CFG_FUZZY = "fuzzy";
 const bool  DEF_FUZZY = false;
-const char *potentialExecutableNames[] = {"chromium",
-                                          "chromium-browser",
-                                          "chrome",
-                                          "chrome-browser",
-                                          "google-chrome",
-                                          "google-chrome-beta",
-                                          "google-chrome-stable",
-                                          "google-chrome-unstable"};
-const char *potentialConfigLocations[] = {"chromium",
-                                          "google-chrome"};
+const char *potentialExecutableNames[] = {"brave"};
+const char *potentialConfigLocations[] = {"brave"};
 
 /** ***************************************************************************/
-vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(QString executable, const QString &bookmarksPath) {
+vector<shared_ptr<StandardIndexItem>> indexbraveBookmarks(QString executable, const QString &bookmarksPath) {
 
     // Build a new index
     vector<shared_ptr<StandardIndexItem>> bookmarks;
@@ -97,7 +89,7 @@ vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(QString executable, c
 
     QFile f(bookmarksPath);
     if (!f.open(QIODevice::ReadOnly)) {
-        qWarning() << qPrintable(QString("Could not open Chrome bookmarks file '%1'.").arg(bookmarksPath));
+        qWarning() << qPrintable(QString("Could not open Brave bookmarks file '%1'.").arg(bookmarksPath));
         return vector<shared_ptr<StandardIndexItem>>();
     }
 
@@ -120,7 +112,7 @@ vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(QString executable, c
 /** ***************************************************************************/
 /** ***************************************************************************/
 /** ***************************************************************************/
-class ChromeBookmarks::Private
+class BraveBookmarks::Private
 {
 public:
     Private(Extension *q) : q(q) {}
@@ -142,7 +134,7 @@ public:
 
 
 /** ***************************************************************************/
-void ChromeBookmarks::Private::startIndexing() {
+void BraveBookmarks::Private::startIndexing() {
 
     // Never run concurrent
     if ( futureWatcher.future().isRunning() )
@@ -154,17 +146,17 @@ void ChromeBookmarks::Private::startIndexing() {
                      std::bind(&Private::finishIndexing, this));
 
     // Run the indexer thread
-    futureWatcher.setFuture(QtConcurrent::run(indexChromeBookmarks, executable, bookmarksFile));
+    futureWatcher.setFuture(QtConcurrent::run(indexBraveBookmarks, executable, bookmarksFile));
 
     // Notification
-    qInfo() << "Start indexing Chrome bookmarks.";
+    qInfo() << "Start indexing Brave bookmarks.";
     emit q->statusInfo("Indexing bookmarks ...");
 
 }
 
 
 /** ***************************************************************************/
-void ChromeBookmarks::Private::finishIndexing() {
+void BraveBookmarks::Private::finishIndexing() {
 
     // Get the thread results
     index = futureWatcher.future().result();
@@ -186,7 +178,7 @@ void ChromeBookmarks::Private::finishIndexing() {
             qWarning() << qPrintable(QString("%1 can not be watched. Changes in this path will not be noticed.").arg(bookmarksFile));
 
     // Notification
-    qInfo() << qPrintable(QString("Indexed %1 Chrome bookmarks.").arg(index.size()));
+    qInfo() << qPrintable(QString("Indexed %1 Brave bookmarks.").arg(index.size()));
     emit q->statusInfo(QString("%1 bookmarks indexed.").arg(index.size()));
 }
 
@@ -195,21 +187,21 @@ void ChromeBookmarks::Private::finishIndexing() {
 /** ***************************************************************************/
 /** ***************************************************************************/
 /** ***************************************************************************/
-ChromeBookmarks::Extension::Extension()
+BraveBookmarks::Extension::Extension()
     : Core::Extension(EXT_ID),
       Core::QueryHandler(Core::Plugin::id()),
       d(new Private(this)) {
 
 
     // Find executable
-    d->executable = QStandardPaths::findExecutable("chromium");
+    d->executable = QStandardPaths::findExecutable("brave");
     for (auto &name : potentialExecutableNames) {
         d->executable = QStandardPaths::findExecutable(name);;
         if (!d->executable.isEmpty())
             break;
     }
     if (d->executable.isEmpty())
-        throw "Chrome/ium executable not found.";
+        throw "Brave executable not found.";
 
     // Load settings
     d->offlineIndex.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
@@ -242,11 +234,11 @@ ChromeBookmarks::Extension::Extension()
 
 
 /** ***************************************************************************/
-ChromeBookmarks::Extension::~Extension() {}
+BraveBookmarks::Extension::~Extension() {}
 
 
 /** ***************************************************************************/
-QWidget *ChromeBookmarks::Extension::widget(QWidget *parent) {
+QWidget *BraveBookmarks::Extension::widget(QWidget *parent) {
     if (d->widget.isNull()){
         d->widget = new ConfigWidget(parent);
 
@@ -270,7 +262,7 @@ QWidget *ChromeBookmarks::Extension::widget(QWidget *parent) {
 
 
 /** ***************************************************************************/
-void ChromeBookmarks::Extension::handleQuery(Core::Query * query) const {
+void BraveBookmarks::Extension::handleQuery(Core::Query * query) const {
 
     const vector<shared_ptr<Core::IndexableItem>> &indexables = d->offlineIndex.search(query->string());
 
@@ -284,13 +276,13 @@ void ChromeBookmarks::Extension::handleQuery(Core::Query * query) const {
 
 
 /** ***************************************************************************/
-const QString &ChromeBookmarks::Extension::path() {
+const QString &BraveBookmarks::Extension::path() {
     return d->bookmarksFile;
 }
 
 
 /** ***************************************************************************/
-void ChromeBookmarks::Extension::setPath(const QString &path) {
+void BraveBookmarks::Extension::setPath(const QString &path) {
 
     QFileInfo fi(path);
     if (!(fi.exists() && fi.isFile()))
@@ -303,7 +295,7 @@ void ChromeBookmarks::Extension::setPath(const QString &path) {
 
 
 /** ***************************************************************************/
-void ChromeBookmarks::Extension::restorePath() {
+void BraveBookmarks::Extension::restorePath() {
     // Find a bookmark file (Take first one)
     for (const QString &browser : potentialConfigLocations){
         QString root = QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)).filePath(browser);
@@ -317,20 +309,19 @@ void ChromeBookmarks::Extension::restorePath() {
 
 
 /** ***************************************************************************/
-bool ChromeBookmarks::Extension::fuzzy() {
+bool BraveBookmarks::Extension::fuzzy() {
     return d->offlineIndex.fuzzy();
 }
 
 
 /** ***************************************************************************/
-void ChromeBookmarks::Extension::updateIndex() {
+void BraveBookmarks::Extension::updateIndex() {
     d->startIndexing();
 }
 
 
 /** ***************************************************************************/
-void ChromeBookmarks::Extension::setFuzzy(bool b) {
+void BraveBookmarks::Extension::setFuzzy(bool b) {
     settings().setValue(CFG_FUZZY, b);
     d->offlineIndex.setFuzzy(b);
 }
-

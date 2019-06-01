@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ChromeBookmarks::ConfigWidget</class>
- <widget class="QWidget" name="ChromeBookmarks::ConfigWidget">
+ <class>BraveBookmarks::ConfigWidget</class>
+ <widget class="QWidget" name="BraveBookmarks::ConfigWidget">
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <widget class="QGroupBox" name="groupBox">

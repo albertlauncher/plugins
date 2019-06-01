@@ -1,7 +1,7 @@
 {
-    "id" :              "org.albert.extension.chromebookmarks",
-    "name" :            "Chrome bookmarks",
-    "version" :         "1.0",
+    "id" :              "org.albert.extension.bravebookmarks",
+    "name" :            "Brave bookmarks",
+    "version" :         "1.0alpha",
     "platform" :        "Linux",
     "group" :           "Extensions",
     "author" :          "Manuel Schneider",

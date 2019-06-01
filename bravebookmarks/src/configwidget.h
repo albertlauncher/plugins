@@ -4,7 +4,7 @@
 #include <QWidget>
 #include "ui_configwidget.h"
 
-namespace ChromeBookmarks {
+namespace BraveBookmarks {
 
 class ConfigWidget final : public QWidget
 {

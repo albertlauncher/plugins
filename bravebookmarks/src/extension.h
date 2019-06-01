@@ -1,4 +1,4 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+Brave// Copyright (C) 2014-2018 Manuel Schneider
 
 #pragma once
 #include <QObject>
@@ -6,7 +6,7 @@
 #include "albert/extension.h"
 #include "albert/queryhandler.h"
 
-namespace ChromeBookmarks {
+namespace BraveBookmarks {
 
 class Private;
 
@@ -22,7 +22,7 @@ public:
     Extension();
     ~Extension();
 
-    QString name() const override { return "Chrome bookmarks"; }
+    QString name() const override { return "Brave bookmarks"; }
     QWidget *widget(QWidget *parent = nullptr) override;
     void handleQuery(Core::Query * query) const override;
 

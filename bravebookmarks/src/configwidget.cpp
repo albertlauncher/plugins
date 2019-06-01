@@ -5,7 +5,7 @@
 #include "configwidget.h"
 
 /** ***************************************************************************/
-ChromeBookmarks::ConfigWidget::ConfigWidget(QWidget *parent) : QWidget(parent) {
+BraveBookmarks::ConfigWidget::ConfigWidget(QWidget *parent) : QWidget(parent) {
     ui.setupUi(this);
 
     connect(ui.pushButton_editPath, &QPushButton::clicked,
@@ -13,12 +13,12 @@ ChromeBookmarks::ConfigWidget::ConfigWidget(QWidget *parent) : QWidget(parent) {
 }
 
 /** ***************************************************************************/
-ChromeBookmarks::ConfigWidget::~ConfigWidget() {
+BraveBookmarks::ConfigWidget::~ConfigWidget() {
 
 }
 
 /** ***************************************************************************/
-void ChromeBookmarks::ConfigWidget::onButton_EditPath() {
+void BraveBookmarks::ConfigWidget::onButton_EditPath() {
     QString path = QFileDialog::getOpenFileName(this, tr("Choose path"));
     if(path.isEmpty()) return;
     emit requestEditPath(path);
