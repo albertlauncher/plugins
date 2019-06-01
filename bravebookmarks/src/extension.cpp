@@ -38,7 +38,7 @@ const char* EXT_ID = "org.albert.extension.bravebookmarks";
 const char* CFG_PATH  = "bookmarkfile";
 const char* CFG_FUZZY = "fuzzy";
 const bool  DEF_FUZZY = false;
-const char *potentialExecutableNames[] = {"brave"};
+const char *potentialExecutableNames[] = {"brave-browser"};
 const char *potentialConfigLocations[] = {"BraveSoftware"};
 
 /** ***************************************************************************/
