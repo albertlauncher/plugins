@@ -39,10 +39,10 @@ const char* CFG_PATH  = "bookmarkfile";
 const char* CFG_FUZZY = "fuzzy";
 const bool  DEF_FUZZY = false;
 const char *potentialExecutableNames[] = {"brave"};
-const char *potentialConfigLocations[] = {"brave"};
+const char *potentialConfigLocations[] = {"BraveSoftware"};
 
 /** ***************************************************************************/
-vector<shared_ptr<StandardIndexItem>> indexbraveBookmarks(QString executable, const QString &bookmarksPath) {
+vector<shared_ptr<StandardIndexItem>> indexBraveBookmarks(QString executable, const QString &bookmarksPath) {
 
     // Build a new index
     vector<shared_ptr<StandardIndexItem>> bookmarks;

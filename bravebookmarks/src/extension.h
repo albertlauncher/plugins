@@ -1,4 +1,4 @@
-Brave// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2018 Manuel Schneider
 
 #pragma once
 #include <QObject>

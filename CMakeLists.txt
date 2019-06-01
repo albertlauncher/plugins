@@ -26,6 +26,11 @@ if (BUILD_APPLICATIONS)
     add_subdirectory(applications)
 endif()
 
+option(BUILD_BRAVEBOOKMARKS "Build the extension" ON)
+if (BUILD_BRAVEBOOKMARKS)
+    add_subdirectory(bravebookmarks)
+endif()
+
 option(BUILD_CALCULATOR "Build the extension" ON)
 if (BUILD_CALCULATOR)
     add_subdirectory(calculator)
