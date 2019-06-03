@@ -1,6 +1,5 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
-
 #include <QApplication>
 #include <QCheckBox>
 #include <QClipboard>
@@ -251,7 +250,8 @@ FirefoxBookmarks::Extension::Extension()
             if ( d->currentProfileId.isNull() ) {
                 for (QString &id : ids) {
                     profilesIni.beginGroup(id);
-                    if ( profilesIni.contains("Default")
+                    if ( profilesIni.contains("Path")
+                         && profilesIni.contains("Default")
                          && profilesIni.value("Default").toBool() )  {
                         d->currentProfileId = id;
                     }
@@ -264,8 +264,10 @@ FirefoxBookmarks::Extension::Extension()
                 d->currentProfileId = "default";
             }
 
-            // Use the first
-            d->currentProfileId = ids[0];
+            if ( d->currentProfileId.isNull() ) {
+                // Use the first
+                d->currentProfileId = ids[0];
+            }
         }
     }
 
