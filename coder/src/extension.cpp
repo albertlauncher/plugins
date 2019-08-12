@@ -84,6 +84,7 @@ public:
     }
 
     const QString getExecCommand(IDE_TYPE type);
+    const QString getExecArg(IDE_TYPE type);
 };
 
 
@@ -92,6 +93,13 @@ const QString Coder::Private::getExecCommand(IDE_TYPE type) {
         return this->codeCmds;
     else if(type == SUBLIME)
         return this->sublCmds;
+    else
+        return "";
+}
+
+const QString Coder::Private::getExecArg(IDE_TYPE type) {
+    if(type == VSCODE)
+        return "--folder-uri";
     else
         return "";
 }
@@ -150,13 +158,19 @@ void getVSCodeProjs(const QString& path, std::map<QString, Coder::ProjItem>& ret
         for(it = jWorkspaces.constBegin(); it != jWorkspaces.constEnd(); it++) {
             QString absPath = it->toString();
             if(absPath.startsWith("file:///")) {
-                absPath = absPath.mid(7);
-            }
-            QDir q(absPath);
-            if(q.exists()) {
-                qDebug() << "[Coder]: Get Dir name " << q.path();
-                Coder::ProjItem item(IDE_TYPE::VSCODE, q.path(), q.dirName());
-                retMap.insert(std::make_pair(q.dirName(), item));
+                QString fPath = absPath.mid(7);  // strip the file://
+                QDir qf(fPath);
+                if(qf.exists()) {
+                    QDir q(absPath);
+                    qDebug() << "[Coder]: Get dir name " << q.path();
+                    Coder::ProjItem item(IDE_TYPE::VSCODE, q.path(), q.dirName());
+                    retMap.insert(std::make_pair(q.dirName(), item));
+                }
+            } else if(absPath.startsWith("vscode-remote://")) {
+                QDir q(absPath);
+                qDebug() << "[Coder]: Get remote dir name " << q.path();
+                Coder::ProjItem item(IDE_TYPE::VSCODE, q.path(), "r_" + q.dirName());
+                retMap.insert(std::make_pair("r_" + q.dirName(), item));
             }
         }
     } else
@@ -274,6 +288,7 @@ void Coder::Extension::handleQuery(Core::Query *query) const {
                    make_shared<ProcAction>(
                        QString("Open '%1' workspace").arg(proj.first),
                        QStringList() << d->getExecCommand(pItem.type)
+                                     << d->getExecArg(pItem.type)
                                      << pItem.path));
                 query->addMatch(item);
             }
