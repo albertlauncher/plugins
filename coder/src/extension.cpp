@@ -169,8 +169,8 @@ void getVSCodeProjs(const QString& path, std::map<QString, Coder::ProjItem>& ret
             } else if(absPath.startsWith("vscode-remote://")) {
                 QDir q(absPath);
                 qDebug() << "[Coder]: Get remote dir name " << q.path();
-                Coder::ProjItem item(IDE_TYPE::VSCODE, q.path(), "r_" + q.dirName());
-                retMap.insert(std::make_pair("r_" + q.dirName(), item));
+                Coder::ProjItem item(IDE_TYPE::VSCODE, q.path(), "Remote: " + q.dirName());
+                retMap.insert(std::make_pair("Remote: " + q.dirName(), item));
             }
         }
     } else
