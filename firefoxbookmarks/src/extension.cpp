@@ -247,7 +247,7 @@ FirefoxBookmarks::Extension::Extension()
                 for (QString &id : ids) {
                     profilesIni.beginGroup(id);
                     if ( profilesIni.contains("Default")
-                         && profilesIni.value("Default").toBool() )  {
+                         && profilesIni.value("Default").toInt() > 0 )  {
                         d->currentProfileId = id;
                     }
                     profilesIni.endGroup();
@@ -260,7 +260,9 @@ FirefoxBookmarks::Extension::Extension()
             }
 
             // Use the first
-            d->currentProfileId = ids[0];
+            if ( d->currentProfileId.isNull() ) {
+                d->currentProfileId = ids[0];
+            }
         }
     }
 
