@@ -18,6 +18,8 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <libintl.h>
+#include <locale.h>
 #include "configwidget.h"
 #include "extension.h"
 #include "albert/queryhandler.h"
@@ -148,7 +150,13 @@ QString getLocalizedKey(const QString &key, const map<QString,QString> &entries,
 
 }
 
-
+static QString getLocalizedFromGettext(const QString &domain, const QString &msgid) {
+    std::string _domain = domain.toStdString();
+    std::string _msgid = msgid.toStdString();
+    
+    const char* msg = dgettext(domain.c_str(),msgid.c_str());
+    return QString::fromUtf8(msg);
+}
 
 /** ***************************************************************************/
 /** ***************************************************************************/
