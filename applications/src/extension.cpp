@@ -154,7 +154,7 @@ static QString getLocalizedFromGettext(const QString &domain, const QString &msg
     std::string _domain = domain.toStdString();
     std::string _msgid = msgid.toStdString();
     
-    const char* msg = dgettext(domain.c_str(),msgid.c_str());
+    const char* msg = dgettext(_domain.c_str(),_msgid.c_str());
     return QString::fromUtf8(msg);
 }
 
@@ -391,7 +391,23 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 
         // Try to get the localized comment
         comment = xdgStringEscape(getLocalizedKey("Comment", entryMap, loc));
-
+        
+        if ((entryIterator = entryMap.find("X-Ubuntu-Gettext-Domain")) != entryMap.end()) {
+            QString domain = entryIterator->second;
+            
+            name = getLocalizedFromGettext(domain,nonLocalizedName);
+            
+            if ((entryIterator = entryMap.find("GenericName")) != entryMap.end()) {
+                QString raw = xdgStringEscape(entryIterator->second);
+                genericName = getLocalizedFromGettext(domain,raw);
+            }
+            
+            if ((entryIterator = entryMap.find("Comment")) != entryMap.end()) {
+                QString raw = xdgStringEscape(entryIterator->second);
+                comment = getLocalizedFromGettext(domain,raw);
+            }
+        }
+        
         // Try to get the keywords
         keywords = xdgStringEscape(getLocalizedKey("Keywords", entryMap, loc)).split(';',QString::SkipEmptyParts);
 
