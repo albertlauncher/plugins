@@ -252,7 +252,7 @@ FirefoxBookmarks::Extension::Extension()
                     profilesIni.beginGroup(id);
                     if ( profilesIni.contains("Path")
                          && profilesIni.contains("Default")
-                         && profilesIni.value("Default").toBool() )  {
+                         && profilesIni.value("Default").toInt() > 0 )  {
                         d->currentProfileId = id;
                     }
                     profilesIni.endGroup();
