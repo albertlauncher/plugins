@@ -326,8 +326,8 @@ QWidget *FirefoxBookmarks::Extension::widget(QWidget *parent) {
             profilesIni.endGroup();
         }
 
-        connect(cmb, static_cast<void(QComboBox::*)(const QString&)>(&QComboBox::currentIndexChanged),
-                this, &Extension::setProfile);
+        connect(cmb, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+                this, static_cast<void(Extension::*)(int)>(&Extension::setProfile));
 
         // Fuzzy
         QCheckBox *ckb = d->widget->ui.fuzzy;
@@ -371,8 +371,17 @@ void FirefoxBookmarks::Extension::handleQuery(Core::Query *query) const {
 
 
 /** ***************************************************************************/
-void FirefoxBookmarks::Extension::setProfile(const QString& profile) {
+void FirefoxBookmarks::Extension::setProfile(int index) {
 
+    QComboBox *cmb = d->widget->ui.comboBox;
+    QVariant profileId = cmb->itemData(index);
+
+    setProfile(profileId.toString());
+}
+
+
+/** ***************************************************************************/
+void FirefoxBookmarks::Extension::setProfile(const QString& profile) {
     d->currentProfileId = profile;
 
     QSettings profilesIni(d->profilesIniPath, QSettings::IniFormat);
