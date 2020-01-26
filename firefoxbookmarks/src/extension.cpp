@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QCheckBox>
+#include <QPushButton>
 #include <QClipboard>
 #include <QtConcurrent>
 #include <QComboBox>
@@ -343,6 +344,10 @@ QWidget *FirefoxBookmarks::Extension::widget(QWidget *parent) {
             ? d->widget->ui.label_statusbar->setText("Indexing bookmarks ...")
             : d->widget->ui.label_statusbar->setText(QString("%1 bookmarks indexed.").arg(d->index.size()));
         connect(this, &Extension::statusInfo, d->widget->ui.label_statusbar, &QLabel::setText);
+
+	// Rescan button
+	QPushButton *btn = d->widget->ui.pushButton_update;
+        connect(btn, &QPushButton::clicked, bind(&Private::startIndexing, d.get()));
 
     }
     return d->widget;
