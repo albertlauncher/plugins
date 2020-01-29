@@ -36,6 +36,7 @@ using namespace std;
 using namespace Core;
 
 namespace {
+const QString CFG_FIREFOX_HOME = "profilesIniPath";
 const QString CFG_PROFILE = "profile";
 const QString CFG_FUZZY   = "fuzzy";
 const bool    DEF_FUZZY   = false;
@@ -221,15 +222,19 @@ FirefoxBookmarks::Extension::Extension()
         throw "Firefox executable not found.";
 
     // Locate profiles ini
-    d->profilesIniPath = QStandardPaths::locate(QStandardPaths::HomeLocation,
-                                                 ".mozilla/firefox/profiles.ini",
-                                                 QStandardPaths::LocateFile);
-    if (d->profilesIniPath.isEmpty()) // Try a windowsy approach
-        d->profilesIniPath = QStandardPaths::locate(QStandardPaths::DataLocation,
-                                                     "Mozilla/firefox/profiles.ini",
+    d->profilesIniPath = settings().value(CFG_FIREFOX_HOME, "").toString();
+    if (d->profilesIniPath.isEmpty()) {
+        d->profilesIniPath = QStandardPaths::locate(QStandardPaths::HomeLocation,
+                                                     ".mozilla/firefox/profiles.ini",
                                                      QStandardPaths::LocateFile);
+        if (d->profilesIniPath.isEmpty()) // Try a windowsy approach
+            d->profilesIniPath = QStandardPaths::locate(QStandardPaths::DataLocation,
+                                                         "Mozilla/firefox/profiles.ini",
+                                                         QStandardPaths::LocateFile);
+    }
     if (d->profilesIniPath.isEmpty())
         throw "Could not locate profiles.ini.";
+    settings().setValue(CFG_FIREFOX_HOME, d->profilesIniPath);
 
     // Load the settings
     d->currentProfileId = settings().value(CFG_PROFILE).toString();
@@ -328,6 +333,9 @@ QWidget *FirefoxBookmarks::Extension::widget(QWidget *parent) {
 
         connect(cmb, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
                 this, static_cast<void(Extension::*)(int)>(&Extension::setProfile));
+
+        // profiles.ini Path Label
+        d->widget->ui.label_profiles->setText("profiles.ini Path: " + d->profilesIniPath);
 
         // Fuzzy
         QCheckBox *ckb = d->widget->ui.fuzzy;
