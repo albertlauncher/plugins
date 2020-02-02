@@ -23,8 +23,10 @@
 #include <QStandardPaths>
 #include <QThreadPool>
 #include <QUrl>
+#include <QTemporaryFile>
 #include <functional>
 #include <map>
+#include <sys/sendfile.h>
 #include "extension.h"
 #include "configwidget.h"
 #include "albert/extension.h"
@@ -128,8 +130,48 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
     vector<shared_ptr<StandardIndexItem>> bookmarks;
 
     {
+        QTemporaryFile dbcopy;
+        dbcopy.setAutoRemove(true);
+        if (!dbcopy.open()) {
+            qWarning() << qPrintable(QString("Could not open temporary file: %1").arg(dbcopy.errorString()));
+            return vector<shared_ptr<Core::StandardIndexItem>>();
+        }
+
+        QFile places(dbPath);
+        if (!places.open(QIODevice::ReadOnly)) {
+            qWarning() << qPrintable(QString("Could not open places.sqlite file: %1").arg(dbcopy.errorString()));
+            return vector<shared_ptr<Core::StandardIndexItem>>();
+        }
+
+        bool sendfile_worked = false;
+        {
+            int source = places.handle();
+            int destination = dbcopy.handle();
+            if (sendfile(destination, source, nullptr, places.size()) != -1) {
+                sendfile_worked = true;
+            } else {
+                qDebug() << "sendfile did not work, falling back to userland buffer";
+            }
+        }
+
+        if (!sendfile_worked) {
+            char buf[512];
+            int read;
+            do {
+                read = places.read(buf, 512);
+                if (read == -1) {
+                    qWarning() << qPrintable(QString("Could not copy places.sqlite file: read failed: %1").arg(places.errorString()));
+                    return vector<shared_ptr<Core::StandardIndexItem>>();
+                }
+                if (dbcopy.write(buf, read) == -1) {
+                    qWarning() << qPrintable(QString("Could not copy places.sqlite file: write failed: %1").arg(dbcopy.errorString()));
+                    return vector<shared_ptr<Core::StandardIndexItem>>();
+                }
+            } while (read > 0);
+        }
+
         QSqlDatabase database = QSqlDatabase::addDatabase("QSQLITE", q->Core::Plugin::id());;
-        database.setDatabaseName(dbPath);
+        database.setDatabaseName(dbcopy.fileName());
 
         if (!database.open()) {
             qWarning() << qPrintable(QString("Could not open Firefox database: %1").arg(database.databaseName()));
