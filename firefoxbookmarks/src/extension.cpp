@@ -285,7 +285,8 @@ FirefoxBookmarks::Extension::Extension()
 
     // If the id does not exist find a proper default
     QSettings profilesIni(d->profilesIniPath, QSettings::IniFormat);
-    if ( !profilesIni.contains(d->currentProfileId) ){
+    QString pathkey = QString("%1/Path").arg(d->currentProfileId);
+    if ( !profilesIni.contains(pathkey) ){
 
         d->currentProfileId = QString();
 
