@@ -12,12 +12,29 @@
   </property>
   <layout class="QVBoxLayout">
    <item>
+    <widget class="QLabel" name="label_exe">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This setting can be changed in the config file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Detected Firefox executable:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QLabel" name="label_profiles">
      <property name="toolTip">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This setting can be changed in the config file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
       <string>profiles.ini Path:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
      </property>
     </widget>
    </item>

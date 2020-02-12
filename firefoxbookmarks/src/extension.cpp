@@ -39,6 +39,7 @@ using namespace Core;
 
 namespace {
 const QString CFG_FIREFOX_HOME = "profilesIniPath";
+const QString CFG_FIREFOX_EXE = "firefoxPath";
 const QString CFG_PROFILE = "profile";
 const QString CFG_FUZZY   = "fuzzy";
 const bool    DEF_FUZZY   = false;
@@ -259,9 +260,13 @@ FirefoxBookmarks::Extension::Extension()
     QSqlDatabase::removeDatabase(Core::Plugin::id());
 
     // Find firefox executable
-    d->firefoxExecutable = QStandardPaths::findExecutable("firefox");
+    d->firefoxExecutable = settings().value(CFG_FIREFOX_EXE, "").toString();
+    if (d->firefoxExecutable.isEmpty()) {
+        d->firefoxExecutable = QStandardPaths::findExecutable("firefox");
+    }
     if (d->firefoxExecutable.isEmpty())
         throw "Firefox executable not found.";
+    settings().setValue(CFG_FIREFOX_EXE, d->firefoxExecutable);
 
     // Locate profiles ini
     d->profilesIniPath = settings().value(CFG_FIREFOX_HOME, "").toString();
@@ -379,6 +384,9 @@ QWidget *FirefoxBookmarks::Extension::widget(QWidget *parent) {
 
         // profiles.ini Path Label
         d->widget->ui.label_profiles->setText("profiles.ini Path: " + d->profilesIniPath);
+
+        // discovered ff executable
+        d->widget->ui.label_exe->setText("Detected Firefox executable: " + d->firefoxExecutable);
 
         // Fuzzy
         QCheckBox *ckb = d->widget->ui.fuzzy;
