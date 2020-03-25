@@ -157,7 +157,7 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                 nsCOMPtr<ISession> session;
                 if (NS_SUCCEEDED(rc = d->manager->CreateInstanceByContractID(NS_SESSION_CONTRACTID, nullptr, NS_GET_IID(ISession), getter_AddRefs(session)))) {
                     nsCOMPtr<IProgress> progress;
-                    if (NS_FAILED(rc = vm->LaunchVMProcess(session, QString("gui").utf16(), QString("").utf16(), getter_AddRefs(progress))))
+                    if (NS_FAILED(rc = vm->LaunchVMProcess(session, QString("gui").utf16(), 0, nullptr, getter_AddRefs(progress))))
                         CRITICAL << "Error, could not start virtual machine:" << rc;
     //                                   << NS_ERROR_UNEXPECTED	<<"Virtual machine not registered."
     //                                   << NS_ERROR_INVALID_ARG	<<"Invalid session type."
