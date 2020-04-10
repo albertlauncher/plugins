@@ -8,7 +8,7 @@
 #include <vector>
 #include "configwidget.h"
 #include "extension.h"
-#include "muParser.h"
+#include <muParser.h>
 #include "albert/query.h"
 #include "albert/util/standarditem.h"
 #include "albert/util/standardactions.h"
