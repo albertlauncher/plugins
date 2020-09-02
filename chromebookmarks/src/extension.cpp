@@ -45,7 +45,8 @@ const char *potentialExecutableNames[] = {"chromium",
                                           "google-chrome",
                                           "google-chrome-beta",
                                           "google-chrome-stable",
-                                          "google-chrome-unstable"};
+                                          "google-chrome-unstable",
+                                         "BraveSoftware"};
 const char *potentialConfigLocations[] = {"chromium",
                                           "google-chrome"};
 
