@@ -6,16 +6,23 @@ file(GLOB_RECURSE SRC src/*)
 
 find_package(Qt5 5.5.0 REQUIRED COMPONENTS Widgets)
 
+find_package(PkgConfig)
+pkg_check_modules(QALC REQUIRED libqalculate)
+
 add_library(${PROJECT_NAME} SHARED ${SRC} ${PROJECT_NAME}.qrc metadata.json)
 
-target_include_directories(${PROJECT_NAME} PRIVATE src/)
+target_include_directories(${PROJECT_NAME}
+    PRIVATE
+        src/
+        ${QALC_INCLUDE_DIRS}
+)
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         ${Qt5Widgets_LIBRARIES}
 	albert::lib
         xdg
-        qalculate
+	${QALC_LINK_LIBRARIES}
 )
 
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/albert/plugins)
