@@ -38,19 +38,30 @@ const char* EXT_ID = "org.albert.extension.chromebookmarks";
 const char* CFG_PATH  = "bookmarkfile";
 const char* CFG_FUZZY = "fuzzy";
 const bool  DEF_FUZZY = false;
-const char *potentialExecutableNames[] = {"brave-browser",
-                                          "brave-browser-stable",
-                                          "chromium",
-                                          "chromium-browser",
-                                          "chrome",
-                                          "chrome-browser",
-                                          "google-chrome",
-                                          "google-chrome-beta",
-                                          "google-chrome-stable",
-                                          "google-chrome-unstable"};
-const char *potentialConfigLocations[] = {"brave-browser",
-                                          "chromium",
-                                          "google-chrome"};
+const char *potentialExecutableNames[] = {
+    "brave",
+    "brave-browser",
+    "brave-browser-stable",
+    "brave-browser-unstable"
+    "chromium",
+    "chromium-browser",
+    "chromium-browser-stable",
+    "chromium-browser-unstable",
+    "chrome",
+    "chrome-browser",
+    "chrome-browser-stable",
+    "chrome-browser-unstable",
+    "google-chrome",
+    "google-chrome-beta",
+    "google-chrome-stable",
+    "google-chrome-unstable"
+};
+const char *potentialConfigLocations[] = {
+    "BraveSoftware/Brave-Browser",
+    "brave-browser",
+    "chromium",
+    "google-chrome"
+};
 
 /** ***************************************************************************/
 vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(QString executable, const QString &bookmarksPath) {
