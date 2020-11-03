@@ -80,7 +80,7 @@ QString defaultCommand(SupportedCommands command){
 
         if (de == "Unity" || de == "Pantheon" || de == "GNOME")
             switch (command) {
-            case LOCK:      return "gnome-screensaver-command --lock";
+            case LOCK:      return "dbus-send --type=method_call --dest=org.gnome.ScreenSaver /org/gnome/ScreenSaver org.gnome.ScreenSaver.Lock";
             case LOGOUT:    return "gnome-session-quit --logout";
             case SUSPEND:   break ;
             case HIBERNATE: break ;
