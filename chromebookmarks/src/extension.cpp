@@ -57,6 +57,7 @@ const char *potentialExecutableNames[] = {
     "google-chrome-unstable"
 };
 const char *potentialConfigLocations[] = {
+    "BraveSoftware",
     "BraveSoftware/Brave-Browser",
     "brave-browser",
     "chromium",
