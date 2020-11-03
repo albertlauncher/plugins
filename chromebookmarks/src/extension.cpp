@@ -38,7 +38,9 @@ const char* EXT_ID = "org.albert.extension.chromebookmarks";
 const char* CFG_PATH  = "bookmarkfile";
 const char* CFG_FUZZY = "fuzzy";
 const bool  DEF_FUZZY = false;
-const char *potentialExecutableNames[] = {"chromium",
+const char *potentialExecutableNames[] = {"brave-browser",
+                                          "brave-browser-stable",
+                                          "chromium",
                                           "chromium-browser",
                                           "chrome",
                                           "chrome-browser",
@@ -46,7 +48,8 @@ const char *potentialExecutableNames[] = {"chromium",
                                           "google-chrome-beta",
                                           "google-chrome-stable",
                                           "google-chrome-unstable"};
-const char *potentialConfigLocations[] = {"chromium",
+const char *potentialConfigLocations[] = {"brave-browser",
+                                          "chromium",
                                           "google-chrome"};
 
 /** ***************************************************************************/
