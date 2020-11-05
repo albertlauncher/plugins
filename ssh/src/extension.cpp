@@ -122,7 +122,7 @@ void Ssh::Extension::handleQuery(Query * query) const {
     else
     {
         // Check sanity of input
-        QRegularExpression re(R"raw(^(?:(\w+)@)?\[?((?:\w[\w:]*|[\w\.]*))\]?(?::(\d+))?$)raw");
+        QRegularExpression re(R"raw(^(?:(\w+)@)?\[?((?:\w[\w:-]*|[\w\.-]*))\]?(?::(\d+))?$)raw");
         QRegularExpressionMatch match = re.match(trimmed);
 
         if (match.hasMatch())
