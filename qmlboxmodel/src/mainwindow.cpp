@@ -396,8 +396,6 @@ bool QmlBoxModel::MainWindow::event(QEvent *event) {
     return QQuickView::event(event);
 }
 
-
-#ifdef Q_OS_LINUX
 /** ****************************************************************************
  * @brief MainWidget::nativeEvent
  *
@@ -405,6 +403,8 @@ bool QmlBoxModel::MainWindow::event(QEvent *event) {
  */
 bool QmlBoxModel::MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *)
 {
+
+#ifdef X_PROTOCOL
     if (eventType == "xcb_generic_event_t")
     {
         xcb_generic_event_t* event = static_cast<xcb_generic_event_t *>(message);
@@ -463,8 +463,8 @@ bool QmlBoxModel::MainWindow::nativeEvent(const QByteArray &eventType, void *mes
         }
     }
     return false;
-}
 #endif
+}
 
 
 /** ***************************************************************************/
@@ -472,7 +472,7 @@ void QmlBoxModel::MainWindow::resizeEvent(QResizeEvent *event) {
 
     QQuickView::resizeEvent(event);
 
-#ifdef __unix__
+#ifdef X_PROTOCOL
 
     // Get root object
     if (!rootObject()) {
