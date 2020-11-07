@@ -182,23 +182,34 @@ void Ssh::Extension::rescan() {
 
     map<QString, QString> hosts;
 
-    // Get the hosts in config
-    for (const QString& path : { QString("/etc/ssh/config"), QDir::home().filePath(".ssh/config") }) {
+    std::function<void(const QString&)> scanfile = [&scanfile, &hosts](const QString& path) {
         if (QFile::exists(path)) {
             QFile file(path);
             if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
                 QTextStream in(&file);
                 while (!in.atEnd()) {
                     QStringList fields = in.readLine().split(QRegularExpression("\\s+"), QString::SkipEmptyParts);
-                    if ( fields.size() > 1 && fields[0] == "Host")
+                    if ( fields.size() > 1 && fields[0] == "Host") {
                         for ( int i = 1; i < fields.size(); ++i )
                             if ( !(fields[i].contains('*') || fields[i].contains('?')) )
                                 hosts.emplace(fields[i], QString());
+                    } else if (fields.size() > 1 && fields[0] == "Include") {
+                        // TODO move this somewhere else
+                        // TODO make it proper tilde expansion
+                        if (fields[1][0] == '~') {
+                            fields[1].remove(0,1).insert(0, QDir::homePath());
+                        }
+                        scanfile(fields[1]);
+                    }
                 }
                 file.close();
             }
         }
-    }
+    };
+
+    // Get the hosts in config
+    for (const QString& path : { QString("/etc/ssh/config"), QDir::home().filePath(".ssh/config") })
+        scanfile(path);
 
     // Get the hosts in known_hosts
     if (d->useKnownHosts) {
