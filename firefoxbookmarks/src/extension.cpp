@@ -1,8 +1,8 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
-
 #include <QApplication>
 #include <QCheckBox>
+#include <QPushButton>
 #include <QClipboard>
 #include <QtConcurrent>
 #include <QComboBox>
@@ -23,8 +23,10 @@
 #include <QStandardPaths>
 #include <QThreadPool>
 #include <QUrl>
+#include <QTemporaryFile>
 #include <functional>
 #include <map>
+#include <sys/sendfile.h>
 #include "extension.h"
 #include "configwidget.h"
 #include "albert/extension.h"
@@ -36,6 +38,8 @@ using namespace std;
 using namespace Core;
 
 namespace {
+const QString CFG_FIREFOX_HOME = "profilesIniPath";
+const QString CFG_FIREFOX_EXE = "firefoxPath";
 const QString CFG_PROFILE = "profile";
 const QString CFG_FUZZY   = "fuzzy";
 const bool    DEF_FUZZY   = false;
@@ -100,8 +104,13 @@ void FirefoxBookmarks::Private::startIndexing() {
 /** ***************************************************************************/
 void FirefoxBookmarks::Private::finishIndexing() {
 
+    auto result = futureWatcher.future().result();
+
+    if ( result.empty() )
+        return;
+
     // Get the thread results
-    index = futureWatcher.future().result();
+    index = std::move(result);
 
     // Rebuild the offline index
     offlineIndex.clear();
@@ -122,8 +131,48 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
     vector<shared_ptr<StandardIndexItem>> bookmarks;
 
     {
+        QTemporaryFile dbcopy;
+        dbcopy.setAutoRemove(true);
+        if (!dbcopy.open()) {
+            qWarning() << qPrintable(QString("Could not open temporary file: %1").arg(dbcopy.errorString()));
+            return vector<shared_ptr<Core::StandardIndexItem>>();
+        }
+
+        QFile places(dbPath);
+        if (!places.open(QIODevice::ReadOnly)) {
+            qWarning() << qPrintable(QString("Could not open places.sqlite file: %1").arg(dbcopy.errorString()));
+            return vector<shared_ptr<Core::StandardIndexItem>>();
+        }
+
+        bool sendfile_worked = false;
+        {
+            int source = places.handle();
+            int destination = dbcopy.handle();
+            if (sendfile(destination, source, nullptr, places.size()) != -1) {
+                sendfile_worked = true;
+            } else {
+                qDebug() << "sendfile did not work, falling back to userland buffer";
+            }
+        }
+
+        if (!sendfile_worked) {
+            char buf[512];
+            int read;
+            do {
+                read = places.read(buf, 512);
+                if (read == -1) {
+                    qWarning() << qPrintable(QString("Could not copy places.sqlite file: read failed: %1").arg(places.errorString()));
+                    return vector<shared_ptr<Core::StandardIndexItem>>();
+                }
+                if (dbcopy.write(buf, read) == -1) {
+                    qWarning() << qPrintable(QString("Could not copy places.sqlite file: write failed: %1").arg(dbcopy.errorString()));
+                    return vector<shared_ptr<Core::StandardIndexItem>>();
+                }
+            } while (read > 0);
+        }
+
         QSqlDatabase database = QSqlDatabase::addDatabase("QSQLITE", q->Core::Plugin::id());;
-        database.setDatabaseName(dbPath);
+        database.setDatabaseName(dbcopy.fileName());
 
         if (!database.open()) {
             qWarning() << qPrintable(QString("Could not open Firefox database: %1").arg(database.databaseName()));
@@ -211,20 +260,28 @@ FirefoxBookmarks::Extension::Extension()
     QSqlDatabase::removeDatabase(Core::Plugin::id());
 
     // Find firefox executable
-    d->firefoxExecutable = QStandardPaths::findExecutable("firefox");
+    d->firefoxExecutable = settings().value(CFG_FIREFOX_EXE, "").toString();
+    if (d->firefoxExecutable.isEmpty()) {
+        d->firefoxExecutable = QStandardPaths::findExecutable("firefox");
+    }
     if (d->firefoxExecutable.isEmpty())
         throw "Firefox executable not found.";
+    settings().setValue(CFG_FIREFOX_EXE, d->firefoxExecutable);
 
     // Locate profiles ini
-    d->profilesIniPath = QStandardPaths::locate(QStandardPaths::HomeLocation,
-                                                 ".mozilla/firefox/profiles.ini",
-                                                 QStandardPaths::LocateFile);
-    if (d->profilesIniPath.isEmpty()) // Try a windowsy approach
-        d->profilesIniPath = QStandardPaths::locate(QStandardPaths::DataLocation,
-                                                     "Mozilla/firefox/profiles.ini",
+    d->profilesIniPath = settings().value(CFG_FIREFOX_HOME, "").toString();
+    if (d->profilesIniPath.isEmpty()) {
+        d->profilesIniPath = QStandardPaths::locate(QStandardPaths::HomeLocation,
+                                                     ".mozilla/firefox/profiles.ini",
                                                      QStandardPaths::LocateFile);
+        if (d->profilesIniPath.isEmpty()) // Try a windowsy approach
+            d->profilesIniPath = QStandardPaths::locate(QStandardPaths::DataLocation,
+                                                         "Mozilla/firefox/profiles.ini",
+                                                         QStandardPaths::LocateFile);
+    }
     if (d->profilesIniPath.isEmpty())
         throw "Could not locate profiles.ini.";
+    settings().setValue(CFG_FIREFOX_HOME, d->profilesIniPath);
 
     // Load the settings
     d->currentProfileId = settings().value(CFG_PROFILE).toString();
@@ -233,7 +290,8 @@ FirefoxBookmarks::Extension::Extension()
 
     // If the id does not exist find a proper default
     QSettings profilesIni(d->profilesIniPath, QSettings::IniFormat);
-    if ( !profilesIni.contains(d->currentProfileId) ){
+    QString pathkey = QString("%1/Path").arg(d->currentProfileId);
+    if ( !profilesIni.contains(pathkey) ){
 
         d->currentProfileId = QString();
 
@@ -246,8 +304,9 @@ FirefoxBookmarks::Extension::Extension()
             if ( d->currentProfileId.isNull() ) {
                 for (QString &id : ids) {
                     profilesIni.beginGroup(id);
-                    if ( profilesIni.contains("Default")
-                         && profilesIni.value("Default").toBool() )  {
+                    if ( profilesIni.contains("Path")
+                         && profilesIni.contains("Default")
+                         && profilesIni.value("Default").toInt() > 0 )  {
                         d->currentProfileId = id;
                     }
                     profilesIni.endGroup();
@@ -259,8 +318,10 @@ FirefoxBookmarks::Extension::Extension()
                 d->currentProfileId = "default";
             }
 
-            // Use the first
-            d->currentProfileId = ids[0];
+            if ( d->currentProfileId.isNull() ) {
+                // Use the first
+                d->currentProfileId = ids[0];
+            }
         }
     }
 
@@ -318,8 +379,14 @@ QWidget *FirefoxBookmarks::Extension::widget(QWidget *parent) {
             profilesIni.endGroup();
         }
 
-        connect(cmb, static_cast<void(QComboBox::*)(const QString&)>(&QComboBox::currentIndexChanged),
-                this, &Extension::setProfile);
+        connect(cmb, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+                this, static_cast<void(Extension::*)(int)>(&Extension::setProfile));
+
+        // profiles.ini Path Label
+        d->widget->ui.label_profiles->setText("profiles.ini Path: " + d->profilesIniPath);
+
+        // discovered ff executable
+        d->widget->ui.label_exe->setText("Detected Firefox executable: " + d->firefoxExecutable);
 
         // Fuzzy
         QCheckBox *ckb = d->widget->ui.fuzzy;
@@ -336,6 +403,10 @@ QWidget *FirefoxBookmarks::Extension::widget(QWidget *parent) {
             ? d->widget->ui.label_statusbar->setText("Indexing bookmarks ...")
             : d->widget->ui.label_statusbar->setText(QString("%1 bookmarks indexed.").arg(d->index.size()));
         connect(this, &Extension::statusInfo, d->widget->ui.label_statusbar, &QLabel::setText);
+
+	// Rescan button
+	QPushButton *btn = d->widget->ui.pushButton_update;
+        connect(btn, &QPushButton::clicked, bind(&Private::startIndexing, d.get()));
 
     }
     return d->widget;
@@ -359,8 +430,17 @@ void FirefoxBookmarks::Extension::handleQuery(Core::Query *query) const {
 
 
 /** ***************************************************************************/
-void FirefoxBookmarks::Extension::setProfile(const QString& profile) {
+void FirefoxBookmarks::Extension::setProfile(int index) {
 
+    QComboBox *cmb = d->widget->ui.comboBox;
+    QVariant profileId = cmb->itemData(index);
+
+    setProfile(profileId.toString());
+}
+
+
+/** ***************************************************************************/
+void FirefoxBookmarks::Extension::setProfile(const QString& profile) {
     d->currentProfileId = profile;
 
     QSettings profilesIni(d->profilesIniPath, QSettings::IniFormat);

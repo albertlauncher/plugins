@@ -26,7 +26,8 @@ public:
     QWidget *widget(QWidget *parent = nullptr) override;
     void handleQuery(Core::Query * query) const override;
 
-    void setProfile(const QString &profile);
+    void setProfile(int);
+    void setProfile(const QString&);
     void changeFuzzyness(bool fuzzy);
     void changeOpenPolicy(bool withFirefox);
 
