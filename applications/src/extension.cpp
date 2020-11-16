@@ -248,7 +248,8 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
     QStringList xdg_current_desktop = QString(getenv("XDG_CURRENT_DESKTOP")).split(':',QString::SkipEmptyParts);
     QLocale loc;
     QStringList xdgAppDirs = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
-
+	xdgAppDirs.append(QStandardPaths::standardLocations(QStandardPaths::DesktopLocation));
+	
     /*
      * Create a list of desktop files to index (unique ids)
      * To determine the ID of a desktop file, make its full path relative to
