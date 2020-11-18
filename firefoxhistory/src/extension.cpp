@@ -132,14 +132,7 @@ FirefoxHistory::Private::indexFirefoxHistory() const {
         }
 
         QSqlQuery result(database);
-        /* Replacing query
-        if ( !result.exec("SELECT bookmarks.guid, bookmarks.title, places.url "
-                          "FROM moz_bookmarks bookmarks "
-                          "JOIN moz_bookmarks parents ON bookmarks.parent = parents.id AND parents.parent <> 4  "
-                          "JOIN moz_places places ON bookmarks.fk = places.id "
-                          "WHERE NOT hidden") ) {  // Those with place:... will not work with xdg-open
 
-        */
         if ( !result.exec("SELECT places.guid, places.title, places.url, historyvisits.visit_date "
                           "FROM moz_historyvisits historyvisits "
                           "JOIN moz_places places ON places.id == historyvisits.place_id "
