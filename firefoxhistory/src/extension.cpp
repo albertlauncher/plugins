@@ -361,7 +361,7 @@ void FirefoxHistory::Extension::handleQuery(Core::Query *query) const {
 /** ***************************************************************************/
 void FirefoxHistory::Extension::setProfile(const QString& profile) {
 
-    d->currentProfileId = profil;
+    d->currentProfileId = profile;
 
     QSettings profilesIni(d->profilesIniPath, QSettings::IniFormat);
 
