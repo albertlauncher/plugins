@@ -441,7 +441,10 @@ void FirefoxBookmarks::Extension::setProfile(int index) {
 
 /** ***************************************************************************/
 void FirefoxBookmarks::Extension::setProfile(const QString& profile) {
-    d->currentProfileId = profile;
+
+    // Check if full profileID [profile_id (Profile_name)] is returned instead of just Profile_name
+    d->currentProfileId = profile.split(' ').last()
+            .remove(QChar('(')).remove(QChar(')'));
 
     QSettings profilesIni(d->profilesIniPath, QSettings::IniFormat);
 
