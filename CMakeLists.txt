@@ -56,6 +56,11 @@ if (BUILD_FIREFOXBOOKMARKS)
     add_subdirectory(firefoxbookmarks)
 endif()
 
+option(BUILD_FIREFOXHISTORY "Build the extension" ON)
+if (BUILD_FIREFOXHISTORY)
+    add_subdirectory(firefoxhistory)
+endif()
+
 option(BUILD_HASHGENERATOR "Build the extension" ON)
 if (BUILD_HASHGENERATOR)
     add_subdirectory(hashgenerator)
