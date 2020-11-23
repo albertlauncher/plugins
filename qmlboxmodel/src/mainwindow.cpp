@@ -459,11 +459,14 @@ bool QmlBoxModel::MainWindow::nativeEvent(const QByteArray &eventType, void *mes
                     hideOnFocusLoss_)
                 hide();
             return true;
-         }
+        }
         }
     }
-    return false;
+#else
+    Q_UNUSED(eventType)
+    Q_UNUSED(message)
 #endif
+    return false;
 }
 
 

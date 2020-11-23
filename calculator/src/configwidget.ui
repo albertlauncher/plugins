@@ -6,7 +6,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is a simple calculator extension. It lets you evaluate basic math expressions. Check the &lt;a href=&quot;https://albertlauncher.github.io/docs/extensions/calculator/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;docs&lt;/span&gt;&lt;/a&gt; for built-in fuctions and operators.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is a simple calculator extension. It lets you evaluate basic math expressions.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>

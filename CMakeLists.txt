@@ -46,7 +46,7 @@ if (BUILD_DEBUG)
     add_subdirectory(debug)
 endif()
 
-option(BUILD_FILES "Build the extension" ON)  # Deprecated
+option(BUILD_FILES "Build the extension" ON)
 if (BUILD_FILES)
     add_subdirectory(files)
 endif()

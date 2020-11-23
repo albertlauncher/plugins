@@ -30,7 +30,7 @@
     <widget class="QLabel" name="label_2">
      <property name="text">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p style=&quot; color:#808080;&quot;&gt;
-Choose the MIME types you want to be indexed by the files extension. The left box contains the known MIME types. Use it to find your desired MIME types. The right box contains the list of patterns that is used to filter the indexed files by matching their MIME type. The patterns support wildcard matching. Check the &lt;a href=&quot;https://albertlauncher.github.io/docs/extensions/files/#mime-filters&quot;&gt;docs&lt;/a&gt; for more details and examples.
+Choose the MIME types you want to be indexed by the files extension. The left box contains the known MIME types. Use it to find your desired MIME types. The right box contains the list of patterns that is used to filter the indexed files by matching their MIME type. The patterns support wildcard matching. Check the docs for more details and examples.
 &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="wordWrap">

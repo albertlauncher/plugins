@@ -2,4 +2,4 @@ CMakeLists.txt.user*
 build*
 *.qmlc
 *.jsc
-
+.DS_Store
