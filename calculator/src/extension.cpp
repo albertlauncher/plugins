@@ -4,6 +4,7 @@
 #include <QLocale>
 #include <QPointer>
 #include <QSettings>
+#include <QString>
 #include <vector>
 #include "albert/query.h"
 #include "albert/util/standardactions.h"
@@ -11,6 +12,7 @@
 #include "configwidget.h"
 #include "extension.h"
 #include "muParser.h"
+#include "muParserInt.h"
 #include "xdg/iconlookup.h"
 Q_LOGGING_CATEGORY(qlc, "calculator")
 #define DEBG qCDebug(qlc,).noquote()
@@ -24,6 +26,8 @@ using namespace Core;
 namespace {
 const QString CFG_SEPS      = "group_separators";
 const bool    CFG_SEPS_DEF  = false;
+const QString CFG_HEXP      = "hex_parsing";
+const bool    CFG_HEXP_DEF  = false;
 }
 
 
@@ -32,6 +36,7 @@ class Calculator::Private
 public:
     QPointer<ConfigWidget> widget;
     std::unique_ptr<mu::Parser> parser;
+    std::unique_ptr<mu::ParserInt> iparser;
     QLocale locale;
     QString iconPath;
 };
@@ -55,6 +60,8 @@ Calculator::Extension::Extension()
     d->parser->SetDecSep(d->locale.decimalPoint().toLatin1());
     d->parser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
     d->parser->SetArgSep(';');
+
+    d->iparser.reset();
 }
 
 
@@ -77,6 +84,20 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
             d->locale.setNumberOptions( (checked) ? d->locale.numberOptions() & ~QLocale::OmitGroupSeparator
                                                   : d->locale.numberOptions() | QLocale::OmitGroupSeparator );
         });
+
+        d->widget->ui.checkBox_hexparsing->setChecked(!(d->locale.numberOptions() & QLocale::OmitGroupSeparator));
+        connect(d->widget->ui.checkBox_hexparsing, &QCheckBox::toggled, [this](bool checked){
+                settings().setValue(CFG_HEXP, checked);
+
+                if (checked) {
+                    d->iparser.reset(new mu::ParserInt);
+                    d->iparser->SetDecSep(d->locale.decimalPoint().toLatin1());
+                    d->iparser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
+                    d->iparser->SetArgSep(';');
+                } else {
+                    d->iparser.reset();
+                }
+        });
     }
     return d->widget;
 }
@@ -86,8 +107,15 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Calculator::Extension::handleQuery(Core::Query * query) const {
 
+    bool hexExpr = false;
+
     try {
-        d->parser->SetExpr(query->string().toStdString());
+        if(d->iparser && query->string().contains("0x")) {
+            d->iparser->SetExpr(query->string().toStdString());
+            hexExpr = true;
+        } else {
+            d->parser->SetExpr(query->string().toStdString());
+        }
     } catch (mu::Parser::exception_type &exception) {
         WARN << "Muparser SetExpr exception: " << exception.GetMsg().c_str();
         return;
@@ -96,7 +124,11 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
 
     // http://beltoforion.de/article.php?a=muparser&p=errorhandling
     try {
-        result = d->parser->Eval();
+        if(hexExpr) {
+            result = d->iparser->Eval();
+        } else {
+            result = d->parser->Eval();
+        }
     } catch (mu::Parser::exception_type &) {
         // Expected exception in case of invalid input
         // DEBG << "Muparser Eval exception: " << exception.GetMsg().c_str();
