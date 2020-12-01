@@ -9,6 +9,7 @@
 #include "configwidget.h"
 #include "extension.h"
 #include "muParser.h"
+#include "muParserInt.h"
 #include "albert/query.h"
 #include "albert/util/standarditem.h"
 #include "albert/util/standardactions.h"
@@ -31,6 +32,7 @@ class Calculator::Private
 public:
     QPointer<ConfigWidget> widget;
     std::unique_ptr<mu::Parser> parser;
+    std::unique_ptr<mu::ParserInt> iparser;
     QLocale locale;
     QString iconPath;
 };
@@ -55,6 +57,11 @@ Calculator::Extension::Extension()
     d->parser->SetDecSep(d->locale.decimalPoint().toLatin1());
     d->parser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
     d->parser->SetArgSep(';');
+
+    d->iparser.reset(new mu::ParserInt);
+    d->iparser->SetDecSep(d->locale.decimalPoint().toLatin1());
+    d->iparser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
+    d->iparser->SetArgSep(';');
 }
 
 
@@ -86,8 +93,17 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Calculator::Extension::handleQuery(Core::Query * query) const {
 
+    bool isHex = query->string().toStdString().find("0x") != std::string::npos;
+
     try {
-        d->parser->SetExpr(query->string().toStdString());
+        if(isHex)
+        {
+            d->iparser->SetExpr(query->string().toStdString());
+        }
+        else
+        {
+            d->parser->SetExpr(query->string().toStdString());
+        }
     } catch (mu::Parser::exception_type &exception) {
         qCWarning(qlc_calculator).noquote() << "Muparser SetExpr exception: " << exception.GetMsg().c_str();
         return;
@@ -96,7 +112,14 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
 
     // http://beltoforion.de/article.php?a=muparser&p=errorhandling
     try {
-        result = d->parser->Eval();
+        if(isHex)
+        {
+            result = d->iparser->Eval();
+        }
+        else
+        {
+            result = d->parser->Eval();
+        }
     } catch (mu::Parser::exception_type &) {
         // Expected exception in case of invalid input
         // qDebug() << "Muparser Eval exception: " << exception.GetMsg().c_str();
