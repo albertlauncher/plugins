@@ -5,6 +5,7 @@
 #include <QLocale>
 #include <QPointer>
 #include <QSettings>
+#include <QString>
 #include <vector>
 #include "configwidget.h"
 #include "extension.h"
@@ -93,7 +94,8 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Calculator::Extension::handleQuery(Core::Query * query) const {
 
-    bool isHex = query->string().toStdString().find("0x") != std::string::npos;
+    auto hexPrefix = QString("0x");
+    bool isHex = query->string().contains(hexPrefix);
 
     try {
         if(isHex)
