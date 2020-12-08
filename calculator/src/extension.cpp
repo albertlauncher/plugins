@@ -24,6 +24,8 @@ Q_LOGGING_CATEGORY(qlc_calculator, "calculator")
 namespace {
 const QString CFG_SEPS      = "group_separators";
 const bool    CFG_SEPS_DEF  = false;
+const QString CFG_HEXP      = "hex_parsing";
+const bool    CFG_HEXP_DEF  = false;
 }
 
 
@@ -59,10 +61,7 @@ Calculator::Extension::Extension()
     d->parser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
     d->parser->SetArgSep(';');
 
-    d->iparser.reset(new mu::ParserInt);
-    d->iparser->SetDecSep(d->locale.decimalPoint().toLatin1());
-    d->iparser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
-    d->iparser->SetArgSep(';');
+    d->iparser.reset();
 }
 
 
@@ -85,6 +84,22 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
             d->locale.setNumberOptions( (checked) ? d->locale.numberOptions() & ~QLocale::OmitGroupSeparator
                                                   : d->locale.numberOptions() | QLocale::OmitGroupSeparator );
         });
+
+        d->widget->ui.checkBox_hexparsing->setChecked(!(d->locale.numberOptions() & QLocale::OmitGroupSeparator));
+        connect(d->widget->ui.checkBox_hexparsing, &QCheckBox::toggled, [this](bool checked){
+                settings().setValue(CFG_HEXP, checked);
+                if(checked)
+                {
+                    d->iparser.reset(new mu::ParserInt);
+                    d->iparser->SetDecSep(d->locale.decimalPoint().toLatin1());
+                    d->iparser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
+                    d->iparser->SetArgSep(';');
+                }
+                else
+                {
+                    d->iparser.reset();
+                }
+        });
     }
     return d->widget;
 }
@@ -94,11 +109,17 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Calculator::Extension::handleQuery(Core::Query * query) const {
 
-    auto hexPrefix = QString("0x");
-    bool isHex = query->string().contains(hexPrefix);
+    bool hexParse = settings().value(CFG_HEXP, CFG_HEXP_DEF).toBool();
+
+    if(hexParse)
+    {
+        auto hexPrefix = QString("0x");
+        bool isHex = query->string().contains(hexPrefix);
+        hexParse = isHex;
+    }
 
     try {
-        if(isHex)
+        if(hexParse)
         {
             d->iparser->SetExpr(query->string().toStdString());
         }
@@ -114,7 +135,7 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
 
     // http://beltoforion.de/article.php?a=muparser&p=errorhandling
     try {
-        if(isHex)
+        if(hexParse)
         {
             result = d->iparser->Eval();
         }
