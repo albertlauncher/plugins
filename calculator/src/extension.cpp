@@ -109,22 +109,13 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Calculator::Extension::handleQuery(Core::Query * query) const {
 
-    bool hexParse = settings().value(CFG_HEXP, CFG_HEXP_DEF).toBool();
-
-    if(hexParse)
-    {
-        auto hexPrefix = QString("0x");
-        bool isHex = query->string().contains(hexPrefix);
-        hexParse = isHex;
-    }
+    bool hexExpr = false;
 
     try {
-        if(hexParse)
-        {
+        if(d->iparser && query->string().contains("0x")) {
             d->iparser->SetExpr(query->string().toStdString());
-        }
-        else
-        {
+            hexExpr = true;
+        } else {
             d->parser->SetExpr(query->string().toStdString());
         }
     } catch (mu::Parser::exception_type &exception) {
@@ -135,12 +126,9 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
 
     // http://beltoforion.de/article.php?a=muparser&p=errorhandling
     try {
-        if(hexParse)
-        {
+        if(hexExpr) {
             result = d->iparser->Eval();
-        }
-        else
-        {
+        } else {
             result = d->parser->Eval();
         }
     } catch (mu::Parser::exception_type &) {
