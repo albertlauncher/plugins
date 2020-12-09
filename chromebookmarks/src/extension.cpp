@@ -1,29 +1,21 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2020 Manuel Schneider
 
-#include <QApplication>
-#include <QClipboard>
-#include <QDebug>
-#include <QDesktopServices>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
-#include <QFileInfo>
 #include <QFileSystemWatcher>
 #include <QFutureWatcher>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QPointer>
-#include <QProcess>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QtConcurrent>
-#include <QTimer>
-#include <QUrl>
-#include <functional>
-#include <memory>
+#include <QWidget>
+#include <set>
 #include <vector>
-#include "configwidget.h"
+#include "ui_configwidget.h"
 #include "extension.h"
 #include "albert/util/standardactions.h"
 #include "albert/util/standardindexitem.h"
@@ -32,260 +24,243 @@
 using namespace std;
 using namespace Core;
 
-namespace {
+Q_LOGGING_CATEGORY(qlc_chromium, "chromium")
+#define DEBG qCDebug(qlc_chromium, ).noquote()
+#define INFO qCInfo(qlc_chromium, ).noquote()
+#define WARN qCWarning(qlc_chromium, ).noquote()
+#define CRIT qCCritical(qlc_chromium, ).noquote()
 
+namespace {
 const char* EXT_ID = "org.albert.extension.chromebookmarks";
-const char* CFG_PATH  = "bookmarkfile";
 const char* CFG_FUZZY = "fuzzy";
 const bool  DEF_FUZZY = false;
-const char *potentialExecutableNames[] = {
-    "brave",
-    "brave-browser",
-    "brave-browser-stable",
-    "brave-browser-unstable"
-    "chromium",
-    "chromium-browser",
-    "chromium-browser-stable",
-    "chromium-browser-unstable",
-    "chrome",
-    "chrome-browser",
-    "chrome-browser-stable",
-    "chrome-browser-unstable",
-    "google-chrome",
-    "google-chrome-beta",
-    "google-chrome-stable",
-    "google-chrome-unstable"
-};
-const char *potentialConfigLocations[] = {
+const char *CONFIG_LOCATIONS[] = {
     "BraveSoftware",
-    "BraveSoftware/Brave-Browser",
     "brave-browser",
     "chromium",
     "google-chrome"
 };
-
-/** ***************************************************************************/
-vector<shared_ptr<StandardIndexItem>> indexChromeBookmarks(QString executable, const QString &bookmarksPath) {
-
-    // Build a new index
-    vector<shared_ptr<StandardIndexItem>> bookmarks;
-
-    QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
-    icon = icon.isEmpty() ? ":favicon" : icon;
-
-    // Define a recursive bookmark indexing lambda
-    std::function<void(const QJsonObject &json)> rec_bmsearch =
-            [&rec_bmsearch, &bookmarks, &icon, &executable](const QJsonObject &json) {
-        QJsonValue type = json["type"];
-        if (type == QJsonValue::Undefined)
-            return;
-        if (type.toString() == "folder"){
-            QJsonArray jarr = json["children"].toArray();
-            for (const QJsonValueRef i : jarr)
-                rec_bmsearch(i.toObject());
-        }
-        if (type.toString() == "url") {
-            QString name = json["name"].toString();
-            QString urlstr = json["url"].toString();
-
-            vector<IndexableItem::IndexString> indexStrings;
-            QUrl url(urlstr);
-            QString host = url.host();
-            indexStrings.emplace_back(name, UINT_MAX);
-            indexStrings.emplace_back(host.left(host.size()-url.topLevelDomain().size()), UINT_MAX/2);
-
-            shared_ptr<StandardIndexItem> item = std::make_shared<StandardIndexItem>(QString("%1.%2").arg(EXT_ID, json["id"].toString()));
-            item->setText(name);
-            item->setCompletion(name);
-            item->setSubtext(urlstr);
-            item->setIconPath(icon);
-            item->setIndexKeywords(std::move(indexStrings));
-            item->addAction(make_shared<ProcAction>("Open URL",
-                                                    QStringList() << executable << urlstr));
-            item->addAction(make_shared<ProcAction>("Open URL in new window",
-                                                    QStringList() << executable << "--new-window"  << urlstr));
-            item->addAction(make_shared<ClipAction>("Copy URL to clipboard", urlstr));
-
-            bookmarks.push_back(std::move(item));
-        }
-    };
-
-    QFile f(bookmarksPath);
-    if (!f.open(QIODevice::ReadOnly)) {
-        qWarning() << qPrintable(QString("Could not open Chrome bookmarks file '%1'.").arg(bookmarksPath));
-        return vector<shared_ptr<StandardIndexItem>>();
-    }
-
-    QJsonObject json = QJsonDocument::fromJson(f.readAll()).object();
-    QJsonObject roots = json.value("roots").toObject();
-    for (const QJsonValue &i : roots)
-        if (i.isObject())
-            rec_bmsearch(i.toObject());
-
-    f.close();
-
-    return bookmarks;
-}
-
 }
 
 
+/** ***************************************************************************/
+/** ***************************************************************************/
 
-/** ***************************************************************************/
-/** ***************************************************************************/
-/** ***************************************************************************/
-/** ***************************************************************************/
-class ChromeBookmarks::Private
+class Chromium::Private
 {
 public:
     Private(Extension *q) : q(q) {}
 
     Extension *q;
 
-    QPointer<ConfigWidget> widget;
+    QPointer<QWidget> widget;
     QFileSystemWatcher fileSystemWatcher;
-    QString bookmarksFile;
-    QString executable;
+    QSet<QString> bookmarksFiles;
 
     vector<shared_ptr<Core::StandardIndexItem>> index;
     Core::OfflineIndex offlineIndex;
     QFutureWatcher<vector<shared_ptr<Core::StandardIndexItem>>> futureWatcher;
 
-    void finishIndexing();
-    void startIndexing();
+
+    void startIndexing() {
+
+        // Never run concurrent
+        if ( futureWatcher.future().isRunning() )
+            return;
+
+        // Run finishIndexing when the indexing thread finished
+        futureWatcher.disconnect();
+        QObject::connect(&futureWatcher, &QFutureWatcher<vector<shared_ptr<Core::StandardIndexItem>>>::finished,
+                         std::bind(&Private::finishIndexing, this));
+
+        // Run the indexer thread
+        futureWatcher.setFuture(QtConcurrent::run(getBookmarks, bookmarksFiles));
+
+        // Notification
+        INFO << "Start indexing Chrome bookmarks.";
+        emit q->statusInfo("Indexing bookmarks ...");
+
+    }
+
+
+    void finishIndexing() {
+
+        // Get the thread results
+        index = futureWatcher.future().result();
+
+        // Rebuild the offline index
+        offlineIndex.clear();
+        for (const auto &item : index)
+            offlineIndex.add(item);
+
+        /*
+         * Finally update the watches (maybe folders changed)
+         * Note that QFileSystemWatcher stops monitoring files once they have been
+         * renamed or removed from disk, and directories once they have been removed
+         * from disk.
+         * Chromium seems to mv the file (inode change).
+         */
+        for (auto filePath : bookmarksFiles)
+            if (!fileSystemWatcher.files().contains(filePath))
+                if(!fileSystemWatcher.addPath(filePath))
+                    WARN << filePath << "can not be watched. Changes in this path will not be noticed.";
+
+        // Notification
+        auto msg = QString("%1 bookmarks indexed from %2.").arg(index.size())
+                .arg(QStringList::fromSet(bookmarksFiles).join(", "));
+        INFO << msg;
+        emit q->statusInfo(msg);
+    }
+
+
+    static vector<shared_ptr<StandardIndexItem>> getBookmarks(const QSet<QString>& bookmarksFiles){
+
+        vector<shared_ptr<StandardIndexItem>> bookmarkItems;
+
+        // For each bookmarks file
+        for (auto filePath : bookmarksFiles) {
+            QFile f(filePath);
+            if (f.open(QIODevice::ReadOnly)) {
+
+                QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
+                icon = icon.isEmpty() ? ":favicon" : icon;
+
+                // Read the bookmarks
+                QJsonObject json = QJsonDocument::fromJson(f.readAll()).object();
+                QJsonObject roots = json.value("roots").toObject();
+                set<tuple<QString,QString,QString>> bookmarks;
+                for (const QJsonValue &root : roots)
+                    if (root.isObject())
+                        getBookmarksRecursionHelper(root.toObject(), bookmarks);
+
+                // Create items and add to results
+                for (const auto& tuple : bookmarks){
+                    QString guid = get<0>(tuple);
+                    QString title = get<1>(tuple);
+                    QString url = get<2>(tuple);
+                    auto item = make_shared<StandardIndexItem>(
+                            QString("%1.%2").arg(EXT_ID, guid), icon, title, url, title, Item::Urgency::Normal,
+                            initializer_list<shared_ptr<Action>>{
+                                make_shared<UrlAction>("Open URL", url),
+                                make_shared<ClipAction>("Copy URL to clipboard", url)
+                            },
+                            initializer_list<Core::IndexableItem::IndexString>{
+                                {title, UINT_MAX},
+                                {url, UINT_MAX/2},
+                            }
+                    );
+                    bookmarkItems.emplace_back(item);
+                }
+                f.close();
+            } else
+                WARN << "Could not open Chrome bookmarks file:" << filePath;
+        }
+
+        return bookmarkItems;
+    }
+
+
+    static void getBookmarksRecursionHelper(const QJsonObject &json, set<tuple<QString,QString,QString>> &output){
+        QJsonValue type = json["type"];
+        if (type != QJsonValue::Undefined){
+
+            if (type.toString() == "folder")
+                for (const QJsonValueRef child : json["children"].toArray())
+                    getBookmarksRecursionHelper(child.toObject(), output);
+
+            if (type.toString() == "url")
+                output.emplace(json["guid"].toString(), json["name"].toString(), json["url"].toString());
+        }
+    }
 };
 
 
 /** ***************************************************************************/
-void ChromeBookmarks::Private::startIndexing() {
-
-    // Never run concurrent
-    if ( futureWatcher.future().isRunning() )
-        return;
-
-    // Run finishIndexing when the indexing thread finished
-    futureWatcher.disconnect();
-    QObject::connect(&futureWatcher, &QFutureWatcher<vector<shared_ptr<Core::StandardIndexItem>>>::finished,
-                     std::bind(&Private::finishIndexing, this));
-
-    // Run the indexer thread
-    futureWatcher.setFuture(QtConcurrent::run(indexChromeBookmarks, executable, bookmarksFile));
-
-    // Notification
-    qInfo() << "Start indexing Chrome bookmarks.";
-    emit q->statusInfo("Indexing bookmarks ...");
-
-}
-
-
 /** ***************************************************************************/
-void ChromeBookmarks::Private::finishIndexing() {
 
-    // Get the thread results
-    index = futureWatcher.future().result();
-
-    // Rebuild the offline index
-    offlineIndex.clear();
-    for (const auto &item : index)
-        offlineIndex.add(item);
-
-    /*
-     * Finally update the watches (maybe folders changed)
-     * Note that QFileSystemWatcher stops monitoring files once they have been
-     * renamed or removed from disk, and directories once they have been removed
-     * from disk.
-     * Chromium seems to mv the file (inode change).
-     */
-    if ( fileSystemWatcher.files().empty() )
-        if( !fileSystemWatcher.addPath(bookmarksFile))
-            qWarning() << qPrintable(QString("%1 can not be watched. Changes in this path will not be noticed.").arg(bookmarksFile));
-
-    // Notification
-    qInfo() << qPrintable(QString("Indexed %1 Chrome bookmarks.").arg(index.size()));
-    emit q->statusInfo(QString("%1 bookmarks indexed.").arg(index.size()));
-}
-
-
-/** ***************************************************************************/
-/** ***************************************************************************/
-/** ***************************************************************************/
-/** ***************************************************************************/
-ChromeBookmarks::Extension::Extension()
+Chromium::Extension::Extension()
     : Core::Extension(EXT_ID),
       Core::QueryHandler(Core::Plugin::id()),
       d(new Private(this)) {
 
-
-    // Find executable
-    d->executable = QStandardPaths::findExecutable("chromium");
-    for (auto &name : potentialExecutableNames) {
-        d->executable = QStandardPaths::findExecutable(name);;
-        if (!d->executable.isEmpty())
-            break;
-    }
-    if (d->executable.isEmpty())
-        throw "Chrome/ium executable not found.";
-
     // Load settings
     d->offlineIndex.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
 
-    // Load and set a valid path
-    QVariant v = settings().value(CFG_PATH);
-    if (v.isValid() && v.canConvert(QMetaType::QString) && QFileInfo(v.toString()).exists())
-        setPath(v.toString());
-    else
-        restorePath();
-
-    // If the path changed write it to the settings
-    connect(this, &Extension::pathChanged, [this](const QString& path){
-        settings().setValue(CFG_PATH, path);
-    });
-
-    // Update index if bookmark file changed
+    // Update index when a "Bookmark" file changed
     connect(&d->fileSystemWatcher, &QFileSystemWatcher::fileChanged,
-            this, &Extension::updateIndex);
+            this, [this](){ d->startIndexing(); });
 
-    // Update index if bookmark file's path changed
-    connect(this, &Extension::pathChanged,
-            this, &Extension::updateIndex);
-
-    // Trigger an initial update
-    updateIndex();
+    // Find "Bookmarks" files, implicitly triggers an initial update
+    updatePaths();
 
     registerQueryHandler(this);
 }
 
 
 /** ***************************************************************************/
-ChromeBookmarks::Extension::~Extension() {}
+Chromium::Extension::~Extension() {}
 
 
 /** ***************************************************************************/
-QWidget *ChromeBookmarks::Extension::widget(QWidget *parent) {
-    if (d->widget.isNull()){
-        d->widget = new ConfigWidget(parent);
+void Chromium::Extension::updatePaths() {
 
-        // Paths
-        d->widget->ui.lineEdit_path->setText(d->bookmarksFile);
-        connect(d->widget.data(), &ConfigWidget::requestEditPath, this, &Extension::setPath);
-        connect(this, &Extension::pathChanged, d->widget->ui.lineEdit_path, &QLineEdit::setText);
+    QSet<QString> files;
 
-        // Fuzzy
-        d->widget->ui.checkBox_fuzzy->setChecked(fuzzy());
-        connect(d->widget->ui.checkBox_fuzzy, &QCheckBox::toggled, this, &Extension::setFuzzy);
-
-        // Status bar
-        ( d->futureWatcher.isRunning() )
-            ? d->widget->ui.label_statusbar->setText("Indexing bookmarks ...")
-            : d->widget->ui.label_statusbar->setText(QString("%1 bookmarks indexed.").arg(d->index.size()));
-        connect(this, &Extension::statusInfo, d->widget->ui.label_statusbar, &QLabel::setText);
+    // Search for chromium based "Bookmarks" files
+    QDir configDir = QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation));
+    for (const QString &configLocation : CONFIG_LOCATIONS){
+        QString root = configDir.filePath(configLocation);
+        QDirIterator it(root, {"Bookmarks"}, QDir::Files, QDirIterator::Subdirectories);
+        while (it.hasNext())
+            files.insert(it.next());
     }
-    return d->widget;
+
+    // If paths changed update bookmarks
+    if (d->bookmarksFiles != files){
+        d->bookmarksFiles = files;
+        d->startIndexing();
+    }
 }
 
 
 /** ***************************************************************************/
-void ChromeBookmarks::Extension::handleQuery(Core::Query * query) const {
+QWidget *Chromium::Extension::widget(QWidget *parent) {
+    if (d->widget.isNull()){
+        d->widget = new QWidget(parent);
+
+        Ui::ConfigWidget ui;
+        ui.setupUi(d->widget);
+
+        // Fuzzy
+        ui.checkBox_fuzzy->setChecked(fuzzy());
+        connect(ui.checkBox_fuzzy, &QCheckBox::toggled, this, &Extension::setFuzzy);
+
+        // Status bar
+        ( d->futureWatcher.isRunning() )
+            ? ui.label_statusbar->setText("Indexing bookmarks ...")
+            : ui.label_statusbar->setText(QString("%1 bookmarks indexed from %2.").arg(d->index.size()).
+                                          arg(QStringList::fromSet(d->bookmarksFiles).join(", ")));
+        connect(this, &Extension::statusInfo, ui.label_statusbar, &QLabel::setText);
+    }
+    return d->widget.data();
+}
+
+
+/** ***************************************************************************/
+bool Chromium::Extension::fuzzy() {
+    return d->offlineIndex.fuzzy();
+}
+
+
+/** ***************************************************************************/
+void Chromium::Extension::setFuzzy(bool b) {
+    settings().setValue(CFG_FUZZY, b);
+    d->offlineIndex.setFuzzy(b);
+}
+
+
+/** ***************************************************************************/
+void Chromium::Extension::handleQuery(Core::Query * query) const {
 
     const vector<shared_ptr<Core::IndexableItem>> &indexables = d->offlineIndex.search(query->string());
 
@@ -295,57 +270,5 @@ void ChromeBookmarks::Extension::handleQuery(Core::Query * query) const {
 
     query->addMatches(std::make_move_iterator(results.begin()),
                       std::make_move_iterator(results.end()));
-}
-
-
-/** ***************************************************************************/
-const QString &ChromeBookmarks::Extension::path() {
-    return d->bookmarksFile;
-}
-
-
-/** ***************************************************************************/
-void ChromeBookmarks::Extension::setPath(const QString &path) {
-
-    QFileInfo fi(path);
-    if (!(fi.exists() && fi.isFile()))
-        return;
-
-    d->bookmarksFile = path;
-
-    emit pathChanged(path);
-}
-
-
-/** ***************************************************************************/
-void ChromeBookmarks::Extension::restorePath() {
-    // Find a bookmark file (Take first one)
-    for (const QString &browser : potentialConfigLocations){
-        QString root = QDir(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)).filePath(browser);
-        QDirIterator it(root, {"Bookmarks"}, QDir::Files, QDirIterator::Subdirectories);
-        while (it.hasNext()) {
-            setPath(it.next());
-            return;
-        }
-    }
-}
-
-
-/** ***************************************************************************/
-bool ChromeBookmarks::Extension::fuzzy() {
-    return d->offlineIndex.fuzzy();
-}
-
-
-/** ***************************************************************************/
-void ChromeBookmarks::Extension::updateIndex() {
-    d->startIndexing();
-}
-
-
-/** ***************************************************************************/
-void ChromeBookmarks::Extension::setFuzzy(bool b) {
-    settings().setValue(CFG_FUZZY, b);
-    d->offlineIndex.setFuzzy(b);
 }
 

@@ -1,10 +1,10 @@
 {
-    "id" :              "org.albert.extension.chromebookmarks",
-    "name" :            "Chrome bookmarks",
-    "version" :         "1.0",
-    "platform" :        "Linux",
+    "id" :              "org.albert.extension.chromium",
+    "name" :            "Chromium bookmarks",
+    "version" :         "1.1",
+    "platform" :        "All",
     "group" :           "Extensions",
-    "author" :          "Manuel Schneider",
+    "author" :          "manuelschneid3r",
     "dependencies" :    [],
     "enabledbydefault": false
 }
