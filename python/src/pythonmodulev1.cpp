@@ -28,10 +28,10 @@ using namespace Core;
 namespace py = pybind11;
 
 Q_LOGGING_CATEGORY(qlc_python_modulev1, "python.modulev1")
-#define DEBUG qCDebug(qlc_python_modulev1).noquote()
-#define INFO qCInfo(qlc_python_modulev1).noquote()
-#define WARNING qCWarning(qlc_python_modulev1).noquote()
-#define CRITICAL qCCritical(qlc_python_modulev1).noquote()
+#define DEBG qCDebug(qlc_python_modulev1,).noquote()
+#define INFO qCInfo(qlc_python_modulev1,).noquote()
+#define WARN qCWarning(qlc_python_modulev1,).noquote()
+#define CRIT qCCritical(qlc_python_modulev1,).noquote()
 
 
 
@@ -102,7 +102,7 @@ Python::PythonModuleV1::PythonModuleV1(const QString &path) : d(new PythonModule
 
 void Python::PythonModuleV1::readMetadata() {
 
-    DEBUG << "Reading metadata of python module:" << QFileInfo(d->path).fileName();
+    DEBG << "Reading metadata of python module:" << QFileInfo(d->path).fileName();
 
     py::gil_scoped_acquire acquire;
 
@@ -224,13 +224,13 @@ void Python::PythonModuleV1::readMetadata() {
     catch(const QString &error)
     {
         d->errorString = error;
-        WARNING << QString("[%1] %2").arg(d->id).arg(d->errorString);
+        WARN << QString("[%1] %2").arg(d->id).arg(d->errorString);
         d->state = State::InvalidMetadata;
     }
     catch(const std::exception &e)
     {
         d->errorString = e.what();
-        WARNING << QString("[%1] %2").arg(d->id).arg(d->errorString);
+        WARN << QString("[%1] %2").arg(d->id).arg(d->errorString);
         d->state = State::InvalidMetadata;
     }
 }
@@ -252,7 +252,7 @@ void Python::PythonModuleV1::load(){
 
     try
     {
-        DEBUG << "Loading" << d->path;
+        DEBG << "Loading" << d->path;
 
         py::module importlib = py::module::import("importlib");
         py::module importli_util = py::module::import("importlib.util");
@@ -268,7 +268,7 @@ void Python::PythonModuleV1::load(){
     catch(const std::exception &e)
     {
         d->errorString = e.what();
-        WARNING << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString);
+        WARN << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(d->errorString);
         d->module = py::object();
         d->state = State::Error;
         return;
@@ -286,7 +286,7 @@ void Python::PythonModuleV1::unload(){
 
     if (d->state == State::Loaded) {
 
-        DEBUG << "Unloading" << d->path;
+        DEBG << "Unloading" << d->path;
 
         py::gil_scoped_acquire acquire;
 
@@ -302,7 +302,7 @@ void Python::PythonModuleV1::unload(){
         }
         catch(std::exception const &e)
         {
-            WARNING << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(e.what());
+            WARN << QString("[%1] %2.").arg(QFileInfo(d->path).fileName()).arg(e.what());
         }
     }
 
@@ -342,7 +342,7 @@ void Python::PythonModuleV1::handleQuery(Query *query) const {
     }
     catch(const exception &e)
     {
-        WARNING << QString("[%1] %2.").arg(d->id).arg(e.what());
+        WARN << QString("[%1] %2.").arg(d->id).arg(e.what());
     }
 }
 
