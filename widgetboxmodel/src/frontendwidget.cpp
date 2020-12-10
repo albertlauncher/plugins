@@ -5,13 +5,13 @@
 #include <QApplication>
 #include <QByteArray>
 #include <QCloseEvent>
-#include <QFocusEvent>
 #include <QCursor>
 #include <QDebug>
 #include <QDesktopWidget>
 #include <QDir>
 #include <QEvent>
 #include <QFile>
+#include <QFocusEvent>
 #include <QGraphicsDropShadowEffect>
 #include <QSettings>
 #include <QStandardPaths>
@@ -25,15 +25,6 @@
 #include "resultslist.h"
 #include "settingsbutton.h"
 #include "ui_frontend.h"
-
-#ifdef __unix__
-#include "xcb/xcb.h"
-#include <X11/extensions/shape.h>
-#undef KeyPress
-#undef KeyRelease
-#undef FocusOut
-#include <QtX11Extras/QX11Info>
-#endif
 
 
 namespace  {
@@ -510,27 +501,6 @@ void WidgetBoxModel::FrontendWidget::resizeEvent(QResizeEvent *event) {
 
     // Let settingsbutton be in top right corner of frame
     d->settingsButton_->move(d->ui.frame->geometry().topRight() - QPoint(d->settingsButton_->width()-1,0));
-
-#ifdef __unix__
-    if (QX11Info::isPlatformX11()) {
-        // Keep the input shape consistent
-        int shape_event_base, shape_error_base;
-        if (XShapeQueryExtension(QX11Info::display(), &shape_event_base, &shape_error_base)) {
-
-            Region region = XCreateRegion();
-            XRectangle rectangle;
-            int scalefactor = devicePixelRatio();  // TODO Qt>5.6 devicePixelRatioF
-            rectangle.x      = static_cast<int16_t>(d->ui.frame->geometry().x()*scalefactor);
-            rectangle.y      = static_cast<int16_t>(d->ui.frame->geometry().y()*scalefactor);
-            rectangle.width  = static_cast<uint16_t>(d->ui.frame->geometry().width()*scalefactor);
-            rectangle.height = static_cast<uint16_t>(d->ui.frame->geometry().height()*scalefactor);
-            XUnionRectWithRegion(&rectangle, region, region);
-            XShapeCombineRegion(QX11Info::display(), winId(), ShapeInput, 0, 0, region, ShapeSet);
-            XDestroyRegion(region);
-        }
-    }
-#endif
-
     QWidget::resizeEvent(event);
 }
 
