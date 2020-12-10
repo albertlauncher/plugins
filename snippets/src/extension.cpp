@@ -14,6 +14,11 @@
 #include "albert/util/standarditem.h"
 #include "extension.h"
 #include <mutex>
+Q_LOGGING_CATEGORY(qlc, "snippets")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 using namespace Core;
 

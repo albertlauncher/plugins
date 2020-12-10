@@ -21,14 +21,13 @@
 #include "albert/util/standardindexitem.h"
 #include "albert/util/offlineindex.h"
 #include "xdg/iconlookup.h"
+Q_LOGGING_CATEGORY(qlc, "chromium")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 using namespace Core;
-
-Q_LOGGING_CATEGORY(qlc_chromium, "chromium")
-#define DEBG qCDebug(qlc_chromium, ).noquote()
-#define INFO qCInfo(qlc_chromium, ).noquote()
-#define WARN qCWarning(qlc_chromium, ).noquote()
-#define CRIT qCCritical(qlc_chromium, ).noquote()
 
 namespace {
 const char* EXT_ID = "org.albert.extension.chromebookmarks";

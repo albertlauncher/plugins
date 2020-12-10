@@ -13,14 +13,13 @@
 #include "albert/util/standardactions.h"
 #include "albert/util/standarditem.h"
 #include "xdg/iconlookup.h"
+Q_LOGGING_CATEGORY(qlc, "virtualbox")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 using namespace Core;
-
-Q_LOGGING_CATEGORY(qlc_virtualbox, "virtualbox")
-#define DEBG qCDebug(qlc_virtualbox,).noquote()
-#define INFO qCInfo(qlc_virtualbox,).noquote()
-#define WARN qCWarning(qlc_virtualbox,).noquote()
-#define CRIT qCCritical(qlc_virtualbox,).noquote()
 
 class VirtualBox::Private
 {

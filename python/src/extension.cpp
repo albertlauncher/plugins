@@ -23,15 +23,14 @@
 #include "modulesmodel.h"
 #include "configwidget.h"
 #include "cast_specialization.h"
+Q_LOGGING_CATEGORY(qlc, "python")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 using namespace Core;
 namespace py = pybind11;
-
-Q_LOGGING_CATEGORY(qlc_python, "python")
-#define DEBG qCDebug(qlc_python,).noquote()
-#define INFO qCInfo(qlc_python,).noquote()
-#define WARN qCWarning(qlc_python,).noquote()
-#define CRIT qCCritical(qlc_python,).noquote()
 
 namespace Python {
 

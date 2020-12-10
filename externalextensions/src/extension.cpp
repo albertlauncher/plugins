@@ -1,6 +1,5 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
-#include <QDebug>
 #include <QDirIterator>
 #include <QFileSystemWatcher>
 #include <QPointer>
@@ -12,6 +11,11 @@
 #include "extension.h"
 #include "externalextension.h"
 #include "externalextensionmodel.h"
+Q_LOGGING_CATEGORY(qlc, "applications")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 
 

@@ -1,12 +1,9 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2020 Manuel Schneider
 
 #include <QApplication>
 #include <QCheckBox>
-#include <QPushButton>
 #include <QClipboard>
-#include <QtConcurrent>
 #include <QComboBox>
-#include <QDebug>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFile>
@@ -15,25 +12,32 @@
 #include <QFutureWatcher>
 #include <QPointer>
 #include <QProcess>
+#include <QPushButton>
 #include <QSettings>
 #include <QSqlDatabase>
 #include <QSqlDriver>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QStandardPaths>
+#include <QTemporaryFile>
 #include <QThreadPool>
 #include <QUrl>
-#include <QTemporaryFile>
+#include <QtConcurrent>
 #include <functional>
 #include <map>
 #include <sys/sendfile.h>
-#include "extension.h"
-#include "configwidget.h"
 #include "albert/extension.h"
 #include "albert/util/offlineindex.h"
-#include "albert/util/standardindexitem.h"
 #include "albert/util/standardactions.h"
+#include "albert/util/standardindexitem.h"
+#include "configwidget.h"
+#include "extension.h"
 #include "xdg/iconlookup.h"
+Q_LOGGING_CATEGORY(qlc, "firefox")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 using namespace Core;
 
@@ -96,7 +100,7 @@ void FirefoxBookmarks::Private::startIndexing() {
     futureWatcher.setFuture(QtConcurrent::run(this, &Private::indexFirefoxBookmarks));
 
     // Notification
-    qInfo() << "Start indexing Firefox bookmarks.";
+    INFO << "Start indexing Firefox bookmarks.";
     emit q->statusInfo("Indexing bookmarks ...");
 }
 
@@ -118,7 +122,7 @@ void FirefoxBookmarks::Private::finishIndexing() {
         offlineIndex.add(item);
 
     // Notification
-    qInfo() <<  qPrintable(QString("Indexed %1 Firefox bookmarks.").arg(index.size()));
+    INFO <<  qPrintable(QString("Indexed %1 Firefox bookmarks.").arg(index.size()));
     emit q->statusInfo(QString("%1 bookmarks indexed.").arg(index.size()));
 }
 
@@ -134,13 +138,13 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
         QTemporaryFile dbcopy;
         dbcopy.setAutoRemove(true);
         if (!dbcopy.open()) {
-            qWarning() << qPrintable(QString("Could not open temporary file: %1").arg(dbcopy.errorString()));
+            WARN << qPrintable(QString("Could not open temporary file: %1").arg(dbcopy.errorString()));
             return vector<shared_ptr<Core::StandardIndexItem>>();
         }
 
         QFile places(dbPath);
         if (!places.open(QIODevice::ReadOnly)) {
-            qWarning() << qPrintable(QString("Could not open places.sqlite file: %1").arg(dbcopy.errorString()));
+            WARN << qPrintable(QString("Could not open places.sqlite file: %1").arg(dbcopy.errorString()));
             return vector<shared_ptr<Core::StandardIndexItem>>();
         }
 
@@ -151,7 +155,7 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
             if (sendfile(destination, source, nullptr, places.size()) != -1) {
                 sendfile_worked = true;
             } else {
-                qDebug() << "sendfile did not work, falling back to userland buffer";
+                DEBG << "sendfile did not work, falling back to userland buffer";
             }
         }
 
@@ -161,11 +165,11 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
             do {
                 read = places.read(buf, 512);
                 if (read == -1) {
-                    qWarning() << qPrintable(QString("Could not copy places.sqlite file: read failed: %1").arg(places.errorString()));
+                    WARN << qPrintable(QString("Could not copy places.sqlite file: read failed: %1").arg(places.errorString()));
                     return vector<shared_ptr<Core::StandardIndexItem>>();
                 }
                 if (dbcopy.write(buf, read) == -1) {
-                    qWarning() << qPrintable(QString("Could not copy places.sqlite file: write failed: %1").arg(dbcopy.errorString()));
+                    WARN << qPrintable(QString("Could not copy places.sqlite file: write failed: %1").arg(dbcopy.errorString()));
                     return vector<shared_ptr<Core::StandardIndexItem>>();
                 }
             } while (read > 0);
@@ -175,7 +179,7 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
         database.setDatabaseName(dbcopy.fileName());
 
         if (!database.open()) {
-            qWarning() << qPrintable(QString("Could not open Firefox database: %1").arg(database.databaseName()));
+            WARN << qPrintable(QString("Could not open Firefox database: %1").arg(database.databaseName()));
             return vector<shared_ptr<Core::StandardIndexItem>>();
         }
 
@@ -186,7 +190,7 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
                           "JOIN moz_bookmarks parents ON bookmarks.parent = parents.id AND parents.parent <> 4  "
                           "JOIN moz_places places ON bookmarks.fk = places.id "
                           "WHERE NOT hidden") ) {  // Those with place:... will not work with xdg-open
-            qWarning() << qPrintable(QString("Querying Firefox bookmarks failed: %1").arg(result.lastError().text()));
+            WARN << qPrintable(QString("Querying Firefox bookmarks failed: %1").arg(result.lastError().text()));
             return vector<shared_ptr<Core::StandardIndexItem>>();
         }
 
@@ -297,7 +301,7 @@ FirefoxBookmarks::Extension::Extension()
 
         QStringList ids = profilesIni.childGroups();
         if ( ids.isEmpty() )
-            qWarning() << "No Firefox profiles found.";
+            WARN << "No Firefox profiles found.";
         else {
 
             // Use the last used profile
@@ -369,7 +373,7 @@ QWidget *FirefoxBookmarks::Extension::widget(QWidget *parent) {
                 cmb->addItem( QString("%1 (%2)").arg(profilesIni.value("Name").toString(), profileId), profileId);
             else {
                 cmb->addItem(profileId, profileId);
-                qWarning() << qPrintable(QString("Firefox profile '%1' does not contain a name.").arg(profileId));
+                WARN << qPrintable(QString("Firefox profile '%1' does not contain a name.").arg(profileId));
             }
 
             // If the profileId match set the current item of the checkbox
@@ -447,7 +451,7 @@ void FirefoxBookmarks::Extension::setProfile(const QString& profile) {
 
     // Check if profile id is in profiles file
     if ( !profilesIni.childGroups().contains(d->currentProfileId) ){
-        qWarning() << qPrintable(QString("Firefox user profile '%2' not found.").arg(d->currentProfileId));
+        WARN << qPrintable(QString("Firefox user profile '%2' not found.").arg(d->currentProfileId));
         return;
     }
 
@@ -456,7 +460,7 @@ void FirefoxBookmarks::Extension::setProfile(const QString& profile) {
 
     // Check if the profile contains a path key
     if ( !profilesIni.contains("Path") ){
-        qWarning() << qPrintable(QString("Firefox profile '%2' does not contain a path.").arg(d->currentProfileId));
+        WARN << qPrintable(QString("Firefox profile '%2' does not contain a path.").arg(d->currentProfileId));
         return;
     }
 

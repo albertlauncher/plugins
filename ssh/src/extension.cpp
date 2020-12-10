@@ -1,27 +1,31 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2020 Manuel Schneider
 
-#include <QDebug>
-#include <QFileSystemWatcher>
-#include <QFile>
 #include <QDir>
+#include <QFile>
+#include <QFileSystemWatcher>
 #include <QPointer>
 #include <QProcess>
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QString>
+#include <QTextStream>
 #include <memory>
-#include <stdexcept>
 #include <set>
-#include "extension.h"
-#include "configwidget.h"
+#include <stdexcept>
+#include "albert/util/shutil.h"
 #include "albert/util/standardactions.h"
 #include "albert/util/standarditem.h"
-#include "albert/util/shutil.h"
+#include "configwidget.h"
+#include "extension.h"
 #include "xdg/iconlookup.h"
+Q_LOGGING_CATEGORY(qlc, "ssh")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 using namespace Core;
-
 extern QString terminalCommand;
 
 namespace {

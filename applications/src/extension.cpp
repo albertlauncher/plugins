@@ -26,17 +26,15 @@
 #include "albert/util/standardindexitem.h"
 #include "albert/util/shutil.h"
 #include "xdg/iconlookup.h"
+Q_LOGGING_CATEGORY(qlc, "applications")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace Core;
 using namespace std;
 
-Q_LOGGING_CATEGORY(qlc_applications, "applications")
-#define DEBG qCDebug(qlc_applications,).noquote()
-#define INFO qCInfo(qlc_applications,).noquote()
-#define WARN qCWarning(qlc_applications,).noquote()
-#define CRIT qCCritical(qlc_applications,).noquote()
-
 extern QString terminalCommand;
-
 
 namespace {
 

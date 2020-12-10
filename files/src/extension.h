@@ -1,10 +1,12 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
 #pragma once
+#include <QLoggingCategory>
 #include <QObject>
 #include <memory>
 #include "albert/extension.h"
 #include "albert/queryhandler.h"
+Q_DECLARE_LOGGING_CATEGORY(qlc)
 
 namespace Files {
 
@@ -16,7 +18,6 @@ class Extension final :
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID ALBERT_EXTENSION_IID FILE "metadata.json")
-
     Q_PROPERTY(QStringList paths READ paths WRITE setPaths NOTIFY pathsChanged)
 
 public:
