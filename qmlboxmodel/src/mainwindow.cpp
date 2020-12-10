@@ -3,28 +3,19 @@
 #include <QApplication>
 #include <QCursor>
 #include <QDebug>
-#include <QDirIterator>
 #include <QDesktopWidget>
 #include <QDir>
+#include <QDirIterator>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QSettings>
-#include <QStandardPaths>
-#include <QTimer>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQuickItem>
-#include "mainwindow.h"
+#include <QSettings>
+#include <QStandardPaths>
+#include <QTimer>
 #include "frontendplugin.h"
-#ifdef __unix__
-#include "xcb/xcb.h"
-#include <X11/extensions/shape.h>
-#undef KeyPress
-#undef KeyRelease
-#undef FocusOut
-#undef Status
-#include <QtX11Extras/QX11Info>
-#endif
+#include "mainwindow.h"
 
 namespace {
 const QString CFG_CENTERED        = "showCentered";
@@ -394,45 +385,6 @@ bool QmlBoxModel::MainWindow::event(QEvent *event) {
     default:break;
     }
     return QQuickView::event(event);
-}
-
-
-/** ***************************************************************************/
-void QmlBoxModel::MainWindow::resizeEvent(QResizeEvent *event) {
-
-    QQuickView::resizeEvent(event);
-
-#ifdef X_PROTOCOL
-
-    // Get root object
-    if (!rootObject()) {
-        qWarning() << "Could not retrieve settableProperties: There is no root object.";
-        return;
-    }
-
-    // Get preferences object
-    QObject *frameObject = rootObject()->findChild<QObject*>(FRAME_OBJ_NAME, Qt::FindChildrenRecursively);
-    if (frameObject) {
-        // Keep the input shape consistent
-        int shape_event_base, shape_error_base;
-        if (XShapeQueryExtension(QX11Info::display(), &shape_event_base, &shape_error_base)) {
-
-            Region region = XCreateRegion();
-            XRectangle rectangle;
-            double scalefactor = devicePixelRatio();
-            rectangle.x      = static_cast<int16_t>(frameObject->property("x").toUInt()*scalefactor);
-            rectangle.y      = static_cast<int16_t>(frameObject->property("y").toUInt()*scalefactor);
-            rectangle.width  = static_cast<uint16_t>(frameObject->property("width").toUInt()*scalefactor);
-            rectangle.height = static_cast<uint16_t>(frameObject->property("height").toUInt()*scalefactor);
-            XUnionRectWithRegion(&rectangle, region, region);
-            XShapeCombineRegion(QX11Info::display(), winId(), ShapeInput, 0, 0, region, ShapeSet);
-            XDestroyRegion(region);
-        }
-    } else
-        qWarning() << qPrintable(QString("Could not retrieve settableProperties: "
-                                         "There is no object named '%1'.").arg(FRAME_OBJ_NAME));
-#endif
-
 }
 
 

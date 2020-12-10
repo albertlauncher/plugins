@@ -61,7 +61,6 @@ public:
 protected:
 
     bool event(QEvent *event) override;
-    void resizeEvent(QResizeEvent *event) override;
     void focusOutEvent(QFocusEvent *event) override;
 
     bool showCentered_;
