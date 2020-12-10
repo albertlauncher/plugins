@@ -60,8 +60,6 @@ Calculator::Extension::Extension()
     d->parser->SetDecSep(d->locale.decimalPoint().toLatin1());
     d->parser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
     d->parser->SetArgSep(';');
-
-    d->iparser.reset();
 }
 
 
@@ -87,16 +85,15 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
 
         d->widget->ui.checkBox_hexparsing->setChecked(!(d->locale.numberOptions() & QLocale::OmitGroupSeparator));
         connect(d->widget->ui.checkBox_hexparsing, &QCheckBox::toggled, [this](bool checked){
-                settings().setValue(CFG_HEXP, checked);
-
-                if (checked) {
-                    d->iparser.reset(new mu::ParserInt);
-                    d->iparser->SetDecSep(d->locale.decimalPoint().toLatin1());
-                    d->iparser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
-                    d->iparser->SetArgSep(';');
-                } else {
-                    d->iparser.reset();
-                }
+            settings().setValue(CFG_HEXP, checked);
+            if (checked) {
+                d->iparser.reset(new mu::ParserInt);
+                d->iparser->SetDecSep(d->locale.decimalPoint().toLatin1());
+                d->iparser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
+                d->iparser->SetArgSep(';');
+            } else {
+                d->iparser.reset();
+            }
         });
     }
     return d->widget;
@@ -106,32 +103,18 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
 
 /** ***************************************************************************/
 void Calculator::Extension::handleQuery(Core::Query * query) const {
-
-    bool hexExpr = false;
-
+    // http://beltoforion.de/article.php?a=muparser&p=errorhandling
+    double result;
     try {
         if(d->iparser && query->string().contains("0x")) {
             d->iparser->SetExpr(query->string().toStdString());
-            hexExpr = true;
+            result = d->iparser->Eval();
         } else {
             d->parser->SetExpr(query->string().toStdString());
+            result = d->parser->Eval();
         }
     } catch (mu::Parser::exception_type &exception) {
         WARN << "Muparser SetExpr exception: " << exception.GetMsg().c_str();
-        return;
-    }
-    double result;
-
-    // http://beltoforion.de/article.php?a=muparser&p=errorhandling
-    try {
-        if(hexExpr) {
-            result = d->iparser->Eval();
-        } else {
-            result = d->parser->Eval();
-        }
-    } catch (mu::Parser::exception_type &) {
-        // Expected exception in case of invalid input
-        // DEBG << "Muparser Eval exception: " << exception.GetMsg().c_str();
         return;
     }
 
