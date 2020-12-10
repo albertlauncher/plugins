@@ -88,8 +88,8 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
         d->widget->ui.checkBox_hexparsing->setChecked(!(d->locale.numberOptions() & QLocale::OmitGroupSeparator));
         connect(d->widget->ui.checkBox_hexparsing, &QCheckBox::toggled, [this](bool checked){
                 settings().setValue(CFG_HEXP, checked);
-                if(checked)
-                {
+
+                if (checked) {
                     d->iparser.reset(new mu::ParserInt);
                     d->iparser->SetDecSep(d->locale.decimalPoint().toLatin1());
                     d->iparser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
