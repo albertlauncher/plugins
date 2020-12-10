@@ -94,9 +94,7 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
                     d->iparser->SetDecSep(d->locale.decimalPoint().toLatin1());
                     d->iparser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
                     d->iparser->SetArgSep(';');
-                }
-                else
-                {
+                } else {
                     d->iparser.reset();
                 }
         });
