@@ -56,7 +56,7 @@ public:
         : offlineIndex(offlineIndex) { }
 
     void visit(Files::IndexTreeNode *node) override {
-        for ( const shared_ptr<Files::File> &item : node->items() )
+        for ( const auto &item : node->items() )
             offlineIndex.add(item);
     }
 };

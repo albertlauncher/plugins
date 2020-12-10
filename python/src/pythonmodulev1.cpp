@@ -1,5 +1,6 @@
 // Copyright (c) 2017-2018 Manuel Schneider
 
+// CAUTION ORDER MATTERS!
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
 #include "pythonmodulev1.h"
@@ -23,16 +24,14 @@
 #include "albert/query.h"
 #include "albert/util/standarditem.h"
 #include "xdg/iconlookup.h"
-using namespace std;
-using namespace Core;
-namespace py = pybind11;
-
 Q_LOGGING_CATEGORY(qlc_python_modulev1, "python.modulev1")
 #define DEBG qCDebug(qlc_python_modulev1,).noquote()
 #define INFO qCInfo(qlc_python_modulev1,).noquote()
 #define WARN qCWarning(qlc_python_modulev1,).noquote()
 #define CRIT qCCritical(qlc_python_modulev1,).noquote()
-
+using namespace std;
+using namespace Core;
+namespace py = pybind11;
 
 
 namespace {
