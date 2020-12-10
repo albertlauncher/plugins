@@ -17,10 +17,10 @@ using namespace std;
 using namespace Core;
 
 Q_LOGGING_CATEGORY(qlc_virtualbox, "virtualbox")
-#define DEBUG    qCDebug   (qlc_virtualbox).noquote()
-#define INFO     qCInfo    (qlc_virtualbox).noquote()
-#define WARNING  qCWarning (qlc_virtualbox).noquote()
-#define CRITICAL qCCritical(qlc_virtualbox).noquote()
+#define DEBG qCDebug(qlc_virtualbox,).noquote()
+#define INFO qCInfo(qlc_virtualbox,).noquote()
+#define WARN qCWarning(qlc_virtualbox,).noquote()
+#define CRIT qCCritical(qlc_virtualbox,).noquote()
 
 class VirtualBox::Private
 {
@@ -158,7 +158,7 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                 if (NS_SUCCEEDED(rc = d->manager->CreateInstanceByContractID(NS_SESSION_CONTRACTID, nullptr, NS_GET_IID(ISession), getter_AddRefs(session)))) {
                     nsCOMPtr<IProgress> progress;
                     if (NS_FAILED(rc = vm->LaunchVMProcess(session, QString("gui").utf16(), 0, nullptr, getter_AddRefs(progress))))
-                        CRITICAL << "Error, could not start virtual machine:" << rc;
+                        CRIT << "Error, could not start virtual machine:" << rc;
     //                                   << NS_ERROR_UNEXPECTED	<<"Virtual machine not registered."
     //                                   << NS_ERROR_INVALID_ARG	<<"Invalid session type."
     //                                   << VBOX_E_OBJECT_NOT_FOUND<<	"No machine matching machineId found."
@@ -167,7 +167,7 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
     //                                   << VBOX_E_VM_ERROR<<"Failed to assign machine to session.";
                     session->UnlockMachine();
                 } else
-                    CRITICAL << "Error, could not instantiate ISession object.";
+                    CRIT << "Error, could not instantiate ISession object.";
             });
 
             auto saveVm = make_shared<FuncAction>("Save virtual machine", [this, vm]()
@@ -181,14 +181,14 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                         if (NS_SUCCEEDED(session->GetMachine(getter_AddRefs(mutableVm)))){
                             nsCOMPtr<IProgress> progress;
                             if (NS_FAILED(rc = mutableVm->SaveState(getter_AddRefs(progress))))
-                            CRITICAL << "Error, failed saving state:" << rc;
+                            CRIT << "Error, failed saving state:" << rc;
                         } else
-                            CRITICAL << "Error, failed getting mutable IMachine of ISession.";
+                            CRIT << "Error, failed getting mutable IMachine of ISession.";
                     } else
-                        CRITICAL << "Error, could not acquire ISession lock.";
+                        CRIT << "Error, could not acquire ISession lock.";
                     session->UnlockMachine();
                 } else
-                    CRITICAL << "Error, could not instantiate ISession object.";
+                    CRIT << "Error, could not instantiate ISession object.";
             });
 
             auto discardSavedVm = make_shared<FuncAction>("Discard saved state", [this, vm]()
@@ -199,14 +199,14 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                         nsCOMPtr<IMachine> mutableVm;
                         if (NS_SUCCEEDED(session->GetMachine(getter_AddRefs(mutableVm)))){
                             if (NS_FAILED(mutableVm->DiscardSavedState(PR_TRUE)))
-                                CRITICAL << "Error, failed discarding saving state.";
+                                CRIT << "Error, failed discarding saving state.";
                         } else
-                            CRITICAL << "Error, failed getting mutable IMachine of ISession.";
+                            CRIT << "Error, failed getting mutable IMachine of ISession.";
                     } else
-                        CRITICAL << "Error, could not acquire ISession lock.";
+                        CRIT << "Error, could not acquire ISession lock.";
                     session->UnlockMachine();
                 } else
-                    CRITICAL << "Error, could not instantiate ISession object.";
+                    CRIT << "Error, could not instantiate ISession object.";
             });
 
             auto acpiPowerVm = make_shared<FuncAction>("Power off via ACPI event (Power button)", [this, vm]()
@@ -217,14 +217,14 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                         nsCOMPtr<IConsole> console;
                         if (NS_SUCCEEDED(session->GetConsole(getter_AddRefs(console)))){
                             if (NS_FAILED(console->PowerButton()))
-                                CRITICAL << "Error, failed sending ACPI event (Power button).";
+                                CRIT << "Error, failed sending ACPI event (Power button).";
                         } else
-                            CRITICAL << "Error, failed getting IConsole of ISession.";
+                            CRIT << "Error, failed getting IConsole of ISession.";
                     } else
-                        CRITICAL << "Error, could not acquire ISession lock.";
+                        CRIT << "Error, could not acquire ISession lock.";
                     session->UnlockMachine();
                 } else
-                    CRITICAL << "Error, could not instantiate ISession object.";
+                    CRIT << "Error, could not instantiate ISession object.";
             });
 
             auto killVm = make_shared<FuncAction>("Turn off virtual machine", [this, vm]()
@@ -236,14 +236,14 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                         if (NS_SUCCEEDED(session->GetConsole(getter_AddRefs(console)))){
                             nsCOMPtr<IProgress> progress;
                             if (NS_FAILED(console->PowerDown(getter_AddRefs(progress))))
-                                CRITICAL << "Error, failed powering down machine.";
+                                CRIT << "Error, failed powering down machine.";
                         } else
-                            CRITICAL << "Error, failed getting IConsole of ISession.";
+                            CRIT << "Error, failed getting IConsole of ISession.";
                     } else
-                        CRITICAL << "Error, could not acquire ISession lock.";
+                        CRIT << "Error, could not acquire ISession lock.";
                     session->UnlockMachine();
                 } else
-                    CRITICAL << "Error, could not instantiate ISession object.";
+                    CRIT << "Error, could not instantiate ISession object.";
             });
 
             auto pauseVm = make_shared<FuncAction>("Pause virtual machine", [this, vm]()
@@ -254,14 +254,14 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                         nsCOMPtr<IConsole> console;
                         if (NS_SUCCEEDED(session->GetConsole(getter_AddRefs(console)))){
                             if (NS_FAILED(console->Pause()))
-                                CRITICAL << "Error, failed pausing machine.";
+                                CRIT << "Error, failed pausing machine.";
                         } else
-                            CRITICAL << "Error, failed getting IConsole of ISession.";
+                            CRIT << "Error, failed getting IConsole of ISession.";
                     } else
-                        CRITICAL << "Error, could not acquire ISession lock.";
+                        CRIT << "Error, could not acquire ISession lock.";
                     session->UnlockMachine();
                 } else
-                    CRITICAL << "Error, could not instantiate ISession object.";
+                    CRIT << "Error, could not instantiate ISession object.";
             });
 
             auto resumeVm = make_shared<FuncAction>("Resume virtual machine", [this, vm]()
@@ -272,14 +272,14 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                         nsCOMPtr<IConsole> console;
                         if (NS_SUCCEEDED(session->GetConsole(getter_AddRefs(console)))){
                             if (NS_FAILED(console->Resume()))
-                                CRITICAL << "Error, failed resuming machine.";
+                                CRIT << "Error, failed resuming machine.";
                         } else
-                            CRITICAL << "Error, failed getting IConsole of ISession.";
+                            CRIT << "Error, failed getting IConsole of ISession.";
                     } else
-                        CRITICAL << "Error, could not acquire ISession lock.";
+                        CRIT << "Error, could not acquire ISession lock.";
                     session->UnlockMachine();
                 } else
-                    CRITICAL << "Error, could not instantiate ISession object.";
+                    CRIT << "Error, could not instantiate ISession object.";
             });
 
 

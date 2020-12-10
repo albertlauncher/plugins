@@ -28,10 +28,10 @@ using namespace Core;
 namespace py = pybind11;
 
 Q_LOGGING_CATEGORY(qlc_python, "python")
-#define DEBUG qCDebug(qlc_python).noquote()
-#define INFO qCInfo(qlc_python).noquote()
-#define WARNING qCWarning(qlc_python).noquote()
-#define CRITICAL qCCritical(qlc_python).noquote()
+#define DEBG qCDebug(qlc_python,).noquote()
+#define INFO qCInfo(qlc_python,).noquote()
+#define WARN qCWarning(qlc_python,).noquote()
+#define CRIT qCCritical(qlc_python,).noquote()
 
 namespace Python {
 
@@ -76,7 +76,7 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
                         try{
                             callable();
                         } catch (exception &e) {
-                            WARNING << e.what();
+                            WARN << e.what();
                         }
                     }),
                     [=](FuncAction *funcAction) {
@@ -140,10 +140,10 @@ PYBIND11_EMBEDDED_MODULE(albertv0, m)
             .def("addAction", static_cast<void (StandardItem::*)(const std::shared_ptr<Action> &)>(&StandardItem::addAction))
             ;
 
-    m.def("debug", [](const py::object &obj){ DEBUG << py::str(obj).cast<QString>(); });
+    m.def("debug", [](const py::object &obj){ DEBG << py::str(obj).cast<QString>(); });
     m.def("info", [](const py::object &obj){ INFO << py::str(obj).cast<QString>(); });
-    m.def("warning", [](const py::object &obj){ WARNING << py::str(obj).cast<QString>(); });
-    m.def("critical", [](const py::object &obj){ CRITICAL << py::str(obj).cast<QString>(); });
+    m.def("warning", [](const py::object &obj){ WARN << py::str(obj).cast<QString>(); });
+    m.def("critical", [](const py::object &obj){ CRIT << py::str(obj).cast<QString>(); });
 
     m.def("iconLookup", [](const py::str &str){ return XDG::IconLookup::iconPath(str.cast<QString>()); });
 
@@ -345,7 +345,7 @@ void Python::Extension::reloadModules() {
             d->modules.emplace_back(move(module));
 
         } catch (const std::exception &e) {
-            WARNING << e.what() << path;
+            WARN << e.what() << path;
         }
     }
 
