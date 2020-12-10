@@ -1,10 +1,12 @@
 // Copyright (C) 2016-2017 Martin Buergmann
 
 #pragma once
+#include <QLoggingCategory>
 #include <QObject>
 #include <memory>
 #include "albert/extension.h"
 #include "albert/queryhandler.h"
+Q_DECLARE_LOGGING_CATEGORY(qlc)
 
 namespace MPRIS {
 

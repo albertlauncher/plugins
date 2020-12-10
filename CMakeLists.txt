@@ -33,7 +33,7 @@ endif()
 
 option(BUILD_CHROMEBOOKMARKS "Build the extension" ON)
 if (BUILD_CHROMEBOOKMARKS)
-    add_subdirectory(chromebookmarks)
+    add_subdirectory(chromium)
 endif()
 
 option(BUILD_EXTERNALEXTENSIONS "Build the extension" ON)

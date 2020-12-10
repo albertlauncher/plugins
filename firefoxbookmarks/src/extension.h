@@ -1,10 +1,12 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
 #pragma once
+#include <QLoggingCategory>
 #include <QObject>
 #include "albert/extension.h"
 #include "albert/queryhandler.h"
 #include <memory>
+Q_DECLARE_LOGGING_CATEGORY(qlc)
 
 namespace FirefoxBookmarks {
 

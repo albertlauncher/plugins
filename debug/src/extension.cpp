@@ -15,7 +15,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <QApplication>
-#include <QDebug>
 #include <QPointer>
 #include <QSettings>
 #include <chrono>
@@ -24,6 +23,11 @@
 #include "extension.h"
 #include "albert/query.h"
 #include "albert/util/standarditem.h"
+Q_LOGGING_CATEGORY(qlc, "debug")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using Core::StandardItem;
 
 

@@ -26,17 +26,15 @@
 #include "albert/util/standardindexitem.h"
 #include "albert/util/shutil.h"
 #include "xdg/iconlookup.h"
+Q_LOGGING_CATEGORY(qlc, "applications")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace Core;
 using namespace std;
 
-Q_LOGGING_CATEGORY(qlc_applications, "applications")
-#define DEBUG qCDebug(qlc_applications).noquote()
-#define INFO qCInfo(qlc_applications).noquote()
-#define WARNING qCWarning(qlc_applications).noquote()
-#define CRITICAL qCCritical(qlc_applications).noquote()
-
 extern QString terminalCommand;
-
 
 namespace {
 
@@ -275,7 +273,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
         const QString &id = id_path_pair.first;
         const QString &path = id_path_pair.second;
 
-        DEBUG << "Indexing desktop file:" << id;
+        DEBG << "Indexing desktop file:" << id;
 
         map<QString,map<QString,QString>> sectionMap;
         map<QString,map<QString,QString>>::iterator sectionIterator;

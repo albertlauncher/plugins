@@ -1,22 +1,26 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
-#include <QDebug>
+#include <QDirIterator>
 #include <QFileInfo>
 #include <QFileSystemWatcher>
-#include <QDirIterator>
-#include <QPointer>
 #include <QFuture>
 #include <QFutureWatcher>
+#include <QPointer>
 #include <QProcess>
 #include <QStringList>
 #include <QtConcurrent>
 #include <set>
-#include "extension.h"
-#include "configwidget.h"
 #include "albert/util/shutil.h"
 #include "albert/util/standardactions.h"
 #include "albert/util/standarditem.h"
+#include "configwidget.h"
+#include "extension.h"
 #include "xdg/iconlookup.h"
+Q_LOGGING_CATEGORY(qlc, "term")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 using namespace Core;
 
@@ -154,7 +158,7 @@ void Terminal::Extension::rebuildIndex() {
         return;
 
     auto index = [](){
-        qDebug() << "Indexing executables in $PATH.";
+        DEBG << "Indexing executables in $PATH.";
         set<QString> index;
         QStringList paths = QString(::getenv("PATH")).split(':', QString::SkipEmptyParts);
         for (const QString &path : paths) {
@@ -165,7 +169,7 @@ void Terminal::Extension::rebuildIndex() {
                     index.insert(file.fileName());
             }
         }
-        qDebug() << "Finished indexing executables in $PATH.";
+        DEBG << "Finished indexing executables in $PATH.";
         return index;
     };
 

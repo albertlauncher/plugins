@@ -1,19 +1,22 @@
 // Copyright (C) 2016-2017 Martin Buergmann
 
-#include "extension.h"
 #include <QDBusConnection>
 #include <QDBusInterface>
 #include <QDBusMessage>
-#include <QDebug>
 #include <QMap>
 #include <QPointer>
 #include <QStringList>
 #include "albert/query.h"
-#include "xdg/iconlookup.h"
 #include "command.h"
 #include "configwidget.h"
+#include "extension.h"
 #include "player.h"
-
+#include "xdg/iconlookup.h"
+Q_LOGGING_CATEGORY(qlc, "mpris")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 #define themeOr(name, fallbk)   XDG::IconLookup::iconPath(name).isEmpty() ? fallbk : XDG::IconLookup::iconPath(name)
 
 namespace  {

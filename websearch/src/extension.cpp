@@ -1,6 +1,5 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2020 Manuel Schneider
 
-#include <QDebug>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFile>
@@ -13,14 +12,19 @@
 #include <QUrl>
 #include <array>
 #include <map>
-#include <vector>
 #include <string>
+#include <vector>
+#include "albert/util/standardactions.h"
+#include "albert/util/standarditem.h"
 #include "configwidget.h"
 #include "enginesmodel.h"
 #include "extension.h"
-#include "albert/util/standardactions.h"
-#include "albert/util/standarditem.h"
 #include "xdg/iconlookup.h"
+Q_LOGGING_CATEGORY(qlc, "websearch")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace Core;
 using namespace std;
 
@@ -109,7 +113,7 @@ Websearch::Extension::Extension()
             d->searchEngines.push_back(searchEngine);
         }
     } else {
-        qWarning() << qPrintable(QString("Could not load from file: '%1'.").arg(enginesJson));
+        WARN << qPrintable(QString("Could not load from file: '%1'.").arg(enginesJson));
         setEngines(defaultSearchEngines);
     }
 }
@@ -210,7 +214,7 @@ void Websearch::Extension::setEngines(const vector<Websearch::SearchEngine> &eng
         }
         file.write(QJsonDocument(array).toJson());
     } else
-        qCritical() << qPrintable(QString("Could not write to file: '%1'.").arg(file.fileName()));
+        CRIT << qPrintable(QString("Could not write to file: '%1'.").arg(file.fileName()));
 }
 
 

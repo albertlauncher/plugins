@@ -9,6 +9,11 @@
 #include "albert/util/standardactions.h"
 #include "albert/util/standarditem.h"
 #include "extension.h"
+Q_LOGGING_CATEGORY(qlc, "hashgen")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 using namespace Core;
 

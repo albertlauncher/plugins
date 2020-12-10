@@ -6,8 +6,7 @@
 #include <memory>
 #include "albert/extension.h"
 #include "albert/queryhandler.h"
-
-Q_DECLARE_LOGGING_CATEGORY(qlc_python)
+Q_DECLARE_LOGGING_CATEGORY(qlc)
 
 namespace Python {
 

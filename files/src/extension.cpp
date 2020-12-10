@@ -1,6 +1,5 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
-#include <QDebug>
 #include <QDir>
 #include <QDirIterator>
 #include <QFutureWatcher>
@@ -25,6 +24,11 @@
 #include "albert/util/standarditem.h"
 #include "albert/util/standardactions.h"
 #include "xdg/iconlookup.h"
+Q_LOGGING_CATEGORY(qlc, "applications")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace Core;
 using namespace std;
 
@@ -52,7 +56,7 @@ public:
         : offlineIndex(offlineIndex) { }
 
     void visit(Files::IndexTreeNode *node) override {
-        for ( const shared_ptr<Files::File> &item : node->items() )
+        for ( const auto &item : node->items() )
             offlineIndex.add(item);
     }
 };
@@ -123,7 +127,7 @@ void Files::Private::startIndexing() {
         indexIntervalTimer.start();
 
     // Run the indexer thread
-    qInfo() << "Start indexing files.";
+    INFO << "Start indexing files.";
     futureWatcher->setFuture(QtConcurrent::run(this, &Private::indexFiles));
 
     // Notification
@@ -147,7 +151,7 @@ void Files::Private::finishIndexing() {
         CounterVisitor counterVisitor;
         for (const auto & tree : indexTrees )
             tree->accept(counterVisitor);
-        qInfo() << qPrintable(QString("Indexed %1 files in %2 directories.")
+        INFO << qPrintable(QString("Indexed %1 files in %2 directories.")
                               .arg(counterVisitor.itemCount).arg(counterVisitor.dirCount));
         emit q->statusInfo(QString("Indexed %1 files in %2 directories.")
                            .arg(counterVisitor.itemCount).arg(counterVisitor.dirCount));
@@ -199,7 +203,7 @@ OfflineIndex* Files::Private::indexFiles() {
     }
 
     // Serialize data
-    qDebug() << "Serializing files…";
+    DEBG << "Serializing files…";
     emit q->statusInfo("Serializing index data…");
     QFile file(q->cacheLocation().filePath("fileindex.json"));
     if (file.open(QIODevice::WriteOnly)) {
@@ -211,11 +215,11 @@ OfflineIndex* Files::Private::indexFiles() {
         file.close();
     }
     else
-        qWarning() << "Couldn't write to file:" << file.fileName();
+        WARN << "Couldn't write to file:" << file.fileName();
 
 
     // Build offline index
-    qDebug() << "Building inverted file index…";
+    DEBG << "Building inverted file index…";
     emit q->statusInfo("Building inverted index…");
     Core::OfflineIndex *offline = new Core::OfflineIndex(indexSettings.fuzzy());
     OfflineIndexBuilderVisitor visitor(*offline);
@@ -255,7 +259,7 @@ Files::Extension::Extension()
     });
 
     // Deserialize data
-    qDebug() << "Loading file index from cache.";
+    DEBG << "Loading file index from cache.";
     QFile file(cacheLocation().filePath("fileindex.json"));
     if ( file.exists() ) {
         if (file.open(QIODevice::ReadOnly)) {
@@ -267,13 +271,13 @@ Files::Extension::Extension()
             file.close();
 
             // Build offline index
-            qDebug() << "Building inverted file index.";
+            DEBG << "Building inverted file index.";
             OfflineIndexBuilderVisitor visitor(d->offlineIndex);
             for (auto& tree : d->indexTrees)
                 tree->accept(visitor);
         }
         else
-            qWarning() << "Could not read from file: " << file.fileName();
+            WARN << "Could not read from file: " << file.fileName();
     }
 
     // Trigger an initial update
@@ -421,17 +425,17 @@ void Files::Extension::setPaths(const QStringList &paths) {
         QString absPath = fileInfo.absoluteFilePath();
 
         if (d->indexRootDirs.contains(absPath)) {
-            qWarning() << QString("Duplicate paths: %1.").arg(path);
+            WARN << QString("Duplicate paths: %1.").arg(path);
             continue;
         }
 
         if (!fileInfo.exists()) {
-            qWarning() << QString("Path does not exist: %1.").arg(path);
+            WARN << QString("Path does not exist: %1.").arg(path);
             continue;
         }
 
         if(!fileInfo.isDir()) {
-            qWarning() << QString("Path is not a directory: %1.").arg(path);
+            WARN << QString("Path is not a directory: %1.").arg(path);
             continue;
         }
 

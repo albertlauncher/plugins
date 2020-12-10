@@ -1,24 +1,26 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
 #include <QClipboard>
-#include <QDebug>
 #include <QLocale>
 #include <QPointer>
 #include <QSettings>
 #include <QString>
 #include <vector>
+#include "albert/query.h"
+#include "albert/util/standardactions.h"
+#include "albert/util/standarditem.h"
 #include "configwidget.h"
 #include "extension.h"
 #include "muParser.h"
 #include "muParserInt.h"
-#include "albert/query.h"
-#include "albert/util/standarditem.h"
-#include "albert/util/standardactions.h"
 #include "xdg/iconlookup.h"
+Q_LOGGING_CATEGORY(qlc, "calculator")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 using namespace Core;
-
-Q_LOGGING_CATEGORY(qlc_calculator, "calculator")
 
 
 namespace {
@@ -27,7 +29,6 @@ const bool    CFG_SEPS_DEF  = false;
 const QString CFG_HEXP      = "hex_parsing";
 const bool    CFG_HEXP_DEF  = false;
 }
-
 
 
 class Calculator::Private
@@ -39,7 +40,6 @@ public:
     QLocale locale;
     QString iconPath;
 };
-
 
 
 /** ***************************************************************************/
@@ -117,7 +117,7 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
             d->parser->SetExpr(query->string().toStdString());
         }
     } catch (mu::Parser::exception_type &exception) {
-        qCWarning(qlc_calculator).noquote() << "Muparser SetExpr exception: " << exception.GetMsg().c_str();
+        WARN << "Muparser SetExpr exception: " << exception.GetMsg().c_str();
         return;
     }
     double result;
@@ -131,7 +131,7 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
         }
     } catch (mu::Parser::exception_type &) {
         // Expected exception in case of invalid input
-        // qDebug() << "Muparser Eval exception: " << exception.GetMsg().c_str();
+        // DEBG << "Muparser Eval exception: " << exception.GetMsg().c_str();
         return;
     }
 

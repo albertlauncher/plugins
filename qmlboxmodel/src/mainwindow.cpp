@@ -3,28 +3,19 @@
 #include <QApplication>
 #include <QCursor>
 #include <QDebug>
-#include <QDirIterator>
 #include <QDesktopWidget>
 #include <QDir>
+#include <QDirIterator>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QSettings>
-#include <QStandardPaths>
-#include <QTimer>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQuickItem>
-#include "mainwindow.h"
+#include <QSettings>
+#include <QStandardPaths>
+#include <QTimer>
 #include "frontendplugin.h"
-#ifdef __unix__
-#include "xcb/xcb.h"
-#include <X11/extensions/shape.h>
-#undef KeyPress
-#undef KeyRelease
-#undef FocusOut
-#undef Status
-#include <QtX11Extras/QX11Info>
-#endif
+#include "mainwindow.h"
 
 namespace {
 const QString CFG_CENTERED        = "showCentered";
@@ -396,116 +387,11 @@ bool QmlBoxModel::MainWindow::event(QEvent *event) {
     return QQuickView::event(event);
 }
 
-/** ****************************************************************************
- * @brief MainWidget::nativeEvent
- *
- * The purpose of this function is to hide in special casesonly.
- */
-bool QmlBoxModel::MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *)
-{
-
-#ifdef X_PROTOCOL
-    if (eventType == "xcb_generic_event_t")
-    {
-        xcb_generic_event_t* event = static_cast<xcb_generic_event_t *>(message);
-        switch (event->response_type & 127)
-        {
-        case XCB_FOCUS_OUT: {
-            /* This is a horribly hackish but working solution.
-
-             A triggered key grab on X11 steals the focus of the window for short
-             period of time. This may result in the following annoying behaviour:
-             When the hotkey is pressed and X11 steals the focus there arises a
-             race condition between the hotkey event and the focus out event.
-             When the app is visible and the focus out event is delivered the app
-             gets hidden. Finally when the hotkey is received the app gets shown
-             again although the user intended to hide the app with the hotkey.
-
-             Solutions:
-             Although X11 differs between the two focus out events, qt does not.
-             One might install a native event filter and use the XCB structs to
-             decide which type of event is delivered, but this approach is not
-             platform independent (unless designed so explicitely, but its a
-             hassle). The behaviour was expected when the app hides on:
-
-             (mode==XCB_NOTIFY_MODE_GRAB && detail==XCB_NOTIFY_DETAIL_NONLINEAR)||
-              (mode==XCB_NOTIFY_MODE_NORMAL && detail==XCB_NOTIFY_DETAIL_NONLINEAR)
-             (Check Xlib Programming Manual)
-
-             Another much simpler but less elegant solution is to delay the
-             hiding a few milliseconds, so that the hotkey event will always be
-             handled first. */
-
-            xcb_focus_out_event_t *fe = reinterpret_cast<xcb_focus_out_event_t*>(event);
-//            qDebug() << "MainWidget::nativeEvent::XCB_FOCUS_OUT\t";
-//            switch (fe->mode) {
-//            case XCB_NOTIFY_MODE_NORMAL: qDebug() << "XCB_NOTIFY_MODE_NORMAL";break;
-//            case XCB_NOTIFY_MODE_GRAB: qDebug() << "XCB_NOTIFY_MODE_GRAB";break;
-//            case XCB_NOTIFY_MODE_UNGRAB: qDebug() << "XCB_NOTIFY_MODE_UNGRAB";break;
-//            case XCB_NOTIFY_MODE_WHILE_GRABBED: qDebug() << "XCB_NOTIFY_MODE_WHILE_GRABBED";break;
-//            }
-//            switch (fe->detail) {
-//            case XCB_NOTIFY_DETAIL_ANCESTOR: qDebug() << "ANCESTOR";break;
-//            case XCB_NOTIFY_DETAIL_INFERIOR: qDebug() << "INFERIOR";break;
-//            case XCB_NOTIFY_DETAIL_NONE: qDebug() << "NONE";break;
-//            case XCB_NOTIFY_DETAIL_NONLINEAR: qDebug() << "NONLINEAR";break;
-//            case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL: qDebug() << "NONLINEAR_VIRTUAL";break;
-//            case XCB_NOTIFY_DETAIL_POINTER: qDebug() << "POINTER";break;break;
-//            case XCB_NOTIFY_DETAIL_POINTER_ROOT: qDebug() << "POINTER_ROOT";
-//            case XCB_NOTIFY_DETAIL_VIRTUAL: qDebug() << "VIRTUAL";break;
-//            }
-            if ((/*(fe->mode==XCB_NOTIFY_MODE_GRAB && fe->detail==XCB_NOTIFY_DETAIL_NONLINEAR) ||*/
-                 (fe->mode==XCB_NOTIFY_MODE_NORMAL && fe->detail==XCB_NOTIFY_DETAIL_NONLINEAR )) &&
-                    hideOnFocusLoss_)
-                hide();
-            return true;
-        }
-        }
-    }
-#else
-    Q_UNUSED(eventType)
-    Q_UNUSED(message)
-#endif
-    return false;
-}
-
 
 /** ***************************************************************************/
-void QmlBoxModel::MainWindow::resizeEvent(QResizeEvent *event) {
-
-    QQuickView::resizeEvent(event);
-
-#ifdef X_PROTOCOL
-
-    // Get root object
-    if (!rootObject()) {
-        qWarning() << "Could not retrieve settableProperties: There is no root object.";
-        return;
-    }
-
-    // Get preferences object
-    QObject *frameObject = rootObject()->findChild<QObject*>(FRAME_OBJ_NAME, Qt::FindChildrenRecursively);
-    if (frameObject) {
-        // Keep the input shape consistent
-        int shape_event_base, shape_error_base;
-        if (XShapeQueryExtension(QX11Info::display(), &shape_event_base, &shape_error_base)) {
-
-            Region region = XCreateRegion();
-            XRectangle rectangle;
-            double scalefactor = devicePixelRatio();
-            rectangle.x      = static_cast<int16_t>(frameObject->property("x").toUInt()*scalefactor);
-            rectangle.y      = static_cast<int16_t>(frameObject->property("y").toUInt()*scalefactor);
-            rectangle.width  = static_cast<uint16_t>(frameObject->property("width").toUInt()*scalefactor);
-            rectangle.height = static_cast<uint16_t>(frameObject->property("height").toUInt()*scalefactor);
-            XUnionRectWithRegion(&rectangle, region, region);
-            XShapeCombineRegion(QX11Info::display(), winId(), ShapeInput, 0, 0, region, ShapeSet);
-            XDestroyRegion(region);
-        }
-    } else
-        qWarning() << qPrintable(QString("Could not retrieve settableProperties: "
-                                         "There is no object named '%1'.").arg(FRAME_OBJ_NAME));
-#endif
-
+void QmlBoxModel::MainWindow::focusOutEvent(QFocusEvent *) {
+    if (hideOnFocusLoss_)
+        hide();
 }
 
 

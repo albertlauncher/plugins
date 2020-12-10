@@ -1,16 +1,20 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2020 Manuel Schneider
 
-#include <QDebug>
 #include <QPointer>
 #include <QRegularExpression>
 #include <QSettings>
 #include <array>
-#include "configwidget.h"
-#include "extension.h"
 #include "albert/util/shutil.h"
 #include "albert/util/standardactions.h"
 #include "albert/util/standarditem.h"
+#include "configwidget.h"
+#include "extension.h"
 #include "xdg/iconlookup.h"
+Q_LOGGING_CATEGORY(qlc, "system")
+#define DEBG qCDebug(qlc,).noquote()
+#define INFO qCInfo(qlc,).noquote()
+#define WARN qCWarning(qlc,).noquote()
+#define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 using namespace Core;
 
