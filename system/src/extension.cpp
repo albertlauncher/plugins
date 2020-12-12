@@ -4,7 +4,6 @@
 #include <QRegularExpression>
 #include <QSettings>
 #include <array>
-#include "albert/util/shutil.h"
 #include "albert/util/standardactions.h"
 #include "albert/util/standarditem.h"
 #include "configwidget.h"
@@ -246,8 +245,8 @@ void System::Extension::handleQuery(Core::Query * query) const {
                 item->setText(QString(itemTitles[i]).replace(re, "<u>\\1</u>"));
                 item->setSubtext(itemDescriptions[i]);
                 item->setIconPath(d->iconPaths[i]);
-                item->addAction(make_shared<ProcAction>(itemDescriptions[i], QStringList(Core::ShUtil::split(d->commands[i]))));
-                query->addMatch(std::move(item), static_cast<uint>(static_cast<float>(query->string().size())/itemTitles[i].size()*UINT_MAX));
+                item->addAction(make_shared<ProcAction>(itemDescriptions[i], QStringList{"/bin/sh", "-c", d->commands[i]}));
+                query->addMatch(std::move(item), static_cast<uint>(static_cast<uint>(query->string().size() / itemTitles[i].size() * UINT_MAX)));
                 break;
             }
         }
