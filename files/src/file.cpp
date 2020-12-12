@@ -1,6 +1,5 @@
 // Copyright (C) 2014-2018 Manuel Schneider
 
-#include "file.h"
 #include <QApplication>
 #include <QClipboard>
 #include <QDesktopServices>
@@ -9,11 +8,13 @@
 #include <QMimeData>
 #include <QProcess>
 #include <QUrl>
-#include "xdg/iconlookup.h"
+#include <pwd.h>
+#include <unistd.h>
 #include "albert/util/standardactions.h"
+#include "file.h"
+#include "xdg/iconlookup.h"
 using namespace std;
 using namespace Core;
-extern QString terminalCommand;
 
 
 /** ***************************************************************************/
@@ -71,23 +72,25 @@ std::vector<std::shared_ptr<Action> > Files::File::buildFileActions(const QStrin
                                              QUrl::fromLocalFile(filePath)));
 
     QFileInfo fileInfo(filePath);
+
     if ( fileInfo.isFile() && fileInfo.isExecutable() )
         actions.push_back(make_shared<ProcAction>("Execute file", QStringList{filePath}));
 
 
     actions.push_back(make_shared<UrlAction>("Reveal in file browser",
-                                             QUrl::fromLocalFile(QFileInfo(filePath).path())));
+                                             QUrl::fromLocalFile(fileInfo.path())));
 
+    // Get the user shell (passwd must not be freed)
+    passwd *pwd = getpwuid(geteuid());
+    if (pwd == nullptr)
+        throw "Could not retrieve user shell";
 
-    actions.push_back(make_shared<FuncAction>("Open terminal at this path", [filePath](){
-        QFileInfo fileInfo(filePath);
-        QStringList commandLine = terminalCommand.trimmed().split(' ');
-        if ( commandLine.size() == 0 )
-            return;
-        QProcess::startDetached(commandLine[0], {}, fileInfo.isDir() ? fileInfo.filePath() : fileInfo.path());
-    }));
+    // Let standard shell handle flow control (syntax differs in shells, e.g. fish)
+    actions.push_back(make_shared<TermAction>("Open terminal here", QStringList{pwd->pw_shell},
+                                              fileInfo.isDir() ? fileInfo.filePath() : fileInfo.path()));
 
     actions.push_back(make_shared<FuncAction>("Copy file to clipboard", [filePath](){
+
         //  Get clipboard
         QClipboard *cb = QApplication::clipboard();
 

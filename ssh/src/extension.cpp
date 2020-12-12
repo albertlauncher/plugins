@@ -26,7 +26,6 @@ Q_LOGGING_CATEGORY(qlc, "ssh")
 #define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 using namespace Core;
-extern QString terminalCommand;
 
 namespace {
 const char* CFG_USE_KNOWN_HOSTS = "use_known_hosts";

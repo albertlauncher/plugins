@@ -34,8 +34,6 @@ Q_LOGGING_CATEGORY(qlc, "applications")
 using namespace Core;
 using namespace std;
 
-extern QString terminalCommand;
-
 namespace {
 
 const char* CFG_FUZZY                = "fuzzy";
