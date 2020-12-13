@@ -1,6 +1,6 @@
 {
-    "id" :              "org.albert.extension.apps",
-    "name" :            "Apps",
+    "id" :              "org.albert.extension.applications",
+    "name" :            "Applications",
     "version" :         "1.2",
     "platform" :        "Linux",
     "group" :           "Extensions",

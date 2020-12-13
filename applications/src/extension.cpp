@@ -20,7 +20,6 @@
 #include <vector>
 #include "albert/queryhandler.h"
 #include "albert/util/offlineindex.h"
-#include "albert/util/shutil.h"
 #include "albert/util/standardactions.h"
 #include "albert/util/standardindexitem.h"
 #include "configwidget.h"
@@ -409,7 +408,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             subtext = commandLine;
 
         // Finally we got everything, build the item
-        auto item = make_shared<StandardIndexItem>(id, icon_path, name, subtext, name);
+        auto item = make_shared<StandardIndexItem>(id, icon_path, name, subtext);
 
         // Set index strings
         vector<IndexableItem::IndexString> indexStrings;
