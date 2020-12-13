@@ -71,7 +71,7 @@ Debug::Extension::~Extension() {
 QWidget *Debug::Extension::widget(QWidget *parent) {
     if (d->widget.isNull())
         d->widget = new ConfigWidget(this, parent);
-    return d->widget;
+    return d->widget.data();
 }
 
 
