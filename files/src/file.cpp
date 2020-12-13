@@ -39,7 +39,7 @@ QString Files::File::subtext() const {
 QString Files::File::completion() const {
     const QString &path = filePath();
     QString result = ( QFileInfo(path).isDir() ) ? QString("%1/").arg(path) : path;
-#ifdef __linux__
+#ifdef __unix__
     if ( result.startsWith(QDir::homePath()) )
         result.replace(QDir::homePath(), "~");
 #endif
