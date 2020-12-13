@@ -152,6 +152,7 @@ public:
     QPointer<ConfigWidget> widget;
     QFileSystemWatcher watcher;
 
+    QStringList indexedDirs;
     vector<shared_ptr<Core::StandardIndexItem>> index;
     OfflineIndex offlineIndex;
 
@@ -500,6 +501,10 @@ Applications::Extension::Extension()
 
     qunsetenv("DESKTOP_AUTOSTART_ID");
 
+
+    d->indexedDirs = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation)
+                        << QStandardPaths::standardLocations(QStandardPaths::DesktopLocation);
+
     // Load settings
     d->offlineIndex.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
     d->ignoreShowInKeys = settings().value(CFG_IGNORESHOWINKEYS, DEF_IGNORESHOWINKEYS).toBool();
@@ -528,6 +533,9 @@ Applications::Extension::~Extension() {
 QWidget *Applications::Extension::widget(QWidget *parent) {
     if (d->widget.isNull()) {
         d->widget = new ConfigWidget(parent);
+
+        // Show the app dirs in the label
+        d->widget->ui.label->setText(d->widget->ui.label->text().replace("__XDG_DATA_DIRS__", d->indexedDirs.join(", ")));
 
         // Fuzzy
         d->widget->ui.checkBox_fuzzy->setChecked(d->offlineIndex.fuzzy());
