@@ -328,7 +328,7 @@ void Files::Extension::handleQuery(Core::Query * query) const {
             QDir dir(pathInfo.filePath());
             QString commonPrefix;
             QString queryFileName = queryFileInfo.fileName();
-            vector<pair<shared_ptr<Core::StandardItem>,uint>> results;
+            vector<pair<shared_ptr<StandardItem>,uint>> results;
 
             for (const QFileInfo& fileInfo : dir.entryInfoList(QDir::AllEntries|QDir::Hidden|QDir::NoDotAndDotDot,
                                                                QDir::DirsFirst|QDir::Name|QDir::IgnoreCase) ) {
@@ -354,8 +354,7 @@ void Files::Extension::handleQuery(Core::Query * query) const {
                     auto item = make_shared<StandardItem>(fileInfo.filePath(),
                                                           icon,
                                                           fileName,
-                                                          fileInfo.filePath(),
-                                                          dir.filePath(fileName));
+                                                          fileInfo.filePath());
                     item->setActions(File::buildFileActions(fileInfo.filePath()));
                     results.emplace_back(move(item), 0);
                 }
