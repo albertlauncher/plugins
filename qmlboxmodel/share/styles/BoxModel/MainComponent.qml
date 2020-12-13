@@ -225,7 +225,11 @@ Item {
         else if ( event.key === Qt.Key_Tab && resultsList.count > 0 ) {
             if ( resultsList.currentIndex === -1 )
                 resultsList.currentIndex = 0
-            historyTextInput.text = resultsList.currentItem.attachedModel.itemCompletionStringRole
+
+            var completion = resultsList.currentItem.attachedModel.itemCompletionStringRole
+            if (completion !== '')  // QString.isnull sent as ''
+                historyTextInput.text = completion
+
         } else event.accepted = false
     }
     Keys.onReleased: {

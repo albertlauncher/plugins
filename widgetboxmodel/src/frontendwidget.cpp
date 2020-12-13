@@ -542,12 +542,12 @@ bool WidgetBoxModel::FrontendWidget::eventFilter(QObject *, QEvent *event) {
 
         // Toggle insert completion string
         case Qt::Key_Tab:
-            if ( d->ui.resultsList->currentIndex().isValid() )
-                d->ui.inputLine->setText(
-                            d->ui.resultsList->model()->data(
-                                d->ui.resultsList->currentIndex(), Core::ItemRoles::CompletionRole
-                                ).toString()
-                            );
+            if ( d->ui.resultsList->currentIndex().isValid() ){
+                QString completion = d->ui.resultsList->model()->data(d->ui.resultsList->currentIndex(),
+                                                                      Core::ItemRoles::CompletionRole).toString();
+                if (!completion.isNull() && completion.isEmpty())
+                    d->ui.inputLine->setText(completion);
+            }
             return true;
 
         case Qt::Key_Alt:
