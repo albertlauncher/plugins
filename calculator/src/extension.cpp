@@ -112,11 +112,12 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
     item->setIconPath(d->iconPath);
     item->setText(d->locale.toString(result, 'G', 16));
     item->setSubtext(QString("Result of '%1'").arg(query->string()));
-    item->setCompletion(item->text());
-    item->addAction(make_shared<ClipAction>("Copy result to clipboard",
-                                            d->locale.toString(result, 'G', 16)));
-    item->addAction(make_shared<ClipAction>("Copy equation to clipboard",
-                                            QString("%1 = %2").arg(query->string(), item->text())));
+    item->setActions({
+        make_shared<ClipAction>("Copy result to clipboard",
+                                d->locale.toString(result, 'G', 16)),
+        make_shared<ClipAction>("Copy equation to clipboard",
+                                QString("%1 = %2").arg(query->string(), item->text()))
+    });
     query->addMatch(move(item), UINT_MAX);
 }
 
