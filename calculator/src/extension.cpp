@@ -21,8 +21,6 @@ Q_LOGGING_CATEGORY(qlc, "calculator")
 #define CRIT qCCritical(qlc,).noquote()
 using namespace std;
 using namespace Core;
-
-
 namespace {
 const QString CFG_SEPS      = "group_separators";
 const bool    CFG_SEPS_DEF  = false;
@@ -31,9 +29,8 @@ const bool    CFG_HEXP_DEF  = false;
 }
 
 
-class Calculator::Private
+struct Calculator::Extension::Private
 {
-public:
     QPointer<ConfigWidget> widget;
     std::unique_ptr<mu::Parser> parser;
     std::unique_ptr<mu::ParserInt> iparser;
@@ -60,15 +57,16 @@ Calculator::Extension::Extension()
     d->parser->SetDecSep(d->locale.decimalPoint().toLatin1());
     d->parser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
     d->parser->SetArgSep(';');
+
+    if (settings().value(CFG_SEPS, CFG_SEPS_DEF).toBool())
+        setGroupSeparatorEnabled(true);
+
+    if (settings().value(CFG_HEXP, CFG_HEXP_DEF).toBool())
+        setIParserEnabled(true);
 }
-
-
 
 /** ***************************************************************************/
-Calculator::Extension::~Extension() {
-
-}
-
+Calculator::Extension::~Extension() { }
 
 
 /** ***************************************************************************/
@@ -77,32 +75,24 @@ QWidget *Calculator::Extension::widget(QWidget *parent) {
         d->widget = new ConfigWidget(parent);
 
         d->widget->ui.checkBox_groupsep->setChecked(!(d->locale.numberOptions() & QLocale::OmitGroupSeparator));
-        connect(d->widget->ui.checkBox_groupsep, &QCheckBox::toggled, [this](bool checked){
-            settings().setValue(CFG_SEPS, checked);
-            d->locale.setNumberOptions( (checked) ? d->locale.numberOptions() & ~QLocale::OmitGroupSeparator
-                                                  : d->locale.numberOptions() | QLocale::OmitGroupSeparator );
-        });
+        connect(d->widget->ui.checkBox_groupsep, &QCheckBox::toggled,
+                [this](bool checked){ setGroupSeparatorEnabled(checked); });
 
         d->widget->ui.checkBox_hexparsing->setChecked(!(d->locale.numberOptions() & QLocale::OmitGroupSeparator));
-        connect(d->widget->ui.checkBox_hexparsing, &QCheckBox::toggled, [this](bool checked){
-            settings().setValue(CFG_HEXP, checked);
-            if (checked) {
-                d->iparser.reset(new mu::ParserInt);
-                d->iparser->SetDecSep(d->locale.decimalPoint().toLatin1());
-                d->iparser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
-                d->iparser->SetArgSep(';');
-            } else {
-                d->iparser.reset();
-            }
-        });
+        connect(d->widget->ui.checkBox_hexparsing, &QCheckBox::toggled,
+                [this](bool checked){ setIParserEnabled(checked); });
+
     }
     return d->widget;
 }
 
 
-
 /** ***************************************************************************/
 void Calculator::Extension::handleQuery(Core::Query * query) const {
+
+    if (query->string().isEmpty())
+        return;
+
     // http://beltoforion.de/article.php?a=muparser&p=errorhandling
     double result;
     try {
@@ -114,22 +104,43 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
             result = d->parser->Eval();
         }
     } catch (mu::Parser::exception_type &exception) {
-        WARN << "Muparser SetExpr exception: " << exception.GetMsg().c_str();
+        DEBG << "Muparser SetExpr exception: " << exception.GetMsg().c_str();
         return;
     }
 
     auto item = make_shared<StandardItem>("muparser");
     item->setIconPath(d->iconPath);
-    d->locale.setNumberOptions(settings().value(CFG_SEPS, CFG_SEPS_DEF).toBool()
-                               ? d->locale.numberOptions() & ~QLocale::OmitGroupSeparator
-                               : d->locale.numberOptions() | QLocale::OmitGroupSeparator );
     item->setText(d->locale.toString(result, 'G', 16));
     item->setSubtext(QString("Result of '%1'").arg(query->string()));
     item->setCompletion(item->text());
-    d->locale.setNumberOptions(d->locale.numberOptions() | QLocale::OmitGroupSeparator);
     item->addAction(make_shared<ClipAction>("Copy result to clipboard",
                                             d->locale.toString(result, 'G', 16)));
     item->addAction(make_shared<ClipAction>("Copy equation to clipboard",
                                             QString("%1 = %2").arg(query->string(), item->text())));
     query->addMatch(move(item), UINT_MAX);
+}
+
+
+/** ***************************************************************************/
+void Calculator::Extension::setGroupSeparatorEnabled(bool enabled){
+    settings().setValue(CFG_SEPS, enabled);
+    if (enabled)
+        d->locale.setNumberOptions(d->locale.numberOptions() & ~QLocale::OmitGroupSeparator);
+    else
+        d->locale.setNumberOptions(d->locale.numberOptions() | QLocale::OmitGroupSeparator);
+}
+
+
+/** ***************************************************************************/
+void Calculator::Extension::setIParserEnabled(bool enabled){
+    settings().setValue(CFG_HEXP, enabled);
+
+    if (enabled){
+        d->iparser.reset(new mu::ParserInt);
+        d->iparser->SetDecSep(d->locale.decimalPoint().toLatin1());
+        d->iparser->SetThousandsSep(d->locale.groupSeparator().toLatin1());
+        d->iparser->SetArgSep(';');
+    }
+    else
+        d->iparser.reset();
 }
