@@ -1,4 +1,4 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2020 Manuel Schneider
 
 #include <QApplication>
 #include <QDir>
@@ -10,23 +10,23 @@
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
-#include <QtConcurrent>
-#include <QTimer>
 #include <QThread>
+#include <QTimer>
+#include <QtConcurrent>
 #include <algorithm>
 #include <functional>
 #include <map>
 #include <memory>
 #include <vector>
-#include "configwidget.h"
-#include "extension.h"
 #include "albert/queryhandler.h"
 #include "albert/util/offlineindex.h"
+#include "albert/util/shutil.h"
 #include "albert/util/standardactions.h"
 #include "albert/util/standardindexitem.h"
-#include "albert/util/shutil.h"
+#include "configwidget.h"
+#include "extension.h"
 #include "xdg/iconlookup.h"
-Q_LOGGING_CATEGORY(qlc, "applications")
+Q_LOGGING_CATEGORY(qlc, "apps")
 #define DEBG qCDebug(qlc,).noquote()
 #define INFO qCInfo(qlc,).noquote()
 #define WARN qCWarning(qlc,).noquote()
@@ -48,56 +48,48 @@ const char* CFG_USENONLOCALIZEDNAME  = "use_non_localized_name";
 const bool  DEF_USENONLOCALIZEDNAME  = false;
 
 /******************************************************************************/
-QStringList expandedFieldCodes(const QStringList & unexpandedFields,
-                               const QString & icon,
-                               const QString & name,
-                               const QString & path) {
+QString fieldCodesExpanded(const QString & exec, const QString & name, const QString & icon, const QString & de_path) {
     /*
-     * A number of special field codes have been defined which will be expanded
-     * by the file manager or program launcher when encountered in the command
-     * line. Field codes consist of the percentage character ("%") followed by
-     * an alpha character. Literal percentage characters must be escaped as %%.
-     * Deprecated field codes should be removed from the command line and
-     * ignored. Field codes are expanded only once, the string that is used to
-     * replace the field code should not be checked for field codes itself.
+     * https://specifications.freedesktop.org/desktop-entry-spec/1.5/ar01s07.html
      *
-     * http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
+     * Code	Description
+     * %% : '%'
+     * %f : A single file name (including the path), even if multiple files are selected. The system reading the desktop entry should recognize that the program in question cannot handle multiple file arguments, and it should should probably spawn and execute multiple copies of a program for each selected file if the program is not able to handle additional file arguments. If files are not on the local file system (i.e. are on HTTP or FTP locations), the files will be copied to the local file system and %f will be expanded to point at the temporary file. Used for programs that do not understand the URL syntax.
+     * %F : A list of files. Use for apps that can open several local files at once. Each file is passed as a separate argument to the executable program.
+     * %u : A single URL. Local files may either be passed as file: URLs or as file path.
+     * %U : A list of URLs. Each URL is passed as a separate argument to the executable program. Local files may either be passed as file: URLs or as file path.
+     * %i : The Icon key of the desktop entry expanded as two arguments, first --icon and then the value of the Icon key. Should not expand to any arguments if the Icon key is empty or missing.
+     * %c : The translated name of the application as listed in the appropriate Name key in the desktop entry.
+     * %k : The location of the desktop file as either a URI (if for example gotten from the vfolder system) or a local filename or empty if no location is known.
+     * Deprecated: %v %m %d %D %n %N
      */
-    QStringList expandedFields;
-
-    for (const QString & field : unexpandedFields){
-
-        if (field == "%i" && !icon.isEmpty()) {
-            expandedFields.push_back("--icon");
-            expandedFields.push_back(icon);
-        }
-
-        QString tmpstr;
-        QString::const_iterator it = field.begin();
-
-        while (it != field.end()) {
-            if (*it == '%'){
-                ++it;
-                if (it == field.end())
-                    break;
-                else if (*it=='%')
-                    tmpstr.push_back("%");
-                else if (*it=='c')
-                    tmpstr.push_back(name);
-                else if (*it=='k')
-                    tmpstr.push_back(path);
-                // TODO Unhandled f F u U
-            }
-            else
-                tmpstr.push_back(*it);
+    QString commandLine;
+    for (auto it = exec.cbegin(); it != exec.end(); ++it) {
+        if (*it == '%'){
             ++it;
-        }
-        if (!tmpstr.isEmpty())
-            expandedFields.push_back(std::move(tmpstr));
+            if (it == exec.end()) {
+                break;
+            } else if (*it=='%') {
+                commandLine.push_back("%");
+            } else if (*it=='f') {  // Unhandled atm
+            } else if (*it=='F') {  // Unhandled atm
+            } else if (*it=='u') {  // Unhandled atm
+            } else if (*it=='U') {  // Unhandled atm
+            } else if (*it=='i' && !icon.isNull()) {
+                commandLine.push_back(QString("--icon %1").arg(icon));
+            } else if (*it=='c') {
+                commandLine.push_back(name);
+            } else if (*it=='k') {
+                commandLine.push_back(de_path);
+            } else if (*it=='v' || *it=='m' || *it=='d' || *it=='D' || *it=='n' || *it=='N') { /*Skipping deprecated field codes*/
+            } else {
+                qWarning() << "Ignoring invalid field code: " << *it;
+            }
+        } else
+            commandLine.push_back(*it);
     }
-    return expandedFields;
+    return commandLine;
 }
-
 /******************************************************************************/
 QString xdgStringEscape(const QString & unescaped) {
     /*
@@ -159,7 +151,6 @@ public:
 
     QPointer<ConfigWidget> widget;
     QFileSystemWatcher watcher;
-    QString graphicalSudoPath;
 
     vector<shared_ptr<Core::StandardIndexItem>> index;
     OfflineIndex offlineIndex;
@@ -190,7 +181,7 @@ void Applications::Private::startIndexing() {
     // Run finishIndexing when the indexing thread finished
     futureWatcher.disconnect();
     QObject::connect(&futureWatcher, &QFutureWatcher<vector<shared_ptr<Core::StandardIndexItem>>>::finished,
-                     std::bind(&Private::finishIndexing, this));
+                     bind(&Private::finishIndexing, this));
 
     // Run the indexer thread
     futureWatcher.setFuture(QtConcurrent::run(this, &Private::indexApplications));
@@ -361,11 +352,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             continue;
 
         // Try to get the localized icon, skip if empty
-        icon = XDG::IconLookup::iconPath({xdgStringEscape(getLocalizedKey("Icon", entryMap, loc)),
-                                          "application-x-executable",
-                                          "exec"});
-        if (icon.isNull())
-            icon = ":application-x-executable";
+        icon = xdgStringEscape(getLocalizedKey("Icon", entryMap, loc));
 
         // Check if this is a terminal app
         term = (entryIterator = entryMap.find("Terminal")) != entryMap.end()
@@ -396,34 +383,32 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 //            if ((valueIterator = entryMap.find("MimeType")) != entryMap.end())
 //                keywords = xdgStringEscape(valueIterator->second).split(';',QString::SkipEmptyParts);
 
+
         /*
          * Build the item
          */
 
-        // Unquote arguments and expand field codes
-        QStringList commandline = expandedFieldCodes(Core::ShUtil::split(exec),
-                                                     icon, name, path);
-        // Malformed exec line. Constraint (1)
-        if (commandline.isEmpty())
-            continue;
+        // Field code expandesd commandline
+        QString commandLine = fieldCodesExpanded(exec, name, icon, path);
+
+        // Icon path
+        QString icon_path = XDG::IconLookup::iconPath({icon, "application-x-executable", "exec"});
+        if (icon_path.isNull())
+            icon_path = ":application-x-executable";
+
+        // Description
+        QString subtext;
+        if (!comment.isEmpty())
+            subtext = comment;
+        else if(useGenericName && !genericName.isEmpty())
+            subtext = genericName;
+        else if(useNonLocalizedName && !nonLocalizedName.isEmpty())
+            subtext = nonLocalizedName;
+        else
+            subtext = commandLine;
 
         // Finally we got everything, build the item
-        shared_ptr<StandardIndexItem> item = std::make_shared<StandardIndexItem>();
-        item->setIconPath(icon);
-        item->setId(id);
-        item->setText(name);
-        item->setCompletion(name);
-
-        // Set subtext/tootip
-        if (!comment.isEmpty())
-            item->setSubtext(comment);
-        else if(useGenericName && !genericName.isEmpty())
-            item->setSubtext(genericName);
-        else if(useNonLocalizedName && !nonLocalizedName.isEmpty())
-            item->setSubtext(nonLocalizedName);
-        else
-            item->setSubtext(exec);
-
+        auto item = make_shared<StandardIndexItem>(id, icon_path, name, subtext, name);
 
         // Set index strings
         vector<IndexableItem::IndexString> indexStrings;
@@ -439,21 +424,20 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             "dbus-send ",
             "/"
         };
-        if (std::none_of(excludes.begin(), excludes.end(), [&exec](const QString &str){ return exec.startsWith(str); }))
-            indexStrings.emplace_back(commandline[0], UINT_MAX);  // safe since (1)
+        if (none_of(excludes.begin(), excludes.end(), [&exec](const QString &str){ return exec.startsWith(str); }))
+            indexStrings.emplace_back(exec.section(QChar(QChar::Space), 0, 0, QString::SectionSkipEmpty), UINT_MAX);
 
         if (useKeywords)
             for (auto & kw : keywords)
                 indexStrings.emplace_back(kw, UINT_MAX/2);
 
         if (useGenericName && !genericName.isEmpty())
-            indexStrings.emplace_back(genericName, UINT_MAX/2   );
+            indexStrings.emplace_back(genericName, UINT_MAX/2);
 
         if (useNonLocalizedName && !nonLocalizedName.isEmpty())
-            indexStrings.emplace_back(nonLocalizedName, UINT_MAX/2   );
+            indexStrings.emplace_back(nonLocalizedName, UINT_MAX/2);
 
-        item->setIndexKeywords(std::move(indexStrings));
-
+        item->setIndexKeywords(move(indexStrings));
 
 
         /*
@@ -461,13 +445,10 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
          */
 
         // Default and root action
-        if (term) {
-            item->addAction(make_shared<TermAction>("Run", commandline, workingDir, false));
-            item->addAction(make_shared<TermAction>("Run as root", QStringList("sudo")+commandline, workingDir, false));
-        } else {
-            item->addAction(make_shared<ProcAction>("Run", commandline, workingDir));
-            item->addAction(make_shared<ProcAction>("Run as root", QStringList("gksudo")+commandline, workingDir));
-        }
+        if (term)
+            item->addAction(make_shared<ShTermAction>("Run", commandLine, ShTermAction::CloseOnExit, workingDir));
+        else
+            item->addAction(make_shared<ProcAction>("Run", QStringList() << "sh" << "-c" << commandLine, workingDir));
 
         // Desktop Actions
         for (const QString &actionIdentifier: actionIdentifiers){
@@ -487,12 +468,11 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
                 continue;
 
             // Unquote arguments and expand field codes
-            QStringList commandline = expandedFieldCodes(Core::ShUtil::split(entryIterator->second),
-                                                         icon, name, path);
+            commandLine = fieldCodesExpanded(entryIterator->second, icon, name, path);
             if (term)
-                item->addAction(make_shared<TermAction>(actionName, commandline, workingDir, false));
+                item->addAction(make_shared<ShTermAction>(actionName, commandLine, ShTermAction::CloseOnExit, workingDir));
             else
-                item->addAction(make_shared<ProcAction>(actionName, commandline, workingDir));
+                item->addAction(make_shared<ProcAction>(actionName, QStringList() << "sh" << "-c" << commandLine, workingDir));
 
         }
 
@@ -501,7 +481,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
          * Add item
          */
 
-        desktopEntries.push_back(std::move(item));
+        desktopEntries.push_back(move(item));
     }
     return desktopEntries;
 }
@@ -520,8 +500,6 @@ Applications::Extension::Extension()
 
     qunsetenv("DESKTOP_AUTOSTART_ID");
 
-    d->graphicalSudoPath = QStandardPaths::findExecutable("gksudo");
-
     // Load settings
     d->offlineIndex.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
     d->ignoreShowInKeys = settings().value(CFG_IGNORESHOWINKEYS, DEF_IGNORESHOWINKEYS).toBool();
@@ -531,7 +509,7 @@ Applications::Extension::Extension()
 
     // If the filesystem changed, trigger the scan
     connect(&d->watcher, &QFileSystemWatcher::directoryChanged,
-            std::bind(&Private::startIndexing, d.get()));
+            bind(&Private::startIndexing, d.get()));
 
     // Trigger initial update
     updateIndex();
@@ -610,10 +588,10 @@ void Applications::Extension::handleQuery(Core::Query * query) const {
 
     vector<pair<shared_ptr<Core::Item>,uint>> results;
     for (const shared_ptr<Core::IndexableItem> &item : indexables)
-        results.emplace_back(std::static_pointer_cast<Core::StandardIndexItem>(item), 1);
+        results.emplace_back(static_pointer_cast<Core::StandardIndexItem>(item), 1);
 
-    query->addMatches(std::make_move_iterator(results.begin()),
-                      std::make_move_iterator(results.end()));
+    query->addMatches(make_move_iterator(results.begin()),
+                      make_move_iterator(results.end()));
 }
 
 

@@ -22,7 +22,7 @@ public:
     Extension();
     ~Extension() override;
 
-    QString name() const override { return "Applications"; }
+    QString name() const override { return "Apps"; }
     QWidget *widget(QWidget *parent = nullptr) override;
     void handleQuery(Core::Query * query) const override;
 
