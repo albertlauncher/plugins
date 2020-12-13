@@ -30,7 +30,7 @@ using namespace std;
 using namespace Core;
 
 namespace {
-const char* EXT_ID = "org.albert.extension.chromebookmarks";
+const char* EXT_ID = "org.albert.extension.chromium";
 const char* CFG_FUZZY = "fuzzy";
 const bool  DEF_FUZZY = false;
 const char *CONFIG_LOCATIONS[] = {

@@ -22,7 +22,7 @@ public:
     Extension();
     ~Extension();
 
-    QString name() const override { return "Chromium bookmarks"; }
+    QString name() const override { return "Chromium"; }
     QWidget *widget(QWidget *parent) override;
     void handleQuery(Core::Query *query) const override;
 

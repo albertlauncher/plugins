@@ -1,6 +1,6 @@
 {
     "id" :              "org.albert.extension.chromium",
-    "name" :            "Chromium bookmarks",
+    "name" :            "Chromium",
     "version" :         "1.1",
     "platform" :        "All",
     "group" :           "Extensions",
