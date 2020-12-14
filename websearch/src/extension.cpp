@@ -165,7 +165,7 @@ void Websearch::Extension::handleQuery(Core::Query * query) const {
             QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
 
             query->addMatch(makeStdItem("valid_url",
-                                        icon.isNull() ? ":favicon" : icon,
+                                        icon.isNull() ? ":default" : icon,
                                         "Open url in browser",
                                         QString("Visit %1").arg(url.authority()),
                                         ActionList{ makeUrlAction("Open URL", url) }
