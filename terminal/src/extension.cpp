@@ -9,11 +9,14 @@
 #include <QProcess>
 #include <QStringList>
 #include <QtConcurrent>
+#include <QWidget>
+#include <QLabel>
+#include <QVBoxLayout>
+#include <QSpacerItem>
 #include <set>
-#include "albert/util/shutil.h"
+#include <functional>
 #include "albert/util/standardactions.h"
 #include "albert/util/standarditem.h"
-#include "configwidget.h"
 #include "extension.h"
 #include "xdg/iconlookup.h"
 Q_LOGGING_CATEGORY(qlc, "term")
@@ -24,51 +27,91 @@ Q_LOGGING_CATEGORY(qlc, "term")
 using namespace std;
 using namespace Core;
 
+
 /** ***************************************************************************/
 /** ***************************************************************************/
-class Terminal::Private
+class Terminal::Extension::Private
 {
 public:
-    QPointer<ConfigWidget> widget;
+    QPointer<QWidget> widget;
     QString iconPath;
     QFileSystemWatcher watcher;
     set<QString> index;
     QFutureWatcher<set<QString>> futureWatcher;
+
+
+    void rebuildIndex() {
+
+        if ( futureWatcher.isRunning() )
+            return;
+
+        QObject::connect(&futureWatcher, &QFutureWatcher<set<QString>>::finished, [this](){
+            index = futureWatcher.future().result();
+            QObject::disconnect(&futureWatcher, nullptr, nullptr, nullptr);
+        });
+
+        futureWatcher.setFuture(QtConcurrent::run(indexPath));
+    }
+
+
+    static set<QString> indexPath(){
+        INFO << "Indexing $PATH.";
+        set<QString> index;
+        QStringList paths = QString(::getenv("PATH")).split(':', QString::SkipEmptyParts);
+        for (const QString &path : paths) {
+            QDirIterator dirIt(path, QDir::NoDotAndDotDot|QDir::Files|QDir::Executable, QDirIterator::Subdirectories);
+            while (dirIt.hasNext()) {
+                dirIt.next();
+                index.insert(dirIt.fileName());
+            }
+        }
+        DEBG << "Finished indexing $PATH.";
+        return index;
+    };
+
 };
 
 
-
 /** ***************************************************************************/
-Terminal::Extension::Extension()
-    : Core::Extension("org.albert.extension.terminal"),
-      Core::QueryHandler(Core::Plugin::id()),
+/** ***************************************************************************/
+Terminal::Extension::Extension() : Core::Extension("org.albert.extension.terminal"),
+                                    Core::QueryHandler(Core::Plugin::id()),
       d(new Private) {
 
     registerQueryHandler(this);
 
-    QString iconPath = XDG::IconLookup::iconPath("utilities-terminal", "terminal");
-    d->iconPath = iconPath.isNull() ? ":terminal" : iconPath;
+    if ((d->iconPath = XDG::IconLookup::iconPath("utilities-terminal", "terminal")).isNull())
+        d->iconPath = ":terminal";
 
     d->watcher.addPaths(QString(::getenv("PATH")).split(':', QString::SkipEmptyParts));
     connect(&d->watcher, &QFileSystemWatcher::directoryChanged,
-            this, &Extension::rebuildIndex);
+            this, [this](){ d->rebuildIndex(); });
 
-    rebuildIndex();
+    d->rebuildIndex();
 }
 
-
-
-/** ***************************************************************************/
-Terminal::Extension::~Extension() {
-
-}
-
+Terminal::Extension::~Extension() { }
 
 
 /** ***************************************************************************/
 QWidget *Terminal::Extension::widget(QWidget *parent) {
-    if (d->widget.isNull())
-        d->widget = new ConfigWidget(parent);
+    if (d->widget.isNull()){
+        d->widget = new QWidget(parent);
+        QVBoxLayout *verticalLayout = new QVBoxLayout();
+        d->widget->setLayout(verticalLayout);
+
+        QLabel *label = new QLabel();
+        label->setWordWrap(true);
+        label->setText(QCoreApplication::translate("Terminal::ConfigWidget",
+            "The terminal extension allows you to run commands in a terminal or "
+            "a shell directly. Theres not much more about it but convenience. "
+            "Just invoke the extension using the trigger '>'.", nullptr));
+        verticalLayout->addWidget(label);
+
+        QSpacerItem *verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+        verticalLayout->addItem(verticalSpacer);
+
+    }
     return d->widget;
 }
 
@@ -84,7 +127,7 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
 
     // Extract data from input string: [0] program. The rest: args
     QString potentialProgram = query->string().section(' ', 0, 0, QString::SectionSkipEmpty);
-    QStringList arguments = ShUtil::split(query->string().section(' ', 1, -1, QString::SectionSkipEmpty));
+    QString remainder = query->string().section(' ', 1, -1, QString::SectionSkipEmpty);
 
     // Iterate over matches
     set<QString>::iterator it = lower_bound(d->index.begin(), d->index.end(), potentialProgram);
@@ -101,21 +144,18 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
                                              commonPrefix.begin()+potentialProgram.size()-1);
         commonPrefix.resize(std::distance(it->begin(), mismatchindexes.first));
 
-        QStringList commandline(*it);
-        commandline << arguments;
+        auto commandline = QString("%1 %2").arg(*it, remainder);
 
-        auto item = make_shared<StandardItem>(*it);
-        item->setIconPath(d->iconPath);
-        item->setText(commandline.join(' '));
-        item->setSubtext(QString("Run '%1'").arg(item->text()));
-        item->setCompletion(item->text());
-        item->addAction(make_shared<TermAction>("Run", commandline, QString(),
-                                                true, TermAction::CloseBehavior::DoNotClose));
-        item->addAction(make_shared<TermAction>("Run and close on exit", commandline, QString(),
-                                                true, TermAction::CloseBehavior::CloseOnExit));
-        item->addAction(make_shared<TermAction>("Run and close on success", commandline, QString(),
-                                                true, TermAction::CloseBehavior::CloseOnSuccess));
-        item->addAction(make_shared<ProcAction>("Run in background (without terminal)", commandline));
+        auto item = makeStdItem(QString(),
+            d->iconPath, commandline, QString("Run '%1'").arg(commandline),
+            ActionList {
+                makeTermAction("Run", commandline, TermAction::DoNotClose),
+                makeTermAction("Run and close on exit", commandline, TermAction::CloseOnExit),
+                makeTermAction("Run and close on success", commandline, TermAction::CloseOnSuccess),
+                makeProcAction("Run in background (without terminal)", QStringList() << "sh" << "-c" << commandline)
+            },
+            commonPrefix
+        );
         results.emplace_back(item, 0);
         ++it;
     }
@@ -126,53 +166,17 @@ void Terminal::Extension::handleQuery(Core::Query * query) const {
         std::static_pointer_cast<StandardItem>(match.first)->setCompletion(completion);
 
     // Build generic item
-    QStringList commandline = ShUtil::split(query->string());
-
-    auto item = make_shared<StandardItem>();
-    item->setIconPath(d->iconPath);
-    item->setText("I'm Feeling Lucky");
-    item->setSubtext(QString("Try running '%1'").arg(query->string()));
-    item->setCompletion(query->rawString());
-    item->addAction(make_shared<TermAction>("Run", commandline, QString(),
-                                            true, TermAction::CloseBehavior::DoNotClose));
-    item->addAction(make_shared<TermAction>("Run and close on exit", commandline, QString(),
-                                            true, TermAction::CloseBehavior::CloseOnExit));
-    item->addAction(make_shared<TermAction>("Run and close on success", commandline, QString(),
-                                            true, TermAction::CloseBehavior::CloseOnSuccess));
-    item->addAction(make_shared<ProcAction>("Run in background (without terminal)", commandline));
-    results.emplace_back(item, 0);
+    auto item = makeStdItem(QString(),
+        d->iconPath, "I'm Feeling Lucky", QString("Try running '%1'").arg(query->string()),
+        ActionList {
+            makeTermAction("Run", query->string(), TermAction::DoNotClose),
+            makeTermAction("Run and close on exit", query->string(), TermAction::CloseOnExit),
+            makeTermAction("Run and close on success", query->string(), TermAction::CloseOnSuccess),
+            makeProcAction("Run in background (without terminal)", QStringList() << "sh" << "-c" << query->string())
+        }
+    );
+    results.emplace_back(move(item), 0);
 
     // Add results to query
     query->addMatches(results.begin(), results.end());
-}
-
-
-/** ***************************************************************************/
-void Terminal::Extension::rebuildIndex() {
-
-    if ( d->futureWatcher.isRunning() )
-        return;
-
-    auto index = [](){
-        DEBG << "Indexing executables in $PATH.";
-        set<QString> index;
-        QStringList paths = QString(::getenv("PATH")).split(':', QString::SkipEmptyParts);
-        for (const QString &path : paths) {
-            QDirIterator dirIt(path);
-            while (dirIt.hasNext()) {
-                QFileInfo file(dirIt.next());
-                if ( file.isExecutable() )
-                    index.insert(file.fileName());
-            }
-        }
-        DEBG << "Finished indexing executables in $PATH.";
-        return index;
-    };
-
-    connect(&d->futureWatcher, &QFutureWatcher<set<QString>>::finished, this, [this](){
-        d->index = d->futureWatcher.future().result();
-        disconnect(&d->futureWatcher, nullptr, nullptr, nullptr);
-    });
-
-    d->futureWatcher.setFuture(QtConcurrent::run(index));
 }

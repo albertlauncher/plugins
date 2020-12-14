@@ -10,11 +10,7 @@ Q_DECLARE_LOGGING_CATEGORY(qlc)
 
 namespace Terminal {
 
-class Private;
-
-class Extension final :
-        public Core::Extension,
-        public Core::QueryHandler
+class Extension final : public Core::Extension, public Core::QueryHandler
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID ALBERT_EXTENSION_IID FILE "metadata.json")
@@ -31,8 +27,7 @@ public:
 
 private:
 
-    void rebuildIndex();
-
+    class Private;
     std::unique_ptr<Private> d;
 
 };
