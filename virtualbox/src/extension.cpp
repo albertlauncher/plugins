@@ -144,13 +144,7 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
             const QString &name = pair.first;
             nsCOMPtr<IMachine> &vm = pair.second;
 
-            auto item = make_shared<StandardItem>(name);
-            item->setIconPath(d->iconPath);
-            item->setText(pair.first);
-            item->setCompletion(pair.first);
-
-
-            auto startVM = make_shared<FuncAction>("Start virtual machine", [this, vm]()
+            auto startVM = makeFuncAction("Start virtual machine", [this, vm]()
             {
                 nsresult rc;
                 nsCOMPtr<ISession> session;
@@ -169,7 +163,7 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                     CRIT << "Error, could not instantiate ISession object.";
             });
 
-            auto saveVm = make_shared<FuncAction>("Save virtual machine", [this, vm]()
+            auto saveVm = makeFuncAction("Save virtual machine", [this, vm]()
             {
                 nsCOMPtr<ISession> session;
                 nsresult rc;
@@ -190,7 +184,7 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                     CRIT << "Error, could not instantiate ISession object.";
             });
 
-            auto discardSavedVm = make_shared<FuncAction>("Discard saved state", [this, vm]()
+            auto discardSavedVm = makeFuncAction("Discard saved state", [this, vm]()
             {
                 nsCOMPtr<ISession> session;
                 if (NS_SUCCEEDED(d->manager->CreateInstanceByContractID(NS_SESSION_CONTRACTID, nullptr, NS_GET_IID(ISession), getter_AddRefs(session)))){
@@ -208,7 +202,7 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                     CRIT << "Error, could not instantiate ISession object.";
             });
 
-            auto acpiPowerVm = make_shared<FuncAction>("Power off via ACPI event (Power button)", [this, vm]()
+            auto acpiPowerVm = makeFuncAction("Power off via ACPI event (Power button)", [this, vm]()
             {
                 nsCOMPtr<ISession> session;
                 if (NS_SUCCEEDED(d->manager->CreateInstanceByContractID(NS_SESSION_CONTRACTID, nullptr, NS_GET_IID(ISession), getter_AddRefs(session)))){
@@ -226,7 +220,7 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                     CRIT << "Error, could not instantiate ISession object.";
             });
 
-            auto killVm = make_shared<FuncAction>("Turn off virtual machine", [this, vm]()
+            auto killVm = makeFuncAction("Turn off virtual machine", [this, vm]()
             {
                 nsCOMPtr<ISession> session;
                 if (NS_SUCCEEDED(d->manager->CreateInstanceByContractID(NS_SESSION_CONTRACTID, nullptr, NS_GET_IID(ISession), getter_AddRefs(session)))){
@@ -245,7 +239,7 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                     CRIT << "Error, could not instantiate ISession object.";
             });
 
-            auto pauseVm = make_shared<FuncAction>("Pause virtual machine", [this, vm]()
+            auto pauseVm = makeFuncAction("Pause virtual machine", [this, vm]()
             {
                 nsCOMPtr<ISession> session;
                 if (NS_SUCCEEDED(d->manager->CreateInstanceByContractID(NS_SESSION_CONTRACTID, nullptr, NS_GET_IID(ISession), getter_AddRefs(session)))){
@@ -263,7 +257,7 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                     CRIT << "Error, could not instantiate ISession object.";
             });
 
-            auto resumeVm = make_shared<FuncAction>("Resume virtual machine", [this, vm]()
+            auto resumeVm = makeFuncAction("Resume virtual machine", [this, vm]()
             {
                 nsCOMPtr<ISession> session;
                 if (NS_SUCCEEDED(d->manager->CreateInstanceByContractID(NS_SESSION_CONTRACTID, nullptr, NS_GET_IID(ISession), getter_AddRefs(session)))){
@@ -281,6 +275,7 @@ void VirtualBox::Extension::handleQuery(Core::Query * query) const {
                     CRIT << "Error, could not instantiate ISession object.";
             });
 
+            auto item = makeStdItem(name, d->iconPath, pair.first);
 
             PRUint32 state;
             vm ->GetState(&state);

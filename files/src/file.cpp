@@ -68,17 +68,17 @@ std::vector<std::shared_ptr<Action> > Files::File::buildFileActions(const QStrin
 {
     vector<shared_ptr<Action>> actions;
 
-    actions.push_back(make_shared<UrlAction>("Open with default application",
-                                             QUrl::fromLocalFile(filePath)));
+    actions.push_back(makeUrlAction("Open with default application",
+                                    QUrl::fromLocalFile(filePath)));
 
     QFileInfo fileInfo(filePath);
 
     if ( fileInfo.isFile() && fileInfo.isExecutable() )
-        actions.push_back(make_shared<ProcAction>("Execute file", QStringList{filePath}));
+        actions.push_back(makeProcAction("Execute file", QStringList{filePath}));
 
 
-    actions.push_back(make_shared<UrlAction>("Reveal in file browser",
-                                             QUrl::fromLocalFile(fileInfo.path())));
+    actions.push_back(makeUrlAction("Reveal in file browser",
+                                    QUrl::fromLocalFile(fileInfo.path())));
 
     // Get the user shell (passwd must not be freed)
     passwd *pwd = getpwuid(geteuid());
@@ -86,10 +86,10 @@ std::vector<std::shared_ptr<Action> > Files::File::buildFileActions(const QStrin
         throw "Could not retrieve user shell";
 
     // Let standard shell handle flow control (syntax differs in shells, e.g. fish)
-    actions.push_back(make_shared<TermAction>("Open terminal here", QStringList{pwd->pw_shell},
-                                              fileInfo.isDir() ? fileInfo.filePath() : fileInfo.path()));
+    actions.push_back(makeTermAction("Open terminal here", QStringList{pwd->pw_shell},
+                                     fileInfo.isDir() ? fileInfo.filePath() : fileInfo.path()));
 
-    actions.push_back(make_shared<FuncAction>("Copy file to clipboard", [filePath](){
+    actions.push_back(makeFuncAction("Copy file to clipboard", [filePath](){
 
         //  Get clipboard
         QClipboard *cb = QApplication::clipboard();
@@ -116,7 +116,7 @@ std::vector<std::shared_ptr<Action> > Files::File::buildFileActions(const QStrin
         cb->setMimeData(newMimeData);
     }));
 
-    actions.push_back(make_shared<ClipAction>("Copy path to clipboard", filePath));
+    actions.push_back(makeClipAction("Copy path to clipboard", filePath));
 
     return actions;
 

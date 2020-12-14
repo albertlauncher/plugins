@@ -94,31 +94,27 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
         return;
 
     // http://beltoforion.de/article.php?a=muparser&p=errorhandling
-    double result;
+    QString result;
     try {
         if(d->iparser && query->string().contains("0x")) {
             d->iparser->SetExpr(query->string().toStdString());
-            result = d->iparser->Eval();
+            result = d->locale.toString(d->iparser->Eval(), 'G', 16);
         } else {
             d->parser->SetExpr(query->string().toStdString());
-            result = d->parser->Eval();
+            result = d->locale.toString(d->parser->Eval(), 'G', 16);
         }
     } catch (mu::Parser::exception_type &exception) {
         DEBG << "Muparser SetExpr exception: " << exception.GetMsg().c_str();
         return;
     }
 
-    auto item = make_shared<StandardItem>("muparser");
-    item->setIconPath(d->iconPath);
-    item->setText(d->locale.toString(result, 'G', 16));
-    item->setSubtext(QString("Result of '%1'").arg(query->string()));
-    item->setActions({
-        make_shared<ClipAction>("Copy result to clipboard",
-                                d->locale.toString(result, 'G', 16)),
-        make_shared<ClipAction>("Copy equation to clipboard",
-                                QString("%1 = %2").arg(query->string(), item->text()))
-    });
-    query->addMatch(move(item), UINT_MAX);
+    query->addMatch(makeStdItem("muparser",
+        d->iconPath, result, QString("Result of '%1'").arg(query->string()),
+        ActionList{
+            makeClipAction("Copy result to clipboard", result),
+            makeClipAction("Copy equation to clipboard", QString("%1 = %2").arg(query->string(), result))
+        }
+    ), UINT_MAX);
 }
 
 

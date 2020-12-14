@@ -16,9 +16,9 @@ MPRIS::Item::Item(Player &p, const QString &title, const QString &subtext, const
         subtext_ = subtext.arg(p.name());
     else
         subtext_ = subtext;
-    actions_.push_back(std::make_shared<Core::FuncAction>(subtext_, [this](){ QDBusConnection::sessionBus().send(message_); }));
+    actions_.push_back(makeFuncAction(subtext_, [this](){ QDBusConnection::sessionBus().send(message_); }));
     if (p.canRaise()) {
-        actions_.push_back(std::make_shared<Core::FuncAction>("Raise Window", [&p](){
+        actions_.push_back(makeFuncAction("Raise Window", [&p](){
             QString busid = p.busId();
             QDBusMessage raise = QDBusMessage::createMethodCall(busid, "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2", "Raise");
             if (!QDBusConnection::sessionBus().send(raise)) {

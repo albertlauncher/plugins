@@ -138,16 +138,12 @@ public:
                     QString title = get<1>(tuple);
                     QString url = get<2>(tuple);
 
-                    auto item = make_shared<StandardIndexItem>(
+                    auto item = makeStdIdxItem(
                         QString("%1.%2").arg(EXT_ID, guid), icon, title, url,
-                        initializer_list<Core::IndexableItem::IndexString>{
-                            {title, UINT_MAX},
-                            {url, UINT_MAX/2},
-                        },
-                        initializer_list<shared_ptr<Action>>{
-                            make_shared<UrlAction>("Open URL", url),
-                            make_shared<ClipAction>("Copy URL to clipboard", url)
-                        }
+                        IdxStrList{{title, UINT_MAX},
+                                   {url, UINT_MAX/2}},
+                        ActionList{makeUrlAction("Open URL", url),
+                                   makeClipAction("Copy URL to clipboard", url)}
                     );
                     bookmarkItems.emplace_back(item);
                 }

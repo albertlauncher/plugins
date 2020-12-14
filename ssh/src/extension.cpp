@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QFileSystemWatcher>
 #include <QPointer>
+#include <QLoggingCategory>
 #include <QProcess>
 #include <QRegularExpression>
 #include <QSettings>
@@ -13,7 +14,6 @@
 #include <memory>
 #include <set>
 #include <stdexcept>
-#include "albert/util/shutil.h"
 #include "albert/util/standardactions.h"
 #include "albert/util/standarditem.h"
 #include "configwidget.h"
@@ -110,15 +110,12 @@ void Ssh::Extension::handleQuery(Query * query) const {
 
                 QString target = port.isEmpty() ? host : QString("[%1]:%2").arg(host, port);
 
-                auto item = std::make_shared<StandardItem>("ssh_" + target);
-                item->setText(target);
-                item->setSubtext(QString("Connect to '%1'").arg(target));
-                item->setCompletion(QString("ssh %1").arg(target));
-                item->setIconPath(d->icon);
-                item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(target),
-                                                        QStringList{"ssh", target}));
-
-                query->addMatch(std::move(item));
+                query->addMatch(makeStdItem("ssh_" + target,
+                    d->icon, target, QString("Connect to '%1'").arg(target),
+                    ActionList{
+                        makeTermAction(QString("Connect to '%1'").arg(target),QStringList{"ssh", target})
+                    }
+                ));
             }
         }
     }
@@ -142,9 +139,6 @@ void Ssh::Extension::handleQuery(Query * query) const {
 
                 if (host.startsWith(q_host, Qt::CaseInsensitive))
                 {
-                    auto item = std::make_shared<StandardItem>("ssh_"+host);
-                    item->setText(host);
-                    item->setIconPath(d->icon);
 
                     QString target = host;
                     if (!q_port.isEmpty())
@@ -155,9 +149,12 @@ void Ssh::Extension::handleQuery(Query * query) const {
                         target = QString("%1@%2").arg(q_user, target);
                     QString subtext = QString("Connect to '%1'").arg(target);
 
-                    item->setSubtext(subtext);
-                    item->setCompletion(QString("ssh %1").arg(target));
-                    item->addAction(make_shared<TermAction>(subtext, QStringList{"ssh", target}));
+                    auto item = makeStdItem("ssh_"+host,
+                                            d->icon,
+                                            host,
+                                            subtext,
+                                            ActionList { makeTermAction(subtext, QStringList{"ssh", target}) },
+                                            QString("ssh %1").arg(target));
 
                     query->addMatch(std::move(item), static_cast<uint>(1.0*q_host.size()/host.size()* UINT_MAX));
                 }
@@ -165,14 +162,17 @@ void Ssh::Extension::handleQuery(Query * query) const {
 
             if (query->isTriggered() && !q_host.isEmpty()) {
                 // Add the quick connect item
-                auto item  = std::make_shared<StandardItem>();
-                item->setText(trimmed);
-                item->setSubtext("Quick connect to an unknown host");
-                item->setCompletion(QString("ssh %1").arg(trimmed));
-                item->setIconPath(d->icon);
-                item->addAction(make_shared<TermAction>(QString("Connect to '%1'").arg(match.captured(0)),
-                                                        QStringList{"ssh", trimmed}));
-                query->addMatch(std::move(item));
+                query->addMatch(makeStdItem(
+                    "",
+                    d->icon,
+                    trimmed,
+                    "Quick connect to an unknown host",
+                    ActionList {
+                        makeTermAction(QString("Connect to '%1'").arg(match.captured(0)),
+                                       QStringList{"ssh", trimmed})
+                    },
+                    QString("ssh %1").arg(trimmed)
+                ));
             }
         }
     }

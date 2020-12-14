@@ -351,12 +351,9 @@ void Files::Extension::handleQuery(Core::Query * query) const {
                     if (icon.isEmpty())
                         icon = (mimetype.iconName() == "inode-directory") ? ":directory" : ":unknown";
 
-                    auto item = make_shared<StandardItem>(fileInfo.filePath(),
-                                                          icon,
-                                                          fileName,
-                                                          fileInfo.filePath());
-                    item->setActions(File::buildFileActions(fileInfo.filePath()));
-                    results.emplace_back(move(item), 0);
+                    results.emplace_back(makeStdItem(fileInfo.filePath(),
+                                                     icon, fileName, fileInfo.filePath(),
+                                                     File::buildFileActions(fileInfo.filePath())), 0);
                 }
             }
 
@@ -375,15 +372,13 @@ void Files::Extension::handleQuery(Core::Query * query) const {
 
         if ( QString("albert scan files").startsWith(query->string()) ) {
 
-            auto item = make_shared<StandardItem>("files.action.index");
-            item->setText("albert scan files");
-            item->setSubtext("Update the file index");
-            item->setIconPath(":app_icon");
-            // Const cast is fine since the action will not be called here
-            item->addAction(make_shared<FuncAction>("Update the file index",
-                                                    [this](){ const_cast<Extension*>(this)->updateIndex();}));
-
-            query->addMatch(move(item));
+            query->addMatch(makeStdItem("files.action.index",
+                "app_icon", "albert scan files", "Update the file index", //Const cast is fine since the action will not be called here
+                ActionList { makeFuncAction(
+                    "Update the file index",
+                    [this](){ const_cast<Extension*>(this)->updateIndex();})}
+                )
+            );
         }
 
         // Search for matches

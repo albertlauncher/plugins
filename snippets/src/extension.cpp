@@ -119,12 +119,12 @@ void Snippets::Extension::handleQuery(Core::Query * query) const {
 //            if ( key.isEmpty() || value.isEmpty() )
 //                return;
 
-//            auto item = std::make_shared<StandardItem>();
+//            auto item = makeStdItem();
 //            item->setText(QString("Set '%1': '%2'").arg(key, value));
 //            item->setSubtext(QString("Store this mapping in the database."));
 //            item->setIconPath(":snippet");
 //            item->setCompletion(query->string());
-//            item->addAction(make_shared<FuncAction>("Add mapping to the database",
+//            item->addAction(makeFuncAction("Add mapping to the database",
 //                                                    [this, key, value](){
 //                QSqlQuery q(d->db);
 //                q.prepare(insertStmt);
@@ -146,12 +146,12 @@ void Snippets::Extension::handleQuery(Core::Query * query) const {
 //            while ( q.next() ){
 //                QString key = q.value(0).toString();
 
-//                auto item = std::make_shared<StandardItem>();
+//                auto item = makeStdItem();
 //                item->setText(QString("Unset '%1': '%2'").arg(key, q.value(1).toString()));
 //                item->setSubtext(QString("Remove this mapping from the database."));
 //                item->setIconPath(":snippet");
 //                item->setCompletion(QString("%1 unset %2").arg(trigger, key));
-//                item->addAction(make_shared<FuncAction>("Remove mapping from database",
+//                item->addAction(makeFuncAction("Remove mapping from database",
 //                                                        [this, key](){
 //                    QSqlQuery q(d->db);
 //                    q.prepare(removeStmt);
@@ -181,12 +181,14 @@ void Snippets::Extension::handleQuery(Core::Query * query) const {
         QString key = q.value(0).toString();
         QString value = q.value(1).toString();
 
-        auto item = std::make_shared<StandardItem>(QString("%1_%2").arg(Plugin::id(), key));
-        item->setText(QString("Text snippet '%1'").arg(QString(key).replace(re, "<u>\\1</u>")));
-        item->setSubtext("Copy the snippet to clipboard");
-        item->setIconPath(":snippet");
-        item->setCompletion(QString("%1%2").arg(trigger, key));
-        item->addAction(make_shared<ClipAction>("Copy value to clipboard", value));
+        auto item = makeStdItem(
+            QString("%1_%2").arg(Plugin::id(), key),
+            ":snippet",
+            QString("Text snippet '%1'").arg(QString(key).replace(re, "<u>\\1</u>")),
+            "Copy the snippet to clipboard",
+            ActionList { makeClipAction("Copy value to clipboard", value) },
+            QString("%1%2").arg(trigger, key)
+        );
 
         query->addMatch(move(item), static_cast<uint>(1.0/key.length()*query->string().length()));
     }

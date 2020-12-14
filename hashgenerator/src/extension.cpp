@@ -96,14 +96,12 @@ void HashGenerator::Extension::handleQuery(Core::Query * query) const {
         hash.addData(string.toUtf8());
         QByteArray hashString = hash.result().toHex();
 
-        auto item = make_shared<StandardItem>(algorithmNames[algorithm]);
-        item->setText(QString("%1 of '%2'").arg(algorithmNames[algorithm], string));
-        item->setSubtext(hashString);
-        item->setIconPath(":hash");
-        item->setCompletion(QString("%1 %2").arg(algorithmNames[algorithm].toLower(), string));
-        item->addAction(make_shared<ClipAction>("Copy hash value to clipboard",
-                                                QString(hashString)));
-        return item;
+        return makeStdItem(algorithmNames[algorithm],
+                           ":hash",
+                           QString("%1 of '%2'").arg(algorithmNames[algorithm], string),
+                           hashString,
+                           ActionList { makeClipAction("Copy hash value to clipboard", QString(hashString)) },
+                           QString("%1 %2").arg(algorithmNames[algorithm].toLower(), string));
     };
 
     if ( query->trigger() == "hash " ) {

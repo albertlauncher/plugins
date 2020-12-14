@@ -241,11 +241,11 @@ void System::Extension::handleQuery(Core::Query * query) const {
     for (size_t i = 0; i < NUMCOMMANDS; ++i) {
         for (auto &alias : aliases[i]) {
             if ( alias.startsWith(query->string(), Qt::CaseInsensitive) ) {
-                auto item = std::make_shared<Core::StandardItem>(configNames[i]);
-                item->setText(QString(itemTitles[i]).replace(re, "<u>\\1</u>"));
-                item->setSubtext(itemDescriptions[i]);
-                item->setIconPath(d->iconPaths[i]);
-                item->addAction(make_shared<ProcAction>(itemDescriptions[i], QStringList{"/bin/sh", "-c", d->commands[i]}));
+                auto item = makeStdItem(configNames[i],
+                                        d->iconPaths[i],
+                                        QString(itemTitles[i]).replace(re, "<u>\\1</u>"),
+                                        itemDescriptions[i],
+                                        ActionList { makeProcAction(itemDescriptions[i], QStringList{"/bin/sh", "-c", d->commands[i]}) });
                 query->addMatch(std::move(item), static_cast<uint>(static_cast<uint>(query->string().size() / itemTitles[i].size() * UINT_MAX)));
                 break;
             }

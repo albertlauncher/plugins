@@ -203,31 +203,27 @@ FirefoxBookmarks::Private::indexFirefoxBookmarks() const {
             // Url will be used more often
             QString urlstr = result.value(2).toString();
 
-            // Create item
-            shared_ptr<StandardIndexItem> item  = make_shared<StandardIndexItem>(result.value(0).toString());
-            item->setText(result.value(1).toString());
-            item->setSubtext(urlstr);
-            item->setIconPath(icon);
+            // Add actions
+            ActionList actions;
+            actions.push_back(makeProcAction("Open URL in Firefox",
+                                             QStringList({firefoxExecutable, urlstr})));
+            actions.push_back(makeProcAction("Open URL in new Firefox window",
+                                             QStringList({firefoxExecutable, "--new-window", urlstr})));
+            actions.insert(openWithFirefox ? actions.end() : actions.begin(),
+                           makeUrlAction("Open URL in your default browser", urlstr));
+            actions.push_back(makeClipAction("Copy url to clipboard", urlstr));
 
-            // Add severeal secondary index keywords
-            vector<IndexableItem::IndexString> indexStrings;
+            // Create item
             QUrl url(urlstr);
             QString host = url.host();
-            indexStrings.emplace_back(item->text(), UINT_MAX);
-            indexStrings.emplace_back(host.left(host.size()-url.topLevelDomain().size()), UINT_MAX/2);
-            indexStrings.emplace_back(result.value(2).toString(), UINT_MAX/4); // parent dirname
-            item->setIndexKeywords(move(indexStrings));
-
-            // Add actions
-            vector<shared_ptr<Action>> actions;
-            actions.push_back(make_shared<ProcAction>("Open URL in Firefox",
-                                                      QStringList({firefoxExecutable, urlstr})));
-            actions.push_back(make_shared<ProcAction>("Open URL in new Firefox window",
-                                                      QStringList({firefoxExecutable, "--new-window", urlstr})));
-            actions.insert(openWithFirefox ? actions.end() : actions.begin(),
-                           make_shared<UrlAction>("Open URL in your default browser", urlstr));
-            actions.push_back(make_shared<ClipAction>("Copy url to clipboard", urlstr));
-            item->setActions(move(actions));
+            shared_ptr<StandardIndexItem> item = makeStdIdxItem(result.value(0).toString(),
+                icon, result.value(1).toString(), urlstr,
+                IdxStrList {
+                    {result.value(1).toString(), UINT_MAX},
+                    {host.left(host.size()-url.topLevelDomain().size()), UINT_MAX/2},
+                    {result.value(2).toString(), UINT_MAX/4},
+                },
+                actions);
 
             bookmarks.push_back(move(item));
         }

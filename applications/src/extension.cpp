@@ -407,9 +407,6 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
         else
             subtext = commandLine;
 
-        // Finally we got everything, build the item
-        auto item = make_shared<StandardIndexItem>(id, icon_path, name, subtext);
-
         // Set index strings
         vector<IndexableItem::IndexString> indexStrings;
         indexStrings.emplace_back(name, UINT_MAX);
@@ -437,18 +434,16 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
         if (useNonLocalizedName && !nonLocalizedName.isEmpty())
             indexStrings.emplace_back(nonLocalizedName, UINT_MAX/2);
 
-        item->setIndexKeywords(move(indexStrings));
-
-
         /*
          * Build actions
          */
 
-        // Default and root action
+        ActionList actionList;
+
         if (term)
-            item->addAction(make_shared<ShTermAction>("Run", commandLine, ShTermAction::CloseOnExit, workingDir));
+            actionList.emplace_back(makeShTermAction("Run", commandLine, ShTermAction::CloseOnExit, workingDir));
         else
-            item->addAction(make_shared<ProcAction>("Run", QStringList() << "sh" << "-c" << commandLine, workingDir));
+            actionList.emplace_back(makeProcAction("Run", QStringList() << "sh" << "-c" << commandLine, workingDir));
 
         // Desktop Actions
         for (const QString &actionIdentifier: actionIdentifiers){
@@ -470,18 +465,13 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             // Unquote arguments and expand field codes
             commandLine = fieldCodesExpanded(entryIterator->second, icon, name, path);
             if (term)
-                item->addAction(make_shared<ShTermAction>(actionName, commandLine, ShTermAction::CloseOnExit, workingDir));
+                actionList.emplace_back(makeShTermAction(actionName, commandLine, ShTermAction::CloseOnExit, workingDir));
             else
-                item->addAction(make_shared<ProcAction>(actionName, QStringList() << "sh" << "-c" << commandLine, workingDir));
+                actionList.emplace_back(makeProcAction(actionName, QStringList() << "sh" << "-c" << commandLine, workingDir));
 
         }
 
-
-        /*
-         * Add item
-         */
-
-        desktopEntries.push_back(move(item));
+        desktopEntries.emplace_back(makeStdIdxItem(id, icon_path, name, subtext, indexStrings, actionList));
     }
     return desktopEntries;
 }

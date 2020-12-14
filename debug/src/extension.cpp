@@ -105,11 +105,10 @@ void Debug::Extension::handleQuery(Core::Query * query) const {
         if (!query->isValid())
             return;
 
-        auto item = std::make_shared<StandardItem>(QString::number(i));
-        item->setText(QString("Das Item #%1").arg(i));
-        item->setSubtext(QString("Toll, das Item #%1").arg(i));
-        item->setIconPath(":debug");
-        query->addMatch(std::move(item));
+        query->addMatch(makeStdItem(QString::number(i),
+                                    ":debug",
+                                    QString("Item #%1").arg(i),
+                                    QString("Wow, Item #%1").arg(i)));
     }
 }
 
