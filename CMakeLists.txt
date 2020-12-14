@@ -36,11 +36,6 @@ if (BUILD_CHROMEBOOKMARKS)
     add_subdirectory(chromium)
 endif()
 
-option(BUILD_EXTERNALEXTENSIONS "Build the extension" ON)
-if (BUILD_EXTERNALEXTENSIONS)
-    add_subdirectory(externalextensions)
-endif()
-
 option(BUILD_DEBUG "Build the extension" OFF)
 if (BUILD_DEBUG)
     add_subdirectory(debug)
