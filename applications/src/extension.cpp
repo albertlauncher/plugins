@@ -441,7 +441,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
         ActionList actionList;
 
         if (term)
-            actionList.emplace_back(makeShTermAction("Run", commandLine, ShTermAction::CloseOnExit, workingDir));
+            actionList.emplace_back(makeTermAction("Run", commandLine, TermAction::CloseOnExit, workingDir));
         else
             actionList.emplace_back(makeProcAction("Run", QStringList() << "sh" << "-c" << commandLine, workingDir));
 
@@ -465,7 +465,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             // Unquote arguments and expand field codes
             commandLine = fieldCodesExpanded(entryIterator->second, icon, name, path);
             if (term)
-                actionList.emplace_back(makeShTermAction(actionName, commandLine, ShTermAction::CloseOnExit, workingDir));
+                actionList.emplace_back(makeTermAction(actionName, commandLine, TermAction::CloseOnExit, workingDir));
             else
                 actionList.emplace_back(makeProcAction(actionName, QStringList() << "sh" << "-c" << commandLine, workingDir));
 
