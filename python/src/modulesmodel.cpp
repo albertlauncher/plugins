@@ -10,7 +10,7 @@
 
 
 namespace {
-enum class Section{Name, Trigger, Version, Author, Count};
+enum class Section{Name, Triggers, Version, Authors, Count};
 }
 
 
@@ -54,7 +54,7 @@ QVariant Python::ModulesModel::headerData(int section, Qt::Orientation orientati
             default: return QVariant();
             }
         }
-        case Section::Trigger:{
+        case Section::Triggers:{
             switch (role) {
             case Qt::DisplayRole: return "Trigger";
             case Qt::ToolTipRole: return "The term that triggers this extension.";
@@ -68,7 +68,7 @@ QVariant Python::ModulesModel::headerData(int section, Qt::Orientation orientati
             default: return QVariant();
             }
         }
-        case Section::Author:{
+        case Section::Authors:{
             switch (role) {
             case Qt::DisplayRole: return "Author";
             case Qt::ToolTipRole: return "The author of this extension.";
@@ -109,9 +109,9 @@ QVariant Python::ModulesModel::data(const QModelIndex &index, int role) const {
         const PythonModuleV1 *module = extension->modules()[static_cast<size_t>(index.row())].get();
         switch (static_cast<Section>(index.column())) {
         case Section::Name:  return module->name();
-        case Section::Trigger:  return module->trigger();
+        case Section::Triggers:  return module->triggers();
         case Section::Version:  return module->version();
-        case Section::Author:  return module->author();
+        case Section::Authors:  return module->authors().join(", ");
         default: return QVariant();
         }
     }
@@ -119,25 +119,38 @@ QVariant Python::ModulesModel::data(const QModelIndex &index, int role) const {
         QString toolTip;
         const PythonModuleV1 *module = extension->modules()[static_cast<size_t>(index.row())].get();
 
-        toolTip = QString("<p><b>Name:</b> %1</p>").arg(module->name().toHtmlEscaped());
+        toolTip = QString("<p><b>%1</b> <i>[%2]</i> by %3</p>").arg(module->name().toHtmlEscaped(), module->version(), module->authors().join(", "));
+        toolTip.append(QString("<p><b>Path:</b>%1</p>").arg(module->path().toHtmlEscaped()));
 
-        if (!module->dependencies().empty())
-            toolTip.append(QString("<p><b>Dependencies:</b> %1</p>").arg(module->dependencies().join(", ").toHtmlEscaped()));
+        switch (module->state()) {
+        case PythonModuleV1::State::InvalidMetadata:
+            toolTip.append(QString("<p><font color=\"#C06060\><b>Invalid metadata:</b>%1</font></p>").arg(QString(module->errorString().toHtmlEscaped()).replace("\n","<br>")));
+            break;
+        case PythonModuleV1::State::MissingDeps:
+            toolTip.append(QString("<p><font color=\"#C06060\"><b>Missing dependencies:</b>%1</font></p>").arg(QString(module->errorString().toHtmlEscaped()).replace("\n","<br>")));
+            break;
+        case PythonModuleV1::State::Unloaded:
+            toolTip.append("<p>This module is ready to be loaded.</p>");
+            break;
+        case PythonModuleV1::State::Loaded:
+            toolTip.append("<p><font color=\"#60C060\">This module is loaded.</font></p>");
+            break;
+        case PythonModuleV1::State::Error:
+            toolTip.append(QString("<p><font color=red><b>ERROR:</b>%1</font></p>").arg(QString(module->errorString().toHtmlEscaped()).replace("\n","<br>")));
+            break;
+        }
+
+        if (!module->executableDependecies().empty())
+            toolTip.append(QString("<p><b>Executable dependencies:</b> %1</p>").arg(module->executableDependecies().join(", ").toHtmlEscaped()));
+
+        if (!module->pythonDependecies().empty())
+            toolTip.append(QString("<p><b>Python dependencies:</b> %1</p>").arg(module->pythonDependecies().join(", ").toHtmlEscaped()));
+
 
         if (!module->description().isEmpty())
             toolTip.append(QString("<p><b>Description:</b> %1</p>").arg(QString(module->description().toHtmlEscaped()).replace("\n","<br>")));
 
-//        if (!module->version().isEmpty())
-//            toolTip.append(QString("\nVersion: %1").arg(module->version()));
-
-//        if (!module->author().isEmpty())
-//            toolTip.append(QString("\nAuthor: %1").arg(module->author()));
-
         toolTip.append(QString("<p><b>Path:</b>%1</p>").arg(module->path().toHtmlEscaped()));
-
-        if ((module->state() == PythonModuleV1::State::Error || module->state() == PythonModuleV1::State::InvalidMetadata)
-                && !module->errorString().isEmpty())
-            toolTip.append(QString("<p><font color=red><b>ERROR:</b>%1</font></p>").arg(QString(module->errorString().toHtmlEscaped()).replace("\n","<br>")));
 
         return QString("<html><head/><body>%1</body></html>").arg(toolTip);
     }
@@ -174,6 +187,9 @@ Qt::ItemFlags Python::ModulesModel::flags(const QModelIndex &index) const {
     if (!index.isValid() || index.row() >= static_cast<int>(extension->modules().size()) )
         return Qt::NoItemFlags;
 
-    return Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemNeverHasChildren;
+    if (extension->modules()[index.row()]->state() == PythonModuleV1::State::MissingDeps)
+        return Qt::ItemNeverHasChildren;
+    else
+        return Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemNeverHasChildren;
 }
 

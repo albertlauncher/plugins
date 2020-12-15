@@ -20,7 +20,7 @@ class PythonModuleV1 final
 
 public:
 
-    enum class State { InvalidMetadata, Unloaded, Loaded, Error };
+    enum class State { InvalidMetadata, MissingDeps, Unloaded, Loaded, Error };
 
     PythonModuleV1(const QString &path);
     ~PythonModuleV1();
@@ -30,17 +30,20 @@ public:
 
     void handleQuery(Core::Query * query) const;
 
-    const QString &path() const;
-    const QString &sourcePath() const;
-    const QString &id() const;
-    const QString &name() const;
-    const QString &author() const;
-    const QString &version() const;
-    const QString &description() const;
-    const QString &trigger() const;
-    const QStringList &dependencies() const;
-    const QString &errorString() const;
+    QString path() const;
+    QString sourcePath() const;
+
+    QString id() const;
+    QString name() const;
+    QString description() const;
+    QString version() const;
+    QStringList authors() const;
+    QStringList executableDependecies() const;
+    QStringList pythonDependecies() const;
+    QStringList triggers() const;
+
     State state() const;
+    QString errorString() const;
 
 private:
 
