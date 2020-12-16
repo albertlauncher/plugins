@@ -8,8 +8,6 @@
 #include <QMimeData>
 #include <QProcess>
 #include <QUrl>
-#include <pwd.h>
-#include <unistd.h>
 #include "albert/util/standardactions.h"
 #include "file.h"
 #include "xdg/iconlookup.h"
@@ -80,13 +78,8 @@ std::vector<std::shared_ptr<Action> > Files::File::buildFileActions(const QStrin
     actions.push_back(makeUrlAction("Reveal in file browser",
                                     QUrl::fromLocalFile(fileInfo.path())));
 
-    // Get the user shell (passwd must not be freed)
-    passwd *pwd = getpwuid(geteuid());
-    if (pwd == nullptr)
-        throw "Could not retrieve user shell";
-
     // Let standard shell handle flow control (syntax differs in shells, e.g. fish)
-    actions.push_back(makeTermAction("Open terminal here", QStringList{pwd->pw_shell},
+    actions.push_back(makeTermAction("Open terminal here", "", TermAction::DoNotClose,
                                      fileInfo.isDir() ? fileInfo.filePath() : fileInfo.path()));
 
     actions.push_back(makeFuncAction("Copy file to clipboard", [filePath](){
