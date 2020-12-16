@@ -10,7 +10,7 @@ The Python interpreter shuts down when the Python extension is unloaded. After t
 
 ## Development
 
-How the Python extension interacts with Python modules is defined in the versioned interface specifications. Devs interested in writing extensions should check the ([current interface specification (v0)](/python/v0/)).
+How the Python extension interacts with Python modules is defined in the versioned interface specifications. Devs interested in writing extensions should check the interface specification below. Note that interfaces may brake any time as long as albert is still in alpha stage (v0.*).
 
 ## Deployment
 
@@ -37,9 +37,9 @@ This example should get you started developing a Python module to extend the fun
 
 Before you code check the Pull Requests. Maybe somebody had your idea already. Finally dont hesitate to share your extension!
 
-## The Python interface specification v0
+## The Python interface specification (v0.4)
 
-To work as an albert extension Python modules have to have a particular interface described below. The Python extension also defines an embedded module `albertv0` (`albert` in future) which allows the Python modules to interact with the core. The interface specification and the built-in albert module are versioned together and form the versioned Python interface. The Python interface is _not_ final. They are prototypes and intended to be improved on user feedback.
+To work as an albert extension Python modules have to have a particular interface described below. The Python extension also defines an embedded module `albert`  which allows the Python modules to interact with the core. The interface specification and the built-in albert module are versioned together and form the versioned Python interface. The Python interface is _not_ final. They are prototypes and intended to be improved on user feedback.
 
 ### The Python module interface specification
 
@@ -47,23 +47,23 @@ This is the metadata albert reads from your module **before** loading it:
 
 Variable | Description
 --- | ---
-`__iid__`|**Mandatory variable** (string). This variable has to hold the interface version the extension implements.
-`__doc__`|The docstring of the module is used as description of the extension. This string will be displayed to the user.
-`__prettyname__`|Optional variable (string). This variable should hold the pretty name of the extension. This string will be displayed to the user.
-`__version__`|Optional variable (string). This variable should hold the version of the extension. This string will be displayed to the user. The versioning scheme should follow the [semantic versioning](http://semver.org).
-`__trigger__`|Optional variable (string). If this extension should be run exclusively, this variable has to hold the trigger that causes the extension to be executed.
-`__author__`|Optional variable (string). This variable should hold the name of the author of the extension.
-`__dependencies__`|Optional variable (list of strings). This string should contain any dependencies the extension needs to be used.
+`__doc__` | **Optional** _[string]_. The docstring of the module is used as description of the extension. This string will be displayed to the user.
+`__title__` | _**MANDATORY** [string]_. This variable should hold the pretty name of the extension. This string will be displayed to the user.
+`__version__` | _**MANDATORY** [string]_. The versioning scheme should be `[iid_major].[iid_minor].[verion]`. The interface id (`iid_*`) should match the pyton interface version. `version` is the extensions version.<br><br>**Note** that within each `iid_maj` the API is backwards compatible, but as long as albert is in alpha stage `iid_major` will be `0` and API may brake any time.
+`__triggers__` | **Optional** _[string, list of strings]_. If this extension should be run exclusively, this variable has to hold the trigger that causes the extension to be executed.
+`__authors__` | **Optional** _[string, list of strings]_. This variable should hold the name of the author of the extension.
+`__exec_deps__`| **Optional** _[string, list of strings]_. This string should contain any dependencies the extension needs to be used. The name of the dependency has to match the name of the executable in $PATH.
+`__py_deps__` | **Optional** _[string, list of strings]_. This string should contain any dependencies the extension needs to be used. The name of the dependency has to match the name of the package in the PyPI.
 
 These are the functions an albert extension must/may have:
 
 Function | Description
 --- | ---
-`handleQuery(Query)`|**Mandatory function**. This is the crucial part of a Python module. When the user types a query, this function is called with a query object representing the current query execution. This function should return a list of Item objects. See the Item class section below.
-`initialize()`|Optional function. This function is called when the extension is loaded. Although you could technically run your initialization code in global scope, it is recommended to initialize your extension in this function. If your extension fails to initialize you can raise exceptions here, which are displayed to the user.
-`finalize()`|Optional function. This function is called when the extension is unloaded.
+`handleQuery(Query)` | ***MANDATORY***. This is the crucial part of a Python module. When the user types a query, this function is called with a query object representing the current query execution. This function should return a list of Item objects. See the Item class section below.
+`initialize()` | **Optional**. This function is called when the extension is loaded. Although you could technically run your initialization code in global scope, it is recommended to initialize your extension in this function. If your extension fails to initialize you can raise exceptions here, which are displayed to the user.
+`finalize()` | **Optional**. This function is called when the extension is unloaded.
 
-### The built-in `albertv0` module
+### The built-in `albert` module
 
 The built-in albert module exposes several functions and classes for use with Albert.
 
@@ -71,11 +71,9 @@ The built-in albert module exposes several functions and classes for use with Al
 
 Function | Description
 --- | ---
-`debug(text)`|Log a debug message. Note that this is effectively a NOP in release builds.
-`info(text)`|Log an info message.
-`warning(text)`|Log a warning message.
-`critical(text)`|Log a critical message.
-`iconLookup(iconName)`|Perform xdg icon lookup and return a path. Empty if nothing found.
+`debug(obj)`<br>`info(obj)`<br>`warning(obj)`<br>`critical(obj)`|Log a message to stdout. Note that `debug` is effectively a NOP in release builds. Puts the passed object into `str()` for convenience. The messages are logged using the QLoggingCategory of the python extension and therefore are subject to filter rules.
+`iconLookup(iconName:str)`|Perform xdg icon lookup and return a path. Empty if nothing found.
+`iconLookup(iconName:list)`|Same as above. With multiple candidate names.
 `cacheLocation()`|Returns the writable cache location of the app. (E.g. $HOME/.cache/albert/ on Linux)
 `configLocation()`|Returns the writable config location of the app. (E.g. $HOME/.config/albert/ on Linux)
 `dataLocation()`|Returns the writable data location of the app. (E.g. $HOME/.local/share/albert/ on Linux)
@@ -91,14 +89,20 @@ Attribute | Description
 `trigger`|This is the trigger that has been used to start this extension.
 `isTriggered`|Indicates that this query has been triggered.
 `isValid`|This flag indicates if the query is valid. A query is valid untill the query manager cancels it. You should regularly check this flag and abort the query handling if the flag is `False` to release threads in the threadpool for the next query.
+`disableSort()`|Indicates that this query has been triggered.
 
 #### The `Item` class
 
 The base class for all items is `ItemBase`. This is a wrapper for the internal Item interface. You should not need this unless you need the `Urgency` enum. The `Urgency` enum is defined in the `ItemBase` namespace and has the following enum members: `Alert`, `Notification` and `Normal`. The `Item` class represents a result item. Objects of this class are intended to be returned by the handleQuery function. The signature of the constructor is as follows:
 
 ```python
-Item(id="", icon=":python_module", text="", subtext="",
-     completion="", urgency=Urgency.Normal, actions=[])
+Item(id="",
+     icon=":python_module",
+     text="",
+     subtext="",
+     actions=[],
+     completion=None:str,
+     urgency=Urgency.Normal)
 ```
 
 Note that the default icon path is `:python_module` which is an embedded resource icon depicting a Python script and the urgency defaults to normal.
@@ -108,8 +112,9 @@ Attribute | Description
 `id`|The identifier string of the item. It is used for ranking algorithms and should not be empty.
 `icon`|The path of the icon displayed in the item.
 `text`|The primary text of the item.
+`actions`|The actions of the item. See [action classes](#action-classes).
 `subtext`|The secondary text of the item. This text should have informative character.
-`completion`|The completion string of the item. This string will be used to replace the input line when the user hits the Tab key on an item. Note that the semantics may vary depending in the context. Often evaluate semantics are more appropriate.
+`completion`|The completion string of the item. This string will be used to replace the input line when the user hits the Tab key on an item. Note that the semantics may vary depending on the context.
 `urgency`|The urgency of the item. Note that the Urgency enum is defined in the ItemBase class. See the Urgency enum.
 `addAction(Action)`|Add an action to the item.
 
@@ -117,16 +122,51 @@ Attribute | Description
 
 The base class for all actions is `ActionBase`. This is a wrapper for the internal Action interface. You should not need it ( If you think you do I‘d be interested why. Please contact me in this case.). There is also a set of standard actions subclassing `ActionBase` which should cover virtually every usecases.
 
-Attribute | Description
---- | ---
-`ClipAction`|This class copies the given text to the clipboard on activation.
-`UrlAction`|This class opens the given URL with the systems default URL handler for the scheme of the URL on activation.
-`ProcAction`|This class executes the given commandline as a detached process on activation. Optionally the working directory of the process can be set.
-`TermAction`|This class executes the given commandline in the terminal set in the preferences. Optionally the working directory of the process can be set. The namespace of the `TermAction` also contains an enum `CloseBehavior` with the enum members `CloseOnSucces`, `CloseOnExit` and `DoNotClose`, which can be used to specify the desired behavior on command termination.
-`FuncAction`|This class is a general purpose action. On activation the callable is executed.
+##### ClipAction
+```python
+class albert.ClipAction(text="", clipboardText="")
+```
+This class copies the given text to the clipboard on activation.
+
+##### UrlAction
+```python
+class albert.UrlAction(text="", url="")
+```
+This class opens the given URL with the systems default URL handler for the scheme of the URL on activation.
+
+##### ProcAction
+```python
+class albert.ProcAction(text="", commandline=[], cwd=None:str)
+```
+This class executes the given commandline as a detached process on activation. Optionally the working directory of the process can be set.
+
+##### TermAction
+```python
+class albert.TermAction(text="", commandline=[], cwd=None:str)
+```
+This class executes the given commandline in the terminal set in the preferences. Optionally the working directory of the process can be set.
 
 ```python
-# Some action examples
+class albert.TermAction(text="", script="", behavior=CloseBehavior.CloseOnSuccess, cwd=None:str)
+```
+Convenience wrapper for shell scripts. Executes the script in the user shell in the terminal.
+
+`TermAction` contains the enum `CloseBehavior`, which can be used to specify the desired behavior on command termination. The values should be self-explanatory.
+```python
+class CloseBehavior(Enum):
+    CloseOnSuccess = 0
+    CloseOnExit = 1
+    DoNotClose = 2
+```
+
+##### FuncAction
+```python
+class albert.FuncAction(text="", callable:callable=lambda:pass)
+```
+This class is a general purpose action. On activation the callable is executed.
+
+#### Some examples
+```python
 ClipAction(text='This action description',
            clipboardText='This goes to the cb')
 
@@ -137,11 +177,14 @@ ProcAction(text='This action runs sth.',
            commandline=['jupyter', 'notebook'],
            cwd='notebooks/nb1')
 
-TermAction(text='This action runs sth in terminal.',
+TermAction(text='This action runs a command in the terminal.',
            commandline=['jupyter', 'notebook'],
-           cwd='~/notebooks/nb1',
-           shell=True,
-           behavior=TermAction.CloseBehavior.DoNotClose)
+           cwd='~/notebooks/nb1')
+
+TermAction(text='This action runs a script in the user shell in the terminal.',
+           script="echo Shell hun | tr 'h' 'f' | cat - ",
+           behavior=TermAction.CloseBehavior.DoNotClose
+           cwd='~')
 
 def do_sth():
      albert.info("Hello on stdout!")

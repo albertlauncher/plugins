@@ -120,11 +120,13 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
             .value("DoNotClose", TermAction::CloseBehavior::DoNotClose)
             .export_values()
             ;
-    pyTermAction.def(py::init(
-                [](QString text, list<QString> commandline, QString workdir) {
-                    return std::make_shared<TermAction>(move(text), QStringList::fromStdList(commandline), move(workdir));
-                }
-            ),
+    pyTermAction.def(
+            py::init<QString, QStringList, QString>(),
+//            py::init(
+//                [](QString text, list<QString> commandline, QString workdir) {
+//                    return std::make_shared<TermAction>(move(text), QStringList::fromStdList(commandline), move(workdir));
+//                }
+//            ),
             py::arg("text"),
             py::arg("commandline"),
             py::arg("cwd") = QString())
