@@ -122,11 +122,6 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
             ;
     pyTermAction.def(
             py::init<QString, QStringList, QString>(),
-//            py::init(
-//                [](QString text, list<QString> commandline, QString workdir) {
-//                    return std::make_shared<TermAction>(move(text), QStringList::fromStdList(commandline), move(workdir));
-//                }
-//            ),
             py::arg("text"),
             py::arg("commandline"),
             py::arg("cwd") = QString())
@@ -171,7 +166,7 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
     m.def("warning",  [](const py::object &obj){ WARN << py::str(obj).cast<QString>(); });
     m.def("critical", [](const py::object &obj){ CRIT << py::str(obj).cast<QString>(); });
 
-    m.def("iconLookup", static_cast<QString (*)(std::list<QString>,QString)>(&XDG::IconLookup::iconPath),
+    m.def("iconLookup", static_cast<QString (*)(QStringList,QString)>(&XDG::IconLookup::iconPath),
           py::arg("iconNames"), py::arg("themeName") = QString());
 
     m.def("iconLookup", static_cast<QString (*)(QString,QString)>(&XDG::IconLookup::iconPath),
@@ -267,7 +262,7 @@ QWidget *Python::Extension::widget(QWidget *parent) {
 void Python::Extension::handleQuery(Core::Query *query) const {
     if ( query->isTriggered() ) {
         for ( auto & module : d->modules ) {
-            if ( d->enabledModules.contains(module->id())
+            if ( d->enabledModules.contains(module->id())  // TODO is this really necessary
                  && module->state() == PythonModuleV1::State::Loaded
                  && module->triggers().contains(query->trigger()) ) {
                 module->handleQuery(query);

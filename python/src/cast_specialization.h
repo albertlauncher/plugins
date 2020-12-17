@@ -3,6 +3,8 @@
 #pragma once
 #include <pybind11/embed.h>
 #include <QString>
+#include <QStringList>
+#include <list>
 namespace py = pybind11;
 
 //  Python string <-> QString conversion
@@ -21,6 +23,21 @@ namespace detail {
         }
         static handle cast(const QString &s, return_value_policy policy, handle parent) {
             return str_caster_t::cast(s.toStdString(), policy, parent);
+        }
+    };
+
+    template <> struct type_caster<QStringList> {
+    PYBIND11_TYPE_CASTER(QStringList, _("QStringList"));
+    private:
+        using list_caster_t = make_caster<std::list<QString>>;
+        list_caster_t list_caster;
+    public:
+        bool load(handle src, bool convert) {
+            if (list_caster.load(src, convert)) { value = QStringList::fromStdList(list_caster); return true; }
+            return false;
+        }
+        static handle cast(const QStringList &s, return_value_policy policy, handle parent) {
+            return list_caster_t::cast(s.toStdList(), policy, parent);
         }
     };
 
