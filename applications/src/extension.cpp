@@ -490,9 +490,10 @@ Applications::Extension::Extension()
 
     qunsetenv("DESKTOP_AUTOSTART_ID");
 
-
-    d->indexedDirs = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation)
-                        << QStandardPaths::standardLocations(QStandardPaths::DesktopLocation);
+    d->indexedDirs = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
+    if (QStandardPaths::standardLocations(QStandardPaths::DesktopLocation)
+            != QStandardPaths::standardLocations(QStandardPaths::HomeLocation))  // Missing desktops fall back to ~
+        d->indexedDirs << QStandardPaths::standardLocations(QStandardPaths::DesktopLocation);
 
     // Load settings
     d->offlineIndex.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
