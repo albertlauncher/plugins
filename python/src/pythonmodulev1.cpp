@@ -259,7 +259,7 @@ void Python::PythonModuleV1::readMetadata() {
             py::module importlib = py::module::import("importlib");
             py::module importlib_util = py::module::import("importlib.util");
             for (const auto& dep : d->spec.pythonDependecies)
-                if (!importlib_util.attr("find_spec")(QString(dep)).is_none())
+                if (importlib_util.attr("find_spec")(QString(dep)).is_none())
                     d->errorString = QString("Could not locate python module '%1'.").arg(dep);
 
             if (!d->errorString.isNull()){
