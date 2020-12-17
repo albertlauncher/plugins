@@ -94,8 +94,7 @@ VirtualBox::Extension::Extension()
     if (NS_FAILED(rc))
         throw("Error, could not instantiate IVirtualBox object.");
 
-    d->iconPath = XDG::IconLookup::iconPath("virtualbox");
-    if ( d->iconPath.isNull() )
+    if ((d->iconPath = XDG::IconLookup::iconPath("virtualbox")).isNull())
         d->iconPath = ":vbox";
 }
 

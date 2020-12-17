@@ -116,13 +116,13 @@ public:
 
         vector<shared_ptr<StandardIndexItem>> bookmarkItems;
 
+        QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
+        icon = icon.isEmpty() ? ":favicon" : icon;
+
         // For each bookmarks file
         for (auto filePath : bookmarksFiles) {
             QFile f(filePath);
             if (f.open(QIODevice::ReadOnly)) {
-
-                QString icon = XDG::IconLookup::iconPath({"www", "web-browser", "emblem-web"});
-                icon = icon.isEmpty() ? ":favicon" : icon;
 
                 // Read the bookmarks
                 QJsonObject json = QJsonDocument::fromJson(f.readAll()).object();
