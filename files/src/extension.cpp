@@ -351,9 +351,14 @@ void Files::Extension::handleQuery(Core::Query * query) const {
                     if (icon.isEmpty())
                         icon = (mimetype.iconName() == "inode-directory") ? ":directory" : ":unknown";
 
-                    results.emplace_back(makeStdItem(fileInfo.filePath(),
-                                                     icon, fileName, fileInfo.filePath(),
-                                                     File::buildFileActions(fileInfo.filePath())), 0);
+                    results.emplace_back(makeStdItem(
+                        fileInfo.filePath(),
+                        icon,
+                        fileName,
+                        fileInfo.filePath(),
+                        File::buildFileActions(fileInfo.filePath()),
+                        fileInfo.filePath()
+                    ), 0);
                 }
             }
 
