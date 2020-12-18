@@ -113,12 +113,18 @@ QWidget *VirtualBox::Extension::widget(QWidget *parent) {
     if (d->widget.isNull()) {
         d->widget = new ConfigWidget(parent);
 
-        d->widget->ui.listWidget->clear();
-        for (auto &pair : d->virtualMachines)
-            d->widget->ui.listWidget->addItem(pair.first);
+        auto refresh = [this](){
+            d->reloadVirtualMachines();
+            d->widget->ui.listWidget->clear();
+            for (auto &pair : d->virtualMachines)
+                d->widget->ui.listWidget->addItem(pair.first);
+        };
+
+        refresh();
 
         connect(d->widget->ui.pushButton, &QPushButton::clicked,
-                this, [=](){d->reloadVirtualMachines();});
+                this, refresh);
+
     }
     return d->widget;
 }
