@@ -187,7 +187,8 @@ Qt::ItemFlags Python::ModulesModel::flags(const QModelIndex &index) const {
     if (!index.isValid() || index.row() >= static_cast<int>(extension->modules().size()) )
         return Qt::NoItemFlags;
 
-    if (extension->modules()[index.row()]->state() == PythonModuleV1::State::MissingDeps)
+    auto state = extension->modules()[index.row()]->state();
+    if (state == PythonModuleV1::State::InvalidMetadata || state == PythonModuleV1::State::MissingDeps)
         return Qt::ItemNeverHasChildren;
     else
         return Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemNeverHasChildren;

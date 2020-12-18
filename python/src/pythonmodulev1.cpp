@@ -251,7 +251,6 @@ void Python::PythonModuleV1::readMetadata() {
          */
 
         {
-
             for (const auto& exec : d->spec.executableDependecies)
                 if (QStandardPaths::findExecutable(exec).isNull())
                     d->errorString = QString("No '%1' in $PATH.").arg(exec);
@@ -295,14 +294,14 @@ Python::PythonModuleV1::~PythonModuleV1() {
 /** ***************************************************************************/
 void Python::PythonModuleV1::load(){
 
-    if (d->state == State::Loaded || d->state == State::InvalidMetadata)
+    if (d->state != State::Loaded)
         return;
 
     py::gil_scoped_acquire acquire;
 
     try
     {
-        DEBG << "Loading" << d->path;
+        INFO << "Loading" << d->path;
 
         py::module importlib = py::module::import("importlib");
         py::module importli_util = py::module::import("importlib.util");
@@ -331,12 +330,12 @@ void Python::PythonModuleV1::load(){
 /** ***************************************************************************/
 void Python::PythonModuleV1::unload(){
 
-    if (d->state == State::Unloaded)
+    if (!(d->state == State::Unloaded || d->state == State::Unloaded))
         return;
 
     if (d->state == State::Loaded) {
 
-        DEBG << "Unloading" << d->path;
+        INFO << "Unloading" << d->path;
 
         py::gil_scoped_acquire acquire;
 
