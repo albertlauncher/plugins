@@ -294,7 +294,7 @@ Python::PythonModuleV1::~PythonModuleV1() {
 /** ***************************************************************************/
 void Python::PythonModuleV1::load(){
 
-    if (d->state != State::Loaded)
+    if (d->state == State::Loaded)
         return;
 
     py::gil_scoped_acquire acquire;

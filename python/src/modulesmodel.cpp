@@ -101,6 +101,8 @@ QVariant Python::ModulesModel::data(const QModelIndex &index, int role) const {
             case PythonModuleV1::State::InvalidMetadata:
             case PythonModuleV1::State::Error:
                 return QIcon(":plugin_error");
+            case PythonModuleV1::State::MissingDeps:
+                return QIcon();
             }
         }
         return QVariant();
