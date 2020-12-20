@@ -31,42 +31,31 @@ Item {
 
         Image {
             id: listItemIcon
-            asynchronous: true
             source: {
                 var path = itemDecorationRole
                 return ( path[0] === ":" ) ? "qrc"+path : path
             }
+            visible: false
+            asynchronous: true
             width: listItem.iconSize
             height: listItem.iconSize
             sourceSize.width: listItem.iconSize*2
             sourceSize.height: listItem.iconSize*2
             cache: true
             fillMode: Image.PreserveAspectFit
-            visible: false
         }
         InnerShadow  {
             id: sunkenListItemIcon
-            width: source.width
-            height: source.height
+            source: listItemIcon
+            anchors.fill: listItemIcon
             horizontalOffset: listItem.ListView.isCurrentItem ? 0 : 2
             verticalOffset: listItem.ListView.isCurrentItem ? 0 : 2
-            radius: listItem.ListView.isCurrentItem ? 0 : 4
+            radius: listItem.ListView.isCurrentItem ? 0 : 6
             samples: 8
-            color: "#80000000"
-            visible: false
+            color: "#f0000000"
             Behavior on verticalOffset { NumberAnimation{ duration: animationDuration } }
             Behavior on horizontalOffset { NumberAnimation{ duration: animationDuration } }
             Behavior on radius { NumberAnimation{ duration: animationDuration } }
-            source: listItemIcon
-        }
-        Desaturate {
-            id: desaturatedSunkenListItemIcon
-            anchors.centerIn: parent
-            width: source.width
-            height: source.height
-            desaturation: listItem.ListView.isCurrentItem ? 0 : 0.25
-            Behavior on desaturation { NumberAnimation{ duration: animationDuration } }
-            source: sunkenListItemIcon
         }
     }
 
