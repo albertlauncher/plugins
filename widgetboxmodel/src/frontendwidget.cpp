@@ -545,7 +545,7 @@ bool WidgetBoxModel::FrontendWidget::eventFilter(QObject *, QEvent *event) {
             if ( d->ui.resultsList->currentIndex().isValid() ){
                 QString completion = d->ui.resultsList->model()->data(d->ui.resultsList->currentIndex(),
                                                                       Core::ItemRoles::CompletionRole).toString();
-                if (!completion.isNull() && completion.isEmpty())
+                if (!(completion.isNull() && completion.isEmpty()))
                     d->ui.inputLine->setText(completion);
             }
             return true;
