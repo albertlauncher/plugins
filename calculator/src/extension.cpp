@@ -113,7 +113,8 @@ void Calculator::Extension::handleQuery(Core::Query * query) const {
         ActionList{
             makeClipAction("Copy result to clipboard", result),
             makeClipAction("Copy equation to clipboard", QString("%1 = %2").arg(query->string(), result))
-        }
+        },
+        result
     ), UINT_MAX);
 }
 
