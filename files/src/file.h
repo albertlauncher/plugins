@@ -5,11 +5,11 @@
 #include <QMimeType>
 #include <map>
 #include <vector>
-#include "albert/indexable.h"
+#include "albert/indexitem.h"
 
 namespace Files {
 
-class File : public Core::IndexableItem
+class File : public Core::IndexItem
 {
 public:
 
@@ -18,7 +18,7 @@ public:
     QString subtext() const override;
     QString completion() const override;
     QString iconPath() const override;
-    std::vector<Core::IndexableItem::IndexString> indexStrings() const override;
+    std::vector<Core::IndexItem::IndexString> indexStrings() const override;
     std::vector<std::shared_ptr<Core::Action>> actions() override;
 
     static std::vector<std::shared_ptr<Core::Action>> buildFileActions(const QString &filePath);

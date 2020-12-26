@@ -258,10 +258,10 @@ void Chromium::Extension::setFuzzy(bool b) {
 /** ***************************************************************************/
 void Chromium::Extension::handleQuery(Core::Query * query) const {
 
-    const vector<shared_ptr<Core::IndexableItem>> &indexables = d->offlineIndex.search(query->string());
+    const vector<shared_ptr<Core::IndexItem>> &indexables = d->offlineIndex.search(query->string());
 
     vector<pair<shared_ptr<Core::Item>,uint>> results;
-    for (const shared_ptr<Core::IndexableItem> &item : indexables)
+    for (const shared_ptr<Core::IndexItem> &item : indexables)
         results.emplace_back(std::static_pointer_cast<Core::StandardIndexItem>(item), 0);
 
     query->addMatches(std::make_move_iterator(results.begin()),

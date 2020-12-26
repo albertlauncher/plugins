@@ -116,8 +116,8 @@ std::vector<std::shared_ptr<Action> > Files::File::buildFileActions(const QStrin
 }
 
 /** ***************************************************************************/
-vector<IndexableItem::IndexString> Files::File::indexStrings() const {
-    vector<IndexableItem::IndexString> res;
+vector<IndexItem::IndexString> Files::File::indexStrings() const {
+    vector<IndexItem::IndexString> res;
     res.emplace_back(name(), UINT_MAX);
     // TODO ADD PATH
     return res;
