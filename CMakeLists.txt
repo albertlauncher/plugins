@@ -71,6 +71,11 @@ if (BUILD_SNIPPETS)
     add_subdirectory(snippets)
 endif()
 
+option(BUILD_SNIPPETS "Build the extension" ON)
+if (BUILD_SNIPPETS)
+    add_subdirectory(spotify)
+endif()
+
 option(BUILD_SSH "Build the extension" ON)
 if (BUILD_SSH)
     add_subdirectory(ssh)
