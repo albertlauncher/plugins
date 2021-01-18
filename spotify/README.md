@@ -10,7 +10,7 @@ functionality of extension, Spotify premium is required.
 
 ## Web API connection
 
-#### 1. Get your Client ID and Client Secret
+### 1. Get your Client ID and Client Secret
 
 Visit: https://developer.spotify.com/dashboard/applications and log
 in with your Spotify account.
@@ -27,7 +27,7 @@ Both are 32-character strings.
 Click on **Edit settings** and add new **Redirect URI**. It doesn't
 have to exist. In this example I will use: `https://nonexistent-uri.net/`
 
-#### 2. Get `code` parameter
+### 2. Get `code` parameter
 
 Open your browser and visit: https://accounts.spotify.com/cs/authorize?response_type=code&client_id=[[client_id]]&scope=user-modify-playback-state%20user-read-playback-state&redirect_uri=https://nonexistent-uri.net/
 
@@ -35,12 +35,12 @@ You have to replace `[[client_id]]` with your actual **Client ID**.
 
 When you press enter, you will get redirected to `https://nonexistent-uri.net/` with `code` in URL parameters. Copy that string and note it down for next usage.
 
-#### 3. Get your Refresh Token
+### 3. Get your Refresh Token
 
 I will use `curl` for this last step. Replace or export all variables and run this command:
 
 ```
-curl -d client_id=$CLIENT_ID -d client_secret=$CLIENT_SECRET -d grant_type=authorization_code -d code=$CODE -d redirect_uri=$REDIRECT_URI https://accounts.spotify.com/api/token
+curl -d client_id=$CLIENT_ID -d client_secret=$CLIENT_SECRET -d grant_type=authorization_code -d code=$CODE -d redirect_uri=https://nonexistent-uri.net/ https://accounts.spotify.com/api/token
 ```
 
 Use your Client ID, Client Secret and `code` from previous step.
