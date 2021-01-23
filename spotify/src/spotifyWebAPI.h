@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QString>
 #include <QObject>
+#include <QReadWriteLock>
 #include <QtNetwork/QNetworkAccessManager>
 #include "track.h"
 #include "device.h"
@@ -64,6 +65,7 @@ private:
     QDateTime expirationTime_;
     QJsonArray itemResults_;
     QJsonArray devicesResult_;
+    QReadWriteLock fileLock_;
 
     static QJsonObject answerToJson_(const QString& answer);
 

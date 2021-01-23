@@ -37,7 +37,6 @@ public:
     QString clientId;
     QString clientSecret;
     QString refreshToken;
-    QString accessToken;
     SpotifyWebAPI *api = new SpotifyWebAPI();
 };
 
@@ -200,10 +199,7 @@ void Spotify::Extension::handleQuery(Core::Query * query) const {
     for (const auto& track : results) {
         auto filename = QString("%1/%2.jpeg").arg(COVERS_DIR_PATH, track.albumId);
 
-        QFileInfo fileInfo(filename);
-        if (!fileInfo.exists()) {
-            d->api->downloadImage(track.imageUrl, filename);
-        }
+        d->api->downloadImage(track.imageUrl, filename);
 
         auto result = makeStdItem(
                 track.id,
@@ -242,4 +238,3 @@ void Spotify::Extension::handleQuery(Core::Query * query) const {
         query->addMatch(result, UINT_MAX);
     }
 }
-

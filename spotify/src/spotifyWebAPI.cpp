@@ -1,12 +1,13 @@
 // Copyright (C) 2020-2021 Ivo Šmerek
 
+#include <QFileInfo>
+#include <QtCore/QEventLoop>
+#include <QtCore/QFile>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
-#include <QtNetwork/QNetworkReply>
-#include <QtCore/QEventLoop>
-#include <QtCore/QFile>
 #include <QtCore/QSaveFile>
+#include <QtNetwork/QNetworkReply>
 #include <utility>
 #include "spotifyWebAPI.h"
 
@@ -147,6 +148,14 @@ namespace Spotify {
     }
 
     void SpotifyWebAPI::downloadImage(const QString& imageUrl, const QString& imageFilePath) {
+        fileLock_.lockForWrite();
+
+        QFileInfo fileInfo(imageFilePath);
+        if (fileInfo.exists()) {
+            fileLock_.unlock();
+            return;
+        }
+
         QNetworkRequest request(imageUrl);
         QNetworkReply *reply = manager->get(request);
 
@@ -161,6 +170,7 @@ namespace Spotify {
         QEventLoop loop;
         connect(this, SIGNAL(imageReceived()), &loop, SLOT(quit()));
         loop.exec();
+        fileLock_.unlock();
     }
 
     void SpotifyWebAPI::addItemToQueue(const QString& uri) {
@@ -208,7 +218,7 @@ namespace Spotify {
     }
 
     void SpotifyWebAPI::play(const QString& uri, QString device) {
-        if (device.isEmpty()) {
+        if (device.isEmpty() && activeDevice) {
             device = activeDevice->id;
         }
         auto *url = new QUrl(PLAY_URL.arg(device));
