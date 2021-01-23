@@ -21,7 +21,7 @@ public:
 
     QNetworkAccessManager *manager;
     QString lastErrorMessage;
-    Device *activeDevice;
+    Device *activeDevice = nullptr;
 
     // Set Web API credentials. Use testConnection for check.
     void setConnection(QString clientId, QString clientSecret, QString refreshToken);

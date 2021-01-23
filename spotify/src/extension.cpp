@@ -37,6 +37,8 @@ public:
     QString clientId;
     QString clientSecret;
     QString refreshToken;
+    bool explicitState;
+    int numberOfResults;
     SpotifyWebAPI *api = new SpotifyWebAPI();
 };
 
@@ -52,6 +54,8 @@ Spotify::Extension::Extension()
     d->clientId = settings().value("client_id").toString();
     d->clientSecret = settings().value("client_secret").toString();
     d->refreshToken = settings().value("refresh_token").toString();
+    d->explicitState = settings().value("explicit_state").toBool();
+    d->numberOfResults = settings().value("number_or_results").toInt();
 
 
     // You can throw in the constructor if something fatal happened
@@ -93,6 +97,18 @@ QWidget *Spotify::Extension::widget(QWidget *parent) {
     connect(d->widget->ui.lineEdit_refresh_token, &QLineEdit::textEdited, [this](const QString &s){
         d->refreshToken = s;
         settings().setValue("refresh_token", s);
+    });
+
+    d->widget->ui.checkBox_explicit->setCheckState(d->explicitState ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+    connect(d->widget->ui.checkBox_explicit, &QCheckBox::stateChanged, [this](const int s){
+        d->explicitState = s;
+        settings().setValue("explicit_state", s);
+    });
+
+    d->widget->ui.spinBox_number_of_results->setValue(d->numberOfResults);
+    connect(d->widget->ui.spinBox_number_of_results, &QSpinBox::textChanged, [this](const QString &s){
+        d->numberOfResults = s.toInt();
+        settings().setValue("number_or_results", s);
     });
 
     // Bind "Test connection" button
@@ -193,10 +209,14 @@ void Spotify::Extension::handleQuery(Core::Query * query) const {
         d->api->refreshToken();
     }
 
-    auto results = d->api->searchTrack(query->string(), "5");
+    auto results = d->api->searchTrack(query->string(), QString("%1").arg(d->numberOfResults));
     auto devices = d->api->getDevices();
 
     for (const auto& track : results) {
+        if (track.isExplicit && !d->explicitState) {
+            continue;
+        }
+
         auto filename = QString("%1/%2.jpeg").arg(COVERS_DIR_PATH, track.albumId);
 
         d->api->downloadImage(track.imageUrl, filename);
