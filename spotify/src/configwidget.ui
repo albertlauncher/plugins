@@ -103,13 +103,13 @@
    </item>
    <item>
     <layout class="QGridLayout" name="gridLayout_3">
-     <item row="0" column="1">
-      <widget class="QCheckBox" name="checkBox_explicit">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_client_secret_2">
        <property name="text">
-        <string/>
+        <string>Allow explicit content:</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
      </item>
@@ -120,6 +120,16 @@
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QCheckBox" name="checkBox_explicit">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string/>
        </property>
       </widget>
      </item>
@@ -153,13 +163,20 @@
        </item>
       </layout>
      </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="label_client_secret_2">
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_4">
        <property name="text">
-        <string>Allow explicit content:</string>
+        <string>Spotify executable:</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="lineEdit_spotify_executable">
+       <property name="text">
+        <string>spotify</string>
        </property>
       </widget>
      </item>

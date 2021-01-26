@@ -1,17 +1,13 @@
 // Copyright (C) 2014-2021 Manuel Schneider, Ivo Šmerek
 
 #include <QPointer>
-#include <QSettings>
 #include <stdexcept>
 #include <QMessageBox>
-#include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
-#include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkReply>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
-#include <QtCore/QEventLoop>
 #include <albert/util/standardactions.h>
 #include "albert/util/standarditem.h"
 #include "configwidget.h"
@@ -37,8 +33,9 @@ public:
     QString clientId;
     QString clientSecret;
     QString refreshToken;
-    bool explicitState;
-    int numberOfResults;
+    QString spotifyExecutable;
+    bool explicitState = true;
+    int numberOfResults = 5;
     SpotifyWebAPI *api = new SpotifyWebAPI();
 };
 
@@ -56,14 +53,15 @@ Spotify::Extension::Extension()
     d->refreshToken = settings().value("refresh_token").toString();
     d->explicitState = settings().value("explicit_state").toBool();
     d->numberOfResults = settings().value("number_or_results").toInt();
+    d->spotifyExecutable = settings().value("spotify_executable").toString();
 
+    if (d->numberOfResults == 0) {
+        d->numberOfResults = 5;
+    }
 
-    // You can throw in the constructor if something fatal happened
-    // throw std::runtime_error( "Description of error." );
-    // throw std::string( "Description of error." );
-    // throw QString( "Description of error." );
-    // throw "Description of error.";
-    // throw; // Whatever prints "unknown error"
+    if (d->spotifyExecutable.isEmpty()) {
+        d->spotifyExecutable = "spotify";
+    }
 }
 
 
@@ -111,6 +109,12 @@ QWidget *Spotify::Extension::widget(QWidget *parent) {
         settings().setValue("number_or_results", s);
     });
 
+    d->widget->ui.lineEdit_spotify_executable->setText(d->spotifyExecutable);
+    connect(d->widget->ui.lineEdit_spotify_executable, &QLineEdit::textEdited, [this](const QString &s){
+        d->spotifyExecutable = s;
+        settings().setValue("spotify_executable", s);
+    });
+
     // Bind "Test connection" button
 
     connect(d->widget->ui.pushButton_test_connection, &QPushButton::clicked, [this](){
@@ -120,8 +124,11 @@ QWidget *Spotify::Extension::widget(QWidget *parent) {
 
         QString message = "Everything is set up correctly.";
         if (!status) {
-            message = QString("Spotify Web API returns: \"%1\"\nPlease check all input fields.")
+            message = QString("Spotify Web API returns: \"%1\"\nPlease, check all input fields.")
                     .arg(d->api->lastErrorMessage);
+            if (d->api->lastErrorMessage.isEmpty()) {
+                message = "Can't get an answer from the server.\nPlease, check your internet connection.";
+            }
         }
 
         auto messageBox = new QMessageBox();
@@ -140,8 +147,8 @@ QWidget *Spotify::Extension::widget(QWidget *parent) {
 void Spotify::Extension::setupSession() {
     d->api->setConnection(d->clientId, d->clientSecret, d->refreshToken);
 
-    if(!QDir("/tmp/albert-spotify").exists()) {
-        QDir().mkdir("/tmp/albert-spotify-covers");
+    if(!QDir(COVERS_DIR_PATH).exists()) {
+        QDir().mkdir(COVERS_DIR_PATH);
     }
 }
 
@@ -156,86 +163,88 @@ void Spotify::Extension::teardownSession() {
 
 /** ***************************************************************************/
 void Spotify::Extension::handleQuery(Core::Query * query) const {
-
-    /*
-     * Things change so often I wont maintain this tutorial here. Check the relevant headers.
-     *
-     * - core/extension.h
-     * - core/queryhandler.h
-     * - core/query.h
-     * - core/item.h
-     * - core/action.h
-     * - util/standarditem.h
-     * - util/offlineindex.h
-     * - util/standardindexitem.h
-     *
-     * Use
-     *
-     *   query->addMatch(my_item)
-     *
-     * to add matches. If you created a throw away item MOVE it instead of
-     * copying e.g.:
-     *
-     *   query->addMatch(std::move(my_tmp_item))
-     *
-     * The relevance factor is optional. (Defaults to 0) its a usigned integer depicting the
-     * relevance of the item 0 mean not relevant UINT_MAX is totally relevant (exact match).
-     * E.g. it the query is "it" and your items name is "item"
-     *
-     *   my_item.name().startswith(query->string)
-     *
-     * is a naive match criterion and
-     *
-     *   UINT_MAX / ( query.searchterm().size() / my_item.name().size() )
-     *
-     * a naive match factor.
-     *
-     * If you have a lot of items use the iterator versions addMatches, e.g. like that
-     *
-     *   query->addMatches(my_items.begin(), my_items.end());
-     *
-     * If the items in the container are temporary object move them to avoid uneccesary
-     * reference counting:
-     *
-     *   query->addMatches(std::make_move_iterator(my_tmp_items.begin()),
-     *                     std::make_move_iterator(my_tmp_items.end()));
-     */
-
     if (query->string().trimmed().isEmpty())
         return;
 
-    if (d->api->expired()) {
-        DEBG << "Token expired. Refreshing";
-        d->api->refreshToken();
+    // If there is no internet connection, make one alerting item to let the user know.
+    if (!d->api->testInternetConnection()) {
+        DEBG << "No internet connection!";
+
+        auto result = makeStdItem("no-internet", "", "Can't get an answer from the server.");
+        result->setSubtext("Please, check your internet connection.");
+
+        query->addMatch(move(result), UINT_MAX);
+        return;
     }
 
-    auto results = d->api->searchTrack(query->string(), QString("%1").arg(d->numberOfResults));
-    auto devices = d->api->getDevices();
+    // If the access token expires, try to refresh it or alert the user what is wrong.
+    if (d->api->expired()) {
+        DEBG << "Token expired. Refreshing";
+        if (!d->api->refreshToken()) {
+            auto result = makeStdItem("wrong-credentials", "", "Wrong credentials");
+            result->setSubtext(d->api->lastErrorMessage + ". Please, check extension settings.");
+
+            query->addMatch(move(result), UINT_MAX);
+            return;
+        }
+    }
+
+    // Search for tracks on Spotify using the query.
+    auto results = d->api->searchTracks(query->string(), d->numberOfResults);
+
+    // Get available Spotify devices.
+    auto *devices = d->api->getDevices();
 
     for (const auto& track : results) {
+        // Deal with explicit tracks according to user setting.
         if (track.isExplicit && !d->explicitState) {
             continue;
         }
 
         auto filename = QString("%1/%2.jpeg").arg(COVERS_DIR_PATH, track.albumId);
 
+        // Download cover image of the album.
         d->api->downloadImage(track.imageUrl, filename);
 
-        auto result = makeStdItem(
-                track.id,
-                filename,
-                QString("%1").arg(track.name),
-                QString("%1 (%2)").arg(track.albumName, track.artists),
-                ActionList { },
-                "none",
-                Item::Urgency::Alert
-        );
+        // Create a standard item with a track name in title and album with artists in subtext.
+        auto result = makeStdItem(track.id, filename, track.name);
+        result->setSubtext(QString("%1 (%2)").arg(track.albumName, track.artists));
 
-        auto playTrack = makeFuncAction("Play on active Spotify device", [this, track]()
+        // First default action with intelligent device chooser.
+        auto playTrack = makeFuncAction("Play this track on Spotify", [this, track, devices]()
         {
-            d->api->play(track.uri);
+            // Check if the last-used device is still available.
+            bool lastDeviceConfirmed = false;
+            QString lastDevice = settings().value("last_device").toString();
+            if (!lastDevice.isEmpty() || !devices->isEmpty()) {
+                for (const auto& device : *devices) {
+                    if (device.id == lastDevice) {
+                        lastDeviceConfirmed = true;
+                        break;
+                    }
+                }
+            }
+
+            if (d->api->activeDevice) {
+                // If available, use an active device and play the track.
+                // TODO: Maybe let user choose in setting if prefer active or last-used device.
+                d->api->play(track.uri, d->api->activeDevice->id);
+                settings().setValue("last_device", d->api->activeDevice->id);
+            } else if (lastDeviceConfirmed) {
+                // If there is not an active device, use last-used one.
+                d->api->play(track.uri, lastDevice);
+            } else if (!devices->isEmpty()) {
+                // Use the first available device.
+                d->api->play(track.uri, devices[0][0].id);
+                settings().setValue("last_device", devices[0][0].id);
+            } else {
+                // Run local Spotify client, wait until it loads, and play the track.
+                makeProcAction("Run Spotify", QStringList() << d->spotifyExecutable)->activate();
+                d->api->waitForDeviceAndPlay(track.uri, 10);
+            }
         });
 
+        // Action to add track to the Spotify queue.
         auto addToQueue = makeFuncAction("Add to the Spotify queue", [this, track]()
         {
             d->api->addItemToQueue(track.uri);
@@ -244,17 +253,23 @@ void Spotify::Extension::handleQuery(Core::Query * query) const {
         result->addAction(playTrack);
         result->addAction(addToQueue);
 
-        for (auto device : devices) {
+        // For each device except active create action to transfer Spotify playback to this device.
+        for (const auto& device : *devices) {
             if (device.isActive) continue;
 
             auto action = makeFuncAction(QString("Play on %1 (%2)").arg(device.type, device.name), [this, track, device]()
             {
                 d->api->play(track.uri, device.id);
+                settings().setValue("last_device", device.id);
             });
 
             result->addAction(action);
         }
 
-        query->addMatch(result, UINT_MAX);
+        query->addMatch(move(result), UINT_MAX);
     }
+}
+
+QueryHandler::ExecutionType Spotify::Extension::executionType() const {
+    return QueryHandler::ExecutionType::Realtime;
 }

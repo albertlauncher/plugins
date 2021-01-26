@@ -13,6 +13,6 @@ namespace Spotify {
         QString id;
         QString name;
         QString type;
-        bool isActive;
+        bool isActive = false;
     };
 }

@@ -15,6 +15,31 @@ namespace Spotify {
 class SpotifyWebAPI : public QObject {
 Q_OBJECT
 
+private:
+    QString TOKEN_URL = "https://accounts.spotify.com/api/token";
+    QString SEARCH_URL = "https://api.spotify.com/v1/search?q=%1&type=%2&limit=%3";
+    QString PLAY_URL = "https://api.spotify.com/v1/me/player/play?device_id=%1";
+    QString ADD_ITEM_URL = "https://api.spotify.com/v1/me/player/queue?uri=%1";
+    QString DEVICES_URL = "https://api.spotify.com/v1/me/player/devices";
+
+    QString clientId_;
+    QString clientSecret_;
+    QString refreshToken_;
+    QString accessToken_;
+    QDateTime expirationTime_;
+    QReadWriteLock fileLock_;
+
+    // Helper function for parsing JSON from HTTP answer.
+    static QJsonObject answerToJson_(const QString& answer);
+
+    // Helper function for waiting for signal.
+    static void waitForSignal_(const QObject *sender, const char *signal);
+
+    // Helper function for waiting and signalling.
+    QString waitForDevice_(QString uri, int timeout);
+
+    QNetworkRequest buildRequest_(const QUrl& url);
+
 public:
     SpotifyWebAPI();
     ~SpotifyWebAPI() override;
@@ -23,10 +48,13 @@ public:
     QString lastErrorMessage;
     Device *activeDevice = nullptr;
 
+    // Tests internet connection to Spotify servers.
+    bool testInternetConnection();
+
     // Set Web API credentials. Use testConnection for check.
     void setConnection(QString clientId, QString clientSecret, QString refreshToken);
 
-    // This method will try to refresh the access_token and return true if successful.
+    // Try to refresh the access_token and return true if successful.
     bool refreshToken();
 
     // Does the same as refreshToken. Is here for better code readability.
@@ -37,46 +65,30 @@ public:
     bool expired();
 
     // Returns QVector with tracks matching the search query.
-    QVector<Track> searchTrack(const QString& query, const QString& limit);
+    QVector<Track> searchTracks(const QString& query, int limit);
 
-    // This method downloads image from imageUrl to imageFilePath.
+    // Downloads image from imageUrl to imageFilePath.
     void downloadImage(const QString& imageUrl, const QString& imageFilePath);
 
+    // Adds track to Spotify listening queue.
     void addItemToQueue(const QString& uri);
 
-    void skipToNextTrack();
+    // Asynchronously plays the song as soon as an available device appears.
+    // Gives up after the timeout.
+    QString waitForDeviceAndPlay(const QString& uri, int timeout);
 
-    void play(const QString& uri, QString device = "");
+    // Returns list of users available Spotify devices.
+    QVector<Device> *getDevices();
 
-    QVector<Device> getDevices();
-
-private:
-    QString TOKEN_URL = "https://accounts.spotify.com/api/token";
-    QString SEARCH_URL = "https://api.spotify.com/v1/search?q=%1&type=%2&limit=%3";
-    QString PLAY_URL = "https://api.spotify.com/v1/me/player/play?device_id=%1";
-    QString ADD_ITEM_URL = "https://api.spotify.com/v1/me/player/queue?uri=%1";
-    QString NEXT_TRACK_URL = "https://api.spotify.com/v1/me/player/next";
-    QString DEVICES_URL = "https://api.spotify.com/v1/me/player/devices";
-
-    QString clientId_;
-    QString clientSecret_;
-    QString refreshToken_;
-    QString accessToken_;
-    QDateTime expirationTime_;
-    QJsonArray itemResults_;
-    QJsonArray devicesResult_;
-    QReadWriteLock fileLock_;
-
-    static QJsonObject answerToJson_(const QString& answer);
+    // Returns id of first available Spotify device.
+    QString getFirstDeviceId();
 
 signals:
-    void tokenRefreshed();
-    void tokenReplyReceived();
-    void searchReplyReceived();
-    void imageReceived();
-    void addedToQueue();
-    void skippedTrack();
-    void played();
+    void deviceReady(QString, QString);
+
+public slots:
+    // Plays track on Spotify device.
+    void play(const QString& uri, QString device = "");
 };
 
 }

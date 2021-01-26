@@ -9,6 +9,7 @@
 #include <QtCore/QSaveFile>
 #include <QtNetwork/QNetworkReply>
 #include <utility>
+#include <QtConcurrent/QtConcurrent>
 #include "spotifyWebAPI.h"
 
 namespace Spotify {
@@ -25,15 +26,66 @@ namespace Spotify {
         return jsonObject;
     }
 
+    void SpotifyWebAPI::waitForSignal_(const QObject *sender, const char *signal) {
+        QEventLoop loop;
+        connect(sender, signal, &loop, SLOT(quit()));
+        loop.exec();
+    }
+
+    QString SpotifyWebAPI::waitForDevice_(QString uri, int timeout) {
+        int counter = 0;
+        while (counter < timeout) {
+            QThread::sleep(1);
+            auto device = getFirstDeviceId();
+            if (!device.isEmpty()) {
+                emit deviceReady(std::move(uri), device);
+                qDebug() << "Using new device";
+                return device;
+            }
+            counter++;
+        }
+
+        return "";
+    }
+
+    QNetworkRequest SpotifyWebAPI::buildRequest_(const QUrl& url) {
+        auto request = new QNetworkRequest(url);
+        auto header = QString("Bearer ") + accessToken_;
+        request->setRawHeader(QByteArray("Authorization"), header.toUtf8());
+        request->setRawHeader(QByteArray("Accept"), "application/json");
+        request->setHeader(QNetworkRequest::ContentTypeHeader, QVariant(QString("application/json")));
+        return *request;
+    }
+
+    bool SpotifyWebAPI::testInternetConnection() {
+        try {
+            auto *url = new QUrl(TOKEN_URL);
+            QNetworkRequest request(*url);
+
+            // New QNetworkAccessManager is necessary. If global manager loses connection in runtime,
+            // sending requests through it causes QDBusConnection warnings followed by freeze.
+            // TODO: Needs testing what happens to global manager when user changes network connection. (e.g. LAN to WiFi)
+
+            auto *tmpManager = new QNetworkAccessManager();
+            QNetworkReply *reply = tmpManager->get(request);
+
+            waitForSignal_(reply, SIGNAL(finished()));
+            return reply->bytesAvailable();
+        } catch (...) {
+            return false;
+        }
+    }
+
     void SpotifyWebAPI::setConnection(QString clientId, QString clientSecret, QString refreshToken) {
         clientId_ = std::move(clientId);
         clientSecret_ = std::move(clientSecret);
         refreshToken_ = std::move(refreshToken);
+        expirationTime_ = QDateTime::currentDateTime();
     }
 
     bool SpotifyWebAPI::refreshToken() {
-        auto *url = new QUrl(TOKEN_URL);
-        QNetworkRequest request(*url);
+        auto url = QUrl(TOKEN_URL);
+        QNetworkRequest request(url);
 
         auto hash = QString("%1:%2").arg(clientId_, clientSecret_).toUtf8().toBase64();
         auto header = QString("Basic ").append(hash);
@@ -51,17 +103,11 @@ namespace Spotify {
             QString answer = reply->readAll();
             QJsonObject jsonVariant = answerToJson_(answer);
 
-            qDebug() << answer;
-
             accessToken_ = "";
 
             if (!jsonVariant["access_token"].isUndefined()) {
                 accessToken_ = jsonVariant["access_token"].toString();
-                qDebug() << "Expires in " << jsonVariant["expires_in"];
                 expirationTime_ = QDateTime::currentDateTime().addSecs(jsonVariant["expires_in"].toInt());
-
-                emit tokenReplyReceived();
-                emit tokenRefreshed();
             }
 
             if (!jsonVariant["error_description"].isUndefined()) {
@@ -69,13 +115,9 @@ namespace Spotify {
             } else {
                 lastErrorMessage = jsonVariant["error"].toString();
             }
-
-            emit tokenReplyReceived();
         });
 
-        QEventLoop loop;
-        connect(this, SIGNAL(tokenReplyReceived()), &loop, SLOT(quit()));
-        loop.exec();
+        waitForSignal_(reply, SIGNAL(finished()));
 
         return !accessToken_.isEmpty() && savedToken != accessToken_;
     }
@@ -88,34 +130,27 @@ namespace Spotify {
         return QDateTime::currentDateTime() > expirationTime_;
     }
 
-    QVector<Track> SpotifyWebAPI::searchTrack(const QString& query, const QString& limit) {
-        auto *url = new QUrl(SEARCH_URL.arg(query, "track", limit));
-        QNetworkRequest request(*url);
-
-        auto header = QString("Bearer ").append(accessToken_);
-        request.setRawHeader(QByteArray("Authorization"), header.toUtf8());
-        request.setRawHeader(QByteArray("Accept"), "application/json");
-        request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant(QString("application/json")));
+    QVector<Track> SpotifyWebAPI::searchTracks(const QString& query, const int limit) {
+        auto url = QUrl(SEARCH_URL.arg(query, "track", QString::number(limit)));
+        QNetworkRequest request = buildRequest_(url);
 
         QNetworkReply *reply = manager->get(request);
 
-        connect(reply, &QNetworkReply::finished, [this, reply]() {
+        auto *itemResults = new QJsonArray();
+
+        connect(reply, &QNetworkReply::finished, [reply, itemResults]() {
 
             QString answer = reply->readAll();
             QJsonObject jsonObject = answerToJson_(answer);
 
-            itemResults_ = jsonObject["tracks"].toObject()["items"].toArray();
-
-            emit searchReplyReceived();
+            *itemResults = jsonObject["tracks"].toObject()["items"].toArray();
         });
 
-        QEventLoop loop;
-        connect(this, SIGNAL(searchReplyReceived()), &loop, SLOT(quit()));
-        loop.exec();
+        waitForSignal_(reply, SIGNAL(finished()));
 
         auto results = new QVector<Track>();
 
-        for (auto item : itemResults_) {
+        for (auto item : *itemResults) {
             auto trackData = item.toObject();
             auto artists = trackData["artists"].toArray();
             qDebug() << item;
@@ -159,121 +194,68 @@ namespace Spotify {
         QNetworkRequest request(imageUrl);
         QNetworkReply *reply = manager->get(request);
 
-        connect(reply, &QNetworkReply::finished, [this, reply, imageFilePath]() {
+        connect(reply, &QNetworkReply::finished, [reply, imageFilePath]() {
             QSaveFile file(imageFilePath);
             file.open(QIODevice::WriteOnly);
             file.write(reply->readAll());
             file.commit();
-            emit imageReceived();
         });
 
-        QEventLoop loop;
-        connect(this, SIGNAL(imageReceived()), &loop, SLOT(quit()));
-        loop.exec();
+        waitForSignal_(reply, SIGNAL(finished()));
         fileLock_.unlock();
     }
 
     void SpotifyWebAPI::addItemToQueue(const QString& uri) {
-        auto *url = new QUrl(ADD_ITEM_URL.arg(uri));
-        QNetworkRequest request(*url);
+        auto url = QUrl(ADD_ITEM_URL.arg(uri));
+        QNetworkRequest request = buildRequest_(url);
 
-        auto header = QString("Bearer ").append(accessToken_);
-        request.setRawHeader(QByteArray("Authorization"), header.toUtf8());
-        request.setRawHeader(QByteArray("Accept"), "application/json");
-        request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant(QString("application/json")));
-
-        QByteArray postData;
-
-        QNetworkReply *reply = manager->post(request, postData);
-
-        connect(reply, &QNetworkReply::finished, [this]() {
-            emit addedToQueue();
-        });
-
-        QEventLoop loop;
-        connect(this, SIGNAL(addedToQueue()), &loop, SLOT(quit()));
-        loop.exec();
-    }
-
-    void SpotifyWebAPI::skipToNextTrack() {
-        auto *url = new QUrl(NEXT_TRACK_URL);
-        QNetworkRequest request(*url);
-
-        auto header = QString("Bearer ").append(accessToken_);
-        request.setRawHeader(QByteArray("Authorization"), header.toUtf8());
-        request.setRawHeader(QByteArray("Accept"), "application/json");
-        request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant(QString("application/json")));
-
-        QByteArray postData;
-
-        QNetworkReply *reply = manager->post(request, postData);
-
-        connect(reply, &QNetworkReply::finished, [this]() {
-            emit skippedTrack();
-        });
-
-        QEventLoop loop;
-        connect(this, SIGNAL(skippedTrack()), &loop, SLOT(quit()));
-        loop.exec();
+        manager->post(request, "");
     }
 
     void SpotifyWebAPI::play(const QString& uri, QString device) {
         if (device.isEmpty() && activeDevice) {
             device = activeDevice->id;
         }
-        auto *url = new QUrl(PLAY_URL.arg(device));
-        QNetworkRequest request(*url);
-
-        auto header = QString("Bearer ").append(accessToken_);
-        request.setRawHeader(QByteArray("Authorization"), header.toUtf8());
-        request.setRawHeader(QByteArray("Accept"), "application/json");
-        request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant(QString("application/json")));
+        auto url = QUrl(PLAY_URL.arg(device));
+        QNetworkRequest request = buildRequest_(url);
 
         QByteArray postData = QString(R"({"uris": ["%1"]})").arg(uri).toLocal8Bit();
 
-        QNetworkReply *reply = manager->put(request, postData);
-
-        connect(reply, &QNetworkReply::finished, [this, reply]() {
-            qDebug() << "Reply:";
-            qDebug() << reply->readAll();
-            emit played();
-        });
-
-        QEventLoop loop;
-        connect(this, SIGNAL(played()), &loop, SLOT(quit()));
-        loop.exec();
+        manager->put(request, postData);
     }
 
-    QVector<Device> SpotifyWebAPI::getDevices() {
-        auto *url = new QUrl(DEVICES_URL);
-        QNetworkRequest request(*url);
+    QString SpotifyWebAPI::waitForDeviceAndPlay(const QString& uri, int timeout) {
+        connect(this, SIGNAL(deviceReady(QString, QString)), this, SLOT(play(QString, QString)));
 
-        auto header = QString("Bearer ").append(accessToken_);
-        request.setRawHeader(QByteArray("Authorization"), header.toUtf8());
-        request.setRawHeader(QByteArray("Accept"), "application/json");
-        request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant(QString("application/json")));
+        QtConcurrent::run([=]() {
+            waitForDevice_(uri, timeout);
+        });
+
+        return "";
+    }
+
+    QVector<Device> *SpotifyWebAPI::getDevices() {
+        auto url = QUrl(DEVICES_URL);
+        QNetworkRequest request = buildRequest_(url);
 
         QNetworkReply *reply = manager->get(request);
 
-        connect(reply, &QNetworkReply::finished, [this, reply]() {
+        auto *devicesResult = new QJsonArray();
 
+        connect(reply, &QNetworkReply::finished, [reply, devicesResult]() {
             QString answer = reply->readAll();
             QJsonObject jsonObject = answerToJson_(answer);
 
-            devicesResult_ = jsonObject["devices"].toArray();
-
-            emit searchReplyReceived();
+            *devicesResult = jsonObject["devices"].toArray();
         });
 
-        QEventLoop loop;
-        connect(this, SIGNAL(searchReplyReceived()), &loop, SLOT(quit()));
-        loop.exec();
+        waitForSignal_(reply, SIGNAL(finished()));
 
-        QVector<Device> result;
+        auto result = new QVector<Device>();
 
         activeDevice = nullptr;
 
-        for (auto item : devicesResult_) {
+        for (auto item : *devicesResult) {
             auto deviceData = item.toObject();
 
             auto *device = new Device();
@@ -287,9 +269,17 @@ namespace Spotify {
                 activeDevice = device;
             }
 
-            result.append(*device);
+            result->append(*device);
         }
 
         return result;
+    }
+
+    QString SpotifyWebAPI::getFirstDeviceId() {
+        QVector<Device> *devices_ = getDevices();
+        if (devices_->isEmpty()) {
+            return "";
+        }
+        return devices_[0][0].id;
     }
 }

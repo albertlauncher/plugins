@@ -25,10 +25,11 @@ public:
 
     QString name() const override { return "Spotify"; }
     QWidget *widget(QWidget *parent = nullptr) override;
-//    QStringList triggers() const override { return {"spotify "}; }
+    QStringList triggers() const override { return {"spotify ", "play "}; }
     void setupSession() override;
     void teardownSession() override;
     void handleQuery(Core::Query * query) const override;
+    ExecutionType executionType() const override;
 
 private:
     std::unique_ptr<Private> d;
