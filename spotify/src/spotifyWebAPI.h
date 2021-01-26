@@ -41,7 +41,7 @@ private:
     QNetworkRequest buildRequest_(const QUrl& url);
 
 public:
-    SpotifyWebAPI();
+    explicit SpotifyWebAPI(QObject* parent);
     ~SpotifyWebAPI() override;
 
     QNetworkAccessManager *manager;

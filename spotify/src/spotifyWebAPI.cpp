@@ -14,11 +14,13 @@
 
 namespace Spotify {
 
-    SpotifyWebAPI::SpotifyWebAPI() {
-        manager = new QNetworkAccessManager();
+    SpotifyWebAPI::SpotifyWebAPI(QObject* parent) {
+        manager = new QNetworkAccessManager(parent);
     }
 
-    SpotifyWebAPI::~SpotifyWebAPI() = default;
+    SpotifyWebAPI::~SpotifyWebAPI() {
+        delete manager;
+    }
 
     QJsonObject SpotifyWebAPI::answerToJson_(const QString& answer) {
         QJsonDocument doc = QJsonDocument::fromJson(answer.toUtf8());
@@ -66,7 +68,7 @@ namespace Spotify {
             // sending requests through it causes QDBusConnection warnings followed by freeze.
             // TODO: Needs testing what happens to global manager when user changes network connection. (e.g. LAN to WiFi)
 
-            auto *tmpManager = new QNetworkAccessManager();
+            auto *tmpManager = new QNetworkAccessManager(this);
             QNetworkReply *reply = tmpManager->get(request);
 
             waitForSignal_(reply, SIGNAL(finished()));

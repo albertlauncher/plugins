@@ -36,7 +36,7 @@ public:
     QString spotifyExecutable;
     bool explicitState = true;
     int numberOfResults = 5;
-    SpotifyWebAPI *api = new SpotifyWebAPI();
+    SpotifyWebAPI *api = nullptr;
 };
 
 
@@ -47,6 +47,8 @@ Spotify::Extension::Extension()
       d(new Private) {
 
     registerQueryHandler(this);
+
+    d->api = new SpotifyWebAPI(this);
 
     d->clientId = settings().value("client_id").toString();
     d->clientSecret = settings().value("client_secret").toString();
