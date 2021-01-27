@@ -4,7 +4,7 @@ project(applications)
 
 file(GLOB_RECURSE SRC src/*)
 
-find_package(Qt5 5.5.0 REQUIRED COMPONENTS Widgets Network Concurrent)
+find_package(Qt5 5.5.0 REQUIRED COMPONENTS Widgets Concurrent)
 
 add_library(${PROJECT_NAME} SHARED ${SRC} ${PROJECT_NAME}.qrc metadata.json)
 
@@ -13,7 +13,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE src/)
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         Qt5::Concurrent
-        Qt5::Network
         Qt5::Widgets
         albert::lib
         xdg
