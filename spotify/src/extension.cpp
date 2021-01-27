@@ -1,19 +1,12 @@
 // Copyright (C) 2014-2021 Manuel Schneider, Ivo Šmerek
 
 #include <QPointer>
-#include <stdexcept>
 #include <QMessageBox>
-#include <QtCore/QJsonDocument>
-#include <QtCore/QJsonObject>
-#include <QtNetwork/QNetworkReply>
-#include <QtWidgets/QLineEdit>
-#include <QtWidgets/QPushButton>
-#include <albert/util/standardactions.h>
+#include "albert/util/standardactions.h"
 #include "albert/util/standarditem.h"
 #include "configwidget.h"
 #include "extension.h"
 #include "spotifyWebAPI.h"
-#include "xdg/iconlookup.h"
 Q_LOGGING_CATEGORY(qlc, "spotify")
 #define DEBG qCDebug(qlc,).noquote()
 #define INFO qCInfo(qlc,).noquote()
@@ -21,10 +14,6 @@ Q_LOGGING_CATEGORY(qlc, "spotify")
 #define CRIT qCCritical(qlc,).noquote()
 using namespace Core;
 using namespace std;
-
-namespace {
-
-}
 
 class Spotify::Private
 {
@@ -121,7 +110,7 @@ QWidget *Spotify::Extension::widget(QWidget *parent) {
 
     connect(d->widget->ui.pushButton_test_connection, &QPushButton::clicked, [this](){
         d->api->setConnection(d->clientId, d->clientSecret, d->refreshToken);
-        d->api->setQNetworkAccessManager(new QNetworkAccessManager());
+        d->api->manager = new QNetworkAccessManager();
 
         bool status = d->api->testConnection();
 
@@ -169,7 +158,7 @@ void Spotify::Extension::handleQuery(Core::Query * query) const {
     if (query->string().trimmed().isEmpty())
         return;
 
-    d->api->setQNetworkAccessManager(new QNetworkAccessManager());
+    d->api->manager = new QNetworkAccessManager();
 
     // If there is no internet connection, make one alerting item to let the user know.
     if (!d->api->testInternetConnection()) {

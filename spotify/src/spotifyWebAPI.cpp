@@ -1,15 +1,8 @@
 // Copyright (C) 2020-2021 Ivo Šmerek
 
-#include <QFileInfo>
-#include <QtCore/QEventLoop>
-#include <QtCore/QFile>
-#include <QtCore/QJsonArray>
-#include <QtCore/QJsonDocument>
-#include <QtCore/QJsonObject>
-#include <QtCore/QSaveFile>
-#include <QtNetwork/QNetworkReply>
-#include <utility>
 #include <QtConcurrent/QtConcurrent>
+#include <QtNetwork/QNetworkReply>
+
 #include "spotifyWebAPI.h"
 
 namespace Spotify {
@@ -42,7 +35,6 @@ namespace Spotify {
             auto device = getFirstDeviceId();
             if (!device.isEmpty()) {
                 emit deviceReady(std::move(uri), device);
-                qDebug() << "Using new device";
                 return device;
             }
             counter++;
@@ -65,6 +57,9 @@ namespace Spotify {
             auto *url = new QUrl(TOKEN_URL);
             QNetworkRequest request(*url);
 
+            if (manager->thread() != QThread::currentThread()) {
+                return false;
+            }
             QNetworkReply *reply = manager->get(request);
 
             waitForSignal_(reply, SIGNAL(finished()));
@@ -81,10 +76,6 @@ namespace Spotify {
         expirationTime_ = QDateTime::currentDateTime();
     }
 
-    void SpotifyWebAPI::setQNetworkAccessManager(QNetworkAccessManager *newManager) {
-        manager = newManager;
-    }
-
     bool SpotifyWebAPI::refreshToken() {
         auto url = QUrl(TOKEN_URL);
         QNetworkRequest request(url);
@@ -99,6 +90,9 @@ namespace Spotify {
 
         QString savedToken = accessToken_;
 
+        if (manager->thread() != QThread::currentThread()) {
+            return false;
+        }
         QNetworkReply *reply = manager->post(request, postData);
 
         connect(reply, &QNetworkReply::finished, [this, reply]() {
@@ -136,6 +130,9 @@ namespace Spotify {
         auto url = QUrl(SEARCH_URL.arg(query, "track", QString::number(limit)));
         QNetworkRequest request = buildRequest_(url);
 
+        if (manager->thread() != QThread::currentThread()) {
+            return QVector<Track>();
+        }
         QNetworkReply *reply = manager->get(request);
 
         auto *itemResults = new QJsonArray();
@@ -155,9 +152,8 @@ namespace Spotify {
         for (auto item : *itemResults) {
             auto trackData = item.toObject();
             auto artists = trackData["artists"].toArray();
-            qDebug() << item;
 
-            Track track;
+            auto track = new Track();
 
             QString artistsText = "";
             int counter = 0;
@@ -169,16 +165,16 @@ namespace Spotify {
                 counter++;
             }
 
-            track.id = trackData["id"].toString();
-            track.name = trackData["name"].toString();
-            track.artists = artistsText;
-            track.albumId = trackData["album"].toObject()["id"].toString();
-            track.albumName = trackData["album"].toObject()["name"].toString();
-            track.uri = trackData["uri"].toString();
-            track.imageUrl = trackData["album"].toObject()["images"].toArray()[2].toObject()["url"].toString();
-            track.isExplicit = trackData["explicit"].toBool();
+            track->id = trackData["id"].toString();
+            track->name = trackData["name"].toString();
+            track->artists = artistsText;
+            track->albumId = trackData["album"].toObject()["id"].toString();
+            track->albumName = trackData["album"].toObject()["name"].toString();
+            track->uri = trackData["uri"].toString();
+            track->imageUrl = trackData["album"].toObject()["images"].toArray()[2].toObject()["url"].toString();
+            track->isExplicit = trackData["explicit"].toBool();
 
-            results->append(track);
+            results->append(*track);
         }
 
         return *results;
@@ -193,14 +189,21 @@ namespace Spotify {
             return;
         }
 
+        if (manager->thread() != QThread::currentThread()) {
+            fileLock_.unlock();
+            return;
+        }
+
         QNetworkRequest request(imageUrl);
         QNetworkReply *reply = manager->get(request);
 
         connect(reply, &QNetworkReply::finished, [reply, imageFilePath]() {
-            QSaveFile file(imageFilePath);
-            file.open(QIODevice::WriteOnly);
-            file.write(reply->readAll());
-            file.commit();
+            if (reply->bytesAvailable()) {
+                QSaveFile file(imageFilePath);
+                file.open(QIODevice::WriteOnly);
+                file.write(reply->readAll());
+                file.commit();
+            }
         });
 
         waitForSignal_(reply, SIGNAL(finished()));
@@ -208,6 +211,7 @@ namespace Spotify {
     }
 
     void SpotifyWebAPI::addItemToQueue(const QString& uri) {
+        manager = new QNetworkAccessManager();
         auto url = QUrl(ADD_ITEM_URL.arg(uri));
         QNetworkRequest request = buildRequest_(url);
 
@@ -215,6 +219,7 @@ namespace Spotify {
     }
 
     void SpotifyWebAPI::play(const QString& uri, QString device) {
+        manager = new QNetworkAccessManager();
         if (device.isEmpty() && activeDevice) {
             device = activeDevice->id;
         }
@@ -230,6 +235,7 @@ namespace Spotify {
         connect(this, SIGNAL(deviceReady(QString, QString)), this, SLOT(play(QString, QString)));
 
         QtConcurrent::run([=]() {
+            manager = new QNetworkAccessManager();
             waitForDevice_(uri, timeout);
         });
 
@@ -240,6 +246,9 @@ namespace Spotify {
         auto url = QUrl(DEVICES_URL);
         QNetworkRequest request = buildRequest_(url);
 
+        if (manager->thread() != QThread::currentThread()) {
+            return new QVector<Device>();
+        }
         QNetworkReply *reply = manager->get(request);
 
         auto *devicesResult = new QJsonArray();

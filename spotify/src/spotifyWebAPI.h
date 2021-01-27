@@ -3,8 +3,6 @@
 #pragma once
 #include <QDateTime>
 #include <QJsonArray>
-#include <QString>
-#include <QObject>
 #include <QReadWriteLock>
 #include <QtNetwork/QNetworkAccessManager>
 #include "track.h"
@@ -53,9 +51,6 @@ public:
 
     // Set Web API credentials. Use testConnection for check.
     void setConnection(QString clientId, QString clientSecret, QString refreshToken);
-
-    // Set QNetworkAccessManager for this instance.
-    void setQNetworkAccessManager(QNetworkAccessManager *newManager);
 
     // Try to refresh the access_token and return true if successful.
     bool refreshToken();
