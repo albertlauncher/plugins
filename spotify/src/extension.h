@@ -31,6 +31,7 @@ public:
 
 private:
     std::unique_ptr<Private> d;
-    QString COVERS_DIR_PATH = "/tmp/albert-spotify-covers";
+    QString SPOTIFY_EXECUTABLE = "spotify";
+    QString CACHE_DIRECTORY = "/tmp/albert-spotify-covers";
 };
 }

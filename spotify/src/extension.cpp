@@ -23,6 +23,7 @@ public:
     QString clientSecret;
     QString refreshToken;
     QString spotifyExecutable;
+    QString cacheDirectory;
     bool explicitState = true;
     int numberOfResults = 5;
     SpotifyWebAPI *api = nullptr;
@@ -45,13 +46,18 @@ Spotify::Extension::Extension()
     d->explicitState = settings().value("explicit_state").toBool();
     d->numberOfResults = settings().value("number_or_results").toInt();
     d->spotifyExecutable = settings().value("spotify_executable").toString();
+    d->cacheDirectory = settings().value("cache_directory").toString();
 
     if (d->numberOfResults == 0) {
         d->numberOfResults = 5;
     }
 
     if (d->spotifyExecutable.isEmpty()) {
-        d->spotifyExecutable = "spotify";
+        d->spotifyExecutable = SPOTIFY_EXECUTABLE;
+    }
+
+    if (d->cacheDirectory.isEmpty()) {
+        d->cacheDirectory = CACHE_DIRECTORY;
     }
 }
 
@@ -100,10 +106,30 @@ QWidget *Spotify::Extension::widget(QWidget *parent) {
         settings().setValue("number_or_results", s);
     });
 
-    d->widget->ui.lineEdit_spotify_executable->setText(d->spotifyExecutable);
+    if (d->spotifyExecutable != SPOTIFY_EXECUTABLE) {
+        d->widget->ui.lineEdit_spotify_executable->setText(d->spotifyExecutable);
+    }
+    d->widget->ui.lineEdit_spotify_executable->setPlaceholderText(SPOTIFY_EXECUTABLE);
     connect(d->widget->ui.lineEdit_spotify_executable, &QLineEdit::textEdited, [this](const QString &s){
-        d->spotifyExecutable = s;
+        if (s.isEmpty()) {
+            d->spotifyExecutable = SPOTIFY_EXECUTABLE;
+        } else {
+            d->spotifyExecutable = s;
+        }
         settings().setValue("spotify_executable", s);
+    });
+
+    if (d->cacheDirectory != CACHE_DIRECTORY) {
+        d->widget->ui.lineEdit_cache_directory->setText(d->cacheDirectory);
+    }
+    d->widget->ui.lineEdit_cache_directory->setPlaceholderText(CACHE_DIRECTORY);
+    connect(d->widget->ui.lineEdit_cache_directory, &QLineEdit::textEdited, [this](const QString &s){
+        if (s.isEmpty()) {
+            d->cacheDirectory = CACHE_DIRECTORY;
+        } else {
+            d->cacheDirectory = s;
+        }
+        settings().setValue("cache_directory", s);
     });
 
     // Bind "Test connection" button
@@ -139,8 +165,8 @@ QWidget *Spotify::Extension::widget(QWidget *parent) {
 void Spotify::Extension::setupSession() {
     d->api->setConnection(d->clientId, d->clientSecret, d->refreshToken);
 
-    if(!QDir(COVERS_DIR_PATH).exists()) {
-        QDir().mkdir(COVERS_DIR_PATH);
+    if(!QDir(d->cacheDirectory).exists()) {
+        QDir().mkdir(d->cacheDirectory);
     }
 }
 
@@ -195,7 +221,7 @@ void Spotify::Extension::handleQuery(Core::Query * query) const {
             continue;
         }
 
-        auto filename = QString("%1/%2.jpeg").arg(COVERS_DIR_PATH, track.albumId);
+        auto filename = QString("%1/%2.jpeg").arg(d->cacheDirectory, track.albumId);
 
         // Download cover image of the album.
         d->api->downloadImage(track.imageUrl, filename);
