@@ -15,7 +15,8 @@
 namespace Spotify {
 
     SpotifyWebAPI::SpotifyWebAPI(QObject* parent) {
-        manager = new QNetworkAccessManager(parent);
+        manager = new QNetworkAccessManager(this);
+        setParent(parent);
     }
 
     SpotifyWebAPI::~SpotifyWebAPI() {
@@ -64,12 +65,7 @@ namespace Spotify {
             auto *url = new QUrl(TOKEN_URL);
             QNetworkRequest request(*url);
 
-            // New QNetworkAccessManager is necessary. If global manager loses connection in runtime,
-            // sending requests through it causes QDBusConnection warnings followed by freeze.
-            // TODO: Needs testing what happens to global manager when user changes network connection. (e.g. LAN to WiFi)
-
-            auto *tmpManager = new QNetworkAccessManager(this);
-            QNetworkReply *reply = tmpManager->get(request);
+            QNetworkReply *reply = manager->get(request);
 
             waitForSignal_(reply, SIGNAL(finished()));
             return reply->bytesAvailable();
@@ -83,6 +79,10 @@ namespace Spotify {
         clientSecret_ = std::move(clientSecret);
         refreshToken_ = std::move(refreshToken);
         expirationTime_ = QDateTime::currentDateTime();
+    }
+
+    void SpotifyWebAPI::setQNetworkAccessManager(QNetworkAccessManager *newManager) {
+        manager = newManager;
     }
 
     bool SpotifyWebAPI::refreshToken() {

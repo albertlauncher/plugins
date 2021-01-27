@@ -121,6 +121,7 @@ QWidget *Spotify::Extension::widget(QWidget *parent) {
 
     connect(d->widget->ui.pushButton_test_connection, &QPushButton::clicked, [this](){
         d->api->setConnection(d->clientId, d->clientSecret, d->refreshToken);
+        d->api->setQNetworkAccessManager(new QNetworkAccessManager());
 
         bool status = d->api->testConnection();
 
@@ -167,6 +168,8 @@ void Spotify::Extension::teardownSession() {
 void Spotify::Extension::handleQuery(Core::Query * query) const {
     if (query->string().trimmed().isEmpty())
         return;
+
+    d->api->setQNetworkAccessManager(new QNetworkAccessManager());
 
     // If there is no internet connection, make one alerting item to let the user know.
     if (!d->api->testInternetConnection()) {
