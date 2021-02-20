@@ -43,7 +43,7 @@ vector<Websearch::SearchEngine> defaultSearchEngines = {
 
 shared_ptr<Core::Item> buildWebsearchItem(const Websearch::SearchEngine &se, const QString &searchterm) {
 
-    QString urlString = QString(se.url).replace("%s", QUrl::toPercentEncoding(searchterm));
+    QString urlString = QString(se.url).replace("%s", QUrl::toPercentEncoding(searchterm.trimmed()));
     QUrl url = QUrl(urlString);
     QString desc = QString("Start %1 search in your browser").arg(se.name);
 
