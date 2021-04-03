@@ -53,7 +53,7 @@ Variable | Description
 `__triggers__` | **Optional** _[string, list of strings]_. If this extension should be run exclusively, this variable has to hold the trigger that causes the extension to be executed.
 `__authors__` | **Optional** _[string, list of strings]_. This variable should hold the name of the author of the extension.
 `__exec_deps__`| **Optional** _[string, list of strings]_. This string should contain any dependencies the extension needs to be used. The name of the dependency has to match the name of the executable in $PATH.
-`__py_deps__` | **Optional** _[string, list of strings]_. This string should contain any dependencies the extension needs to be used. The name of the dependency has to match the name of the package in the PyPI.
+`__py_deps__` | **Optional** _[string, list of strings]_. This string should contain any python dependencies the extension needs to be used. The name of the dependency has to match the name of the package in the PyPI.
 
 These are the functions an albert extension must/may have:
 
@@ -89,7 +89,7 @@ Attribute | Description
 `trigger`|This is the trigger that has been used to start this extension.
 `isTriggered`|Indicates that this query has been triggered.
 `isValid`|This flag indicates if the query is valid. A query is valid untill the query manager cancels it. You should regularly check this flag and abort the query handling if the flag is `False` to release threads in the threadpool for the next query.
-`disableSort()`|Indicates that this query has been triggered.
+`disableSort()`|Preserve the order of the query results, do not sort
 
 #### The `Item` class
 
