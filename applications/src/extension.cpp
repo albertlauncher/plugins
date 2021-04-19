@@ -408,7 +408,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             subtext = commandLine;
 
         // Set index strings
-        vector<IndexableItem::IndexString> indexStrings;
+        vector<IndexItem::IndexString> indexStrings;
         indexStrings.emplace_back(name, UINT_MAX);
 
         QStringList excludes = {
@@ -582,10 +582,10 @@ QWidget *Applications::Extension::widget(QWidget *parent) {
 /** ***************************************************************************/
 void Applications::Extension::handleQuery(Core::Query * query) const {
 
-    const vector<shared_ptr<Core::IndexableItem>> &indexables = d->offlineIndex.search(query->string());
+    const vector<shared_ptr<Core::IndexItem>> &indexables = d->offlineIndex.search(query->string());
 
     vector<pair<shared_ptr<Core::Item>,uint>> results;
-    for (const shared_ptr<Core::IndexableItem> &item : indexables)
+    for (const shared_ptr<Core::IndexItem> &item : indexables)
         results.emplace_back(static_pointer_cast<Core::StandardIndexItem>(item), 1);
 
     query->addMatches(make_move_iterator(results.begin()),

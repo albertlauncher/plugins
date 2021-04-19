@@ -387,11 +387,11 @@ void Files::Extension::handleQuery(Core::Query * query) const {
         }
 
         // Search for matches
-        const vector<shared_ptr<IndexableItem>> &indexables = d->offlineIndex.search(query->string());
+        const vector<shared_ptr<IndexItem>> &indexables = d->offlineIndex.search(query->string());
 
         // Add results to query
         vector<pair<shared_ptr<Core::Item>,uint>> results;
-        for (const shared_ptr<Core::IndexableItem> &item : indexables)
+        for (const shared_ptr<Core::IndexItem> &item : indexables)
             // TODO `Search` has to determine the relevance. Set to 0 for now
             results.emplace_back(static_pointer_cast<File>(item), 0);
 

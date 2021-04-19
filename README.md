@@ -29,7 +29,7 @@ Implement the `Core::Extension` and `Core::QueryHandler` interface. Especially `
 
 `Core::QueryHandler` has several functions that will be called on special events. Most important is the virtual function `handleQuery(Query)` this function will be called when the user types in his queries.
 
-The `Core::Query` object contains all necessary information and accepts objects of abstract type `Core::Item`. Subclass it or use `Core::StandardItem`. The items interface has a getter for actions of abstract type `Core::Action`. Again subclass it or use `Core::StandardAction`. Furter there is the `Core::IndexableItem` interface with its standard implementation `Core::StandardIndexItem`. These items are for the use with the utility class `Core::OfflineIndex` which does basic offline indexing and searching for you.
+The `Core::Query` object contains all necessary information and accepts objects of abstract type `Core::Item`. Subclass it or use `Core::StandardItem`. The items interface has a getter for actions of abstract type `Core::Action`. Again subclass it or use `Core::StandardAction`. Furter there is the `Core::IndexItem` interface with its standard implementation `Core::StandardIndexItem`. These items are for the use with the utility class `Core::OfflineIndex` which does basic offline indexing and searching for you.
 
 To get a detailed description of the interfaces read the header files of the core library interface classes.
 
