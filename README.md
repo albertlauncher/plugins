@@ -21,7 +21,7 @@ To keep the code readable there are some conventions that are not strictly neces
 - Make sure to have checked all core library headers .
 - Implement your extension.
 
-Contact us if you need [help](/help/).
+Join our community chats if you need help.
 
 ## Extension plugins
 
@@ -35,7 +35,7 @@ To get a detailed description of the interfaces read the header files of the cor
 
 ## Frontend plugins
 
-Implement the `Core::Frontend` interface. Implementing a frontend is a cumbersome process with tons of caveats. I will rather not write a documentation on it. [Contact](/help/) us directly.
+Implement the `Core::Frontend` interface. Implementing a frontend is a cumbersome process with tons of caveats. I will rather not write a documentation on it. Joind the conversation in one of the chats.
 
 
 ## The plugin metadata
