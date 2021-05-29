@@ -1,0 +1,10 @@
+{
+    "id" :              "org.albert.extension.firefoxhistory",
+    "name" :            "Firefox history",
+    "version" :         "1.0",
+    "platform" :        "All",
+    "group" :           "Extensions",
+    "author" :          "Cyprien Ruffino, Martin Buergmann, Manuel Schneider",
+    "dependencies" :    ["firefox"],
+    "enabledbydefault": false
+}
