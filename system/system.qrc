@@ -6,5 +6,6 @@
         <file alias="hibernate">resources/hibernate.svg</file>
         <file alias="lock">resources/lock.svg</file>
         <file alias="logout">resources/logout.svg</file>
+        <file alias="screenoff">resources/hibernate.svg</file>
     </qresource>
 </RCC>
