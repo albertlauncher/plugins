@@ -20,7 +20,7 @@ using namespace Core;
 
 namespace {
 
-const uint NUMCOMMANDS = 6;
+const uint NUMCOMMANDS = 7;
 
 enum SupportedCommands {
     LOCK,
@@ -29,51 +29,57 @@ enum SupportedCommands {
     HIBERNATE,
     REBOOT,
     POWEROFF,
+    SCREENOFF,
 };
 
-array<const QString, 6> configNames{{
+array<const QString, 7> configNames{{
     "lock",
     "logout",
     "suspend",
     "hibernate",
     "reboot",
-    "shutdown"
+    "shutdown",
+    "screenoff"
 }};
 
-array<const QString, 6> itemTitles{{
+array<const QString, 7> itemTitles{{
     "Lock",
     "Log out",
     "Suspend",
     "Hibernate",
     "Restart",
-    "Shut down"
+    "Shut down",
+    "Screen Off"
 }};
 
-array<vector<QString>, 6> aliases{{
+array<vector<QString>, 7> aliases{{
     {"lock"},
     {"log out", "logout", "leave"},
     {"suspend", "sleep"},
     {"suspend", "hibernate"},
     {"restart", "reboot"},
-    {"shut down", "shutdown", "poweroff", "halt"}
+    {"shut down", "shutdown", "poweroff", "halt"},
+    {"screenoff","monitoroff","dark"}
 }};
 
-array<const QString, 6> itemDescriptions{{
+array<const QString, 7> itemDescriptions{{
     "Lock the session.",
     "Quit the session.",
     "Suspend to memory.",
     "Suspend to disk.",
     "Restart the machine.",
     "Shut down the machine.",
+    "Turn Off the Monitor without Locking"
 }};
 
-array<const QString, 6> iconNames{{
+array<const QString, 7> iconNames{{
     "system-lock-screen",
     "system-log-out",
     "system-suspend",
     "system-suspend-hibernate",
     "system-reboot",
-    "system-shutdown"
+    "system-shutdown",
+    "system-suspend-hibernate"
 }};
 
 
@@ -89,6 +95,7 @@ QString defaultCommand(SupportedCommands command){
             case HIBERNATE: break ;
             case REBOOT:    return "gnome-session-quit --reboot";
             case POWEROFF:  return "gnome-session-quit --power-off";
+            case SCREENOFF:  return "xset dpms force off";
             }
 
         else if (de == "kde-plasma" || de == "KDE")
@@ -99,6 +106,7 @@ QString defaultCommand(SupportedCommands command){
             case HIBERNATE: break ;
             case REBOOT:    return "qdbus org.kde.ksmserver /KSMServer logout 0 1 0";
             case POWEROFF:  return "qdbus org.kde.ksmserver /KSMServer logout 0 2 0";
+            case SCREENOFF:  return "xset dpms force off";
             }
 
         else if (de == "X-Cinnamon" || de == "Cinnamon")
@@ -109,6 +117,7 @@ QString defaultCommand(SupportedCommands command){
             case HIBERNATE: break ;
             case REBOOT:    return "cinnamon-session-quit --reboot";
             case POWEROFF:  return "cinnamon-session-quit --power-off";
+            case SCREENOFF:  return "xset dpms force off";
             }
 
         else if (de == "MATE")
@@ -119,6 +128,7 @@ QString defaultCommand(SupportedCommands command){
             case HIBERNATE: return "sh -c \"mate-screensaver-command --lock && systemctl hibernate -i\"";
             case REBOOT:    return "mate-session-save --shutdown-dialog";
             case POWEROFF:  return "mate-session-save --shutdown-dialog";
+            case SCREENOFF:  return "xset dpms force off";
             }
 
         else if (de == "XFCE")
@@ -129,6 +139,7 @@ QString defaultCommand(SupportedCommands command){
             case HIBERNATE: return "xfce4-session-logout --hibernate";
             case REBOOT:    return "xfce4-session-logout --reboot";
             case POWEROFF:  return "xfce4-session-logout --halt";
+            case SCREENOFF:  return "xset dpms force off";
             }
     }
 
@@ -139,6 +150,7 @@ QString defaultCommand(SupportedCommands command){
     case HIBERNATE: return "systemctl hibernate -i";
     case REBOOT:    return "notify-send \"Error.\" \"Reboot command is not set.\" --icon=system-reboot";
     case POWEROFF:  return "notify-send \"Error.\" \"Poweroff command is not set.\" --icon=system-shutdown";
+    case SCREENOFF:  return "xset dpms force off";
     }
 
     // NEVER REACHED
@@ -225,6 +237,12 @@ QWidget *System::Extension::widget(QWidget *parent) {
             d->commands[POWEROFF]= s;
             settings().setValue(configNames[POWEROFF], s);
         });
+
+         d->widget->ui.lineEdit_screenoff->setText(d->commands[SCREENOFF]);
+        connect(d->widget->ui.lineEdit_screenoff, &QLineEdit::textEdited, [this](const QString &s){
+            d->commands[SCREENOFF]= s;
+            settings().setValue(configNames[SCREENOFF], s);
+        });       
     }
     return d->widget;
 }
