@@ -1,14 +1,5 @@
 # -*- coding: utf-8 -*-
 
-"""This is a simple python template extension.
-
-This extension should show the API in a comprehensible way. Use the module docstring to provide a \
-description of the extension. The docstring should have three paragraphs: A brief description in \
-the first line, an optional elaborate description of the plugin, and finally the synopsis of the \
-extension.
-
-Synopsis: <trigger> [delay|throw] <query>"""
-
 from albert import *
 import os
 from time import sleep
