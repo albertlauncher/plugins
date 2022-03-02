@@ -3,3 +3,5 @@ build*
 *.qmlc
 *.jsc
 .DS_Store
+*.vscode*
+*__pycache__*
