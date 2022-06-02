@@ -9,5 +9,6 @@
         <file alias="wikipedia">resources/wikipedia.svg</file>
         <file alias="wolfram">resources/wolfram.png</file>
         <file alias="duckduckgo">resources/duckduckgo.svg</file>
+        <file alias="kagi">resources/kagi.svg</file>
     </qresource>
 </RCC>
