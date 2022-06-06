@@ -71,8 +71,8 @@ if (BUILD_SNIPPETS)
     add_subdirectory(snippets)
 endif()
 
-option(BUILD_SNIPPETS "Build the extension" ON)
-if (BUILD_SNIPPETS)
+option(BUILD_SPOTIFY "Build the extension" ON)
+if (BUILD_SPOTIFY)
     add_subdirectory(spotify)
 endif()
 
