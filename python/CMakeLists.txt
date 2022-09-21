@@ -5,7 +5,11 @@ PROJECT(python)
 FILE(GLOB_RECURSE SRC src/*)
 
 find_package(Qt5 5.5.0 REQUIRED COMPONENTS Widgets)
-add_subdirectory(pybind11)
+
+find_package(pybind11)
+if (NOT pybind11_FOUND)
+    add_subdirectory(pybind11)
+endif()
 
 add_library(${PROJECT_NAME} SHARED ${SRC} ${PROJECT_NAME}.qrc metadata.json)
 
