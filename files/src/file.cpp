@@ -79,7 +79,7 @@ std::vector<std::shared_ptr<Action> > Files::File::buildFileActions(const QStrin
                                     QUrl::fromLocalFile(fileInfo.path())));
 
     // Let standard shell handle flow control (syntax differs in shells, e.g. fish)
-    actions.push_back(makeTermAction("Open terminal here", "", TermAction::DoNotClose,
+    actions.push_back(makeTermAction("Open terminal here", "true", TermAction::DoNotClose,
                                      fileInfo.isDir() ? fileInfo.filePath() : fileInfo.path()));
 
     actions.push_back(makeFuncAction("Copy file to clipboard", [filePath](){
