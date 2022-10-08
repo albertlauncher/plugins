@@ -26,10 +26,10 @@ public:
     QWidget *widget(QWidget *parent) override;
     void handleQuery(Core::Query *query) const override;
 
-    void updatePaths();
-
-    bool fuzzy();
+    bool fuzzy() const;
     void setFuzzy(bool b = true);
+    const QString &path() const;
+    void setPath(const QString path);
 
 private:
 
