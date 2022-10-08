@@ -287,7 +287,8 @@ void Python::Extension::handleQuery(Core::Query *query) const {
 QStringList Python::Extension::triggers() const {
     QStringList retval;
     for ( auto &module : d->modules )
-        retval << module->triggers();
+        if (module->state() == PythonModuleV1::State::Loaded)
+            retval << module->triggers();
     return retval;
 }
 
