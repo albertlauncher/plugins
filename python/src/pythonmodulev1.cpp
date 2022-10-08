@@ -330,7 +330,7 @@ void Python::PythonModuleV1::load(){
 /** ***************************************************************************/
 void Python::PythonModuleV1::unload(){
 
-    if (!(d->state == State::Unloaded || d->state == State::Unloaded))
+    if (d->state == State::Unloaded)
         return;
 
     if (d->state == State::Loaded) {
