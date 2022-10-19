@@ -49,7 +49,7 @@ Variable | Description
 --- | ---
 `__doc__` | **Optional** _[string]_. The docstring of the module is used as description of the extension. This string will be displayed to the user.
 `__title__` | _**MANDATORY** [string]_. This variable should hold the pretty name of the extension. This string will be displayed to the user.
-`__version__` | _**MANDATORY** [string]_. The versioning scheme should be `[iid_major].[iid_minor].[verion]`. The interface id (`iid_*`) should match the pyton interface version. `version` is the extensions version.<br><br>**Note** that within each `iid_maj` the API is backwards compatible, but as long as albert is in alpha stage `iid_major` will be `0` and API may brake any time.
+`__version__` | _**MANDATORY** [string]_. The versioning scheme should be `[iid_major].[iid_minor].[version]`. The interface id (`iid_*`) should match the pyton interface version. `version` is the extensions version.<br><br>**Note** that within each `iid_maj` the API is backwards compatible, but as long as albert is in alpha stage `iid_major` will be `0` and API may brake any time.
 `__triggers__` | **Optional** _[string, list of strings]_. If this extension should be run exclusively, this variable has to hold the trigger that causes the extension to be executed.
 `__authors__` | **Optional** _[string, list of strings]_. This variable should hold the name of the author of the extension.
 `__exec_deps__`| **Optional** _[string, list of strings]_. This string should contain any dependencies the extension needs to be used. The name of the dependency has to match the name of the executable in $PATH.
