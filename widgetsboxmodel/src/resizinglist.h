@@ -1,9 +1,8 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (c) 2022 Manuel Schneider
 
 #pragma once
 #include <QListView>
 
-namespace WidgetBoxModel {
 
 class ResizingList : public QListView
 {
@@ -11,9 +10,7 @@ class ResizingList : public QListView
     Q_PROPERTY(int maxItems READ maxItems WRITE setMaxItems MEMBER maxItems_ NOTIFY maxItemsChanged)
 
 public:
-
-    ResizingList(QWidget *parent = 0) : QListView(parent), maxItems_(5) {}
-    virtual ~ResizingList() {}
+    explicit ResizingList(QWidget *parent = nullptr);
 
     uint maxItems() const;
     void setMaxItems(uint maxItems);
@@ -22,16 +19,13 @@ public:
     QSize sizeHint() const override;
     void setModel(QAbstractItemModel * model) override;
 
+protected:
+    bool eventFilter(QObject*, QEvent *event) override;
+
 private:
-
-    void updateAppearance();
-
     uint maxItems_;
 
 signals:
-
     void maxItemsChanged();
 
 };
-
-}
