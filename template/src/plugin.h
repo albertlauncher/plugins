@@ -1,16 +1,16 @@
-// Copyright (C) 2014-2021 Manuel Schneider
+// Copyright (c) 2022 Manuel Schneider
 
 #pragma once
 #include "albert.h"
 
-class Plugin final
-        : public Core::Extension,
-          public Core::QueryHandler
+class Plugin :
+        public albert::ExtensionPlugin,
+        public albert::QueryHandler,
+        public albert::ConfigWidgetProvider
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
     Plugin();
-    QString name() const override { return "Template"; }
-    void handleQuery(Core::Query*) const override;
-    QWidget *widget(QWidget *parent = nullptr) override { return nullptr; }
+    void handleQuery(Query&) const override;
+    QWidget* buildConfigWidget() override;
 };
