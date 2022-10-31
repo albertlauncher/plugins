@@ -1,16 +1,13 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2021 Manuel Schneider
 
 #pragma once
 #include <QString>
 
-namespace Websearch {
-
-class SearchEngine {
-public:
+struct SearchEngine
+{
     QString name;
     QString trigger;
     QString iconPath;
     QString url;
 };
 
-}

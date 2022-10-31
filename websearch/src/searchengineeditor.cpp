@@ -1,15 +1,13 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2021 Manuel Schneider
 
 #include <QFileDialog>
 #include <QStandardPaths>
 #include "searchengineeditor.h"
 
 
-
-/** ***************************************************************************/
-Websearch::SearchEngineEditor::SearchEngineEditor(const SearchEngine &searchEngine, QWidget *parent)
-    : QDialog(parent), searchEngine_(searchEngine) {
-
+SearchEngineEditor::SearchEngineEditor(const SearchEngine &searchEngine, QWidget *parent)
+    : QDialog(parent), searchEngine_(searchEngine)
+{
     ui.setupUi(this);
     setWindowModality(Qt::WindowModal);
 
@@ -43,5 +41,4 @@ Websearch::SearchEngineEditor::SearchEngineEditor(const SearchEngine &searchEngi
         searchEngine_.iconPath = fileName;
         ui.toolButton_icon->setIcon(QIcon(fileName));
     });
-
 }

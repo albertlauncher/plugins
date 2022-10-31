@@ -1,11 +1,9 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2021 Manuel Schneider
 
 #pragma once
 #include <QAbstractTableModel>
 
-namespace Websearch {
-
-class Extension;
+class Plugin;
 
 class EnginesModel final : public QAbstractTableModel
 {
@@ -13,7 +11,7 @@ class EnginesModel final : public QAbstractTableModel
 
 public:
 
-    EnginesModel(Extension *extension, QObject *parent = Q_NULLPTR);
+    EnginesModel(Plugin *extension, QObject *parent = Q_NULLPTR);
 
     int rowCount(const QModelIndex & parent = QModelIndex()) const override;
     int columnCount(const QModelIndex & parent = QModelIndex()) const override;
@@ -31,8 +29,6 @@ public:
 
 private:
 
-    Extension *extension_;
+    Plugin *extension_;
 
 };
-
-}

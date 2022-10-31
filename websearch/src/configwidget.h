@@ -1,12 +1,10 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2021 Manuel Schneider
 
 #pragma once
 #include <QWidget>
 #include "ui_configwidget.h"
 
-namespace Websearch {
-
-class Extension;
+class Plugin;
 class EnginesModel;
 
 class ConfigWidget final : public QWidget
@@ -15,8 +13,7 @@ class ConfigWidget final : public QWidget
 
 public:
 
-    explicit ConfigWidget(Extension *extension, QWidget *parent = 0);
-    ~ConfigWidget();
+    explicit ConfigWidget(Plugin *extension, QWidget *parent = 0);
     Ui::ConfigWidget ui;
 
 private:
@@ -26,8 +23,6 @@ private:
     void onButton_remove();
     void onButton_restoreDefaults();
 
-    Extension *extension_;
+    Plugin *plugin_;
     EnginesModel *enginesModel_;
 };
-
-}

@@ -1,11 +1,9 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2021 Manuel Schneider
 
 #pragma once
 #include <QDialog>
 #include "ui_searchengineeditor.h"
 #include "searchengine.h"
-
-namespace Websearch {
 
 class SearchEngineEditor : public QDialog
 {
@@ -22,5 +20,3 @@ private:
     Ui::SearchEngineEditor ui;
 
 };
-
-}

@@ -1,20 +1,20 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (C) 2014-2021 Manuel Schneider
 
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QStandardPaths>
 #include "configwidget.h"
 #include "enginesmodel.h"
-#include "extension.h"
+#include "plugin.h"
 #include "searchengineeditor.h"
 
-/** ***************************************************************************/
-Websearch::ConfigWidget::ConfigWidget(Extension *extension, QWidget *parent)
-    : QWidget(parent), extension_(extension) {
 
+ConfigWidget::ConfigWidget(Plugin *plugin, QWidget *parent)
+    : QWidget(parent), plugin_(plugin)
+{
     ui.setupUi(this);
 
-    enginesModel_ = new EnginesModel(extension, ui.tableView_searches);
+    enginesModel_ = new EnginesModel(plugin, ui.tableView_searches);
     ui.tableView_searches->setModel(enginesModel_);
 
     ui.tableView_searches->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -35,17 +35,10 @@ Websearch::ConfigWidget::ConfigWidget(Extension *extension, QWidget *parent)
 }
 
 
-
-/** ***************************************************************************/
-Websearch::ConfigWidget::~ConfigWidget() {
-}
-
-
-
-/** ***************************************************************************/
-void Websearch::ConfigWidget::onActivated(QModelIndex index) {
+void ConfigWidget::onActivated(QModelIndex index)
+{
     int row = index.row();
-    SearchEngineEditor searchEngineEditor(extension_->engines()[static_cast<ulong>(row)], this);
+    SearchEngineEditor searchEngineEditor(plugin_->engines()[static_cast<ulong>(row)], this);
 
     if (searchEngineEditor.exec()){
         // Set the new engine
@@ -59,10 +52,8 @@ void Websearch::ConfigWidget::onActivated(QModelIndex index) {
 }
 
 
-
-/** ***************************************************************************/
-void Websearch::ConfigWidget::onButton_new() {
-
+void ConfigWidget::onButton_new()
+{
     // Open search engine editor
     SearchEngine searchEngine;
     searchEngine.iconPath = ":default";
@@ -90,9 +81,8 @@ void Websearch::ConfigWidget::onButton_new() {
 }
 
 
-
-/** ***************************************************************************/
-void Websearch::ConfigWidget::onButton_remove() {
+void ConfigWidget::onButton_remove()
+{
     // Ask if sure
     int row = ui.tableView_searches->currentIndex().row();
     QString engineName = ui.tableView_searches->model()
@@ -108,9 +98,8 @@ void Websearch::ConfigWidget::onButton_remove() {
 }
 
 
-
-/** ***************************************************************************/
-void Websearch::ConfigWidget::onButton_restoreDefaults() {
+void ConfigWidget::onButton_restoreDefaults()
+{
     QMessageBox::StandardButton reply =
             QMessageBox::question(this, "Sure?",
                                   QString("Do you really want to restore the default search engines?"),

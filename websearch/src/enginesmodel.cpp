@@ -1,4 +1,4 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (c) 2022 Manuel Schneider
 
 
 #include <QDir>
@@ -9,41 +9,37 @@
 #include <QStandardPaths>
 #include <QUuid>
 #include "enginesmodel.h"
-#include "extension.h"
+#include "plugin.h"
 #include "searchengine.h"
 
 namespace {
-
 enum class Section{ Name, Trigger, URL} ;
 const int sectionCount = 3;
-
 std::map<QString,QIcon> iconCache;
+}
+
+
+EnginesModel::EnginesModel(Plugin *extension, QObject *parent)
+    : QAbstractTableModel(parent), extension_(extension)
+{
 
 }
 
 
-/** ***************************************************************************/
-Websearch::EnginesModel::EnginesModel(Extension *extension, QObject *parent)
-    : QAbstractTableModel(parent), extension_(extension) {
-}
-
-
-/** ***************************************************************************/
-int Websearch::EnginesModel::rowCount(const QModelIndex &) const {
+int EnginesModel::rowCount(const QModelIndex &) const
+{
     return static_cast<int>(extension_->engines().size());
 }
 
 
-
-/** ***************************************************************************/
-int Websearch::EnginesModel::columnCount(const QModelIndex &) const {
+int EnginesModel::columnCount(const QModelIndex &) const
+{
     return sectionCount;
 }
 
 
-
-/** ***************************************************************************/
-QVariant Websearch::EnginesModel::headerData(int section, Qt::Orientation orientation, int role) const {
+QVariant EnginesModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
     // No sanity check necessary since
     if ( section < 0 || sectionCount <= section )
         return QVariant();
@@ -61,8 +57,8 @@ QVariant Websearch::EnginesModel::headerData(int section, Qt::Orientation orient
         }
         case Section::Trigger:{
             switch (role) {
-            case Qt::DisplayRole: return "Trigger";
-            case Qt::ToolTipRole: return "The term that triggers this searchengine.";
+            case Qt::DisplayRole: return "Short";
+            case Qt::ToolTipRole: return "The short name for this searchengine.";
             default: return QVariant();
             }
 
@@ -81,9 +77,8 @@ QVariant Websearch::EnginesModel::headerData(int section, Qt::Orientation orient
 }
 
 
-
-/** ***************************************************************************/
-QVariant Websearch::EnginesModel::data(const QModelIndex &index, int role) const {
+QVariant EnginesModel::data(const QModelIndex &index, int role) const
+{
     if ( !index.isValid() ||
          index.row() >= static_cast<int>(extension_->engines().size()) ||
          index.column() >= sectionCount )
@@ -100,6 +95,7 @@ QVariant Websearch::EnginesModel::data(const QModelIndex &index, int role) const
         case Section::URL:
             return extension_->engines()[static_cast<ulong>(index.row())].url;
         }
+        break;
     }
     case Qt::DecorationRole: {
         if (static_cast<Section>(index.column()) == Section::Name) {
@@ -111,17 +107,17 @@ QVariant Websearch::EnginesModel::data(const QModelIndex &index, int role) const
                 return it->second;
             return iconCache.insert(std::make_pair(iconPath, QIcon(iconPath))).second;
         }
-        return QVariant();
+        break;
     }
-    case Qt::ToolTipRole: return "Double click to edit";
-    default: return QVariant();
+    case Qt::ToolTipRole:
+        return "Double click to edit";
     }
+    return {};
 }
 
 
-
-/** ***************************************************************************/
-bool Websearch::EnginesModel::setData(const QModelIndex &index, const QVariant &value, int role) {
+bool EnginesModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
     if ( !index.isValid() ||
          index.row() >= static_cast<int>(extension_->engines().size()) ||
          index.column() >= sectionCount)
@@ -129,7 +125,7 @@ bool Websearch::EnginesModel::setData(const QModelIndex &index, const QVariant &
 
     switch (role) {
     case Qt::DisplayRole: {
-        if ( !value.canConvert(QMetaType::QString) )
+        if (!value.canConvert(QMetaType(QMetaType::QString)))
             return false;
         QString s = value.toString();
         switch (static_cast<Section>(index.column())) {
@@ -137,21 +133,21 @@ bool Websearch::EnginesModel::setData(const QModelIndex &index, const QVariant &
             std::vector<SearchEngine> newEngines = extension_->engines();
             newEngines[static_cast<ulong>(index.row())].name = s;
             extension_->setEngines(newEngines);
-            dataChanged(index, index, QVector<int>({Qt::DisplayRole}));
+            emit dataChanged(index, index, QVector<int>({Qt::DisplayRole}));
             return true;
         }
         case Section::Trigger: {
             std::vector<SearchEngine> newEngines = extension_->engines();
             newEngines[static_cast<ulong>(index.row())].trigger = s;
             extension_->setEngines(newEngines);
-            dataChanged(index, index, QVector<int>({Qt::DisplayRole}));
+            emit dataChanged(index, index, QVector<int>({Qt::DisplayRole}));
             return true;
         }
         case Section::URL: {
             std::vector<SearchEngine> newEngines = extension_->engines();
             newEngines[static_cast<ulong>(index.row())].url = s;
             extension_->setEngines(newEngines);
-            dataChanged(index, index, QVector<int>({Qt::DisplayRole}));
+            emit dataChanged(index, index, QVector<int>({Qt::DisplayRole}));
             return true;
         }
         }
@@ -168,14 +164,14 @@ bool Websearch::EnginesModel::setData(const QModelIndex &index, const QVariant &
 
         // Create extension dir if necessary
         QDir configDir = QDir(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
-        if ( !configDir.exists(extension_->Core::Plugin::id()) ) {
-            if ( !configDir.mkdir(extension_->Core::Plugin::id()) ) {
+        if ( !configDir.exists(extension_->id()) ) {
+            if ( !configDir.mkdir(extension_->id()) ) {
                 qWarning() << "Could not create extension data dir.";
                 return false;
             }
         }
 
-        configDir.cd(extension_->Core::Plugin::id());
+        configDir.cd(extension_->id());
 
         // Build the new random path
         QString newFilePath = configDir.filePath(QString("%1.%2")
@@ -206,9 +202,8 @@ bool Websearch::EnginesModel::setData(const QModelIndex &index, const QVariant &
 }
 
 
-
-/** ***************************************************************************/
-Qt::ItemFlags Websearch::EnginesModel::flags(const QModelIndex &index) const {
+Qt::ItemFlags EnginesModel::flags(const QModelIndex &index) const
+{
     if (index.isValid())
         return QAbstractTableModel::flags(index) | Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsDragEnabled;
     else
@@ -216,9 +211,8 @@ Qt::ItemFlags Websearch::EnginesModel::flags(const QModelIndex &index) const {
 }
 
 
-
-/** ***************************************************************************/
-bool Websearch::EnginesModel::insertRows(int position, int rows, const QModelIndex &) {
+bool EnginesModel::insertRows(int position, int rows, const QModelIndex &)
+{
     if ( position < 0 || rows < 1 ||
          static_cast<int>(extension_->engines().size()) < position)
         return false;
@@ -235,9 +229,8 @@ bool Websearch::EnginesModel::insertRows(int position, int rows, const QModelInd
 }
 
 
-
-/** ***************************************************************************/
-bool Websearch::EnginesModel::removeRows(int position, int rows, const QModelIndex &) {
+bool EnginesModel::removeRows(int position, int rows, const QModelIndex &)
+{
     if ( position < 0 || rows < 1 ||
          static_cast<int>(extension_->engines().size()) < position + rows)
         return false;
@@ -252,10 +245,9 @@ bool Websearch::EnginesModel::removeRows(int position, int rows, const QModelInd
 }
 
 
-
-/** ***************************************************************************/
-bool Websearch::EnginesModel::moveRows(const QModelIndex &srcParent, int srcRow, int cnt,
-                                       const QModelIndex &dstParent, int dstRow) {
+bool EnginesModel::moveRows(const QModelIndex &srcParent, int srcRow, int cnt,
+                            const QModelIndex &dstParent, int dstRow)
+{
     if ( srcRow < 0 || cnt < 1 || dstRow < 0 ||
          static_cast<int>(extension_->engines().size()) < srcRow + cnt - 1 ||
          static_cast<int>(extension_->engines().size()) < dstRow ||
@@ -279,29 +271,23 @@ bool Websearch::EnginesModel::moveRows(const QModelIndex &srcParent, int srcRow,
 }
 
 
-
-/** ***************************************************************************/
-void Websearch::EnginesModel::restoreDefaults() {
+void EnginesModel::restoreDefaults()
+{
     beginResetModel();
     extension_->restoreDefaultEngines();
     endResetModel();
 }
 
 
-
-/** ***************************************************************************/
-Qt::DropActions Websearch::EnginesModel::supportedDropActions() const {
+Qt::DropActions EnginesModel::supportedDropActions() const
+{
     return Qt::MoveAction;
 }
 
 
-
-/** ***************************************************************************/
-bool Websearch::EnginesModel::dropMimeData(const QMimeData *data,
-                                           Qt::DropAction /*action*/,
-                                           int dstRow,
-                                           int /*column*/,
-                                           const QModelIndex &/*parent*/) {
+bool EnginesModel::dropMimeData(const QMimeData *data, Qt::DropAction /*action*/,
+                                int dstRow, int /*column*/, const QModelIndex &/*parent*/)
+{
     QByteArray encoded = data->data("application/x-qabstractitemmodeldatalist");
     QDataStream stream(&encoded, QIODevice::ReadOnly);
     int srcRow = 0;
