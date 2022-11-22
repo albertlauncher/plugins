@@ -1,3 +1,7 @@
+<!--
+  ~ Copyright (c) 2022 Manuel Schneider
+  -->
+
 <RCC>
     <qresource prefix="/">
         <file>resources/gear.svg</file>
