@@ -1,5 +1,9 @@
+<!--
+  ~ Copyright (c) 2022 Manuel Schneider
+  -->
+
 <RCC>
     <qresource prefix="/">
-        <file alias="terminal">resources/terminal.svg</file>
+        <file alias="terminal">terminal.svg</file>
     </qresource>
 </RCC>
