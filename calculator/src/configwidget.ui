@@ -1,21 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Calculator::ConfigWidget</class>
- <widget class="QWidget" name="Calculator::ConfigWidget">
+ <class>ConfigWidget</class>
+ <widget class="QWidget" name="ConfigWidget">
   <layout class="QVBoxLayout" name="verticalLayout_2">
-   <item>
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is a simple calculator extension. It lets you evaluate basic math expressions.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="wordWrap">
-      <bool>true</bool>
-     </property>
-     <property name="openExternalLinks">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
     <widget class="QCheckBox" name="checkBox_groupsep">
      <property name="text">
