@@ -1,62 +1,74 @@
 # C++/Qt plugins
 
-A native albert extension is a [Qt Plugin](http://doc.qt.io/qt-5/plugins-howto.html#the-low-level-api-extending-qt-applications.) which is nothing else but a special shared library. A plugin has to have the correct interface id (IID) and of course to implement this interfaces to be loaded, e.g. `Core::Extension` or `Core::Frontend`. The best way to to get an overview is to read the [core library interface](https://github.com/albertlauncher/albert/tree/master/include/albert) classes. The headers comments and the other plugins especially the [template extension](https://github.com/albertlauncher/plugins/tree/master/templateExtension) should get you started.
-
-The internal API is still not final yet. If you want to write a plugin check the other extensions. There are some caveats and requirements you should know:
-
-- Qt Plugin needs a metadata file
-- The metadata needs a unique id to be loaded
-- The metadata file name must match the name in the `Q_PLUGIN_METADATA` macro
-- The interface id defined in `Q_PLUGIN_METADATA` must match the current one defined in the interface headers for the plugin to be loaded.
+A native albert plugin is a Qt Plugin which is just a particular shared library. For the details on this see the docs on [Qt Plugins](https://doc.qt.io/qt-6/plugins-howto.html#the-low-level-api-extending-qt-applications). The library tries to abstract over the details as good as possible by providing helper C and CMake macros. 
 
 ## Getting started
 
-The best way to get started is to copy the [template extension](https://github.com/albertlauncher/plugins/tree/master/templateExtension) and adjust the contents.
+### CMake
 
-To keep the code readable there are some conventions that are not strictly necessary, but the intention is to unify the filenames of the plugins.The main class of the extension is called `Extension` and if the extension returns a configuration widget the class shall be called `ConfigWidget`. The metadata file is called `metadata.json`. This would implicitly lead to naming conflicts, therefor all classes of an extensions live in a dedicated namespace having the name of the extension. In bullets:
+Albert is based on CMake. Use the macros defined in the Albert package to define a target for a plugin. You can either build a plugin in the source tree of the project using `albert_plugin` (for e.g upstream colaboration) use build a dedicated project and use the albert CMake package using `albert_downstream_plugin` and some more CMake directives. Both commands are more or less the same, while `albert_plugin` has some more convenience features. These macros do most of the necessary Qt boilerplate for you. Here are the parameters you can pass:
 
-- Copy the template extension.
-- Adjust the values contents in `metadata.json` and project name in `CmakeLists.txt`.
-- Rename the namespace. Remember to define the namespace in the `*.ui` files, too.
-- Make sure to have checked all core library headers .
-- Implement your extension.
+|         Parameter |  Type  | Notes                                                                             |
+|------------------:|:------:|-----------------------------------------------------------------------------------|
+|                ID | value  | optional, defaults to dirname                                                     |
+|           VERSION | value  | required in in-project builds, overwrites ${PROJECT_VERSION} in downstream builds |
+|              NAME | value  | required                                                                          |
+|       DESCRIPTION | value  | required                                                                          |
+|           LICENSE | value  | required                                                                          |
+|               URL | value  | required, should contain code and and readme                                      |
+|   NOUSER/FRONTEND | option | optional, FRONTEND implies NOUSER                                                 |
+|       MAINTAINERS |  list  | optional                                                                          |
+|           AUTHORS |  list  | optional, in source tree built from git log                                       |
+|   QT_DEPENDENCIES |  list  | optional, Qt::Core is exported from albert, automated import and link             |
+|  LIB_DEPENDENCIES |  list  | optional                                                                          |
+| EXEC_DEPENDENCIES |  list  | optional                                                                          |
 
-Join our community chats if you need help.
+A CMakeLists.txt of a dedicated downstream plugin could look like this:
 
-## Extension plugins
+```cmake
+cmake_minimum_required(VERSION 3.16)  # Needed for CMake top level projects
 
-Implement the `Core::Extension` and `Core::QueryHandler` interface. Especially `Core::Extension` is not final yet. But this should not be a problem. Since changes would need you to just change a few lines of code.
+project(test VERSION 0.1)  # Needed for CMake top level projects
 
-`Core::QueryHandler` has several functions that will be called on special events. Most important is the virtual function `handleQuery(Query)` this function will be called when the user types in his queries.
+find_package(albert)
 
-The `Core::Query` object contains all necessary information and accepts objects of abstract type `Core::Item`. Subclass it or use `Core::StandardItem`. The items interface has a getter for actions of abstract type `Core::Action`. Again subclass it or use `Core::StandardAction`. Furter there is the `Core::IndexableItem` interface with its standard implementation `Core::StandardIndexItem`. These items are for the use with the utility class `Core::OfflineIndex` which does basic offline indexing and searching for you.
-
-To get a detailed description of the interfaces read the header files of the core library interface classes.
-
-## Frontend plugins
-
-Implement the `Core::Frontend` interface. Implementing a frontend is a cumbersome process with tons of caveats. I will rather not write a documentation on it. Joind the conversation in one of the chats.
-
-
-## The plugin metadata
-
-The plugin metadata is a mandatory file that is needed to compile the plugin. Its content is *JSON* formatted and its name has to be equal to the the one specified in the `Q_PLUGIN_METADATA` in the extensions main class. The convention is to call it `metadata.json`. Its fields give the application information about the plugin without having to load the plugin.
-
-Currently the plugin specification has the following keys:
-- `id` is the unique identifier of the app. A plugin will not be loaded if its id has been registered already by an other plugin.
-- `name` is the pretty printed name of the plugin.
-- `version` is, well, the version of the plugin.
-- `author` name of the developer of this plugin.
-- `dependencies` is an array of dependencies of this plugin. These dependencies are mandatory for the plugin but optional for the application. The user is responsible to install them.
-
-A plugin specification could look like the following:
-
-```json
-{
-    "id" :              "org.albert.extension.bookmarks",
-    "name" :            "Bookmarks",
-    "version" :         "1.1",
-    "author" :          "Manuel Schneider",
-    "dependencies" :    []
-}
+albert_downstream_plugin(
+    NAME "Pretty name"
+    DESCRIPTION "Brief description"
+    LICENSE GPL
+    URL https://mydomain.com/myurl
+    MAINTAINERS @ManuelSchneid3r
+)
 ```
+while the equivalent in source plugin CMakeLists.txt would look like
+```cmake
+albert_plugin(
+    VERSION 1.0
+    NAME "Pretty name"
+    DESCRIPTION "Brief description"
+    LICENSE GPL
+    URL https://mydomain.com/myurl
+    MAINTAINERS @ManuelSchneid3r
+)
+```
+
+Of course you can add additional CMake directives. If you are keen on seeing the details check the `cmake` dir in the project root. Thats it. Now let's get started writing some C++ code.
+
+### C++
+
+To build an albert plugin include `albert.h`, subclass `albert::Plugin` and put the `Q_OBJECT` and `ALBERT_PLUGIN` in the class declaration.
+
+```cpp
+#pragma once
+#include "albert.h"
+
+class Plugin : public QObject, public albert::Plugin
+{
+    Q_OBJECT ALBERT_PLUGIN
+};
+
+```
+
+Compile. Done. Congratulations you built a plugin. Now go ahead and give it a purpose. Subclass base classes deriving `albert::Extension` to extend the application by loading this plugin. The most common use case for this app is the `albert::QueryHandler` and its subclasses. Not going into much detail here, since maintaining the documentation doubles the workload. Check the library interface classes as they are documented and always up to date. Also see some reference plugins like the Template and Debug plugins for basic understanding or the other plugins with a real purpose [here](https://github.com/albertlauncher/plugins/tree/master/). 
+
+Join our [community chats](https://albertlauncher.github.io/help/#chats) if you need help.
