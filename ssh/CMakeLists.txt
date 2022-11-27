@@ -1,20 +1,10 @@
-cmake_minimum_required(VERSION 3.1.3)
-
-project(ssh)
-
-file(GLOB_RECURSE SRC src/*)
-
-find_package(Qt5 5.5.0 REQUIRED COMPONENTS Widgets)
-
-add_library(${PROJECT_NAME} SHARED ${SRC} ${PROJECT_NAME}.qrc metadata.json)
-
-target_include_directories(${PROJECT_NAME} PRIVATE src/)
-
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-        Qt5::Widgets
-        albert::lib
-        xdg
+albert_plugin(
+    VERSION 1.3
+    NAME SecureShell
+    DESCRIPTION "Run secure shell sessions"
+    LICENSE ALL
+    URL https://github.com/albertlauncher/plugins/tree/master/ssh
+    MAINTAINERS @manuelschneid3r
+    EXEC_DEPENDENCIES ssh
+    QT_DEPENDENCIES Widgets
 )
-
-install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/albert/plugins)

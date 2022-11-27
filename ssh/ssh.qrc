@@ -1,5 +1,9 @@
+<!--
+  ~ Copyright (c) 2022 Manuel Schneider
+  -->
+
 <RCC>
     <qresource prefix="/">
-        <file alias="ssh">resources/ssh.svg</file>
+        <file alias="ssh">ssh.svg</file>
     </qresource>
 </RCC>
