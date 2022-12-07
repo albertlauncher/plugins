@@ -1,3 +1,7 @@
+<!--
+  ~ Copyright (c) 2022 Manuel Schneider
+  -->
+
 <RCC>
     <qresource prefix="/">
         <file alias="play">resources/1485099680_playback-play.svg</file>

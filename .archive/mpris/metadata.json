@@ -1,0 +1,7 @@
+{
+    "id": "@PROJECT_NAME@",
+    "version": "@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@",
+    "name": "MPRIS Control",
+    "description": "Control MPRIS media players. If you have MPRIS-capable media players running (like Rhythmbox, VLC, ...) just type any of 'play', 'pause', 'stop', 'next', 'previous' and you can send these commands directly to your player from albert.",
+    "authors": ["@idkcpp", "Manuel S."]
+}

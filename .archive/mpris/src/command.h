@@ -1,16 +1,14 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (c) 2022 Manuel Schneider
 
 #pragma once
 
 #include <QString>
 #include <QVariant>
 #include <functional>
-#include "albert/query.h"
+#include "albert.h"
 #include "player.h"
 using std::function;
-typedef std::shared_ptr<Core::Item> SharedItem;
-
-namespace MPRIS {
+typedef std::shared_ptr<albert::Item> SharedItem;
 
 class Command
 {
@@ -23,12 +21,12 @@ public:
      * @param method    The DBus method to invoke when this command is performed.
      * @param iconpath  The path to the icon which the StandardItem will get.
      */
-    Command(const QString& label, const QString& title, const QString& subtext, const QString& method, QString iconpath);
+    Command(const QString& label, const QString& title, const QString& subtext, const QString& method, QStringList icon);
 
     QString& getLabel();
     QString& getTitle();
     QString& getMethod();
-    QString& getIconPath();
+    QStringList &getIcon();
 
     /**
      * @brief applicableWhen    Configure this command to be only appicable under a certian (given) conditions.
@@ -44,7 +42,7 @@ public:
      * @brief produceStandardItem   Produces an instance of AlbertItem for this command to invoke on a given Player.
      * @return                      Returns a shared_ptr on this AlbertItem.
      */
-    SharedItem produceAlbertItem(Player &) const;
+    albert::SStdItem produceAlbertItem(Player &) const;
 
     /**
      * @brief isApplicable  If configured, checks if the given property meets the expected criteria.
@@ -53,12 +51,11 @@ public:
     bool isApplicable(Player&) const;
 
 private:
-    QString label_, title_, subtext_, method_, iconpath_;
+    QString label_, title_, subtext_, method_;
+    QStringList icon_;
     bool applicableCheck_;
     QString path_;
     QString property_;
     QVariant expectedValue_;
     bool positivity_;
 };
-
-} // namespace MPRIS
