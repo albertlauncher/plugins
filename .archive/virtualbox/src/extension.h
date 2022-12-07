@@ -1,5 +1,4 @@
-// Copyright (C) 2014-2015 Manuel Schneider
-// Contributed to by 2016-2017 Martin Buergmann
+// Copyright (c) 2022 Manuel Schneider
 
 #pragma once
 #include <QObject>
