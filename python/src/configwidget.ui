@@ -1,56 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Python::ConfigWidget</class>
- <widget class="QWidget" name="Python::ConfigWidget">
+ <class>ConfigWidget</class>
+ <widget class="QWidget" name="ConfigWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>631</width>
-    <height>521</height>
+    <width>551</width>
+    <height>318</height>
    </rect>
   </property>
-  <layout class="QVBoxLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
-    <widget class="QLabel" name="label">
+    <widget class="QCheckBox" name="checkBox_watchSources">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#808080;&quot;&gt;Embedded python provides a convenient way to write custom extensions. The list below contains the python extensions found on your system.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="wordWrap">
-      <bool>true</bool>
+      <string>Watch sources for changes</string>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="QTableView" name="tableView">
-     <property name="sizeAdjustPolicy">
-      <enum>QAbstractScrollArea::AdjustToContents</enum>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-     <property name="alternatingRowColors">
-      <bool>true</bool>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
      </property>
-     <property name="selectionMode">
-      <enum>QAbstractItemView::SingleSelection</enum>
-     </property>
-     <property name="selectionBehavior">
-      <enum>QAbstractItemView::SelectRows</enum>
-     </property>
-     <property name="textElideMode">
-      <enum>Qt::ElideLeft</enum>
-     </property>
-     <property name="showGrid">
-      <bool>false</bool>
-     </property>
-     <property name="wordWrap">
-      <bool>false</bool>
-     </property>
-     <attribute name="horizontalHeaderHighlightSections">
-      <bool>false</bool>
-     </attribute>
-     <attribute name="verticalHeaderVisible">
-      <bool>false</bool>
-     </attribute>
-    </widget>
+    </spacer>
    </item>
   </layout>
  </widget>

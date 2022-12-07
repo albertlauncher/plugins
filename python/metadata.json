@@ -1,9 +1,0 @@
-{
-    "id" :              "org.albert.extension.python",
-    "name" :            "Python",
-    "version" :         "1.3",
-    "platform" :        "All",
-    "group" :           "Extensions",
-    "author" :          "Manuel Schneider @manuelschneid3r",
-    "dependencies" :    ["python3"]
-}

@@ -1,24 +1,14 @@
-cmake_minimum_required(VERSION 3.1.3)
-
-PROJECT(python)
-
-FILE(GLOB_RECURSE SRC src/*)
-
-find_package(Qt5 5.5.0 REQUIRED COMPONENTS Widgets)
-add_subdirectory(pybind11)
-
-add_library(${PROJECT_NAME} SHARED ${SRC} ${PROJECT_NAME}.qrc metadata.json)
-
-target_include_directories(${PROJECT_NAME} PRIVATE src/)
-
-target_link_libraries(${PROJECT_NAME}
-    PUBLIC
-        Qt5::Widgets
-    PRIVATE
-        pybind11::embed
-        albert::lib
-        xdg
+albert_plugin(
+        VERSION 1.4
+        NAME "Python"
+        DESCRIPTION "Load Python plugins"
+        LICENSE ALL
+        URL https://github.com/albertlauncher/plugins/tree/master/python
+        MAINTAINERS @manuelschneid3r
+        QT_DEPENDENCIES Widgets
 )
 
-install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/albert/plugins)
-install(DIRECTORY "share/" DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/org.albert.extension.python")
+find_package(Python3 COMPONENTS Interpreter Development)
+find_package(pybind11)
+target_link_libraries(${PROJECT_NAME} PRIVATE pybind11::embed)
+install(DIRECTORY "plugins/" DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/${PROJECT_NAME}/plugins")

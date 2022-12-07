@@ -1,41 +1,53 @@
 # Python
 
-The Python extension makes the application extendable by embedding Python modules. Since the name of the native extension providing this functionality is *Python extension* and a Python module in this context is called *Python extension* too, this article refers to the Python extensions by using the term *Python modules*.
+The Python plugin makes the app extendable by Python modules. 
 
-In the settings of the Python extension you can find a list of installed Python extensions. This list with checkboxes works similar to the list of native extensions. Check the box of a Python module to automatically load it when the Python extension gets initialized. The icon represents the loading status. Dash means unloaded, the green checkmark stands for a successfully loaded module and a red cross indicates an error while loading the extension. In this case you can hover over the item to check its tooltip. There you find any error messages. You can also run Albert from terminal to check for error output.
+## Deployment
+
+The Python plugin scans `$DATADIR/python/plugins` for Python modules implementing the Python interface spec (See [AppDataLocation](http://doc.qt.io/qt-5/qstandardpaths.html#StandardLocation-enum) for `$DATADIR` values).
+Ids are guaranteed to be unique. If several of those paths contain a plugins with identical ids, the first plugin found will be used.
+
+## The Python interface specification
+
+This is the metadata albert reads from your module **before** loading it:
+
+Variable | Description
+--- | ---
+`__iid__` | _**MANDATORY** [string]_. The interface version this plugin implements. Currently 1.0
+`__version__` | _**MANDATORY** [string]_. The versioning scheme should be `x.y.z`. Increment x on breaking changes (also considering UX), y on smaller, backward compatible changes and z on patches. Reset y and z if x or y respecitvely changed.
+`__name__` | _**MANDATORY** [string]_. Human readable name
+`__desription__` | _**MANDATORY** [string]_. A brief, imperative description like "Launchs apps" or "Open files"
+`__doc__` | **MANDATORY** _[string]_. The docstring of the module is used as long description/readme of the extension. 
+`__license__` | **MANDATORY** _[string]_. Short form e.g. BSD-2-Clause or GPL-3.0
+`__url__` | **MANDATORY** _[string]_. Browsable source, issues etc
+`__maintainers__` | **Optional** _[string, list of strings]_. The active maintainers. Preferrably using mentionable Github usernames.
+`__authors__` | **Optional** _[string, list of strings]_. The author(s) of this extension.
+`__bin_dependencies__`| **Optional** _[string, list of strings]_. Required executables. The name of the dependency has to match the name of the executable in $PATH.
+`__lib_dependencies__` | **Optional** _[string, list of strings]_. Required Python packages. The name of the dependency has to match the name of the package in the PyPI.
 
 ## Known issues
 
 The Python interpreter shuts down when the Python extension is unloaded. After this, enabling the extension will restart the interpreter. Some modules cannot be re-initialized safely and may cause segfaults after the interpreter has been restarted (numpy!). The issue is that Python itself cannot completely unload extension modules and there are several caveats with regard to interpreter restarting. In short, not all memory may be freed, either due to Python reference cycles or user-created global data. All the details can be found in the CPython documentation.
 
-## Development
 
-How the Python extension interacts with Python modules is defined in the versioned interface specifications. Devs interested in writing extensions should check the interface specification below. Note that interfaces may brake any time as long as albert is still in alpha stage (v0.*).
 
-## Deployment
 
-The extension checks its data directories for a directory called `modules`. The name of a data directory is the id of the extension. In the case of the Python extension this is `org.albert.extension.python`. The data directories reside in the data directories of the application defined by [Qt](http://doc.qt.io/qt-5/qstandardpaths.html#StandardLocation-enum). Hence on linux the modules would be looked up in the following directories (in this order):
 
-```
-~/.local/share/albert/org.albert.extension.python/modules
-/usr/local/share/albert/org.albert.extension.python/modules
-/usr/share/albert/org.albert.extension.python/modules
-```
 
-Ids are guaranteed to be unique. This means that if several of those paths contain a plugins with identical ids, the first plugin found will be used.
 
-## Getting started (on Linux)
 
-This example should get you started developing a Python module to extend the functionality of Albert. For more extension examples, see the [albert Python extensions repository](https://github.com/albertlauncher/python).
 
-1. Duplicate the folder `~/.local/share/albert/org.albert.extension.python/modules/api-test`
-1. Rename the module but stay consistent with the conventions.
-1. Open Albert settings and navigate to Extensions > Python
-1. If your module is not listed, reload the Python extension or restart Albert
-1. Enable your module (Check the checkbox) next to your extension
-1. Create your extension. The Python extension reloads modules on file changes.
 
-Before you code check the Pull Requests. Maybe somebody had your idea already. Finally dont hesitate to share your extension!
+
+
+
+
+
+
+
+---
+
+# Deprecated documentation
 
 ## The Python interface specification (v0.4)
 
@@ -49,17 +61,17 @@ Variable | Description
 --- | ---
 `__doc__` | **Optional** _[string]_. The docstring of the module is used as description of the extension. This string will be displayed to the user.
 `__title__` | _**MANDATORY** [string]_. This variable should hold the pretty name of the extension. This string will be displayed to the user.
-`__version__` | _**MANDATORY** [string]_. The versioning scheme should be `[iid_major].[iid_minor].[version]`. The interface id (`iid_*`) should match the pyton interface version. `version` is the extensions version.<br><br>**Note** that within each `iid_maj` the API is backwards compatible, but as long as albert is in alpha stage `iid_major` will be `0` and API may brake any time.
+`__version__` | _**MANDATORY** [string]_. The versioning scheme should be `[iid_major].[iid_minor].[verion]`. The interface id (`iid_*`) should match the pyton interface version. `version` is the extensions version.<br><br>**Note** that within each `iid_maj` the API is backwards compatible, but as long as albert is in alpha stage `iid_major` will be `0` and API may brake any time.
 `__triggers__` | **Optional** _[string, list of strings]_. If this extension should be run exclusively, this variable has to hold the trigger that causes the extension to be executed.
 `__authors__` | **Optional** _[string, list of strings]_. This variable should hold the name of the author of the extension.
 `__exec_deps__`| **Optional** _[string, list of strings]_. This string should contain any dependencies the extension needs to be used. The name of the dependency has to match the name of the executable in $PATH.
-`__py_deps__` | **Optional** _[string, list of strings]_. This string should contain any dependencies the extension needs to be used. The name of the dependency has to match the name of the package in the PyPI.
+`__py_deps__` | **Optional** _[string, list of strings]_. This string should contain any python dependencies the extension needs to be used. The name of the dependency has to match the name of the package in the PyPI.
 
 These are the functions an albert extension must/may have:
 
 Function | Description
 --- | ---
-`handleQuery(Query)` | ***MANDATORY***. This is the crucial part of a Python module. When the user types a query, this function is called with a query object representing the current query execution. This function should return a list of Item objects. See the Item class section below.
+`handleQuery(QueryExecution)` | ***MANDATORY***. This is the crucial part of a Python module. When the user types a query, this function is called with a query object representing the current query execution. This function should return a list of Item objects. See the Item class section below.
 `initialize()` | **Optional**. This function is called when the extension is loaded. Although you could technically run your initialization code in global scope, it is recommended to initialize your extension in this function. If your extension fails to initialize you can raise exceptions here, which are displayed to the user.
 `finalize()` | **Optional**. This function is called when the extension is unloaded.
 
@@ -78,9 +90,9 @@ Function | Description
 `configLocation()`|Returns the writable config location of the app. (E.g. $HOME/.config/albert/ on Linux)
 `dataLocation()`|Returns the writable data location of the app. (E.g. $HOME/.local/share/albert/ on Linux)
 
-#### The `Query` class
+#### The `QueryExecution` class
 
-The query class represents a query execution. It holds the necessary information to handle a Query. It is passed to the handleQuery function. It holds the following read-only properties.
+The query class represents a query execution. It holds the necessary information to handle a QueryExecution. It is passed to the handleQuery function. It holds the following read-only properties.
 
 Attribute | Description
 --- | ---
@@ -89,7 +101,7 @@ Attribute | Description
 `trigger`|This is the trigger that has been used to start this extension.
 `isTriggered`|Indicates that this query has been triggered.
 `isValid`|This flag indicates if the query is valid. A query is valid untill the query manager cancels it. You should regularly check this flag and abort the query handling if the flag is `False` to release threads in the threadpool for the next query.
-`disableSort()`|Indicates that this query has been triggered.
+`disableSort()`|Preserve the order of the query results, do not isSorted
 
 #### The `Item` class
 
