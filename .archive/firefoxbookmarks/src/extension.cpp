@@ -1,4 +1,4 @@
-// Copyright (C) 2014-2020 Manuel Schneider
+// Copyright (c) 2022 Manuel Schneider
 
 #include <QApplication>
 #include <QCheckBox>
