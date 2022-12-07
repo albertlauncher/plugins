@@ -1,227 +1,166 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (c) 2022 Manuel Schneider
 
+#include "configwidget.h"
+#include "mimefilterdialog.h"
+#include "namefilterdialog.h"
+#include "plugin.h"
+#include <QDir>
 #include <QFileDialog>
 #include <QStandardPaths>
-#include <QStringListModel>
-#include "configwidget.h"
-#include "extension.h"
-#include "mimetypedialog.h"
+#include <map>
+using namespace std;
 
-/** ***************************************************************************/
-Files::ConfigWidget::ConfigWidget(Extension *_extension, QWidget *_parent)
-    : QWidget(_parent), extension(_extension) {
+static QStringList getPaths(const map<QString,unique_ptr<FsIndexPath>> &index_paths){
+    QStringList paths;
+    for (const auto &[p,_] : index_paths)
+        paths << p;
+    return paths;
+};
+
+ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu)
+{
     ui.setupUi(this);
 
-    // Paths
-    QStringListModel *pathsModel = new QStringListModel(this);
-    pathsModel->setStringList(extension->paths());
-    ui.listView_paths->setModel(pathsModel);
-    connect(extension, &Extension::pathsChanged,
-            pathsModel, &QStringListModel::setStringList);
+    auto &index_paths = plu->fsIndex().indexPaths();
+    paths_model.setStringList(getPaths(index_paths));
+    ui.listView_paths->setModel(&paths_model);
 
-    // Buttons
-    connect(ui.pushButton_add, &QPushButton::clicked, [=](){
-        QFileInfo fileInfo(QFileDialog::getExistingDirectory(
-                               this,
-                               tr("Choose directory"),
-                               QStandardPaths::writableLocation(QStandardPaths::HomeLocation)));
-        if(fileInfo.exists())
-            extension->setPaths(QStringList(extension->paths()) << fileInfo.absoluteFilePath());
-    });
-
-    connect(ui.pushButton_remove, &QPushButton::clicked, [this, pathsModel](){
-        if ( !ui.listView_paths->currentIndex().isValid() )
-            return;
-        QStringList paths(extension->paths());
-        paths.removeAll(pathsModel->stringList()[ui.listView_paths->currentIndex().row()]);
-        extension->setPaths(paths);
-    });
-
-    connect(ui.pushButton_restore, &QPushButton::clicked,
-            extension, &Extension::restorePaths);
-
-    connect(ui.pushButton_update, &QPushButton::clicked,
-            extension, &Extension::updateIndex);
-
-    /*
-     * Initialize the indexing options
-     */
-
-    ui.checkBox_hidden->setChecked(extension->indexHidden());
-    connect(ui.checkBox_hidden, &QCheckBox::toggled, extension, &Extension::setIndexHidden);
-
-    ui.checkBox_followSymlinks->setChecked(extension->followSymlinks());
-    connect(ui.checkBox_followSymlinks, &QCheckBox::toggled, extension, &Extension::setFollowSymlinks);
-
-    ui.checkBox_fuzzy->setChecked(extension->fuzzy());
-    connect(ui.checkBox_fuzzy, &QCheckBox::toggled, extension, &Extension::setFuzzy);
-
-    ui.spinBox_interval->setValue(static_cast<int>(extension->scanInterval()));
-    connect(ui.spinBox_interval, static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-            extension, &Extension::setScanInterval);
-
-    /*
-     * Initialize the mime options
-     */
-
-    QStringList filters = extension->filters();
-
-    if (filters.contains("audio/*"))
-        ui.checkBox_audio->setCheckState(Qt::Checked);
-    else if (std::any_of(filters.begin(), filters.end(),
-                        [](const QString & str){ return str.startsWith("audio/"); }))
-        ui.checkBox_audio->setCheckState(Qt::PartiallyChecked);
-    else
-        ui.checkBox_audio->setCheckState(Qt::Unchecked);
-
-    if (filters.contains("video/*"))
-        ui.checkBox_video->setCheckState(Qt::Checked);
-    else if (std::any_of(filters.begin(), filters.end(),
-                        [](const QString & str){ return str.startsWith("video/"); }))
-        ui.checkBox_video->setCheckState(Qt::PartiallyChecked);
-    else
-        ui.checkBox_video->setCheckState(Qt::Unchecked);
-
-    if (filters.contains("image/*"))
-        ui.checkBox_image->setCheckState(Qt::Checked);
-    else if (std::any_of(filters.begin(), filters.end(),
-                         [](const QString & str){ return str.startsWith("image/"); }))
-        ui.checkBox_image->setCheckState(Qt::PartiallyChecked);
-    else
-        ui.checkBox_image->setCheckState(Qt::Unchecked);
-
-    if (filters.contains("application/*"))
-        ui.checkBox_docs->setCheckState(Qt::Checked);
-    else if (std::any_of(filters.begin(), filters.end(),
-                         [](const QString & str){ return str.startsWith("application/"); }))
-        ui.checkBox_docs->setCheckState(Qt::PartiallyChecked);
-    else
-        ui.checkBox_docs->setCheckState(Qt::Unchecked);
-
-    if (filters.contains("inode/directory"))
-        ui.checkBox_dirs->setCheckState(Qt::Checked);
-    else
-        ui.checkBox_dirs->setCheckState(Qt::Unchecked);
-
-    /*
-     * Set the actions for checking the mime options
-     */
-
-    connect(ui.checkBox_audio, &QCheckBox::clicked, extension, [this]() {
-        ui.checkBox_audio->setTristate(false);
-        QStringList filters = extension->filters();
-        filters.erase(std::remove_if(filters.begin(), filters.end(),
-                                     [](const QString &str){ return str.startsWith("audio/"); }),
-                      filters.end());
-        if (ui.checkBox_audio->checkState() == Qt::Checked)
-            filters.push_back("audio/*");
-        extension->setFilters(filters);
-    });
-
-    connect(ui.checkBox_video, &QCheckBox::clicked, extension, [this]() {
-        ui.checkBox_video->setTristate(false);
-        QStringList filters = extension->filters();
-        filters.erase(std::remove_if(filters.begin(), filters.end(),
-                                     [](const QString &str){ return str.startsWith("video/"); }),
-                      filters.end());
-        if (ui.checkBox_video->checkState() == Qt::Checked)
-            filters.push_back("video/*");
-        extension->setFilters(filters);
-    });
-
-    connect(ui.checkBox_image, &QCheckBox::clicked, extension, [this]() {
-        ui.checkBox_image->setTristate(false);
-        QStringList filters = extension->filters();
-        filters.erase(std::remove_if(filters.begin(), filters.end(),
-                                     [](const QString &str){ return str.startsWith("image/"); }),
-                      filters.end());
-        if (ui.checkBox_image->checkState() == Qt::Checked)
-            filters.push_back("image/*");
-        extension->setFilters(filters);
-    });
-
-    connect(ui.checkBox_docs, &QCheckBox::clicked, extension, [this]() {
-        ui.checkBox_docs->setTristate(false);
-        QStringList filters = extension->filters();
-        filters.erase(std::remove_if(filters.begin(), filters.end(),
-                                     [](const QString &str){ return str.startsWith("application/"); }),
-                      filters.end());
-        if (ui.checkBox_docs->checkState() == Qt::Checked)
-            filters.push_back("application/*");
-        extension->setFilters(filters);
-    });
-
-    connect(ui.checkBox_dirs, &QCheckBox::toggled, extension, [=](bool checked){
-        QStringList filters = extension->filters();
-        filters.removeAll("inode/directory");
-        if (checked)
-            filters.push_back("inode/directory");
-        extension->setFilters(filters);
-    });
-
-    // The advanced button action
-    connect(ui.pushButton_advanced, &QPushButton::clicked, [=](){
-
-        MimeTypeDialog dialog(extension->filters(), this);
-        dialog.setWindowModality(Qt::WindowModal);
-        if ( dialog.exec() ) {
-
-            // If the dialog has been accepted, update extension and checkboxes
-            extension->setFilters(dialog.filters());
-
-            // Set the shortcuts
-            QStringList filters = extension->filters();
-
-            if (filters.contains("audio/*"))
-                ui.checkBox_audio->setCheckState(Qt::Checked);
-            else if (std::any_of(filters.begin(), filters.end(),
-                                 [](const QString & str){ return str.startsWith("audio/"); }))
-                ui.checkBox_audio->setCheckState(Qt::PartiallyChecked);
-            else
-                ui.checkBox_audio->setCheckState(Qt::Unchecked);
-
-            if (filters.contains("video/*"))
-                ui.checkBox_video->setCheckState(Qt::Checked);
-            else if (std::any_of(filters.begin(), filters.end(),
-                                 [](const QString & str){ return str.startsWith("video/"); }))
-                ui.checkBox_video->setCheckState(Qt::PartiallyChecked);
-            else
-                ui.checkBox_video->setCheckState(Qt::Unchecked);
-
-            if (filters.contains("image/*"))
-                ui.checkBox_image->setCheckState(Qt::Checked);
-            else if (std::any_of(filters.begin(), filters.end(),
-                                 [](const QString & str){ return str.startsWith("image/"); }))
-                ui.checkBox_image->setCheckState(Qt::PartiallyChecked);
-            else
-                ui.checkBox_image->setCheckState(Qt::Unchecked);
-
-            if (filters.contains("application/*"))
-                ui.checkBox_docs->setCheckState(Qt::Checked);
-            else if (std::any_of(filters.begin(), filters.end(),
-                                 [](const QString & str){ return str.startsWith("application/"); }))
-                ui.checkBox_docs->setCheckState(Qt::PartiallyChecked);
-            else
-                ui.checkBox_docs->setCheckState(Qt::Unchecked);
-
-            if (filters.contains("inode/directory"))
-                ui.checkBox_dirs->setCheckState(Qt::Checked);
-            else
-                ui.checkBox_dirs->setCheckState(Qt::Unchecked);
+    connect(ui.toolButton_add, &QPushButton::clicked, this, [this]()
+    {
+        QString path = QFileDialog::getExistingDirectory(
+                this,
+                tr("Choose directory"),
+                QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
+        if (!path.isEmpty()){
+            auto *p = new FsIndexPath(path);
+            if (plugin->fsIndex().addPath(p)){
+                plugin->fsIndex().update(p);
+                paths_model.setStringList(getPaths(plugin->fsIndex().indexPaths()));
+                for (int i = 0; i < paths_model.stringList().size(); ++i)
+                    if (paths_model.stringList()[i] == path)
+                        ui.listView_paths->setCurrentIndex(paths_model.index(i, 0));
+            }
+            else delete p;
         }
     });
 
-    // Status bar
-    connect(extension, &Extension::statusInfo, this, [this](const QString& text){
+    connect(ui.toolButton_rem, &QPushButton::clicked, this, [this]()
+    {
+        if (ui.listView_paths->currentIndex().isValid()){
+            plugin->fsIndex().remPath(ui.listView_paths->currentIndex().data().toString());
+            paths_model.removeRow(ui.listView_paths->currentIndex().row());
+        }
+    });
+
+    connect(plugin, &Plugin::statusInfo, this, [this](const QString& text){
         QFontMetrics metrics(ui.label_statusbar->font());
-        QString elidedText = metrics.elidedText(text, Qt::ElideMiddle, ui.label_statusbar->width()-5);
+        QString elidedText = metrics.elidedText(text, Qt::ElideRight, ui.label_statusbar->width()-5);
         ui.label_statusbar->setText(elidedText);
+    });
+
+    /*
+     * Per path stuff
+     */
+
+    // Update ui on index change
+    connect(ui.listView_paths->selectionModel(), &QItemSelectionModel::currentChanged,
+            this, [this](const QModelIndex &current, const QModelIndex &previous){
+                if (!current.isValid()) {
+                    ui.groupBox_path->setEnabled(false);
+                } else {
+                    ui.groupBox_path->setEnabled(true);
+                    current_path = current.data().toString();
+                    auto &fsp = plugin->fsIndex().indexPaths().at(current_path);
+                    ui.checkBox_hidden->setChecked(fsp->indexHidden());
+                    ui.checkBox_followSymlinks->setChecked(fsp->followSymlinks());
+                    ui.spinBox_depth->setValue(static_cast<int>(fsp->maxDepth()));
+                    ui.spinBox_interval->setValue(static_cast<int>(fsp->scanInterval()));
+                    ui.checkBox_fswatch->setChecked(fsp->watchFileSystem());
+                    adjustMimeCheckboxes();
+                }
+            });
+
+    connect(ui.pushButton_namefilters, &QPushButton::clicked, this, [this]() {
+        auto &fsp = plugin->fsIndex().indexPaths().at(current_path);
+        NameFilterDialog dialog(fsp->nameFilters(), this);
+        dialog.setWindowModality(Qt::WindowModal);
+        if (dialog.exec()) {
+            auto filters = dialog.filters();
+            filters.removeDuplicates();
+            fsp->setNameFilters(filters);
+        }
+    });
+
+    connect(ui.pushButton_mimefilters, &QPushButton::clicked, this, [this]() {
+        auto &fsp = plugin->fsIndex().indexPaths().at(current_path);
+        MimeFilterDialog dialog(fsp->mimeFilters(), this);
+        dialog.setWindowModality(Qt::WindowModal);
+        if (dialog.exec()) {
+            auto filters = dialog.filters();
+            filters.removeDuplicates();
+            fsp->setMimeFilters(filters);
+            adjustMimeCheckboxes();
+
+        }
+    });
+
+    connect(ui.checkBox_hidden, &QCheckBox::clicked, this,
+            [this](bool value){ plugin->fsIndex().indexPaths().at(current_path)->setIndexHidden(value); });
+
+    connect(ui.checkBox_followSymlinks, &QCheckBox::clicked, this,
+            [this](bool value){ plugin->fsIndex().indexPaths().at(current_path)->setFollowSymlinks(value); });
+
+    connect(ui.spinBox_interval, &QSpinBox::valueChanged, this,
+            [this](int value){ plugin->fsIndex().indexPaths().at(current_path)->setScanInterval(value); });
+
+    connect(ui.spinBox_depth, &QSpinBox::valueChanged, this,
+            [this](int value){ plugin->fsIndex().indexPaths().at(current_path)->setMaxDepth(value); });
+
+    connect(ui.checkBox_fswatch, &QCheckBox::clicked, this,
+            [this](bool value){ plugin->fsIndex().indexPaths().at(current_path)->setWatchFilesystem(value); });
+
+    auto helper = [this](QCheckBox *checkbox, const QString& type){
+        connect(checkbox, &QCheckBox::clicked, this, [this, checkbox, type](bool checked){
+            checkbox->setTristate(false);
+            auto patterns = plugin->fsIndex().indexPaths().at(current_path)->mimeFilters();
+            patterns = patterns.filter(QRegularExpression(QString(R"(^(?!%1\/))").arg(type))); // drop all of mimetype class
+            if (checked)
+                patterns.push_back(QString("%1/*").arg(type));
+            plugin->fsIndex().indexPaths().at(current_path)->setMimeFilters(patterns);
+        });
+    };
+    helper(ui.checkBox_audio, "audio");
+    helper(ui.checkBox_video, "video");
+    helper(ui.checkBox_image, "image");
+    helper(ui.checkBox_docs, "application");
+
+    connect(ui.checkBox_dirs, &QCheckBox::clicked, this, [this](bool checked){
+        auto patterns = plugin->fsIndex().indexPaths().at(current_path)->mimeFilters();
+        patterns.removeAll("inode/directory");
+        if (checked)
+            patterns.push_back("inode/directory");
+        plugin->fsIndex().indexPaths().at(current_path)->setMimeFilters(patterns);
     });
 }
 
-
-
-/** ***************************************************************************/
-Files::ConfigWidget::~ConfigWidget() {
-
+void ConfigWidget::adjustMimeCheckboxes()
+{
+    auto patterns = plugin->fsIndex().indexPaths().at(current_path)->mimeFilters();
+    ui.checkBox_dirs->setCheckState(patterns.contains("inode/directory") ? Qt::Checked : Qt::Unchecked);
+    map<QCheckBox*,QString> m {
+            {ui.checkBox_audio, "audio/"},
+            {ui.checkBox_video, "video/"},
+            {ui.checkBox_image, "image/"},
+            {ui.checkBox_docs, "application/"}
+    };
+    for (const auto &[checkbox, mime_prefix] : m){
+        if (patterns.contains(mime_prefix+"*"))
+            checkbox->setCheckState(Qt::Checked);
+        else if (any_of(patterns.begin(), patterns.end(),
+                        [mime_prefix=mime_prefix](const QString & str){ return str.startsWith(mime_prefix); }))
+            checkbox->setCheckState(Qt::PartiallyChecked);
+        else
+            checkbox->setCheckState(Qt::Unchecked);
+    }
 }
+

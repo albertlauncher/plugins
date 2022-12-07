@@ -1,33 +1,22 @@
-// Copyright (C) 2014-2018 Manuel Schneider
+// Copyright (c) 2022 Manuel Schneider
 
 #pragma once
-#include <QWidget>
-#include <QTimer>
 #include "ui_configwidget.h"
+#include <QStringListModel>
+#include <QTimer>
+#include <QWidget>
 
-namespace Files {
-
-class Extension;
+class Plugin;
 
 class ConfigWidget final : public QWidget
 {
     Q_OBJECT
-
 public:
-
-    explicit ConfigWidget(Extension *ext, QWidget *parent = 0);
-    ~ConfigWidget();
-
-private:
-
-    Extension *extension;
+    explicit ConfigWidget(Plugin *, QWidget *parent = 0);
     Ui::ConfigWidget ui;
-
-signals:
-
-    void requestAddPath(const QString&);
-    void requestRemovePath(const QString&);
-
+private:
+    void adjustMimeCheckboxes();
+    QStringListModel paths_model;
+    QString current_path;
+    Plugin *plugin;
 };
-
-}

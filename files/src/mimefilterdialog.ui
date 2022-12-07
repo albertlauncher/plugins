@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Files::MimeTypeDialog</class>
- <widget class="QDialog" name="Files::MimeTypeDialog">
+ <class>MimeFilterDialog</class>
+ <widget class="QDialog" name="MimeFilterDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>600</width>
-    <height>480</height>
+    <width>800</width>
+    <height>400</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,9 +29,7 @@
    <item>
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p style=&quot; color:#808080;&quot;&gt;
-Choose the MIME types you want to be indexed by the files extension. The left box contains the known MIME types. Use it to find your desired MIME types. The right box contains the list of patterns that is used to filter the indexed files by matching their MIME type. The patterns support wildcard matching. Check the docs for more details and examples.
-&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#808080;&quot;&gt;Choose the MIME types you want to be indexed by the files extension. Use the left list to find your desired MIME types. The right box contains the list of patterns that is used to filter the indexed files by matching their MIME type. The patterns support wildcard matching. &lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -42,7 +40,7 @@ Choose the MIME types you want to be indexed by the files extension. The left bo
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="2,1">
      <item>
       <widget class="QGroupBox" name="groupBox">
        <property name="title">
@@ -66,26 +64,11 @@ Choose the MIME types you want to be indexed by the files extension. The left bo
           <property name="verticalScrollBarPolicy">
            <enum>Qt::ScrollBarAlwaysOn</enum>
           </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
           <property name="showDropIndicator" stdset="0">
            <bool>false</bool>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>22</width>
-            <height>22</height>
-           </size>
-          </property>
-          <property name="layoutMode">
-           <enum>QListView::Batched</enum>
-          </property>
-          <property name="gridSize">
-           <size>
-            <width>0</width>
-            <height>24</height>
-           </size>
-          </property>
-          <property name="uniformItemSizes">
-           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -98,9 +81,6 @@ Choose the MIME types you want to be indexed by the files extension. The left bo
         </item>
        </layout>
       </widget>
-     </item>
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout_3"/>
      </item>
      <item>
       <widget class="QGroupBox" name="groupBox_2">
@@ -121,66 +101,36 @@ Choose the MIME types you want to be indexed by the files extension. The left bo
          <number>4</number>
         </property>
         <item>
-         <widget class="QListView" name="listView_filters">
-          <property name="verticalScrollBarPolicy">
-           <enum>Qt::ScrollBarAlwaysOn</enum>
-          </property>
-          <property name="showDropIndicator" stdset="0">
-           <bool>false</bool>
-          </property>
-          <property name="gridSize">
-           <size>
-            <width>0</width>
-            <height>24</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QToolButton" name="toolButton_copyMimetype">
-            <property name="text">
-             <string>&gt;</string>
-            </property>
-            <property name="icon">
-             <iconset theme="go-next">
-              <normaloff>.</normaloff>.</iconset>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QToolButton" name="toolButton_add">
-            <property name="icon">
-             <iconset theme="list-add">
-              <normaloff>.</normaloff>.</iconset>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QToolButton" name="toolButton_remove">
-            <property name="icon">
-             <iconset theme="list-remove">
-              <normaloff>.</normaloff>.</iconset>
-            </property>
-           </widget>
-          </item>
-         </layout>
+         <widget class="QPlainTextEdit" name="plainTextEdit"/>
         </item>
        </layout>
       </widget>
      </item>
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout_5"/>
-     </item>
     </layout>
    </item>
    <item>
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QLabel" name="label_error">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>
@@ -189,7 +139,7 @@ Choose the MIME types you want to be indexed by the files extension. The left bo
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>Files::MimeTypeDialog</receiver>
+   <receiver>MimeFilterDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -205,7 +155,7 @@ Choose the MIME types you want to be indexed by the files extension. The left bo
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>Files::MimeTypeDialog</receiver>
+   <receiver>MimeFilterDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
