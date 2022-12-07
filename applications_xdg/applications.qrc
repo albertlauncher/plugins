@@ -1,0 +1,9 @@
+<!--
+  ~ Copyright (c) 2022 Manuel Schneider
+  -->
+
+<RCC>
+    <qresource prefix="/">
+        <file alias="executable">executable.svg</file>
+    </qresource>
+</RCC>

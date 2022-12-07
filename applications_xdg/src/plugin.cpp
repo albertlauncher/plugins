@@ -1,42 +1,13 @@
-// Copyright (C) 2014-2020 Manuel Schneider
+// Copyright (c) 2022 Manuel Schneider
 
-#include <QApplication>
-#include <QDir>
-#include <QDirIterator>
-#include <QFile>
-#include <QFileSystemWatcher>
-#include <QPointer>
-#include <QProcess>
-#include <QRegularExpression>
-#include <QSettings>
 #include <QStandardPaths>
-#include <QThread>
-#include <QTimer>
-#include <QtConcurrent>
-#include <algorithm>
-#include <functional>
-#include <map>
-#include <memory>
-#include <vector>
-#include "albert/queryhandler.h"
-#include "albert/util/offlineindex.h"
-#include "albert/util/standardactions.h"
-#include "albert/util/standardindexitem.h"
-#include "configwidget.h"
-#include "extension.h"
-#include "xdg/iconlookup.h"
-Q_LOGGING_CATEGORY(qlc, "apps")
-#define DEBG qCDebug(qlc,).noquote()
-#define INFO qCInfo(qlc,).noquote()
-#define WARN qCWarning(qlc,).noquote()
-#define CRIT qCCritical(qlc,).noquote()
-using namespace Core;
+#include <QRegularExpression>
+#include "plugin.h"
+#include "ui_configwidget.h"
+ALBERT_LOGGING
 using namespace std;
-
-namespace {
-
-const char* CFG_FUZZY                = "fuzzy";
-const bool  DEF_FUZZY                = false;
+using albert::StandardItem;
+using albert::IndexItem;
 const char* CFG_IGNORESHOWINKEYS     = "ignore_show_in_keys";
 const bool  DEF_IGNORESHOWINKEYS     = false;
 const char* CFG_USEKEYWORDS          = "use_keywords";
@@ -46,8 +17,8 @@ const bool  DEF_USEGENERICNAME       = false;
 const char* CFG_USENONLOCALIZEDNAME  = "use_non_localized_name";
 const bool  DEF_USENONLOCALIZEDNAME  = false;
 
-/******************************************************************************/
-QString fieldCodesExpanded(const QString & exec, const QString & name, const QString & icon, const QString & de_path) {
+static QString fieldCodesExpanded(const QString & exec, const QString & name, const QString & icon, const QString & de_path)
+{
     /*
      * https://specifications.freedesktop.org/desktop-entry-spec/1.5/ar01s07.html
      *
@@ -89,8 +60,9 @@ QString fieldCodesExpanded(const QString & exec, const QString & name, const QSt
     }
     return commandLine;
 }
-/******************************************************************************/
-QString xdgStringEscape(const QString & unescaped) {
+
+static QString xdgStringEscape(const QString & unescaped)
+{
     /*
      * The escape sequences \s, \n, \t, \r, and \\ are supported for values of
      * type string and localestring, meaning ASCII space, newline, tab, carriage
@@ -123,8 +95,8 @@ QString xdgStringEscape(const QString & unescaped) {
     return result;
 }
 
-/******************************************************************************/
-QString getLocalizedKey(const QString &key, const map<QString,QString> &entries, const QLocale &loc) {
+static QString getLocalizedKey(const QString &key, const map<QString,QString> &entries, const QLocale &loc)
+{
     map<QString,QString>::const_iterator it;
     if ( (it = entries.find(QString("%1[%2]").arg(key, loc.name()))) != entries.end()
          || (it = entries.find(QString("%1[%2]").arg(key, loc.name().left(2)))) != entries.end()
@@ -133,110 +105,16 @@ QString getLocalizedKey(const QString &key, const map<QString,QString> &entries,
     return QString();
 }
 
-}
-
-
-
-/** ***************************************************************************/
-/** ***************************************************************************/
-/** ***************************************************************************/
-/** ***************************************************************************/
-class Applications::Private
+vector<IndexItem> Plugin::indexApps(const bool &abort) const
 {
-public:
-    Private(Extension *q) : q(q) {}
-
-    Extension *q;
-
-    QPointer<ConfigWidget> widget;
-    QFileSystemWatcher watcher;
-
-    QStringList indexedDirs;
-    vector<shared_ptr<Core::StandardIndexItem>> index;
-    OfflineIndex offlineIndex;
-
-    QFutureWatcher<vector<shared_ptr<Core::StandardIndexItem>>> futureWatcher;
-    bool rerun = false;
-    bool ignoreShowInKeys;
-    bool useKeywords;
-    bool useGenericName;
-    bool useNonLocalizedName;
-
-    void finishIndexing();
-    void startIndexing();
-    vector<shared_ptr<Core::StandardIndexItem>> indexApplications() const;
-};
-
-
-
-/** ***************************************************************************/
-void Applications::Private::startIndexing() {
-
-    // Never run concurrent
-    if ( futureWatcher.future().isRunning() ) {
-        rerun = true;
-        return;
-    }
-
-    // Run finishIndexing when the indexing thread finished
-    futureWatcher.disconnect();
-    QObject::connect(&futureWatcher, &QFutureWatcher<vector<shared_ptr<Core::StandardIndexItem>>>::finished,
-                     bind(&Private::finishIndexing, this));
-
-    // Run the indexer thread
-    futureWatcher.setFuture(QtConcurrent::run(this, &Private::indexApplications));
-
-    // Notification
-    INFO << "Start indexing applications.";
-    emit q->statusInfo("Indexing applications ...");
-}
-
-
-
-/** ***************************************************************************/
-void Applications::Private::finishIndexing() {
-
-    // Get the thread results
-    index = futureWatcher.future().result();
-
-    // Rebuild the offline index
-    offlineIndex.clear();
-    for (const auto &item : index)
-        offlineIndex.add(item);
-
-    // Finally update the watches (maybe folders changed)
-    if (!watcher.directories().isEmpty())
-        watcher.removePaths(watcher.directories());
-    QStringList xdgAppDirs = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
-    for (const QString &path : xdgAppDirs) {
-        if (QFile::exists(path)) {
-            watcher.addPath(path);
-            QDirIterator dit(path, QDir::Dirs|QDir::NoDotAndDotDot);
-            while (dit.hasNext())
-                watcher.addPath(dit.next());
-        }
-    }
-
-    // Notification
-    INFO << QString("Indexed %1 applications.").arg(index.size());
-    emit q->statusInfo(QString("%1 applications indexed.").arg(index.size()));
-
-    if ( rerun ) {
-        startIndexing();
-        rerun = false;
-    }
-}
-
-/** ***************************************************************************/
-vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications() const {
+    vector<IndexItem> results;
 
     // Get a new index [O(n)]
-    vector<shared_ptr<StandardIndexItem>> desktopEntries;
-    QStringList xdg_current_desktop = QString(getenv("XDG_CURRENT_DESKTOP")).split(':',QString::SkipEmptyParts);
+    QStringList xdg_current_desktop = QString(getenv("XDG_CURRENT_DESKTOP")).split(':', Qt::SkipEmptyParts);
     QLocale loc;
     QStringList xdgAppDirs = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
     xdgAppDirs.append(QStandardPaths::standardLocations(QStandardPaths::DesktopLocation));
-	
+
     /*
      * Create a list of desktop files to index (unique ids)
      * To determine the ID of a desktop file, make its full path relative to
@@ -301,25 +179,25 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 
         // Skip, if type is not found or not application
         if ((entryIterator = entryMap.find("Type")) == entryMap.end() ||
-                entryIterator->second != "Application")
+            entryIterator->second != "Application")
             continue;
 
         // Skip, if this desktop entry must not be shown
         if ((entryIterator = entryMap.find("NoDisplay")) != entryMap.end()
-                && entryIterator->second == "true")
+            && entryIterator->second == "true")
             continue;
 
         if (!ignoreShowInKeys) {
             // Skip if the current desktop environment is specified in "NotShowIn"
             if ((entryIterator = entryMap.find("NotShowIn")) != entryMap.end())
-                for (const QString &str : entryIterator->second.split(';',QString::SkipEmptyParts))
+                for (const QString &str : entryIterator->second.split(';', Qt::SkipEmptyParts))
                     if (xdg_current_desktop.contains(str))
                         continue;
 
             // Skip if the current desktop environment is not specified in "OnlyShowIn"
             if ((entryIterator = entryMap.find("OnlyShowIn")) != entryMap.end()) {
                 bool found = false;
-                for (const QString &str : entryIterator->second.split(';',QString::SkipEmptyParts))
+                for (const QString &str : entryIterator->second.split(';', Qt::SkipEmptyParts))
                     if (xdg_current_desktop.contains(str)){
                         found = true;
                         break;
@@ -356,7 +234,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 
         // Check if this is a terminal app
         term = (entryIterator = entryMap.find("Terminal")) != entryMap.end()
-                && entryIterator->second=="true";
+               && entryIterator->second=="true";
 
         // Try to get the localized genericName
         genericName = xdgStringEscape(getLocalizedKey("GenericName", entryMap, loc));
@@ -369,7 +247,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
         comment = xdgStringEscape(getLocalizedKey("Comment", entryMap, loc));
 
         // Try to get the keywords
-        keywords = xdgStringEscape(getLocalizedKey("Keywords", entryMap, loc)).split(';',QString::SkipEmptyParts);
+        keywords = xdgStringEscape(getLocalizedKey("Keywords", entryMap, loc)).split(';', Qt::SkipEmptyParts);
 
         // Try to get the workindir
         if ((entryIterator = entryMap.find("Path")) != entryMap.end())
@@ -377,7 +255,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
 
         // Try to get the keywords
         if ((entryIterator = entryMap.find("Actions")) != entryMap.end())
-            actionIdentifiers = xdgStringEscape(entryIterator->second).split(';',QString::SkipEmptyParts);
+            actionIdentifiers = xdgStringEscape(entryIterator->second).split(';', Qt::SkipEmptyParts);
 
 //            // Try to get the mimetypes
 //            if ((valueIterator = entryMap.find("MimeType")) != entryMap.end())
@@ -392,9 +270,7 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
         QString commandLine = fieldCodesExpanded(exec, name, icon, path);
 
         // Icon path
-        QString icon_path = XDG::IconLookup::iconPath({icon, "application-x-executable", "exec"});
-        if (icon_path.isNull())
-            icon_path = ":application-x-executable";
+        QStringList icon_urls = {"xdg:" + icon, "xdg:application-x-executable", "xdg:exec",":application-x-executable"};
 
         // Description
         QString subtext;
@@ -408,42 +284,44 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             subtext = commandLine;
 
         // Set index strings
-        vector<IndexableItem::IndexString> indexStrings;
-        indexStrings.emplace_back(name, UINT_MAX);
+        QStringList index_strings;
+        index_strings << name;
 
         QStringList excludes = {
-            "java ",
-            "ruby ",
-            "python ",
-            "perl ",
-            "bash ",
-            "sh ",
-            "dbus-send ",
-            "/"
+                "java ",
+                "ruby ",
+                "python ",
+                "perl ",
+                "bash ",
+                "sh ",
+                "dbus-send ",
+                "/"
         };
         if (none_of(excludes.begin(), excludes.end(), [&exec](const QString &str){ return exec.startsWith(str); }))
-            indexStrings.emplace_back(exec.section(QChar(QChar::Space), 0, 0, QString::SectionSkipEmpty), UINT_MAX);
+            index_strings << exec.section(QChar(QChar::Space), 0, 0, QString::SectionSkipEmpty);
 
         if (useKeywords)
             for (auto & kw : keywords)
-                indexStrings.emplace_back(kw, UINT_MAX/2);
+                index_strings << kw;
 
         if (useGenericName && !genericName.isEmpty())
-            indexStrings.emplace_back(genericName, UINT_MAX/2);
+            index_strings << genericName;
 
         if (useNonLocalizedName && !nonLocalizedName.isEmpty())
-            indexStrings.emplace_back(nonLocalizedName, UINT_MAX/2);
+            index_strings << nonLocalizedName;
 
         /*
          * Build actions
          */
 
-        ActionList actionList;
+        albert::Actions actionList;
 
         if (term)
-            actionList.emplace_back(makeTermAction("Run", commandLine, TermAction::CloseOnExit, workingDir));
+            actionList.emplace_back("run", "Run", [=](){ albert::runTerminal(commandLine, workingDir, true); });
         else
-            actionList.emplace_back(makeProcAction("Run", QStringList() << "sh" << "-c" << commandLine, workingDir));
+            actionList.emplace_back("run", "Run", [=](){
+                albert::runDetachedProcess(QStringList() << "sh" << "-c" << commandLine, workingDir);
+            });
 
         // Desktop Actions
         for (const QString &actionIdentifier: actionIdentifiers){
@@ -465,151 +343,111 @@ vector<shared_ptr<StandardIndexItem>> Applications::Private::indexApplications()
             // Unquote arguments and expand field codes
             commandLine = fieldCodesExpanded(entryIterator->second, icon, name, path);
             if (term)
-                actionList.emplace_back(makeTermAction(actionName, commandLine, TermAction::CloseOnExit, workingDir));
+                actionList.emplace_back(actionName, actionName, [=](){
+                    albert::runTerminal(commandLine, workingDir, true);
+                });
             else
-                actionList.emplace_back(makeProcAction(actionName, QStringList() << "sh" << "-c" << commandLine, workingDir));
-
+                actionList.emplace_back(actionName, actionName, [=](){
+                    albert::runDetachedProcess(QStringList() << "sh" << "-c" << commandLine, workingDir);
+                });
         }
 
-        desktopEntries.emplace_back(makeStdIdxItem(id, icon_path, name, subtext, indexStrings, actionList));
+        auto item = StandardItem::make(id, name, subtext, name, icon_urls, actionList);
+        for (const auto &index_string : index_strings){
+            results.emplace_back(item, index_string);
+        }
     }
-    return desktopEntries;
+    return results;
 }
 
-
-/** ***************************************************************************/
-/** ***************************************************************************/
-/** ***************************************************************************/
-/** ***************************************************************************/
-Applications::Extension::Extension()
-    : Core::Extension("org.albert.extension.applications"),
-      Core::QueryHandler(Core::Plugin::id()),
-      d(new Private(this)) {
-
-    registerQueryHandler(this);
+Plugin::Plugin()
+{
 
     qunsetenv("DESKTOP_AUTOSTART_ID");
 
-    d->indexedDirs = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
+    app_dirs = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
     if (QStandardPaths::standardLocations(QStandardPaths::DesktopLocation)
-            != QStandardPaths::standardLocations(QStandardPaths::HomeLocation))  // Missing desktops fall back to ~
-        d->indexedDirs << QStandardPaths::standardLocations(QStandardPaths::DesktopLocation);
+        != QStandardPaths::standardLocations(QStandardPaths::HomeLocation))  // Missing desktops fall back to ~
+        app_dirs << QStandardPaths::standardLocations(QStandardPaths::DesktopLocation);
 
     // Load settings
-    d->offlineIndex.setFuzzy(settings().value(CFG_FUZZY, DEF_FUZZY).toBool());
-    d->ignoreShowInKeys = settings().value(CFG_IGNORESHOWINKEYS, DEF_IGNORESHOWINKEYS).toBool();
-    d->useGenericName = settings().value(CFG_USEGENERICNAME, DEF_USEGENERICNAME).toBool();
-    d->useNonLocalizedName = settings().value(CFG_USENONLOCALIZEDNAME, DEF_USENONLOCALIZEDNAME).toBool();
-    d->useKeywords = settings().value(CFG_USEKEYWORDS, DEF_USEKEYWORDS).toBool();
+    ignoreShowInKeys = settings()->value(CFG_IGNORESHOWINKEYS, DEF_IGNORESHOWINKEYS).toBool();
+    useGenericName = settings()->value(CFG_USEGENERICNAME, DEF_USEGENERICNAME).toBool();
+    useNonLocalizedName = settings()->value(CFG_USENONLOCALIZEDNAME, DEF_USENONLOCALIZEDNAME).toBool();
+    useKeywords = settings()->value(CFG_USEKEYWORDS, DEF_USEKEYWORDS).toBool();
 
-    // If the filesystem changed, trigger the scan
-    connect(&d->watcher, &QFileSystemWatcher::directoryChanged,
-            bind(&Private::startIndexing, d.get()));
+    // Paths set on initial update finish
+    connect(&fs_watcher_, &QFileSystemWatcher::directoryChanged, this, [this](){ indexer.run(); });
 
-    // Trigger initial update
-    updateIndex();
+    indexer.parallel = [this](const bool &abort){ return indexApps(abort); };
+    indexer.finish = [this](vector<IndexItem> &&result){
+        apps = ::move(result); updateIndex();
+
+        // Finally update the watches (maybe folders changed)
+        if (!fs_watcher_.directories().isEmpty())
+            fs_watcher_.removePaths(fs_watcher_.directories());
+
+        for (const QString &path : app_dirs) {
+            if (QFile::exists(path)) {
+                fs_watcher_.addPath(path);
+                QDirIterator dit(path, QDir::Dirs|QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+                while (dit.hasNext())
+                    fs_watcher_.addPath(dit.next());
+            }
+        }
+    };
+    indexer.run();
 }
 
-
-
-/** ***************************************************************************/
-Applications::Extension::~Extension() {
-    d->futureWatcher.waitForFinished();
+vector<IndexItem> Plugin::indexItems() const
+{
+    return apps;
 }
 
+QWidget *Plugin::buildConfigWidget()
+{
+    auto widget = new QWidget;
+    Ui::ConfigWidget ui;
+    ui.setupUi(widget);
 
+    // Show the app dirs in the label
+    ui.label->setText(ui.label->text().replace("__XDG_DATA_DIRS__", app_dirs.join(", ")));
 
-/** ***************************************************************************/
-QWidget *Applications::Extension::widget(QWidget *parent) {
-    if (d->widget.isNull()) {
-        d->widget = new ConfigWidget(parent);
+    // Use keywords
+    ui.checkBox_useKeywords->setChecked(useKeywords);
+    connect(ui.checkBox_useKeywords, &QCheckBox::toggled,
+            this, [this](bool checked){
+                settings()->setValue(CFG_USEKEYWORDS, checked);
+                useKeywords = checked;
+                indexer.run();
+            });
 
-        // Show the app dirs in the label
-        d->widget->ui.label->setText(d->widget->ui.label->text().replace("__XDG_DATA_DIRS__", d->indexedDirs.join(", ")));
+    // Use generic name
+    ui.checkBox_useGenericName->setChecked(useGenericName);
+    connect(ui.checkBox_useGenericName, &QCheckBox::toggled,
+            this, [this](bool checked){
+                settings()->setValue(CFG_USEGENERICNAME, checked);
+                useGenericName = checked;
+                indexer.run();
+            });
 
-        // Fuzzy
-        d->widget->ui.checkBox_fuzzy->setChecked(d->offlineIndex.fuzzy());
-        connect(d->widget->ui.checkBox_fuzzy, &QCheckBox::toggled,
-                 this, &Extension::setFuzzy);
+    // Use non-localized name
+    ui.checkBox_useNonLocalizedName->setChecked(useNonLocalizedName);
+    connect(ui.checkBox_useNonLocalizedName, &QCheckBox::toggled,
+            this, [this](bool checked){
+                settings()->setValue(CFG_USENONLOCALIZEDNAME, checked);
+                useNonLocalizedName = checked;
+                indexer.run();
+            });
 
-        // Use keywords
-        d->widget->ui.checkBox_useKeywords->setChecked(d->useKeywords);
-        connect(d->widget->ui.checkBox_useKeywords, &QCheckBox::toggled,
-                this, [this](bool checked){
-            settings().setValue(CFG_USEKEYWORDS, checked);
-            d->useKeywords = checked;
-            d->startIndexing();
-        });
+    // Ignore onlyshowin notshowin keys
+    ui.checkBox_ignoreShowInKeys->setChecked(ignoreShowInKeys);
+    connect(ui.checkBox_ignoreShowInKeys, &QCheckBox::toggled,
+            this, [this](bool checked){
+                settings()->setValue(CFG_IGNORESHOWINKEYS, checked);
+                ignoreShowInKeys = checked;
+                indexer.run();
+            });
 
-        // Use generic name
-        d->widget->ui.checkBox_useGenericName->setChecked(d->useGenericName);
-        connect(d->widget->ui.checkBox_useGenericName, &QCheckBox::toggled,
-                this, [this](bool checked){
-            settings().setValue(CFG_USEGENERICNAME, checked);
-            d->useGenericName = checked;
-            d->startIndexing();
-        });
-
-        // Use non-localized name
-        d->widget->ui.checkBox_useNonLocalizedName->setChecked(d->useNonLocalizedName);
-        connect(d->widget->ui.checkBox_useNonLocalizedName, &QCheckBox::toggled,
-                this, [this](bool checked){
-            settings().setValue(CFG_USENONLOCALIZEDNAME, checked);
-            d->useNonLocalizedName = checked;
-            d->startIndexing();
-        });
-
-        // Ignore onlyshowin notshowin keys
-        d->widget->ui.checkBox_ignoreShowInKeys->setChecked(d->ignoreShowInKeys);
-        connect(d->widget->ui.checkBox_ignoreShowInKeys, &QCheckBox::toggled,
-                this, [this](bool checked){
-            settings().setValue(CFG_IGNORESHOWINKEYS, checked);
-            d->ignoreShowInKeys = checked;
-            d->startIndexing();
-        });
-
-        // Status bar
-        ( d->futureWatcher.isRunning() )
-            ? d->widget->ui.label_statusbar->setText("Indexing applications ...")
-            : d->widget->ui.label_statusbar->setText(QString("%1 applications indexed.").arg(d->index.size()));
-        connect(this, &Extension::statusInfo, d->widget->ui.label_statusbar, &QLabel::setText);
-    }
-    return d->widget;
-}
-
-
-
-/** ***************************************************************************/
-void Applications::Extension::handleQuery(Core::Query * query) const {
-
-    const vector<shared_ptr<Core::IndexableItem>> &indexables = d->offlineIndex.search(query->string());
-
-    vector<pair<shared_ptr<Core::Item>,uint>> results;
-    for (const shared_ptr<Core::IndexableItem> &item : indexables)
-        results.emplace_back(static_pointer_cast<Core::StandardIndexItem>(item), 1);
-
-    query->addMatches(make_move_iterator(results.begin()),
-                      make_move_iterator(results.end()));
-}
-
-
-
-/** ***************************************************************************/
-bool Applications::Extension::fuzzy() {
-    return d->offlineIndex.fuzzy();
-}
-
-
-
-/** ***************************************************************************/
-void Applications::Extension::setFuzzy(bool b) {
-    settings().setValue(CFG_FUZZY, b);
-    d->offlineIndex.setFuzzy(b);
-}
-
-
-
-/** ***************************************************************************/
-void Applications::Extension::updateIndex() {
-    d->startIndexing();
+    return widget;
 }
