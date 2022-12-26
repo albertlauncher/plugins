@@ -432,8 +432,6 @@ public:
 
         try
         {
-            INFO << QProcessEnvironment::systemEnvironment().toStringList();
-
             for (const auto& exec : metadata_.binary_dependencies)
                 if (QStandardPaths::findExecutable(exec).isNull())
                     throw runtime_error(QString("No '%1' in $PATH.").arg(exec).toStdString());
