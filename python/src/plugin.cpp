@@ -30,7 +30,6 @@ static const char *ATTR_MD_DESCRIPTION = "md_description";
 static const char *ATTR_MD_LICENSE     = "md_license";
 static const char *ATTR_MD_URL         = "md_url";
 static const char *ATTR_MD_MAINTAINERS = "md_maintainers";
-static const char *ATTR_MD_AUTHORS     = "md_authors";
 static const char *ATTR_MD_BIN_DEPS    = "md_bin_dependencies";
 static const char *ATTR_MD_LIB_DEPS    = "md_lib_dependencies";
 static const char *ATTR_MD_CREDITS     = "md_credits";
@@ -308,9 +307,6 @@ public:
                             else if (target_name == ATTR_MD_MAINTAINERS)
                                 metadata_.maintainers = {value};
 
-                            else if (target_name == ATTR_MD_AUTHORS)
-                                metadata_.authors = {value};
-
                             else if (target_name == ATTR_MD_LIB_DEPS)
                                 metadata_.runtime_dependencies = {value};
 
@@ -329,9 +325,6 @@ public:
 
                             if (target_name == ATTR_MD_MAINTAINERS)
                                 metadata_.maintainers = list;
-
-                            else if (target_name == ATTR_MD_AUTHORS)
-                                metadata_.authors = list;
 
                             else if (target_name == ATTR_MD_LIB_DEPS)
                                 metadata_.runtime_dependencies = list;
@@ -552,7 +545,7 @@ Plugin::Plugin()
     QString packages_path = dataDir().filePath("site-packages");
     py::module::import("site").attr("addsitedir")(packages_path);
 
-    installPackages({"pip"});
+//    installPackages({"pip"});
 
     // Create module dirs
     if (!dataDir().exists(PLUGIN_DIR))
