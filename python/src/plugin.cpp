@@ -92,11 +92,21 @@ PYBIND11_EMBEDDED_MODULE(albert, m)  // interface id 0.5
      * execution and deletion. Further exceptions thrown from python
      * have to be catched.
      */
-    struct GilFunctor {
+    struct GilAwareFunctor {
         py::object callable;
-        GilFunctor(const py::object &callable)
-            : callable(callable){}
-        ~GilFunctor(){
+        GilAwareFunctor(const py::object &callable) : callable(callable){}
+        GilAwareFunctor(GilAwareFunctor&&) = default;
+        GilAwareFunctor & operator=(GilAwareFunctor&&) = default;
+        GilAwareFunctor(const GilAwareFunctor &other){
+            py::gil_scoped_acquire acquire;
+            callable = other.callable;
+        }
+        GilAwareFunctor & operator=(const GilAwareFunctor &other){
+            py::gil_scoped_acquire acquire;
+            callable = other.callable;
+            return *this;
+        }
+        ~GilAwareFunctor(){
             py::gil_scoped_acquire acquire;
             callable = py::object();
         }
@@ -112,7 +122,7 @@ PYBIND11_EMBEDDED_MODULE(albert, m)  // interface id 0.5
     py::class_<Action>(m, "Action")
         .def(py::init([](QString id, QString text, const py::object &callable) {
                  py::gil_scoped_acquire acquire;
-                 return Action(::move(id), ::move(text), GilFunctor(callable));
+                 return Action(::move(id), ::move(text), GilAwareFunctor(callable));
              }),
              py::arg("id"),
              py::arg("text"),
