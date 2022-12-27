@@ -47,7 +47,6 @@ vector<shared_ptr<albert::StandardItem>> Plugin::indexApps(const bool &abort)
                 WARN << "(ns_bundle_identifier == nil)";
                 continue;
             }
-
             auto identifier = nsstrtoqstr(ns_bundle_identifier);
             auto name = nsstrtoqstr([result valueForAttribute:(NSString *)kMDItemDisplayName]);
             name.chop(4); // rem .app
@@ -65,9 +64,9 @@ vector<shared_ptr<albert::StandardItem>> Plugin::indexApps(const bool &abort)
                     surl,
                     {QString("qfip:%1").arg(surl)},
                     {
-                            {"launch", "Launch app", [ns_bundle_identifier](){
+                            {"launch", "Launch app", [identifier](){
                                 if (![[NSWorkspace sharedWorkspace]
-                                        launchAppWithBundleIdentifier:ns_bundle_identifier
+                                        launchAppWithBundleIdentifier:qstrtonsstr(identifier)
                                                               options:NSWorkspaceLaunchDefault
                                        additionalEventParamDescriptor:NULL
                                                      launchIdentifier:NULL]) {
