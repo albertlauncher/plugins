@@ -2,6 +2,7 @@
 
 #include "albert/albert.h"
 #include "settingsbutton.h"
+#include <QAction>
 #include <QPainter>
 #include <QStyleOptionButton>
 #include <QtSvg/QSvgRenderer>
