@@ -13,49 +13,38 @@ static vector<shared_ptr<albert::Item>> buildItems(const QString &input)
     vector<shared_ptr<albert::Item>> results;
 
     // Get all matching files
-    QFileInfo queryFileInfo(input);
-    QFileInfo fi(queryFileInfo.path());
-    if (fi.exists() && fi.isDir()) {
-        QDir dir(fi.filePath());
-        QString commonPrefix;
-        QString queryFileName = queryFileInfo.fileName();
-        QFileInfoList result_files;
+    QFileInfo query_file_info(input);
+    QDir dir(query_file_info.path());
+    QString name_filter = query_file_info.fileName();
 
-        for (const QFileInfo &fileInfo: dir.entryInfoList(QDir::AllEntries | QDir::Hidden | QDir::NoDotAndDotDot,
-                                                          QDir::DirsFirst | QDir::Name | QDir::IgnoreCase)) {
-            QString fileName = fileInfo.fileName();
-
-            if (fileName.startsWith(queryFileName)) {
-
-                if (fileInfo.isDir())
-                    fileName.append(QDir::separator());
-
-                if (commonPrefix.isNull())
-                    commonPrefix = fileName;
-                else {
-                    auto pair = mismatch(commonPrefix.begin(), commonPrefix.end(),
-                                         fileName.begin(), fileName.end());
-                    commonPrefix.resize(distance(commonPrefix.begin(), pair.first));
-                }
-
-                result_files << fileInfo;
-            }
-        }
-
+    if (dir.exists()) {
         QMimeDatabase mimeDatabase;
-        for (auto &rfi : result_files){
-            QMimeType mimetype = mimeDatabase.mimeTypeForFile(rfi);
+
+        for (const QFileInfo &dir_entry_info: dir.entryInfoList(QDir::AllEntries | QDir::Hidden | QDir::NoDotAndDotDot,
+                                                                QDir::DirsFirst | QDir::Name | QDir::IgnoreCase)) {
+            if (!dir_entry_info.fileName().startsWith(name_filter))
+                continue;
+
+            QMimeType mimetype = mimeDatabase.mimeTypeForFile(dir_entry_info);
+            QString completion = dir_entry_info.filePath();
+
+            if (dir_entry_info.isDir())
+                completion.append(QDir::separator());
+
+            if (completion.startsWith(QDir::homePath()))
+                completion = QString("~%1").arg(completion.mid(QDir::homePath().size()));
+
+            CRIT << "file_path"<< completion;
 
             results.emplace_back(make_shared<StandardFile>(
-                    rfi.filePath(),
-                    mimetype,
-                    commonPrefix.isEmpty() ? commonPrefix : dir.filePath(commonPrefix)));
+                dir_entry_info.filePath(),
+                mimetype,
+                completion
+            ));
         }
     }
     return results;
 }
-
-
 
 
 QString RootBrowser::id() const { return "rootbrowser"; }
