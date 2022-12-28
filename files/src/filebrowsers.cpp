@@ -34,8 +34,6 @@ static vector<shared_ptr<albert::Item>> buildItems(const QString &input)
             if (completion.startsWith(QDir::homePath()))
                 completion = QString("~%1").arg(completion.mid(QDir::homePath().size()));
 
-            CRIT << "file_path"<< completion;
-
             results.emplace_back(make_shared<StandardFile>(
                 dir_entry_info.filePath(),
                 mimetype,
