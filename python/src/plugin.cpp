@@ -61,9 +61,6 @@ public:
     QString synopsis() const override { PYBIND11_OVERRIDE(QString, QueryHandler, synopsis); }
     QString defaultTrigger() const override { PYBIND11_OVERRIDE(QString, QueryHandler, defaultTrigger); }
     bool allowTriggerRemap() const override { PYBIND11_OVERRIDE(bool, QueryHandler, allowTriggerRemap); }
-
-
-
 };
 
 //class PyIndexQueryHandler : albert::IndexQueryHandler {
