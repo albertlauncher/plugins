@@ -1,9 +1,9 @@
+project(widgetsboxmodel VERSION 1.2)
 albert_plugin(
-    VERSION 1.2
     NAME "Qt Widgets BoxModel"
     DESCRIPTION "The native frontend"
     LICENSE ALL
-    URL https://github.com/albertlauncher/plugins/widgetsboxmodel
+    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
     MAINTAINERS @manuelschneid3r
     QT_DEPENDENCIES Svg Widgets StateMachine
     FRONTEND

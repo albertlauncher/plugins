@@ -1,11 +1,11 @@
+project(python VERSION 1.4)
 albert_plugin(
-        VERSION 1.4
-        NAME "Python"
-        DESCRIPTION "Load Python plugins"
-        LICENSE ALL
-        URL https://github.com/albertlauncher/plugins/tree/master/python
-        MAINTAINERS @manuelschneid3r
-        QT_DEPENDENCIES Widgets
+    NAME "Python"
+    DESCRIPTION "Load Python plugins"
+    LICENSE ALL
+    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
+    MAINTAINERS @manuelschneid3r
+    QT_DEPENDENCIES Widgets
 )
 
 find_package(Python3 COMPONENTS Interpreter Development)

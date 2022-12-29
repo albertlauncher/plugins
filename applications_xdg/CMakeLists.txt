@@ -1,7 +1,6 @@
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+project(applications VERSION 1.3)
 albert_plugin(
-    VERSION 1.3
-    ID applications
     NAME Applications
     DESCRIPTION "Launch applications"
     LICENSE ALL

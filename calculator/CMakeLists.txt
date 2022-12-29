@@ -1,13 +1,12 @@
+project(calculator VERSION 1.3)
 albert_plugin(
-    VERSION 1.3
     NAME Calculator
     DESCRIPTION "Evaluate math expressions"
     LICENSE BSD-2
-    URL https://github.com/albertlauncher/plugins/tree/master/template
+    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
     MAINTAINERS @manuelschneid3r
     QT_DEPENDENCIES Widgets
     LIB_DEPENDENCIES libmuparser
-    EXEC_DEPENDENCIES
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
