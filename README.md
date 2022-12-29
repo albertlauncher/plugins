@@ -1,74 +1,48 @@
 # C++/Qt plugins
 
-A native albert plugin is a Qt Plugin which is just a particular shared library. For the details on this see the docs on [Qt Plugins](https://doc.qt.io/qt-6/plugins-howto.html#the-low-level-api-extending-qt-applications). The library tries to abstract over the details as good as possible by providing helper C and CMake macros. 
+Native plugins are based on [Qt Plugins](https://doc.qt.io/qt-6/plugins-howto.html#the-low-level-api-extending-qt-applications).
 
 ## Getting started
 
-### CMake
+In your CMakeLists.txt define a project. PROJECT_NAME and PROJECT_VERSION define your plugin id and version. Use the Albert package CMake macro  `albert_plugin`. These macros do a lot of necessary Qt boilerplate for you. See the table below for parameters you can pass. If you are keen on seeing the details check the `cmake` dir in the project root. 
 
-Albert is based on CMake. Use the macros defined in the Albert package to define a target for a plugin. You can either build a plugin in the source tree of the project using `albert_plugin` (for e.g upstream colaboration) use build a dedicated project and use the albert CMake package using `albert_downstream_plugin` and some more CMake directives. Both commands are more or less the same, while `albert_plugin` has some more convenience features. These macros do most of the necessary Qt boilerplate for you. Here are the parameters you can pass:
+|         Parameter |  Type  | Notes                                                                         |
+|------------------:|:------:|-------------------------------------------------------------------------------|
+|              NAME | value  | **MANDATORY** Human readable name                                             |
+|       DESCRIPTION | value  | **MANDATORY** Brief, imperative description                                   |
+|           LICENSE | value  | **MANDATORY** Short form e.g. BSD-2-Clause or GPL-3.0                         |
+|               URL | value  | **MANDATORY** Browsable source, issues etc                                    |
+|          FRONTEND | option | *Optional* Indicates that this plugin realizes the frontend interface         |
+|       MAINTAINERS |  list  | *Optional* Active maintainers. Preferrably using mentionable GitHub usernames |
+|   QT_DEPENDENCIES |  list  | *Optional* Qt::Core is exported from albert, auto import and link             |
+|  LIB_DEPENDENCIES |  list  | *Optional* Required libraries                                                 |
+| EXEC_DEPENDENCIES |  list  | *Optional* Required executables                                               |
 
-|         Parameter |  Type  | Notes                                                                             |
-|------------------:|:------:|-----------------------------------------------------------------------------------|
-|                ID | value  | optional, defaults to dirname                                                     |
-|           VERSION | value  | required in in-project builds, overwrites ${PROJECT_VERSION} in downstream builds |
-|              NAME | value  | required                                                                          |
-|       DESCRIPTION | value  | required                                                                          |
-|           LICENSE | value  | required                                                                          |
-|               URL | value  | required, should contain code and and readme                                      |
-|   NOUSER/FRONTEND | option | optional, FRONTEND implies NOUSER                                                 |
-|       MAINTAINERS |  list  | optional                                                                          |
-|           AUTHORS |  list  | optional, in source tree built from git log                                       |
-|   QT_DEPENDENCIES |  list  | optional, Qt::Core is exported from albert, automated import and link             |
-|  LIB_DEPENDENCIES |  list  | optional                                                                          |
-| EXEC_DEPENDENCIES |  list  | optional                                                                          |
-
-A CMakeLists.txt of a dedicated downstream plugin could look like this:
-
+A CMakeLists.txt of an example plugin could look like this:
 ```cmake
-cmake_minimum_required(VERSION 3.16)  # Needed for CMake top level projects
-
-project(test VERSION 0.1)  # Needed for CMake top level projects
-
-find_package(albert)
-
-albert_downstream_plugin(
-    NAME "Pretty name"
-    DESCRIPTION "Brief description"
-    LICENSE GPL
-    URL https://mydomain.com/myurl
-    MAINTAINERS @ManuelSchneid3r
-)
-```
-while the equivalent in source plugin CMakeLists.txt would look like
-```cmake
+project(some_plugin_id VERSION 1.0)
 albert_plugin(
-    VERSION 1.0
-    NAME "Pretty name"
+    NAME "Some pretty name"
     DESCRIPTION "Brief description"
     LICENSE GPL
     URL https://mydomain.com/myurl
-    MAINTAINERS @ManuelSchneid3r
+    MAINTAINERS @yourname
 )
 ```
 
-Of course you can add additional CMake directives. If you are keen on seeing the details check the `cmake` dir in the project root. Thats it. Now let's get started writing some C++ code.
-
-### C++
-
-To build an albert plugin include `albert.h`, subclass `albert::Plugin` and put the `Q_OBJECT` and `ALBERT_PLUGIN` in the class declaration.
+A minimal working example of an albert Plugin looks like:
 
 ```cpp
 #pragma once
 #include "albert.h"
 
-class Plugin : public QObject, public albert::Plugin
+class Plugin : public albert::Plugin
 {
     Q_OBJECT ALBERT_PLUGIN
 };
-
 ```
 
-Compile. Done. Congratulations you built a plugin. Now go ahead and give it a purpose. Subclass base classes deriving `albert::Extension` to extend the application by loading this plugin. The most common use case for this app is the `albert::QueryHandler` and its subclasses. Not going into much detail here, since maintaining the documentation doubles the workload. Check the library interface classes as they are documented and always up to date. Also see some reference plugins like the Template and Debug plugins for basic understanding or the other plugins with a real purpose [here](https://github.com/albertlauncher/plugins/tree/master/). 
+Subclass classes deriving `albert::Extension` to extend the application by loading this plugin. The most common use case is probably `albert::QueryHandler` or one of its subclasses. 
 
-Join our [community chats](https://albertlauncher.github.io/help/#chats) if you need help.
+
+Check the [library interface classes](https://github.com/albertlauncher/albert/tree/master/include/albert) as they are documented and always up to date. Also see the [existing plugins](https://github.com/albertlauncher/plugins/tree/master/) to get a basic understanding. Join our [community chats](https://albertlauncher.github.io/help/#chats) if you need help.
