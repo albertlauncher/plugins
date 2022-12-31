@@ -16,7 +16,11 @@ void InputLine::paintEvent(QPaintEvent *event)
         return;
 
     if (!input_hint.isNull()) {
-        QString hint = input_hint.startsWith(text()) ? input_hint.mid(text().length()) : input_hint;
+        QString hint;
+        if (input_hint.startsWith(text()))
+            hint = input_hint.mid(text().length());
+        else
+            hint = QString(" %1").arg(input_hint);
 
         QStyleOptionFrame panel;
         initStyleOption(&panel);
