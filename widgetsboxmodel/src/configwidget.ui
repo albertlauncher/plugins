@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>507</width>
-    <height>289</height>
+    <width>491</width>
+    <height>351</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -345,7 +345,7 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
+      <item row="2" column="0">
        <widget class="QCheckBox" name="checkBox_clearOnHide">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -361,7 +361,7 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
+      <item row="2" column="1">
        <widget class="QLabel" name="label_clearOnHide">
         <property name="text">
          <string>Clear input line on hide</string>
@@ -371,7 +371,7 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
+      <item row="3" column="0">
        <widget class="QCheckBox" name="checkBox_history_search">
         <property name="toolTip">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the current input text to filter the input history.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -381,13 +381,32 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
+      <item row="3" column="1">
        <widget class="QLabel" name="label_history_search">
         <property name="text">
          <string>Enable history search</string>
         </property>
         <property name="buddy">
          <cstring>checkBox_history_search</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="label">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt; color:#818181;&quot;&gt;If you created a cool theme &lt;/span&gt;&lt;a href=&quot;https://github.com/orgs/albertlauncher/discussions/1147&quot;&gt;&lt;span style=&quot; font-size:9pt; text-decoration: underline; color:#094fd1;&quot;&gt;share it&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-size:9pt; color:#818181;&quot;&gt; with other users. The best themes will go upstream and be shipped with Albert.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+        <property name="openExternalLinks">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
