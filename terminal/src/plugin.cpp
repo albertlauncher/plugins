@@ -16,7 +16,7 @@ static QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":termina
 
 ::Plugin::Plugin()
 {
-    indexer.parallel = [this](const bool &abort){
+    indexer.parallel = [](const bool &abort){
         INFO << "Indexing $PATH.";
         set<QString> result;
         QStringList paths = QString(::getenv("PATH")).split(':', Qt::SkipEmptyParts);

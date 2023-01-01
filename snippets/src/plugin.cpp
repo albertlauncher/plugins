@@ -72,7 +72,7 @@ QWidget *Plugin::buildConfigWidget()
     connect(ui.listView, &QListView::activated, [model](const QModelIndex &index){
         albert::openUrl(QString("file://%1").arg(model->filePath(index)));
     });
-    connect(ui.pushButton_opendir, &QPushButton::clicked, [this](){
+    connect(ui.pushButton_opendir, &QPushButton::clicked, [](){
         albert::openUrl(QString("file://%1").arg(SnippetItem::path));
     });
 

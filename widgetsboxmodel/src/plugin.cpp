@@ -1,7 +1,6 @@
 // Copyright (c) 2022 Manuel Schneider
 
 #include "albert/albert.h"
-#include "albert/extensionregistry.h"
 #include "albert/logging.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
@@ -48,12 +47,12 @@ const bool    DEF_SYSTEM_SHADOW = true;
 const uint    DEF_SHADOW_SIZE = 32;  // TODO user
 
 
-constexpr Qt::KeyboardModifier mods_mod[] = {
-    Qt::ShiftModifier,
-    Qt::MetaModifier,
-    Qt::ControlModifier,
-    Qt::AltModifier
-};
+//constexpr Qt::KeyboardModifier mods_mod[] = {
+//    Qt::ShiftModifier,
+//    Qt::MetaModifier,
+//    Qt::ControlModifier,
+//    Qt::AltModifier
+//};
 constexpr Qt::Key mods_keys[] = {
     Qt::Key_Shift,
     Qt::Key_Meta,
@@ -413,7 +412,6 @@ void Plugin::init_statemachine()
     // Activations
 
     auto activate = [this, s_results_model_matches, s_results_model_fallbacks](uint i, uint a){
-        void(albert::Query::*func)(uint, uint);
         if (s_results_model_matches->active())
             current_query->activateMatch(i, a);
         else if (s_results_model_fallbacks->active())
@@ -425,7 +423,7 @@ void Plugin::init_statemachine()
     };
 
     QObject::connect(window.results_list, &ItemsList::activated,
-                     [this, activate](const auto &index){activate(index.row(), 0);});
+                     [activate](const auto &index){activate(index.row(), 0);});
 
     QObject::connect(window.actions_list, &ItemsList::activated, this,
                      [this, activate](const auto &index){activate(window.results_list->currentIndex().row(),

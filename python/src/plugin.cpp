@@ -33,7 +33,7 @@ static const char *ATTR_MD_MAINTAINERS = "md_maintainers";
 static const char *ATTR_MD_BIN_DEPS    = "md_bin_dependencies";
 static const char *ATTR_MD_LIB_DEPS    = "md_lib_dependencies";
 static const char *ATTR_MD_CREDITS     = "md_credits";
-static const char *ATTR_MD_MINPY       = "md_mincredits";
+static const char *ATTR_MD_MINPY       = "md_min_python";
 static const char *ATTR_PLUGIN_CLASS   = "Plugin";
 static const char *ATTR_INITIALIZE     = "initialize";
 static const char *ATTR_FINALIZE       = "finalize";
@@ -223,7 +223,7 @@ class PyPluginLoader : public albert::PluginLoader
 {
 public:
     PyPluginLoader(Plugin *provider, albert::ExtensionRegistry &registry, const QFileInfo &file_info)
-        : provider_(provider), registry_(registry), PluginLoader(file_info.absoluteFilePath())
+        : PluginLoader(file_info.absoluteFilePath()), provider_(provider), registry_(registry)
     {
         if(!file_info.exists())
             throw runtime_error("File path does not exist");
@@ -239,8 +239,6 @@ public:
             throw runtime_error("Python package init file does not exist");
 
         // Extract metadata
-
-        DEBG << "Reading metadata of python module:" << file_info.fileName();
 
         metadata_.id = file_info.completeBaseName();
 
@@ -552,10 +550,11 @@ Plugin::Plugin()
     auto plugin_dirs = QSP::locateAll(QSP::AppDataLocation, id(), QSP::LocateDirectory);
     for (const QString &plugin_dir : plugin_dirs) {
         if (QDir dir{plugin_dir}; dir.cd(PLUGIN_DIR)) {
-            DEBG << "Search for plugins in" << dir.absolutePath();
+            DEBG << "Searching Python plugins in" << dir.absolutePath();
             for (const QFileInfo &file_info : dir.entryInfoList(QDir::Dirs|QDir::Files|QDir::NoDotAndDotDot)) {
                 try {
-                    plugins_.emplace_back(this, registry(), file_info);
+                    auto &loader = plugins_.emplace_back(this, registry(), file_info);
+                    DEBG << "Found valid Python plugin" << loader.path;
                 } catch (const exception &e) {
                     DEBG << e.what() << file_info.filePath();
                 }
@@ -584,7 +583,7 @@ void Plugin::setWatchSources(bool val)
         connect(sources_watcher_.get(), &QFileSystemWatcher::fileChanged, [this](){
             for (auto &loader : plugins_)
                 if (loader.state() == PluginState::Loaded ||
-                    loader.state() == PluginState::Unloaded && !loader.stateInfo().isEmpty()){
+                    (loader.state() == PluginState::Unloaded && !loader.stateInfo().isEmpty())){
                     loader.unload();
                     loader.load();
                 }

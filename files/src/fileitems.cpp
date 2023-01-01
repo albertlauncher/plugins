@@ -112,7 +112,7 @@ const QMimeType &IndexFileItem::mimeType() const { return mimetype_; }
 
 
 StandardFile::StandardFile(QString path, QMimeType mimetype, QString completion)
-        : mimetype_(::move(mimetype)), completion_(::move(completion))
+        : completion_(::move(completion)), mimetype_(::move(mimetype))
 {
     QFileInfo fileInfo(path);
     name_ = fileInfo.fileName();

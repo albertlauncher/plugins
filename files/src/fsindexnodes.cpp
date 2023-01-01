@@ -36,7 +36,7 @@ NameFilter::NameFilter(const QString &pattern) : regex(pattern), type(PatternTyp
 
 
 DirNode::DirNode(QString name, const std::shared_ptr<DirNode>& parent, uint64_t mdate):
-        name_(std::move(name)), parent_(parent), mdate_(mdate) { name.shrink_to_fit(); }
+        parent_(parent), name_(std::move(name)), mdate_(mdate) { name.shrink_to_fit(); }
 
 DirNode::~DirNode() = default;
 
@@ -133,9 +133,8 @@ void DirNode::update(const std::shared_ptr<DirNode>& shared_this,
             // Match against name filters
             auto exclude = false;
             for (const auto &filter: settings.name_filters)
-                if ((exclude && filter.type == PatternType::Include ||
-                     !exclude && filter.type == PatternType::Exclude) &&
-                    filter.regex.match(QDir(relativeFilePath()).filePath(fi.fileName())).hasMatch())
+                if (((exclude && filter.type == PatternType::Include) || (!exclude && filter.type == PatternType::Exclude))
+                    && filter.regex.match(QDir(relativeFilePath()).filePath(fi.fileName())).hasMatch())
                     exclude = !exclude;
 
             // Index structure

@@ -7,7 +7,7 @@
 #include <QTimer>
 #include <set>
 
-struct IndexFileItem;
+class IndexFileItem;
 class AbstractFileItem;
 class QMimeType;
 
