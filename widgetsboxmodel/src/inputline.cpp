@@ -44,5 +44,6 @@ void InputLine::paintEvent(QPaintEvent *event)
 void InputLine::setInputHint(const QString &text)
 {
     input_hint = text;
+    setToolTip(text);
     update();
 }
