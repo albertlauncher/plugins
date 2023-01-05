@@ -103,7 +103,7 @@ Plugin::Plugin()
     if (s->contains(CFG_BOOKMARKS_PATH)){
         for (auto loc : {QStandardPaths::GenericDataLocation, QStandardPaths::GenericConfigLocation})
             for (const auto &path : QStandardPaths::standardLocations(loc))
-                for (const QString &app_dir_name : app_dirs)
+                for (const char *app_dir_name : app_dirs)
                     for (QDirIterator it(QDir(path).filePath(app_dir_name), {"Bookmarks"},
                                          QDir::Files, QDirIterator::Subdirectories); it.hasNext();)
                         paths_ << it.next();
