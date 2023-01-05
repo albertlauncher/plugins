@@ -214,7 +214,8 @@ PYBIND11_EMBEDDED_MODULE(albert, m)  // interface id 0.5
 
     m.def("sendTrayNotification", &albert::sendTrayNotification,
           py::arg("title") = QString(),
-          py::arg("msg") = QString());
+          py::arg("msg") = QString(),
+          py::arg("ms") = 10000);
 }
 
 

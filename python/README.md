@@ -114,7 +114,7 @@ Returns the writable cache, config and data location of the app. E.g. on Linux *
 
 <hr>
 
-`sendTrayNotification(title:str='', msg:str='')`
+`sendTrayNotification(title:str='', msg:str='', ms:int=10000)`
 
 <hr>
 
