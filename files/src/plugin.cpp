@@ -67,6 +67,8 @@ Plugin::Plugin()
 
 Plugin::~Plugin()
 {
+    fs_index_.disconnect();
+
     auto s = settings();
     QStringList paths;
     QJsonObject object;

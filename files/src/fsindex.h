@@ -67,7 +67,8 @@ public:
     ~FsIndex();
 
     const std::map<QString,std::unique_ptr<FsIndexPath>> &indexPaths() const;
-        bool addPath(FsIndexPath *path);
+
+    bool addPath(FsIndexPath *path);
     void remPath(const QString &path);
 
     void update(FsIndexPath *p = nullptr);
