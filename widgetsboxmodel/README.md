@@ -27,7 +27,7 @@ There is an excellent documentation on QStyleSheets:
 
 Further check the [existing themes](https://github.com/albertlauncher/plugins/tree/master/widgetboxmodel/share/themes).
 
-If you're done place the file in "~/.local/share/albert/org.albert.frontend.widgetboxmodel/themes/" and restart albert. The restart is necessary because file list is read once at start. If the file is listed you can apply changes by switching to other themes and and back again.
+If you're done place the file in "$datapath/widgetsboxmodel/themes/" and restart albert. The restart is necessary because file list is read once at start. If the file is listed you can apply changes by switching to other themes and and back again.
 
 ##### Limitations
 
