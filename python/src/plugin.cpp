@@ -3,15 +3,17 @@
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
 #include "cast_specialization.h"
-#include <QLabel>
-#include <QFileSystemWatcher>
-#include <QDesktopServices>
-#include <QProcessEnvironment>
-#include <QDirIterator>
-#include <QStandardPaths>
-#include <memory>
 #include "plugin.h"
 #include "ui_configwidget.h"
+#include <QDesktopServices>
+#include <QDirIterator>
+#include <QFileSystemWatcher>
+#include <QLabel>
+#include <QMessageBox>
+#include <QProcessEnvironment>
+#include <QStandardPaths>
+#include <iostream>
+#include <memory>
 ALBERT_LOGGING
 using namespace std;
 using namespace albert;
@@ -435,20 +437,26 @@ public:
                 if (QStandardPaths::findExecutable(exec).isNull())
                     throw runtime_error(QString("No '%1' in $PATH.").arg(exec).toStdString());
 
-            py::module importlib_util = py::module::import("importlib.util");
-            QStringList missing;
-            for (auto &requirement : metadata_.runtime_dependencies)
-                if (importlib_util.attr("find_spec")(QString(requirement)).is_none())
-                    missing << requirement;
-            if (!missing.isEmpty())
-                provider_->installPackages(missing);
-
-            py::object pyspec = importlib_util.attr("spec_from_file_location")(QString("albert.%1").arg(metadata_.id), source_path_); // Prefix to avoid conflicts
-            module_ = importlib_util.attr("module_from_spec")(pyspec);
-            pyspec.attr("loader").attr("exec_module")(module_);
-            instance_ = module_.attr("Plugin")();
-            state_ = PluginState::Loaded;
-            state_info_.clear();
+            try {
+                py::module importlib_util = py::module::import("importlib.util");
+                py::object pyspec = importlib_util.attr("spec_from_file_location")(QString("albert.%1").arg(metadata_.id), source_path_); // Prefix to avoid conflicts
+                module_ = importlib_util.attr("module_from_spec")(pyspec);
+                pyspec.attr("loader").attr("exec_module")(module_);
+                instance_ = module_.attr("Plugin")();
+                state_ = PluginState::Loaded;
+                state_info_.clear();
+            } catch (py::error_already_set &e) {
+                if (e.matches(PyExc_ModuleNotFoundError)) {
+                    QString text("Looks like something is missing:\n\n");
+                    text.append(e.what());
+                    text.append("\n\nTry installing missing dependencies into albert site-packages?\n\nNote that you have to reload the plugin afterwards.");
+                    auto b = QMessageBox::warning(nullptr, "Module not found", text,
+                                                  QMessageBox::Yes|QMessageBox::No, QMessageBox::Yes);
+                    if (b==QMessageBox::Yes)
+                        provider_->installPackages(metadata_.runtime_dependencies);
+                }
+                throw e;
+            }
 
             if (py::hasattr(instance_, ATTR_INITIALIZE))
                 if (auto init = instance_.attr(ATTR_INITIALIZE); py::isinstance<py::function>(init))
@@ -541,8 +549,6 @@ Plugin::Plugin()
     QString packages_path = dataDir().filePath("site-packages");
     py::module::import("site").attr("addsitedir")(packages_path);
 
-//    installPackages({"pip"});
-
     // Create module dirs
     if (!dataDir().exists(PLUGIN_DIR))
         dataDir().mkdir(PLUGIN_DIR);
@@ -620,9 +626,28 @@ QWidget *Plugin::buildConfigWidget()
 
 void Plugin::installPackages(const QStringList &package_names) const
 {
-    py::gil_scoped_acquire gil;
-    std::vector<string> params{"install", "--disable-pip-version-check", "--upgrade", "--target", dataDir().filePath("site-packages").toStdString()};
-    for (const auto &pn : package_names)
-        params.push_back(pn.toStdString());
-    py::module::import("pip").attr("main")(py::cast(params));
+//    py::gil_scoped_acquire gil;
+//    std::vector<string> params{"install", "--disable-pip-version-check", "--upgrade", "--target", dataDir().filePath("site-packages").toStdString()};
+//    for (const auto &pn : package_names)
+//        params.push_back(pn.toStdString());
+//    py::module::import("pip").attr("main")(py::cast(params));
+
+//    INFO << "Installing python packages:" << package_names;
+//    QStringList args;
+//    args << "-m"<< "pip"<< "install"<< "--disable-pip-version-check"<< /*"--upgrade"<< */"--target" << dataDir().filePath("site-packages") << package_names;
+//    QProcess p;
+//    p.start("python3", args);
+//    p.waitForFinished(-1);
+//    if (auto err = p.readAllStandardError(); !err.isEmpty()){
+//        WARN << "pip stderr:";
+//        cout << qPrintable(err) << endl;
+//    }
+//    if (auto out = p.readAllStandardOutput(); !out.isEmpty()){
+//        WARN << "pip stdout:";
+//        cout << qPrintable(out) << endl;
+//    }
+
+    auto script = QString("python3 -m pip install --disable-pip-version-check --target . %2")
+                  .arg(package_names.join(" "));
+    runTerminal(script, dataDir().filePath("site-packages"));
 }
