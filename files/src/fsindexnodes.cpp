@@ -36,7 +36,7 @@ NameFilter::NameFilter(const QString &pattern) : regex(pattern), type(PatternTyp
 
 
 DirNode::DirNode(QString name, const std::shared_ptr<DirNode>& parent, uint64_t mdate):
-        parent_(parent), name_(std::move(name)), mdate_(mdate) { name.shrink_to_fit(); }
+        parent_(parent), name_(std::move(name)), mdate_(mdate) { name_.shrink_to_fit(); }
 
 DirNode::~DirNode() = default;
 

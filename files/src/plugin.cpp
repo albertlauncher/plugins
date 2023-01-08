@@ -93,8 +93,6 @@ Plugin::~Plugin()
         file.close();
     } else
         WARN << "Couldn't write to file:" << file.fileName();
-
-    fs_index_.update();
 }
 
 vector<albert::IndexItem> Plugin::indexItems() const
