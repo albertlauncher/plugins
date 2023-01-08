@@ -12,7 +12,7 @@
 SettingsButton::SettingsButton(QWidget *parent) : QPushButton(parent)
 {
     rotation_animation = std::make_unique<QPropertyAnimation>(this, "angle");
-    rotation_animation->setDuration(6000);
+    rotation_animation->setDuration(10000);
     rotation_animation->setStartValue(0);
     rotation_animation->setEndValue(360);
     rotation_animation->setLoopCount(-1);
