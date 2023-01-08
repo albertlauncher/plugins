@@ -87,7 +87,7 @@ struct CondSignalTransition : public QSignalTransition {
 Plugin::Plugin() : history_(dataDir().filePath("input_history"))
 {
     display_delay_timer.setSingleShot(true);
-    display_delay_timer.setInterval(1000);
+    display_delay_timer.setInterval(100);
 
     // Find themes
     QStringList pluginDataPaths = QStandardPaths::locateAll(
