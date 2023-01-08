@@ -392,12 +392,10 @@ void Plugin::init_statemachine()
     opacity_animation->setEasingCurve(QEasingCurve::InOutQuad);
 
     QObject::connect(s_button_shown, &QState::entered, this, [this, opacity_animation](){
-        window.settings_button->rotation_animation->start();
         opacity_animation->setDirection(QAbstractAnimation::Forward);
         opacity_animation->start();
     });
     QObject::connect(s_button_shown, &QState::exited, this, [this, opacity_animation](){
-        window.settings_button->rotation_animation->stop();
         opacity_animation->setDirection(QAbstractAnimation::Backward);
         opacity_animation->start();
     });
@@ -439,6 +437,7 @@ bool Plugin::eventFilter(QObject *watched, QEvent *event)
         qApp->quit();
 
     else if (event->type() == QEvent::Show) {
+        window.settings_button->rotation_animation->start();
         // Move widget after showing it since QWidget::move works only on widgets
         // that have been shown once. Well as long as this does not introduce ugly
         // flicker this may be okay.
@@ -449,6 +448,7 @@ bool Plugin::eventFilter(QObject *watched, QEvent *event)
     }
 
     else if (event->type() == QEvent::Hide) {
+        window.settings_button->rotation_animation->stop();
         if (clearOnHide_){
             history_.add(window.input_line->text());
             window.input_line->clear();
