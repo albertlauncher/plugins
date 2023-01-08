@@ -534,6 +534,7 @@ bool Plugin::eventFilter(QObject *watched, QEvent *event)
                 if (keyEvent->modifiers() == Qt::ControlModifier || keyEvent->modifiers() == Qt::AltModifier){
                     albert::showSettings();
                     setVisible(false);
+                    return true;
                 }
                 break;
             }
