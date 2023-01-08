@@ -61,12 +61,15 @@ Plugin::Plugin()
         {{"scan_files", "Index", [this](){ fs_index_.update(); }}}
     );
 
-    addAutoExtension(&homebrowser);
-    addAutoExtension(&rootbrowser);
+    registry().add(&homebrowser);
+    registry().add(&rootbrowser);
 }
 
 Plugin::~Plugin()
 {
+    registry().remove(&homebrowser);
+    registry().remove(&rootbrowser);
+
     fs_index_.disconnect();
 
     auto s = settings();
