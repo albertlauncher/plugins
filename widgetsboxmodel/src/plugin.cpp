@@ -438,6 +438,10 @@ bool Plugin::eventFilter(QObject *watched, QEvent *event)
 
     else if (event->type() == QEvent::Show) {
         window.settings_button->rotation_animation->start();
+
+        // Trigger a new query on show
+        emit window.input_line->textChanged(window.input_line->text());
+
         // Move widget after showing it since QWidget::move works only on widgets
         // that have been shown once. Well as long as this does not introduce ugly
         // flicker this may be okay.
