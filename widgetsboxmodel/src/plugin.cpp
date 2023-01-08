@@ -391,11 +391,11 @@ void Plugin::init_statemachine()
     opacity_animation->setDirection(QAbstractAnimation::Backward);  // is part of state
     opacity_animation->setEasingCurve(QEasingCurve::InOutQuad);
 
-    QObject::connect(s_button_shown, &QState::entered, this, [this, opacity_animation](){
+    QObject::connect(s_button_shown, &QState::entered, this, [opacity_animation](){
         opacity_animation->setDirection(QAbstractAnimation::Forward);
         opacity_animation->start();
     });
-    QObject::connect(s_button_shown, &QState::exited, this, [this, opacity_animation](){
+    QObject::connect(s_button_shown, &QState::exited, this, [opacity_animation](){
         opacity_animation->setDirection(QAbstractAnimation::Backward);
         opacity_animation->start();
     });

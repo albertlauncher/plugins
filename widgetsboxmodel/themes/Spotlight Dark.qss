@@ -30,7 +30,7 @@
 
 #settingsButton {
     margin: 6px 6px 0px 0px;
-    color: #202020;
+    color: #808080;
     background-color: transparent;
     padding: 2px;
     min-width:14px;
