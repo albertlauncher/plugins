@@ -647,7 +647,7 @@ void Plugin::installPackages(const QStringList &package_names) const
 //        cout << qPrintable(out) << endl;
 //    }
 
-    auto script = QString("python3 -m pip install --disable-pip-version-check --target . %2")
-                  .arg(package_names.join(" "));
-    runTerminal(script, dataDir().filePath("site-packages"));
+    auto script = QString(R"R(python3 -m pip install --disable-pip-version-check --target "%1" %2; cd %1)R")
+                  .arg(dataDir().filePath("site-packages"), package_names.join(" "));
+    runTerminal(script);
 }
