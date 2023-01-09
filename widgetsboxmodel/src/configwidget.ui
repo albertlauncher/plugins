@@ -203,8 +203,14 @@
      </item>
      <item>
       <widget class="QLabel" name="label">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;span style=&quot; font-size:9pt; color:#818181;&quot;&gt;If you created a cool theme &lt;/span&gt;&lt;a href=&quot;https://github.com/orgs/albertlauncher/discussions/1147&quot;&gt;&lt;span style=&quot; font-size:9pt; text-decoration: underline; color:#094fd1;&quot;&gt;share it&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-size:9pt; color:#818181;&quot;&gt; with other users. The best themes will go upstream and be shipped with Albert.&lt;/span&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt;See the &lt;/span&gt;&lt;a href=&quot;https://github.com/albertlauncher/plugins/blob/master/widgetsboxmodel/README.md&quot;&gt;&lt;span style=&quot; font-size:9pt; text-decoration: underline; color:#094fd1;&quot;&gt;readme&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt; for instructions on how to create your own theme. If you created a nice theme please &lt;/span&gt;&lt;a href=&quot;https://github.com/orgs/albertlauncher/discussions/1147&quot;&gt;&lt;span style=&quot; font-size:9pt; text-decoration: underline; color:#094fd1;&quot;&gt;share it&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="wordWrap">
         <bool>true</bool>
