@@ -23,7 +23,7 @@ struct SnippetItem : albert::Item
                 albert::setClipboardText(QTextStream(&f).readAll());
             }},
             {"snip-open", "Open snippet", [this]() {
-                albert::openUrl(QDir(path).filePath(file_name_));
+                albert::openUrl("file://" + QDir(path).filePath(file_name_));
             }}
         };
     }
