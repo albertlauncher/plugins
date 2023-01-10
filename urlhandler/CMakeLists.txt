@@ -1,4 +1,4 @@
-project(urlhandler VERSION 1.0)
+project(urlhandler VERSION 1.1)
 albert_plugin(
     NAME "URL Handler"
     DESCRIPTION "Open URLs"

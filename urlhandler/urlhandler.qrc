@@ -1,0 +1,9 @@
+<!--
+  ~ Copyright (c) 2022 Manuel Schneider
+  -->
+
+<RCC>
+    <qresource prefix="/">
+        <file alias="tlds">resources/tlds-20230101.txt</file>
+    </qresource>
+</RCC>
