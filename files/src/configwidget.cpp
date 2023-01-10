@@ -6,6 +6,7 @@
 #include "plugin.h"
 #include <QDir>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QStandardPaths>
 #include <map>
 using namespace std;
@@ -117,7 +118,18 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
             [this](int value){ plugin->fsIndex().indexPaths().at(current_path)->setMaxDepth(value); });
 
     connect(ui.checkBox_fswatch, &QCheckBox::clicked, this,
-            [this](bool value){ plugin->fsIndex().indexPaths().at(current_path)->setWatchFilesystem(value); });
+            [this](bool value){
+                if (value)
+                    QMessageBox::warning(this, "Warning",
+                                         "Enabling file system watches comes with caveats. "
+                                         "You should only activate this option if you know "
+                                         "what you are doing. A lot of file system changes "
+                                         "(compilation, installing, etc) while having "
+                                         "watches enabled can put your system under high "
+                                         "load. You have been warned.");
+
+                plugin->fsIndex().indexPaths().at(current_path)->setWatchFilesystem(value);
+            });
 
     auto helper = [this](QCheckBox *checkbox, const QString& type){
         connect(checkbox, &QCheckBox::clicked, this, [this, checkbox, type](bool checked){
