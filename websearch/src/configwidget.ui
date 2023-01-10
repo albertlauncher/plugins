@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>ConfigWidget</class>
  <widget class="QWidget" name="ConfigWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>476</width>
-    <height>445</height>
-   </rect>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="leftMargin">
     <number>0</number>
@@ -80,17 +72,15 @@
      </item>
      <item>
       <widget class="QPushButton" name="pushButton_new">
-       <property name="icon">
-        <iconset theme="list-add">
-         <normaloff>.</normaloff>.</iconset>
+       <property name="text">
+        <string>Add</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="pushButton_remove">
-       <property name="icon">
-        <iconset theme="list-remove">
-         <normaloff>.</normaloff>.</iconset>
+       <property name="text">
+        <string>Remove</string>
        </property>
       </widget>
      </item>
