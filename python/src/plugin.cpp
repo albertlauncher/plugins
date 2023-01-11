@@ -438,13 +438,25 @@ public:
                     throw runtime_error(QString("No '%1' in $PATH.").arg(exec).toStdString());
 
             try {
+
+                // Import as __name__ = albert.package_name
                 py::module importlib_util = py::module::import("importlib.util");
                 py::object pyspec = importlib_util.attr("spec_from_file_location")(QString("albert.%1").arg(metadata_.id), source_path_); // Prefix to avoid conflicts
                 module_ = importlib_util.attr("module_from_spec")(pyspec);
+
+                // Set default md_id
+                if (!py::hasattr(module_, ATTR_MD_ID))
+                    module_.attr("md_id") = metadata_.id;
+
+                // Execute module
                 pyspec.attr("loader").attr("exec_module")(module_);
+
+                // Instanciate plugin
                 instance_ = module_.attr("Plugin")();
+
                 state_ = PluginState::Loaded;
                 state_info_.clear();
+
             } catch (py::error_already_set &e) {
                 if (e.matches(PyExc_ModuleNotFoundError)) {
                     QString text("Looks like something is missing:\n\n");
