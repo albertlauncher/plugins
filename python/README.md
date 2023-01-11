@@ -12,7 +12,7 @@ Variable | Description
 --- | ---
 `md_iid` | **MANDATORY [str]**`<major>.<minor>` The Python plugin interface version this plugin implements. Currently 0.5
 `md_version` | **MANDATORY [str]**`<major>.<minor>`  The plugin version 
-`md_id` | **Optional [str]** `[a-zA-Z0-9_]` Use to overwrite the default (module name).  
+`md_id` | **Optional [str]** `[a-zA-Z0-9_]` Use to overwrite the default (module name). Note `__name__` gets `albert.` prepended to avoid conflicts.
 `md_name` | **MANDATORY [str]** Human readable name
 `md_description` | **MANDATORY [str]** A brief, imperative description like "Launchs apps" or "Open files"
 `__doc__` | **Recommended [str]** The docstring of the module is used as long description/readme of the extension.
