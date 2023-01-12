@@ -34,7 +34,7 @@ static QStringList getAppBundlePaths()
     // Run a spotlight query
     NSMetadataQuery * query = [[NSMetadataQuery alloc] init];
     [query setSearchScopes: [NSArray arrayWithObjects: @"Applications", @"/Applications", @"/System/Applications", @"/System/Library/CoreServices/Applicatis", nil]];
-    [query setPredicate:[NSPredicate predicateWithFormat:@"kMDItemContentType == 'com.apple.application-bundle' && kMDItemKind == 'Programm'"]]; //  || kMDItemContentType == 'com.apple.systempreference.prefpane'"]];
+    [query setPredicate:[NSPredicate predicateWithFormat:@"kMDItemContentType == 'com.apple.application-bundle'"]]; //  || kMDItemContentType == 'com.apple.systempreference.prefpane'"]];
     if ([query startQuery]){
       while ([query isGathering])
         [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
