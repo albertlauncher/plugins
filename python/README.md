@@ -82,61 +82,35 @@ class Plugin(QueryHandler):
 
 The built-in albert module exposes several functions and classes for use with Albert.
 
-#### Functions
-
-<hr>
-
-`debug(obj)`, `info(obj)`, `warning(obj)`, `critical(obj)`
+#### `debug(obj)`, `info(obj)`, `warning(obj)`, `critical(obj)`
 
 Log a message to stdout. Note that `debug` is effectively a NOP in release builds. Puts the passed object into `str()` for convenience. The messages are logged using the QLoggingCategory of the python extension and therefore are subject to filter rules.
 
-<hr>
-
-`cacheLocation()`, `configLocation()`, `dataLocation()`
+#### `cacheLocation()`, `configLocation()`, `dataLocation()`
 
 Returns the writable cache, config and data location of the app. E.g. on Linux *$HOME/.cache/albert/*, *$HOME/.config/albert/* and *$HOME/.local/share/albert/*.
 
-<hr>
+#### `setClipboardText(text:str='')`
 
-`setClipboardText(text:str='')`
+#### `openUrl(url:str='')`
 
-<hr>
+#### `runDetachedProcess(cmdln:list(str)=[], workdir:str='')`
 
-`openUrl(url:str='')`
+#### `runTerminal(script:str='', workdir:str='', close_on_exit:bool=False)`
 
-<hr>
+#### `sendTrayNotification(title:str='', msg:str='', ms:int=10000)`
 
-`runDetachedProcess(cmdln:list(str)=[], workdir:str='')`
-
-<hr>
-
-`runTerminal(script:str='', workdir:str='', close_on_exit:bool=False)`
-
-<hr>
-
-`sendTrayNotification(title:str='', msg:str='', ms:int=10000)`
-
-<hr>
-
-#### Classes
-
-<hr>
-
-`albert.Action(id:str, text:str, callable:object)`
+#### `albert.Action(id:str, text:str, callable:object)`
 
 Represents the internal `albert::Action` class.
 
-<hr>
+#### `albert.Item(id:str='', text:str='', subtext:str='', completion:str='', icon:list(str)=[], actions:list(Action)=[])`
 
-`albert.Item(id:str='', text:str='', subtext:str='', completion:str='', icon:list(str)=[], actions:list(Action)=[])`
+Corresponds to the internal class [`albert::StandardItem`](https://github.com/albertlauncher/albert/blob/master/include/albert/util/standarditem.h) See the C++ documentation for more info.
 
-Corresponds to the internal class `albert::StandardItem`. See the C++ documentation for more info.
+#### `albert.Extension()`
 
-<hr>
-
-`albert.Extension()`
-
-Corresponds to the internal class `albert::Extension` which is a virtual base class for all extensions. You _have to_ override the following functions in all subclasses.
+Corresponds to the internal class [`albert::Extension`](https://github.com/albertlauncher/albert/blob/master/include/albert/extension.h) which is a virtual base class for all extensions. You _have to_ override the following functions in all subclasses.
 
 Function| Description
 --- | ---
@@ -144,11 +118,9 @@ Function| Description
 `albert.Extension.name()` | ***MANDATORY*** Return the human readable extension name 
 `albert.Extension.description()` | ***MANDATORY*** Return an imperative, brief description 
 
-<hr>
+#### `albert.QueryHandler(albert.Extension)`
 
-`albert.QueryHandler(albert.Extension)`
-
-Corresponds to the internal extension class `albert::QueryHandler`. Subclass it to provide a query handling extension.
+Corresponds to the internal extension class [`albert::QueryHandler`](https://github.com/albertlauncher/albert/blob/master/include/albert/extensions/queryhandler.h). Subclass it to provide a query handling extension.
 
 Function| Description
 --- | ---
@@ -157,9 +129,7 @@ Function| Description
 `albert.QueryHandler.defaultTrigger()` | **Optional** Return a default trigger overwrite. Defaults to extension id.
 `albert.QueryHandler.allowTriggerRemap()` | **Optional** Return a bool indicating if the user is allowed to remap the trigger. Defaults to True.
 
-<hr>
-
-`albert.Query()`
+#### `albert.Query()`
 
 The query class represents a user query and is passed to the handleQuery function when the user starts a query.
 
@@ -170,9 +140,6 @@ Attirbute | Description
 `albert.Query.isValid()` | This flag indicates if the query is valid. A query is valid until the query manager cancels it. You should regularly check this flag and abort the query handling if the flag is `False` to release threads in the threadpool for the next query.
 `albert.Query.add(Item)` | Adds a single item to the query
 `albert.Query.add(list(Item))` | Adds a list of items to the query
-
-<hr>
-
 
 ## Deployment
 
