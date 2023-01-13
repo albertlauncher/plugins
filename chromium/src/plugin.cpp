@@ -100,7 +100,7 @@ Plugin::Plugin()
     index_hostname_ = s->value(CFG_INDEX_HOSTNAME, DEF_INDEX_HOSTNAME).toBool();
 
     // If not configured try to automatically set paths
-    if (s->contains(CFG_BOOKMARKS_PATH)){
+    if (!s->contains(CFG_BOOKMARKS_PATH)){
         for (auto loc : {QStandardPaths::GenericDataLocation, QStandardPaths::GenericConfigLocation})
             for (const auto &path : QStandardPaths::standardLocations(loc))
                 for (const char *app_dir_name : app_dirs)
