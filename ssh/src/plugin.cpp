@@ -11,6 +11,7 @@
 #include <utility>
 ALBERT_LOGGING
 using namespace std;
+using namespace albert;
 static const char* CFG_USE_KNOWN_HOSTS = "use_known_hosts";
 static const bool  DEF_USE_KNOWN_HOSTS = true;
 
@@ -19,42 +20,53 @@ static const QString user_conf_file_path = QDir::home().filePath(".ssh/config");
 static const QString known_hosts_file_path = QDir::home().filePath(".ssh/known_hosts");
 static const QStringList icon_urls = {"xdg:ssh", ":ssh"};
 
-struct SshItem : albert::Item
+static const QRegularExpression re_known_hosts(R"raw(^\[?([\w\-\.\:]+)\]?(?::(\d+))?)raw");
+static const QRegularExpression re_input(R"raw(^(?:(\w+)@)?\[?((?:[\w\.-]*))\]?(?::(\d+))?(?:\s+(.*))?$)raw");
+
+struct SshItem : Item
 {
-    explicit SshItem(QString host, QString port, QString from):
-            host_(std::move(host)), port_(std::move(port)), from_file_(std::move(from)) {}
+    explicit SshItem(QString host, QString port, QString info):
+            host(std::move(host)), port(std::move(port)), info(std::move(info)) {}
     SshItem(const SshItem&) = default;
 
-    QString user_;
-    QString host_;
-    QString port_;
-    QString from_file_;
+    QString user;
+    QString host;
+    QString port;
+    QString cmdln;
+    QString info;
 
-    QString id() const override { return host_; }
+    QString id() const override { return host; }
     QString text() const override {
-        if (user_.isEmpty()){
-            if (port_.isEmpty()){
-                return host_;
+        if (user.isEmpty()){
+            if (port.isEmpty()){
+                return host;
             } else
-                return QString("%1:%2").arg(host_, port_);
+                return QString("%1:%2").arg(host, port);
         } else {
-            if (port_.isEmpty()){
-                return QString("%1@%2").arg(user_, host_);
+            if (port.isEmpty()){
+                return QString("%1@%2").arg(user, host);
             } else
-                return QString("%1@%2:%3").arg(user_, host_, port_);
+                return QString("%1@%2:%3").arg(user, host, port);
         }
     }
-    QString subtext() const override { return QString("%1 (%2)").arg(text(), from_file_); }
+    QString subtext() const override { return QString("%1 - %2").arg(text(), info); }
     QStringList iconUrls() const override { return icon_urls; }
-    vector<albert::Action> actions() const override { return {
-                {"ssh-connect", "Connect to host", [this]() {
-                    if (port_.isEmpty())
-                        albert::runTerminal(QString("ssh %1").arg(host_));
-                    else
-                        albert::runTerminal(QString("ssh %1:%2").arg(host_, port_));
-                }}
-        }; }
-
+    void connect(bool close_term) const {
+        auto authority = host;
+        if (!user.isEmpty())
+            authority = QString("%1@%2").arg(user, authority);
+        if (!port.isEmpty())
+            authority = QString("%1:%2").arg(authority, port);
+        if (!cmdln.isEmpty())
+            authority = QString("%1 %2").arg(authority, cmdln);
+        runTerminal(QString("ssh %1").arg(authority), {}, close_term);
+    }
+    vector<Action> actions() const override {
+        return {
+            { "ssh-connect", "Connect", [this](){ connect(true); } },
+            { "ssh-connect", "Connect (Keep terminal)", [this](){ connect(false); } }
+        };
+    }
 };
 
 static void getConfigHosts(vector<shared_ptr<SshItem>> &hosts, const bool &cancel)
@@ -65,7 +77,7 @@ static void getConfigHosts(vector<shared_ptr<SshItem>> &hosts, const bool &cance
             if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
                 QTextStream in(&file);
                 while (!in.atEnd()) {
-                    QStringList fields = in.readLine().split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+                    QStringList fields = in.readLine().split(" ", Qt::SkipEmptyParts);
                     if (fields.size() > 1 && fields[0] == "Host") {
                         for (int i = 1; i < fields.size(); ++i)
                             if (!(fields[i].contains('*') || fields[i].contains('?')))
@@ -95,10 +107,9 @@ static void getKnownHosts(vector<shared_ptr<SshItem>> &hosts, const bool &cancel
     // Get the hosts in known_hosts
     if (QFile file(known_hosts_file_path); file.exists()) {
         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QRegularExpression re(R"raw(^\[?([\w\-\.\:]+)\]?(?::(\d+))?)raw");
             QTextStream in(&file);
             while (!in.atEnd())
-                if (auto match = re.match(in.readLine()); match.hasMatch())
+                if (auto match = re_known_hosts.match(in.readLine()); match.hasMatch())
                     unique_hosts.emplace(match.captured(1), make_shared<SshItem>(match.captured(1),
                                                                                  match.captured(2),
                                                                                  known_hosts_file_path));
@@ -123,22 +134,22 @@ Plugin::Plugin()
     };
     indexer.finish = [this](vector<shared_ptr<SshItem>> && items){
         hosts_ = ::move(items);
-        updateIndex();
+        updateIndexItems();
     };
 
-    connect(&fs_watcher_, &QFileSystemWatcher::fileChanged, [this](){ indexer.run(); });
+    connect(&fs_watcher_, &QFileSystemWatcher::fileChanged, this, [this](){ indexer.run(); });
 
     useKnownHosts_ = settings()->value(CFG_USE_KNOWN_HOSTS, DEF_USE_KNOWN_HOSTS).toBool();
     indexer.run();
 }
 
-vector<albert::IndexItem> Plugin::indexItems() const
+void Plugin::updateIndexItems()
 {
-    vector<albert::IndexItem> index_items;
+    vector<IndexItem> index_items;
     index_items.reserve(hosts_.size());
     for (const auto &host : hosts_)
-        index_items.emplace_back(static_pointer_cast<albert::Item>(host), host->host_);
-    return index_items;
+        index_items.emplace_back(static_pointer_cast<Item>(host), host->host);
+    setIndexItems(::move(index_items));
 }
 
 QWidget *Plugin::buildConfigWidget()
@@ -156,41 +167,51 @@ QWidget *Plugin::buildConfigWidget()
 
 QString Plugin::synopsis() const
 {
-    return "[user@]<host>[:port]";
+    return "[usr@]<hst>[:prt] [cmdln]";
 }
 
-void Plugin::handleQuery(Query &query) const
+void Plugin::handleQuery(QueryHandler::Query &query) const
 {
     auto trimmed = query.string().trimmed();
     if (trimmed.isEmpty())
-        IndexQueryHandler::handleQuery(query);
+        GlobalQueryHandler::handleQuery(query);
     else {
         // Check sanity of input
-        QRegularExpression re(R"raw(^(?:(\w+)@)?\[?((?:[\w\.-]*))\]?(?::(\d+))?$)raw");
-        QRegularExpressionMatch match = re.match(trimmed);
+        QRegularExpressionMatch match = re_input.match(trimmed);
 
         if (match.hasMatch())
         {
             QString q_user = match.captured(1);
             QString q_host = match.captured(2);
             QString q_port = match.captured(3);
+            QString q_cmdln = match.captured(4);
 
-            vector<albert::RankItem> rank_items{rankItems(q_host, query.isValid())};
+            struct GQ : public GlobalQueryHandler::Query {
+                const QString &q;
+                const bool &v;
+                GQ(const QString &q, const bool &v) : q(q), v(v) {}
+                const QString &string() const { return q; }
+                bool isValid() const { return v; }
+            } gq(q_host, query.isValid());
+
+            vector<RankItem> rank_items{IndexQueryHandler::handleQuery(gq)};
             sort(rank_items.begin(), rank_items.end(), [](const auto &a, const auto &b){ return a.score > b.score; });
-            vector<shared_ptr<albert::Item>> results;
+            vector<shared_ptr<Item>> results;
 
             // Show all hosts matching the query
             for (auto &rank_item : rank_items) {
                 auto item = make_shared<SshItem>(*static_pointer_cast<SshItem>(rank_item.item)); // copy
-                if (!q_user.isEmpty()) item->user_ = q_user;
-                if (!q_port.isEmpty()) item->port_ = q_port;
+                if (!q_user.isEmpty()) item->user = q_user;
+                if (!q_port.isEmpty()) item->port = q_port;
+                if (!q_cmdln.isEmpty()) item->cmdln = q_cmdln;
                 results.emplace_back(::move(item));
             }
 
             // Add the quick connect item
             if (!q_host.isEmpty()){
                 auto *i = new SshItem(q_host, q_port, "Quick connect");
-                i->user_ = q_user;
+                i->user = q_user;
+                i->cmdln = q_cmdln;
                 results.emplace_back(i);
             }
 
@@ -211,3 +232,33 @@ void Plugin::setUseKnownHosts(bool b)
     useKnownHosts_ = b;
     indexer.run();
 }
+
+
+
+
+
+
+
+/*
+https://regex101.com/
+
+anme@host:888 comand
+host:888 comand
+anme@host comand
+host comand
+anme@host:888
+host:888
+anme@host
+host
+anme@[host]:888 comand
+[host]:888 comand
+anme@[host] comand
+[host] comand
+anme@[host]:888
+[host]:888
+anme@[host]
+[host]
+
+*/
+
+

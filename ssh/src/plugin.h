@@ -19,8 +19,8 @@ class Plugin:
 public:
     Plugin();
     QString synopsis() const override;
-    void handleQuery(Query&) const override;
-    std::vector<albert::IndexItem> indexItems() const override;
+    void handleQuery(QueryHandler::Query&) const override;
+    void updateIndexItems() override;
     QWidget* buildConfigWidget() override;
 
 private:
@@ -31,4 +31,6 @@ private:
     QFileSystemWatcher fs_watcher_;
     std::vector<std::shared_ptr<SshItem>> hosts_;
     bool useKnownHosts_;
+
+    using IndexQueryHandler::handleQuery;  // hide -Woverloaded-virtual
 };
