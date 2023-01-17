@@ -13,7 +13,7 @@ class Plugin:
     Q_OBJECT ALBERT_PLUGIN
 public:
     Plugin();
-    std::vector<albert::IndexItem> indexItems() const override;
+    void updateIndexItems() override;
     QWidget* buildConfigWidget() override;
 private:
 

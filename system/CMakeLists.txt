@@ -1,4 +1,4 @@
-project(system VERSION 1.2)
+project(system VERSION 1.3)
 albert_plugin(
     NAME System
     DESCRIPTION "Control your machines state"

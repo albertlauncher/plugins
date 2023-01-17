@@ -152,11 +152,11 @@ QWidget* Plugin::buildConfigWidget()
     return w;
 }
 
-std::vector<albert::IndexItem> Plugin::indexItems() const
+void Plugin::updateIndexItems()
 {
-    std::vector<albert::IndexItem> items;
+    std::vector<albert::IndexItem> index_items;
     for (const auto &si : items_)
         for (const auto &alias : si.aliases)
-            items.emplace_back(si.item, alias);
-    return items;
+            index_items.emplace_back(si.item, alias);
+    setIndexItems(::move(index_items));
 }
