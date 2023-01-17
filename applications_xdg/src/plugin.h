@@ -16,8 +16,8 @@ class Plugin:
 public:
     Plugin();
 
+    void updateIndexItems() override;
     QWidget *buildConfigWidget() override;
-    std::vector<albert::IndexItem> indexItems() const override;
 
 protected:
     std::vector<albert::IndexItem> indexApps(const bool &abort) const;

@@ -381,7 +381,8 @@ Plugin::Plugin()
 
     indexer.parallel = [this](const bool &abort){ return indexApps(abort); };
     indexer.finish = [this](vector<IndexItem> &&result){
-        apps = ::move(result); updateIndex();
+        apps = ::move(result);
+        updateIndexItems();
 
         // Finally update the watches (maybe folders changed)
         if (!fs_watcher_.directories().isEmpty())
@@ -399,9 +400,12 @@ Plugin::Plugin()
     indexer.run();
 }
 
-vector<IndexItem> Plugin::indexItems() const
+void Plugin::updateIndexItems()
 {
-    return apps;
+    vector<IndexItem> index_items;
+    for (const auto & ii : apps)
+        index_items.emplace_back(ii.item, ii.string);
+    setIndexItems(::move(index_items));
 }
 
 QWidget *Plugin::buildConfigWidget()
