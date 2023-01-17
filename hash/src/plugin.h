@@ -9,6 +9,6 @@ class Plugin:
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
-    std::vector<albert::RankItem> rankItems(const QString &string, const bool& isValid) const override;
-    void handleQuery(Query&) const override;
+    std::vector<albert::RankItem> handleQuery(const Query&) const override;
+    void handleQuery(QueryHandler::Query&) const override;
 };
