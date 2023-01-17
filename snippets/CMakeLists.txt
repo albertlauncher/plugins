@@ -1,4 +1,4 @@
-project(snippets VERSION 1.1)
+project(snippets VERSION 1.2)
 albert_plugin(
     NAME Snippets
     DESCRIPTION "Copy snippets to the clipboard"

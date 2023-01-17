@@ -15,8 +15,9 @@ public:
     Plugin();
     QString defaultTrigger() const override;
     QWidget* buildConfigWidget() override;
-    std::vector<albert::IndexItem> indexItems() const override;
+    void updateIndexItems() override;
 
 public:
     QFileSystemWatcher fs_watcher;
+    albert::BackgroundExecutor<std::vector<albert::IndexItem>> indexer;
 };
