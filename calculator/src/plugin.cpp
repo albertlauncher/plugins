@@ -5,6 +5,7 @@
 #include <QString>
 ALBERT_LOGGING
 using namespace std;
+using namespace albert;
 
 namespace {
 const char* CFG_SEPS     = "group_separators";
@@ -18,7 +19,7 @@ Plugin::Plugin()
     // FIXME Qt6 Workaround for https://bugreports.qt.io/browse/QTBUG-58504
     locale = QLocale(QLocale::system().name());
 
-    parser = std::make_unique<mu::Parser>();
+    parser = make_unique<mu::Parser>();
     parser->SetDecSep(locale.decimalPoint()[0].toLatin1());
     parser->SetThousandsSep(locale.groupSeparator()[0].toLatin1());
     parser->SetArgSep(';');
@@ -48,38 +49,38 @@ QWidget *Plugin::buildConfigWidget()
 }
 
 
-std::vector<albert::RankItem> Plugin::rankItems(const QString &string, const bool& isValid) const 
+vector<RankItem> Plugin::handleQuery(const Query &query) const
 {
-    if (string.isEmpty())
+    if (query.string().isEmpty())
         return {};
 
     // http://beltoforion.de/article.php?a=muparser&p=errorhandling
     QString result;
     try {
-        if(iparser && string.contains("0x")) {
-            iparser->SetExpr(string.toStdString());
+        if(iparser && query.string().contains("0x")) {
+            iparser->SetExpr(query.string().toStdString());
             result = locale.toString(iparser->Eval(), 'G', 16);
         } else {
-            parser->SetExpr(string.toStdString());
+            parser->SetExpr(query.string().toStdString());
             result = locale.toString(parser->Eval(), 'G', 16);
         }
     } catch (mu::Parser::exception_type &exception) {
         return {};
     }
 
-    std::vector<albert::RankItem> items;
-    items.emplace_back(albert::StandardItem::make(
+    vector<RankItem> items;
+    items.emplace_back(StandardItem::make(
         "muparser",
         result,
-        QString("Result of '%1'").arg(string),
+        QString("Result of '%1'").arg(query.string()),
         {"xdg:calc", ":calc"},
         {
                 {"cp-res", "Copy result to clipboard",
-                 [=](){ albert::setClipboardText(result); }},
+                 [=](){ setClipboardText(result); }},
                 {"cp-equ", "Copy equation to clipboard",
-                 [=](){ albert::setClipboardText(QString("%1 = %2").arg(string, result)); }}
+                 [=, q=query.string()](){ setClipboardText(QString("%1 = %2").arg(q, result)); }}
         })
-    , albert::MAX_SCORE);
+        , RankItem::MAX_SCORE);
     return items;
 }
 

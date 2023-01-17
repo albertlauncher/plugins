@@ -17,7 +17,7 @@ class Plugin:
 public:
     Plugin();
 
-    std::vector<albert::RankItem> rankItems(const QString &string, const bool& isValid) const override;
+    std::vector<albert::RankItem> handleQuery(const Query&) const override;
     QWidget* buildConfigWidget() override;
 
     void setGroupSeparatorEnabled(bool enabled);
