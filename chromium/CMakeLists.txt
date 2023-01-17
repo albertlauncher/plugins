@@ -1,4 +1,4 @@
-project(chromium VERSION 1.2)
+project(chromium VERSION 1.3)
 albert_plugin(
     NAME Chromium
     DESCRIPTION "Open Chromium based browser bookmarks"

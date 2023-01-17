@@ -85,16 +85,6 @@ static std::vector<std::shared_ptr<BookmarkItem>> parseBookmarks(const QStringLi
 
 Plugin::Plugin()
 {
-    indexer.parallel = [this](const bool &abort){
-        return parseBookmarks(paths_, abort);
-    };
-    indexer.finish = [this](vector<shared_ptr<BookmarkItem>> && res){
-        auto msg = QString("%1 bookmarks indexed.").arg(bookmarks_.size());
-        INFO << msg;
-        emit statusChanged(msg);
-        bookmarks_=::move(res);
-        updateIndex();
-    };
 
     auto s = settings();
     index_hostname_ = s->value(CFG_INDEX_HOSTNAME, DEF_INDEX_HOSTNAME).toBool();
@@ -112,7 +102,6 @@ Plugin::Plugin()
     else
         paths_ = s->value(CFG_BOOKMARKS_PATH).toStringList();
 
-    indexer.run();
 
     connect(&file_system_watcher_, &QFileSystemWatcher::fileChanged, [this](){
         // Update watches. Chromium seems to mv the file (inode change).
@@ -123,24 +112,37 @@ Plugin::Plugin()
         emit statusChanged(msg);
         indexer.run();
     });
+
+    indexer.parallel = [this](const bool &abort){
+        return parseBookmarks(paths_, abort);
+    };
+    indexer.finish = [this](vector<shared_ptr<BookmarkItem>> && res){
+        auto msg = QString("%1 bookmarks indexed.").arg(bookmarks_.size());
+        INFO << msg;
+        emit statusChanged(msg);
+        bookmarks_=::move(res);
+        updateIndexItems();
+    };
+    indexer.run();
 }
 
-void Plugin::setPaths(const QStringList& paths) {
+void Plugin::setPaths(const QStringList& paths)
+{
     paths_ = paths;
     paths_.sort();
     settings()->setValue(CFG_BOOKMARKS_PATH, paths_);
-    updateIndex();
+    indexer.run();
 }
 
-vector<albert::IndexItem> Plugin::indexItems() const
+void Plugin::updateIndexItems()
 {
     vector<albert::IndexItem> index_items;
-    for (const auto & bookmark : bookmarks_){
+    for (const auto &bookmark : bookmarks_){
         index_items.emplace_back(static_pointer_cast<albert::Item>(bookmark), bookmark->name_);
         if (index_hostname_)
             index_items.emplace_back(static_pointer_cast<albert::Item>(bookmark), QUrl(bookmark->url_).host());
     }
-    return index_items;
+    setIndexItems(::move(index_items));
 }
 
 QWidget *Plugin::buildConfigWidget()

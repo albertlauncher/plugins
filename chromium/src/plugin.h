@@ -15,11 +15,8 @@ class Plugin :
     Q_OBJECT ALBERT_PLUGIN
 public:
     Plugin();
-
-    std::vector<albert::IndexItem> indexItems() const final;
+    void updateIndexItems() override;
     QWidget* buildConfigWidget() override;
-
-
 
 private:
     QFileSystemWatcher file_system_watcher_;
