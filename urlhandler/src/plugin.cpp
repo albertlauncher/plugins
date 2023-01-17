@@ -17,10 +17,10 @@ Plugin::Plugin()
     std::sort(valid_tlds.begin(), valid_tlds.end());
 }
 
-vector<RankItem> Plugin::rankItems(const QString &string, const bool& isValid) const
+vector<RankItem> Plugin::handleQuery(const Query &query) const
 {
     vector<RankItem> results;
-    auto trimmed = string.trimmed();
+    auto trimmed = query.string().trimmed();
     auto url = QUrl::fromUserInput(trimmed);
 
     // Check syntax and TLD validity
@@ -52,7 +52,7 @@ vector<RankItem> Plugin::rankItems(const QString &string, const bool& isValid) c
                         QDesktopServices::openUrl(url);
                     }
                 }})
-            , MAX_SCORE
+            , RankItem::MAX_SCORE
             );
     }
     return results;

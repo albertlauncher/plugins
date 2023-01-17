@@ -10,7 +10,7 @@ class Plugin:
     Q_OBJECT ALBERT_PLUGIN
 public:
     Plugin();
-    std::vector<albert::RankItem> rankItems(const QString &string, const bool& isValid) const override;
+    std::vector<albert::RankItem> handleQuery(const Query&) const override;
 private:
     QStringList valid_tlds;
 };
