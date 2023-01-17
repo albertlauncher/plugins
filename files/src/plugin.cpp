@@ -25,7 +25,7 @@ const char* INDEX_FILE_NAME = "file_index.json";
 
 Plugin::Plugin()
 {
-    connect(&fs_index_, &FsIndex::updatedFinished, this, [this](){ updateIndex(); });
+    connect(&fs_index_, &FsIndex::updatedFinished, this, [this](){ updateIndexItems(); });
 
     QJsonObject object;
     if (QFile file(cacheDir().filePath(INDEX_FILE_NAME)); file.open(QIODevice::ReadOnly))
@@ -98,16 +98,22 @@ Plugin::~Plugin()
         WARN << "Couldn't write to file:" << file.fileName();
 }
 
-vector<albert::IndexItem> Plugin::indexItems() const
+void Plugin::updateIndexItems()
 {
+    // Get file items
     vector<shared_ptr<AbstractFileItem>> items;
     for (auto &[path, fsp] : fs_index_.indexPaths())
         fsp->items(items);
+
+    // Create index items
     vector<albert::IndexItem> ii;
     for (auto &file_item : items)
         ii.emplace_back(file_item, file_item->name());
+
+    // Add update item
     ii.emplace_back(update_item, update_item->text());
-    return ii;
+
+    setIndexItems(::move(ii));
 }
 
 QWidget *Plugin::buildConfigWidget()
