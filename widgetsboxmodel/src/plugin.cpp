@@ -15,6 +15,7 @@
 #include <utility>
 ALBERT_LOGGING
 using namespace std;
+using namespace albert;
 
 namespace  {
 const char*   CFG_WND_POS  = "windowPosition";
@@ -824,3 +825,29 @@ void Plugin::setDisplaySystemShadow(bool value)
     settings()->setValue(CFG_SYSTEM_SHADOW, value);
     window.setWindowFlags(window.windowFlags().setFlag(Qt::NoDropShadowWindowHint, !value));
 }
+
+QString Plugin::defaultTrigger() const { return "themes "; }
+
+void Plugin::handleQuery(Query &query) const
+{
+    for (const auto &[name, path] : themes_)
+        if (name.startsWith(query.string(), Qt::CaseInsensitive))
+            query.add(
+                StandardItem::make(
+                    QString("theme_%1").arg(name),
+                    name,
+                    path,
+                    {":app_icon"},
+                    {
+                        {
+                            "apply", "Apply theme",
+                            [self=const_cast<Plugin*>(this), n=name](){ self->setTheme(n); }
+                        },{
+                            "open", "Open theme file",
+                            [p=path](){ openUrl(p); }
+                        }
+                    }
+                )
+            );
+}
+

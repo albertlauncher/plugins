@@ -12,9 +12,9 @@ class SettingsButton;
 class InputLine;
 
 
-class Plugin:
-        public albert::ExtensionPlugin,
-        public albert::Frontend
+class Plugin : public albert::ExtensionPlugin,
+               public albert::QueryHandler,
+               public albert::Frontend
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
@@ -65,8 +65,11 @@ public:
     void setVisible(bool visible) override;
     QString input() const override;
     void setInput(const QString&) override;
-
     QWidget* createSettingsWidget() override;
+
+    // albert::QueryHandler
+    QString defaultTrigger() const override;
+    void handleQuery(Query &query) const override;
 
 private:
     void init_statemachine();
