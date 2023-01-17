@@ -8,10 +8,10 @@
 class ConfigWidget;
 
 
-class Plugin final :
-        public albert::ExtensionPlugin,
-        public albert::GlobalQueryHandler,
-        public albert::ConfigWidgetProvider
+class Plugin final : public albert::ExtensionPlugin,
+                     public albert::ConfigWidgetProvider,
+                     public albert::FallbackHandler,
+                     public albert::GlobalQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 
@@ -19,7 +19,7 @@ public:
 
     Plugin();
 
-    std::vector<albert::RankItem> rankItems(const QString &string, const bool& isValid) const override;
+    std::vector<albert::RankItem> handleQuery(const Query&) const override;
     std::vector<std::shared_ptr<albert::Item>> fallbacks(const QString &) const override;
     QWidget *buildConfigWidget() override;
 

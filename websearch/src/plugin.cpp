@@ -12,6 +12,7 @@
 #include <array>
 #include <vector>
 using namespace std;
+using namespace albert;
 ALBERT_LOGGING
 
 const char * ENGINES_FILE_NAME = "engines.json";
@@ -88,40 +89,39 @@ void ::Plugin::restoreDefaultEngines()
     setEngines(defaultSearchEngines);
 }
 
-static shared_ptr<albert::StandardItem> buildItem(const SearchEngine &se, const QString &search_term)
+static shared_ptr<StandardItem> buildItem(const SearchEngine &se, const QString &search_term)
 {
     QString url = QString(se.url).replace("%s", QUrl::toPercentEncoding(search_term));
-    return albert::StandardItem::make(
+    return StandardItem::make(
             se.name,
             se.name,
             QString("Search %1 for '%2'").arg(se.name, search_term),
             QString("%1 %2").arg(se.name, search_term),
             {QString("xdg:%1").arg(se.name.toLower()), se.iconPath},
-            {{"run", "Run websearch", [url](){ albert::openUrl(url); }}}
+            {{"run", "Run websearch", [url](){ openUrl(url); }}}
     );
 }
 
-vector<albert::RankItem> Plugin::rankItems(const QString &string, const bool& isValid) const
+vector<RankItem> Plugin::handleQuery(const Query &query) const
 {
-    vector<albert::RankItem> results;
-
-    if (!string.isEmpty())
+    vector<RankItem> results;
+    if (!query.string().isEmpty())
         for (const SearchEngine &se: searchEngines_)
             for (const auto &keyword : {se.trigger.toLower(), QString("%1 ").arg(se.name.toLower())})
-                if (auto prefix = string.toLower().left(keyword.size()); keyword.startsWith(prefix)){
-                    results.emplace_back(buildItem(se, string.mid(prefix.size())),
-                                         (albert::Score) ((double) prefix.length() / (double) keyword.size() *
-                                                          albert::MAX_SCORE));
+                if (auto prefix = query.string().toLower().left(keyword.size()); keyword.startsWith(prefix)){
+                    results.emplace_back(buildItem(se, query.string().mid(prefix.size())),
+                                         (RankItem::Score) ((double) prefix.length()
+                                                           / (double) keyword.size()
+                                                           * RankItem::MAX_SCORE));
                     break;  // max one of these icons, assumption: tigger is shorter and yields higer scores
 
                 }
-    applyUsageScores(results);
     return results;
 }
 
-vector<shared_ptr<albert::Item>> Plugin::fallbacks(const QString &query) const
+vector<shared_ptr<Item>> Plugin::fallbacks(const QString &query) const
 {
-    vector<shared_ptr<albert::Item>> results;
+    vector<shared_ptr<Item>> results;
     if (!query.isEmpty())
         for (const SearchEngine &se: searchEngines_)
             results.emplace_back(buildItem(se, query.isEmpty()?"…":query));
