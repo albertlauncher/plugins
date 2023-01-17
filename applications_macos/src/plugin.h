@@ -13,11 +13,10 @@ class Plugin:
 public:
     Plugin();
 
-    std::vector<albert::IndexItem> indexItems() const override;
+    void updateIndexItems() override;
 
 protected:
     static std::vector<std::shared_ptr<albert::Item>> indexApps(const bool &abort);
-    albert::BackgroundExecutor<std::vector<std::shared_ptr<albert::Item>>> indexer;
-    std::vector<std::shared_ptr<albert::Item>> apps;
+    albert::BackgroundExecutor<std::vector<albert::IndexItem>> indexer;
     QFileSystemWatcher fs_watcher_;
 };

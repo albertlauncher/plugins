@@ -95,28 +95,26 @@ static shared_ptr<Item> createAppItem(const QString &bundle_path)
 Plugin::Plugin()
 {
   connect(&fs_watcher_, &QFileSystemWatcher::directoryChanged, this, [this](){ indexer.run(); });
-  fs_watcher_.addPaths(QStringList(watched_dirs));
-  indexer.parallel = &Plugin::indexApps;
-  indexer.finish = [this](vector<shared_ptr<Item>> &&result){ apps = ::move(result); updateIndex(); };
+  fs_watcher_.addPaths(watched_dirs);
+
+  indexer.parallel = [](const bool &abort){
+    vector<IndexItem> results;
+    for (const QString &bundle_path : getAppBundlePaths()){
+      auto app_item = createAppItem(bundle_path);
+      results.emplace_back(app_item, app_item->text());
+    }
+    return results;
+  };
+  indexer.finish = [this](vector<IndexItem> &&result){
+    setIndexItems(::move(result));
+  };
+}
+
+void Plugin::updateIndexItems()
+{
   indexer.run();
-
 }
 
-vector<shared_ptr<Item>> Plugin::indexApps(const bool &abort)
-{
-  vector<shared_ptr<Item>> results;
-  for (const QString &bundle_path : getAppBundlePaths())
-    results.emplace_back(createAppItem(bundle_path));
-  return results;
-}
-
-vector<IndexItem> Plugin::indexItems() const
-{
-    vector<IndexItem> items;
-    for (const auto &app : apps)
-        items.emplace_back(app, app->text());
-    return items;
-}
 
 // // older snippets
 // NSString *ns_bundle_identifier = [result valueForAttribute:(NSString *)kMDItemCFBundleIdentifier];
