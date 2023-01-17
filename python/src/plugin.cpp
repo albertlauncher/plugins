@@ -59,7 +59,6 @@ public:
     virtual void handleQuery_(Query *query) const { PYBIND11_OVERRIDE_NAME(void, PyQueryhandler, "handleQuery", handleQuery_, query); }
     void handleQuery(Query &query) const override { handleQuery_(&query); }
 
-    vector<shared_ptr<albert::Item>> fallbacks(const QString &string) const override { PYBIND11_OVERRIDE(vector<shared_ptr<albert::Item>>, QueryHandler, fallbacks, string); }
     QString synopsis() const override { PYBIND11_OVERRIDE(QString, QueryHandler, synopsis); }
     QString defaultTrigger() const override { PYBIND11_OVERRIDE(QString, QueryHandler, defaultTrigger); }
     bool allowTriggerRemap() const override { PYBIND11_OVERRIDE(bool, QueryHandler, allowTriggerRemap); }
@@ -160,7 +159,6 @@ PYBIND11_EMBEDDED_MODULE(albert, m)  // interface id 0.5
     py::class_<QueryHandler, Extension, PyQueryhandler, shared_ptr<QueryHandler>>(m, "QueryHandler")
         .def(py::init<>())
         .def("handleQuery", &QueryHandler::handleQuery, py::return_value_policy::reference)
-        .def("fallbacks", &QueryHandler::fallbacks)
         .def("synopsis", &QueryHandler::synopsis)
         .def("defaultTrigger", &QueryHandler::defaultTrigger)
         .def("allowTriggerRemap", &QueryHandler::allowTriggerRemap)
