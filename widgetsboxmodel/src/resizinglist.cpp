@@ -67,6 +67,13 @@ bool ResizingList::eventFilter(QObject*, QEvent *event)
             // case Qt::Key_End:
                 return QListView::event(event);
 
+            case Qt::Key_O:
+                if (keyEvent->modifiers().testFlag(Qt::ControlModifier)){
+                    emit activated(currentIndex());
+                    return true;
+                }
+                break;
+
             case Qt::Key_Enter:
             case Qt::Key_Return:
                 emit activated(currentIndex());
