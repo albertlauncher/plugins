@@ -48,6 +48,9 @@ QWidget *Plugin::buildConfigWidget()
     return widget;
 }
 
+QString Plugin::defaultTrigger() const { return "="; }
+
+QString Plugin::synopsis() const { return "<math expression>"; }
 
 vector<RankItem> Plugin::handleQuery(const Query &query) const
 {
@@ -73,6 +76,7 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
         "muparser",
         result,
         QString("Result of '%1'").arg(query.string()),
+        result,
         {"xdg:calc", ":calc"},
         {
                 {"cp-res", "Copy result to clipboard",

@@ -17,6 +17,8 @@ class Plugin:
 public:
     Plugin();
 
+    QString defaultTrigger() const override;
+    QString synopsis() const override;
     std::vector<albert::RankItem> handleQuery(const Query&) const override;
     QWidget* buildConfigWidget() override;
 

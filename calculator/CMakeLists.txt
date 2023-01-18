@@ -1,4 +1,4 @@
-project(calculator VERSION 1.4)
+project(calculator VERSION 1.5)
 albert_plugin(
     NAME Calculator
     DESCRIPTION "Evaluate math expressions"
