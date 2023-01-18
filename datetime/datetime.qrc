@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>datetime.png</file>
+    </qresource>
+</RCC>
