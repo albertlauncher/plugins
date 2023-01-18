@@ -36,7 +36,7 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
             return results;
 
         // validate top level domain if scheme is not given (http assumed)
-        if (!trimmed.startsWith("http") && !binary_search(valid_tlds.begin(), valid_tlds.end(), tld))
+        if (tld.size() == 0 || (!trimmed.startsWith("http") && !binary_search(valid_tlds.begin(), valid_tlds.end(), tld)))
             return results;
 
         results.emplace_back(
