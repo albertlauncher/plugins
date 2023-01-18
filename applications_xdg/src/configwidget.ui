@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>ConfigWidget</class>
  <widget class="QWidget" name="ConfigWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>800</width>
-    <height>600</height>
-   </rect>
-  </property>
   <layout class="QVBoxLayout" name="verticallayout_2">
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">

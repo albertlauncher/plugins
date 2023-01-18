@@ -22,11 +22,9 @@ public:
 protected:
     std::vector<albert::IndexItem> indexApps(const bool &abort) const;
 
-
     albert::BackgroundExecutor<std::vector<albert::IndexItem>> indexer;
     std::vector<albert::IndexItem> apps;
     QFileSystemWatcher fs_watcher_;
-    QStringList app_dirs;
     bool ignoreShowInKeys;
     bool useKeywords;
     bool useGenericName;

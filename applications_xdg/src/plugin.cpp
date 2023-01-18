@@ -112,8 +112,6 @@ vector<IndexItem> Plugin::indexApps(const bool &abort) const
     // Get a new index [O(n)]
     QStringList xdg_current_desktop = QString(getenv("XDG_CURRENT_DESKTOP")).split(':', Qt::SkipEmptyParts);
     QLocale loc;
-    QStringList xdgAppDirs = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
-    xdgAppDirs.append(QStandardPaths::standardLocations(QStandardPaths::DesktopLocation));
 
     /*
      * Create a list of desktop files to index (unique ids)
@@ -123,7 +121,7 @@ vector<IndexItem> Plugin::indexApps(const bool &abort) const
      */
 
     map<QString /*desktop file id*/, QString /*path*/> desktopFiles;
-    for ( const QString &dir : xdgAppDirs ) {
+    for ( const QString &dir : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation) ) {
         QDirIterator fIt(dir, QStringList("*.desktop"), QDir::Files,
                          QDirIterator::Subdirectories|QDirIterator::FollowSymlinks);
         while (!fIt.next().isEmpty()) {
@@ -362,13 +360,7 @@ vector<IndexItem> Plugin::indexApps(const bool &abort) const
 
 Plugin::Plugin()
 {
-
     qunsetenv("DESKTOP_AUTOSTART_ID");
-
-    app_dirs = QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
-    if (QStandardPaths::standardLocations(QStandardPaths::DesktopLocation)
-        != QStandardPaths::standardLocations(QStandardPaths::HomeLocation))  // Missing desktops fall back to ~
-        app_dirs << QStandardPaths::standardLocations(QStandardPaths::DesktopLocation);
 
     // Load settings
     ignoreShowInKeys = settings()->value(CFG_IGNORESHOWINKEYS, DEF_IGNORESHOWINKEYS).toBool();
@@ -388,7 +380,7 @@ Plugin::Plugin()
         if (!fs_watcher_.directories().isEmpty())
             fs_watcher_.removePaths(fs_watcher_.directories());
 
-        for (const QString &path : app_dirs) {
+        for (const QString &path : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation)) {
             if (QFile::exists(path)) {
                 fs_watcher_.addPath(path);
                 QDirIterator dit(path, QDir::Dirs|QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
@@ -415,7 +407,8 @@ QWidget *Plugin::buildConfigWidget()
     ui.setupUi(widget);
 
     // Show the app dirs in the label
-    ui.label->setText(ui.label->text().replace("__XDG_DATA_DIRS__", app_dirs.join(", ")));
+    ui.label->setText(ui.label->text().replace("__XDG_DATA_DIRS__",
+                                               QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation).join(", ")));
 
     // Use keywords
     ui.checkBox_useKeywords->setChecked(useKeywords);
