@@ -844,7 +844,7 @@ void Plugin::handleQuery(Query &query) const
                             [self=const_cast<Plugin*>(this), n=name](){ self->setTheme(n); }
                         },{
                             "open", "Open theme file",
-                            [p=path](){ openUrl(p); }
+                            [p=path](){ openUrl("file://"+p); }
                         }
                     }
                 )
