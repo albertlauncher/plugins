@@ -27,7 +27,7 @@ QSize ResizingList::sizeHint() const
 {
     if (model() == nullptr)
         return {};
-    return {width(), sizeHintForRow(0) * std::min(static_cast<int>(maxItems_), model()->rowCount(rootIndex()))};
+    return {width(), contentsMargins().bottom() + contentsMargins().top() + sizeHintForRow(0) * std::min(static_cast<int>(maxItems_), model()->rowCount(rootIndex()))};
 }
 
 QSize ResizingList::minimumSizeHint() const
