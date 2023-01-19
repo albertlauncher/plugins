@@ -3,8 +3,10 @@
 #include "configwidget.h"
 #include "plugin.h"
 #include "fileitems.h"
+#include <QDir>
 ALBERT_LOGGING
 using namespace std;
+using namespace albert;
 
 const char* CFG_PATHS = "paths";
 const char* CFG_MIME_FILTERS = "mimeFilters";
@@ -53,7 +55,7 @@ Plugin::Plugin()
     }
     fs_index_.update();
 
-    update_item = albert::StandardItem::make(
+    update_item = StandardItem::make(
         "scan_files",
         "Update index",
         "Update the file index",
@@ -106,12 +108,28 @@ void Plugin::updateIndexItems()
         fsp->items(items);
 
     // Create index items
-    vector<albert::IndexItem> ii;
+    vector<IndexItem> ii;
     for (auto &file_item : items)
         ii.emplace_back(file_item, file_item->name());
 
     // Add update item
     ii.emplace_back(update_item, update_item->text());
+
+    // Add trash item
+#if defined(Q_OS_LINUX)
+    auto trash_path = "trash:///";
+#elif defined(Q_OS_MAC)
+    auto trash_path = QString("file://%1/.Trash").arg(QDir::homePath());
+#endif
+
+    ii.emplace_back(StandardItem::make(
+            "trash",
+            "Trash",
+            "Your trash folder",
+            {"xdg:user-trash-full", "qsp:SP_TrashIcon"},
+            { {"open", "Open", [=](){ openUrl(trash_path); } } }
+        ), "trash"
+    );
 
     setIndexItems(::move(ii));
 }
