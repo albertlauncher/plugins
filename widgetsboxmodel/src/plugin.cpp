@@ -118,7 +118,7 @@ Plugin::Plugin() : history_(dataDir().filePath("input_history"))
     setDisplaySystemShadow(s->value(CFG_SYSTEM_SHADOW, DEF_SYSTEM_SHADOW).toBool());
     theme_ = s->value(CFG_THEME, DEF_THEME).toString();
     if (!setTheme(theme_))
-        qFatal("FATAL: Stylefile not found: %s", theme_.toStdString().c_str());
+        WARN << "Stylefile not found:" << theme_.toStdString().c_str();
 
     init_statemachine();
 
@@ -673,8 +673,8 @@ bool Plugin::setTheme(const QString &theme)
             theme_ = theme;
             return true;
         }
-    }  catch (const std::out_of_range&) {
-        throw std::runtime_error("Configured frontend theme does not exist.");
+    } catch (const std::out_of_range&) {
+        CRIT << "Set theme does not exist.";
     }
     return false;
 }
