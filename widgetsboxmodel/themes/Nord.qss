@@ -1,0 +1,99 @@
+/*
+ * author: Manuel Schneider <https://github.com/ManuelSchneid3r>
+ *
+ * Check http://doc.qt.io/qt-5/stylesheet-syntax.html especially the subtopics:
+ * The Style Sheet Syntax (http://doc.qt.io/qt-5/stylesheet-syntax.html)
+ * Qt Style Sheets Reference (http://doc.qt.io/qt-5/stylesheet-reference.html)
+ */
+
+* {
+    color: #81A1C1;
+    background-color: #2E3440;
+}
+
+QToolTip {
+
+}
+
+#frame {
+    background-color: none;
+    border: none;
+    max-width:640px;
+    min-width:640px;
+    padding: 10px; /* to have a drag handle */
+}
+
+#inputLine {
+    border-radius: 8px;
+    border: 1px solid #4C566A;
+    color: #81A1C1;
+    font-size: 26px;
+    padding: 6px;
+    selection-background-color: #3B4252;
+    selection-color: #81A1C1;
+}
+
+#settingsButton {
+    background-color: transparent;
+    color: #4C566A;
+    max-height:13px;
+    max-width:13px;
+    min-height:13px;
+    min-width:13px;
+    padding: 16px;
+}
+
+/********** ListViews ************/
+
+QListView {
+    margin-top: 10px;
+    border: 1px solid #4C566A;
+    border-radius: 8px;
+    padding: 6px;
+    color: #5E81AC;
+    selection-color: #81A1C1;
+    selection-background-color: #3B4252;
+}
+
+
+QListView::item {
+    padding: 4px;
+    border-radius: 6px;
+}
+
+QListView::item:selected {
+    background-color: #3B4252;
+}
+
+QListView QScrollBar:vertical  {
+    width: 2px;
+    background: transparent;
+}
+
+QListView QScrollBar::handle:vertical  {
+    background: #4C566A;
+    min-height: 24px;
+}
+
+QListView QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+QListView QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical,
+QListView QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    border: 0px;
+    width: 0px;
+    height: 0px;
+    background: transparent;
+}
+
+/********** resultsList **********/
+
+QListView#resultsList {
+    icon-size: 38px;
+    font-size: 20px;
+}
+
+/********** actionList **********/
+
+QListView#actionList {
+    font-size: 16px;
+}
+
