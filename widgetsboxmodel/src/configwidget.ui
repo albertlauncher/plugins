@@ -126,12 +126,6 @@
    </item>
    <item row="5" column="0">
     <widget class="QLabel" name="label_hideOnFocusOut">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
      <property name="text">
       <string>Hide on focus out</string>
      </property>
@@ -187,42 +181,47 @@
     </widget>
    </item>
    <item row="7" column="1">
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QComboBox" name="comboBox_themes">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the color theme of the window.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="label">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt;See the &lt;/span&gt;&lt;a href=&quot;https://github.com/albertlauncher/plugins/blob/master/widgetsboxmodel/README.md&quot;&gt;&lt;span style=&quot; font-size:9pt; text-decoration: underline; color:#094fd1;&quot;&gt;readme&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt; for instructions on how to create your own theme. If you created a nice theme please &lt;/span&gt;&lt;a href=&quot;https://github.com/orgs/albertlauncher/discussions/1147&quot;&gt;&lt;span style=&quot; font-size:9pt; text-decoration: underline; color:#094fd1;&quot;&gt;share it&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-       <property name="wordWrap">
-        <bool>true</bool>
-       </property>
-       <property name="openExternalLinks">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    <widget class="QComboBox" name="comboBox_themes">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the color theme of the window.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
    </item>
-   <item row="8" column="0">
+   <item row="8" column="1">
+    <widget class="QLabel" name="label_themeinfo">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>200</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt;See the &lt;/span&gt;&lt;a href=&quot;https://github.com/albertlauncher/plugins/blob/master/widgetsboxmodel/README.md&quot;&gt;&lt;span style=&quot; font-size:9pt; text-decoration: underline; color:#094fd1;&quot;&gt;readme&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt; for instructions on how to create your own theme. If you created a nice theme please &lt;/span&gt;&lt;a href=&quot;https://github.com/orgs/albertlauncher/discussions/1147&quot;&gt;&lt;span style=&quot; font-size:9pt; text-decoration: underline; color:#094fd1;&quot;&gt;share it&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="textFormat">
+      <enum>Qt::AutoText</enum>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="openExternalLinks">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="0">
     <widget class="QLabel" name="label_results">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -238,7 +237,7 @@
      </property>
     </widget>
    </item>
-   <item row="8" column="1">
+   <item row="9" column="1">
     <widget class="QSpinBox" name="spinBox_results">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -257,7 +256,7 @@
      </property>
     </widget>
    </item>
-   <item row="9" column="0">
+   <item row="10" column="0">
     <widget class="QLabel" name="label_system_shadow">
      <property name="text">
       <string>Display system shadow</string>
@@ -267,7 +266,7 @@
      </property>
     </widget>
    </item>
-   <item row="9" column="1">
+   <item row="10" column="1">
     <widget class="QCheckBox" name="checkBox_system_shadow">
      <property name="toolTip">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Tell the system to draw a shadow around the window. Note that on some systems this may look pretty ugly. Use the client shadow in this case.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -277,7 +276,7 @@
      </property>
     </widget>
    </item>
-   <item row="10" column="0">
+   <item row="11" column="0">
     <widget class="QLabel" name="label_client_shadow">
      <property name="text">
       <string>Display client shadow</string>
@@ -287,14 +286,14 @@
      </property>
     </widget>
    </item>
-   <item row="10" column="1">
+   <item row="11" column="1">
     <widget class="QCheckBox" name="checkBox_client_shadow">
      <property name="toolTip">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Draw a shadow on the client side.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
    </item>
-   <item row="11" column="0">
+   <item row="12" column="0">
     <widget class="QLabel" name="label_icons">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -310,14 +309,14 @@
      </property>
     </widget>
    </item>
-   <item row="11" column="1">
+   <item row="12" column="1">
     <widget class="QCheckBox" name="checkBox_icons">
      <property name="toolTip">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Display icons provided by the items.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
    </item>
-   <item row="12" column="0">
+   <item row="13" column="0">
     <widget class="QLabel" name="label_scrollbar">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -333,7 +332,7 @@
      </property>
     </widget>
    </item>
-   <item row="12" column="1">
+   <item row="13" column="1">
     <widget class="QCheckBox" name="checkBox_scrollbar">
      <property name="toolTip">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Displays a scrollbar in the results list.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -342,6 +341,21 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>checkBox_show_fallbacks</tabstop>
+  <tabstop>checkBox_history_search</tabstop>
+  <tabstop>checkBox_clearOnHide</tabstop>
+  <tabstop>checkBox_onTop</tabstop>
+  <tabstop>checkBox_quit_on_close</tabstop>
+  <tabstop>checkBox_hideOnFocusOut</tabstop>
+  <tabstop>checkBox_center</tabstop>
+  <tabstop>comboBox_themes</tabstop>
+  <tabstop>spinBox_results</tabstop>
+  <tabstop>checkBox_system_shadow</tabstop>
+  <tabstop>checkBox_client_shadow</tabstop>
+  <tabstop>checkBox_icons</tabstop>
+  <tabstop>checkBox_scrollbar</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
