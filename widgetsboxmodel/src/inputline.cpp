@@ -34,7 +34,7 @@ void InputLine::paintEvent(QPaintEvent *event)
         auto fm = fontMetrics();
         content_rect.adjust(fm.horizontalAdvance(text()), 0, 0, 0);
         auto text = fm.elidedText(hint, Qt::ElideRight, content_rect.width());
-        auto color = panel.palette.highlight().color();
+        auto color = panel.palette.placeholderText().color();
         color.setAlpha(80);
         p.setPen(color);
         p.drawText(content_rect, Qt::TextSingleLine, text);
