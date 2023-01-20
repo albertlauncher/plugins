@@ -29,4 +29,5 @@ protected:
     bool useKeywords;
     bool useGenericName;
     bool useNonLocalizedName;
+    bool useExec;
 };

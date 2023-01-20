@@ -14,6 +14,8 @@ const char* CFG_USEKEYWORDS          = "use_keywords";
 const bool  DEF_USEKEYWORDS          = false;
 const char* CFG_USEGENERICNAME       = "use_generic_name";
 const bool  DEF_USEGENERICNAME       = false;
+const char* CFG_USEEXEC              = "use_exec";
+const bool  DEF_USEEXEC              = false;
 const char* CFG_USENONLOCALIZEDNAME  = "use_non_localized_name";
 const bool  DEF_USENONLOCALIZEDNAME  = false;
 
@@ -285,19 +287,6 @@ vector<IndexItem> Plugin::indexApps(const bool &abort) const
         QStringList index_strings;
         index_strings << name;
 
-        QStringList excludes = {
-                "java ",
-                "ruby ",
-                "python ",
-                "perl ",
-                "bash ",
-                "sh ",
-                "dbus-send ",
-                "/"
-        };
-        if (none_of(excludes.begin(), excludes.end(), [&exec](const QString &str){ return exec.startsWith(str); }))
-            index_strings << exec.section(QChar(QChar::Space), 0, 0, QString::SectionSkipEmpty);
-
         if (useKeywords)
             for (auto & kw : keywords)
                 index_strings << kw;
@@ -307,6 +296,22 @@ vector<IndexItem> Plugin::indexApps(const bool &abort) const
 
         if (useNonLocalizedName && !nonLocalizedName.isEmpty())
             index_strings << nonLocalizedName;
+
+        if (useExec){
+            static QStringList excludes = {
+                "/",
+                "bash ",
+                "dbus-send ",
+                "env ",
+                "java ",
+                "perl ",
+                "python ",
+                "ruby ",
+                "sh "
+            };
+            if (none_of(excludes.begin(), excludes.end(), [&exec](const QString &str){ return exec.startsWith(str); }))
+                index_strings << exec.section(QChar(QChar::Space), 0, 0, QString::SectionSkipEmpty);
+        }
 
         /*
          * Build actions
@@ -367,6 +372,7 @@ Plugin::Plugin()
     useGenericName = settings()->value(CFG_USEGENERICNAME, DEF_USEGENERICNAME).toBool();
     useNonLocalizedName = settings()->value(CFG_USENONLOCALIZEDNAME, DEF_USENONLOCALIZEDNAME).toBool();
     useKeywords = settings()->value(CFG_USEKEYWORDS, DEF_USEKEYWORDS).toBool();
+    useExec = settings()->value(CFG_USEEXEC, DEF_USEEXEC).toBool();
 
     // Paths set on initial update finish
     connect(&fs_watcher_, &QFileSystemWatcher::directoryChanged, this, [this](){ indexer.run(); });
@@ -434,6 +440,15 @@ QWidget *Plugin::buildConfigWidget()
             this, [this](bool checked){
                 settings()->setValue(CFG_USENONLOCALIZEDNAME, checked);
                 useNonLocalizedName = checked;
+                indexer.run();
+            });
+
+    // Use exec
+    ui.checkBox_useExec->setChecked(useExec);
+    connect(ui.checkBox_useExec, &QCheckBox::toggled,
+            this, [this](bool checked){
+                settings()->setValue(CFG_USEEXEC, checked);
+                useExec = checked;
                 indexer.run();
             });
 

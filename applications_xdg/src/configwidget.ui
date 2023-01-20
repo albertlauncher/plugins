@@ -38,23 +38,30 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="checkBox_useExec">
+         <property name="text">
+          <string>Use 'Exec' value for lookup</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="checkBox_useKeywords">
          <property name="text">
-          <string>Additionaly use keywords for lookup</string>
+          <string>Use keywords for lookup</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QCheckBox" name="checkBox_useGenericName">
          <property name="text">
-          <string>Additionally use generic name for lookup</string>
+          <string>Use generic name for lookup</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QCheckBox" name="checkBox_useNonLocalizedName">
          <property name="text">
-          <string>Additionally use non-localized name for lookup</string>
+          <string>Use non-localized name for lookup</string>
          </property>
         </widget>
        </item>
