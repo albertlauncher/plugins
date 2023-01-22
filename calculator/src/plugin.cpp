@@ -16,8 +16,12 @@ const bool  CFG_HEXP_DEF = false;
 
 Plugin::Plugin()
 {
-    // FIXME Qt6 Workaround for https://bugreports.qt.io/browse/QTBUG-58504
-    locale = QLocale(QLocale::system().name());
+    if (QString loc = qgetenv("LC_NUMERIC"); !loc.isEmpty())
+        locale = QLocale(loc);
+    else if (QString loc = qgetenv("LC_ALL"); !loc.isEmpty())
+        locale = QLocale(loc);
+    else
+        locale = QLocale(QLocale::system().name());
 
     parser = make_unique<mu::Parser>();
     parser->SetDecSep(locale.decimalPoint()[0].toLatin1());
