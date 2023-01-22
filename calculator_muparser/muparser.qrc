@@ -4,6 +4,6 @@
 
 <RCC>
     <qresource prefix="/">
-        <file alias="calc">calc.svg</file>
+        <file alias="calc">muparser.svg</file>
     </qresource>
 </RCC>
