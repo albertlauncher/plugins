@@ -10,7 +10,7 @@ In your CMakeLists.txt define a project. PROJECT_NAME and PROJECT_VERSION define
 |------------------:|:------:|-------------------------------------------------------------------------------|
 |              NAME | value  | **MANDATORY** Human readable name                                             |
 |       DESCRIPTION | value  | **MANDATORY** Brief, imperative description                                   |
-|  LONG_DESCRIPTION | value  | *Optional* Longer description (supports Markdown)                              |
+|  LONG_DESCRIPTION | value  | *Optional* Longer description or absolute file path to text file (supports Markdown).  |
 |           LICENSE | value  | **MANDATORY** Short form e.g. BSD-2-Clause or GPL-3.0                         |
 |               URL | value  | **MANDATORY** Browsable source, issues etc                                    |
 |          FRONTEND | option | *Optional* Indicates that this plugin realizes the frontend interface         |
