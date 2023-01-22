@@ -103,13 +103,11 @@ Plugin::Plugin()
         paths_ = s->value(CFG_BOOKMARKS_PATH).toStringList();
 
 
-    connect(&file_system_watcher_, &QFileSystemWatcher::fileChanged, [this](){
+    file_system_watcher_.addPaths(paths_);
+    connect(&file_system_watcher_, &QFileSystemWatcher::fileChanged, this, [this](){
         // Update watches. Chromium seems to mv the file (inode change).
         file_system_watcher_.removePaths(file_system_watcher_.files());
         file_system_watcher_.addPaths(paths_);
-        auto msg = QString("%1 bookmarks indexed.").arg(bookmarks_.size());
-        INFO << msg;
-        emit statusChanged(msg);
         indexer.run();
     });
 
@@ -117,10 +115,10 @@ Plugin::Plugin()
         return parseBookmarks(paths_, abort);
     };
     indexer.finish = [this](vector<shared_ptr<BookmarkItem>> && res){
+        bookmarks_=::move(res);
         auto msg = QString("%1 bookmarks indexed.").arg(bookmarks_.size());
         INFO << msg;
         emit statusChanged(msg);
-        bookmarks_=::move(res);
         updateIndexItems();
     };
     indexer.run();
