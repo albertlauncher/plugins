@@ -11,10 +11,6 @@
     background-color: #2E3440;
 }
 
-QToolTip {
-
-}
-
 #frame {
     background-color: none;
     border: none;
@@ -23,15 +19,17 @@ QToolTip {
     padding: 10px; /* to have a drag handle */
 }
 
+
 #inputLine {
     border-radius: 8px;
     border: 1px solid #4C566A;
     color: #81A1C1;
     font-size: 26px;
-    padding: 6px;
+    padding: 8px;
     selection-background-color: #3B4252;
     selection-color: #81A1C1;
 }
+
 
 #settingsButton {
     background-color: transparent;
@@ -43,57 +41,63 @@ QToolTip {
     padding: 16px;
 }
 
-/********** ListViews ************/
 
 QListView {
-    margin-top: 10px;
-    border: 1px solid #4C566A;
     border-radius: 8px;
-    padding: 6px;
+    border: 1px solid #4C566A;
     color: #5E81AC;
-    selection-color: #81A1C1;
+    margin-top: 4px;
     selection-background-color: #3B4252;
+    selection-color: #81A1C1;
 }
 
-
 QListView::item {
-    padding: 4px;
     border-radius: 6px;
+    padding: 4px;
 }
 
 QListView::item:selected {
     background-color: #3B4252;
 }
 
-QListView QScrollBar:vertical  {
-    width: 2px;
+
+QListView#resultsList {
+    font-size: 20px;
+    icon-size: 34px;
+    padding: 4px 8px 4px 8px;
+}
+
+QListView#resultsList::item {
+    margin: 4px 0px 4px 0px;
+}
+
+
+QListView#actionList {
+    font-size: 16px;
+    padding: 6px 8px 6px 8px;
+}
+
+QListView#actionList::item {
+    margin: 2px 0px 2px 0px;
+}
+
+
+QListView QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+QListView QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical,
+QListView QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
     background: transparent;
+    border: 0px;
+    height: 0px;
+    width: 0px;
+}
+
+QListView QScrollBar:vertical  {
+    background: transparent;
+    margin: 8px 0px 8px 0px;
+    width: 2px;
 }
 
 QListView QScrollBar::handle:vertical  {
     background: #4C566A;
     min-height: 24px;
 }
-
-QListView QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
-QListView QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical,
-QListView QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-    border: 0px;
-    width: 0px;
-    height: 0px;
-    background: transparent;
-}
-
-/********** resultsList **********/
-
-QListView#resultsList {
-    icon-size: 38px;
-    font-size: 20px;
-}
-
-/********** actionList **********/
-
-QListView#actionList {
-    font-size: 16px;
-}
-
