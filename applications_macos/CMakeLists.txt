@@ -6,7 +6,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         LICENSE ALL
         URL https://github.com/albertlauncher/plugins/tree/master/applications_macos
         MAINTAINERS @manuelschneid3r
-        AUTHORS @manuelschneid3r
         QT_DEPENDENCIES Widgets
         LIB_DEPENDENCIES [objc cococa]
     )
