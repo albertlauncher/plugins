@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
@@ -35,11 +35,11 @@ static const char *ATTR_MD_MAINTAINERS = "md_maintainers";
 static const char *ATTR_MD_BIN_DEPS    = "md_bin_dependencies";
 static const char *ATTR_MD_LIB_DEPS    = "md_lib_dependencies";
 static const char *ATTR_MD_CREDITS     = "md_credits";
-static const char *ATTR_MD_MINPY       = "md_min_python";
+//static const char *ATTR_MD_MINPY       = "md_min_python";
 static const char *ATTR_PLUGIN_CLASS   = "Plugin";
 static const char *ATTR_INITIALIZE     = "initialize";
 static const char *ATTR_FINALIZE       = "finalize";
-static const char *ATTR_EXTENSIONS     = "extensions";
+//static const char *ATTR_EXTENSIONS     = "extensions";
 
 struct PyPluginMetaData : public albert::PluginMetaData
 {
@@ -219,6 +219,28 @@ PYBIND11_EMBEDDED_MODULE(albert, m)  // interface id 0.5
 }
 
 
+
+class PyPluginInstance : public albert::PluginInstance
+{
+public:
+    PyPluginInstance(py::object pyinst) : pyinst_(pyinst) { }
+
+    void initialize() override
+    {
+        if (py::hasattr(pyinst_, ATTR_INITIALIZE))
+            if (auto func = pyinst_.attr(ATTR_INITIALIZE); py::isinstance<py::function>(func))
+                func();
+    }
+
+    void finalize() override
+    {
+        if (py::hasattr(pyinst_, ATTR_FINALIZE))
+            if (auto func = pyinst_.attr(ATTR_FINALIZE); py::isinstance<py::function>(func))
+                func();
+    }
+
+    py::object pyinst_;
+};
 
 class PyPluginLoader : public albert::PluginLoader
 {
@@ -404,21 +426,14 @@ public:
         //            }
         //        }
     }
-
+    PyPluginLoader(PyPluginLoader&&) = default;
     ~PyPluginLoader() = default;
 
     Plugin *provider() const override { return provider_; }
 
     PyPluginMetaData const &metaData() const override { return metadata_; }
 
-    QString iconUrl() const override { return ":python"; }
-
-    QWidget *makeInfoWidget() const override
-    {
-        auto w = new PluginInfoWidget(*this);
-        w->layout->addRow("Min Python version:", new QLabel(metadata_.min_python, w));
-        return w;
-    }
+    PluginInstance *instance() const override { return instance_.get(); }
 
     void load() override
     {
@@ -450,7 +465,13 @@ public:
                 pyspec.attr("loader").attr("exec_module")(module_);
 
                 // Instanciate plugin
-                instance_ = module_.attr("Plugin")();
+                instance_.reset(new PyPluginInstance(module_.attr("Plugin")()));
+                instance_->initialize();
+
+                // auto register
+                if (py::isinstance<Extension>(instance_->pyinst_))
+                    if (auto *e = instance_->pyinst_.cast<shared_ptr<Extension>>().get())
+                        registry_.add(e);
 
                 state_ = PluginState::Loaded;
                 state_info_.clear();
@@ -468,13 +489,6 @@ public:
                 throw e;
             }
 
-            if (py::hasattr(instance_, ATTR_INITIALIZE))
-                if (auto init = instance_.attr(ATTR_INITIALIZE); py::isinstance<py::function>(init))
-                    init();
-
-            if (py::isinstance<Extension>(instance_))
-                if (auto *e = instance_.cast<shared_ptr<Extension>>().get())
-                    registry_.add(e);
 
 //            if (py::hasattr(instance_, ATTR_EXTENSIONS))
 //                if (auto exts = instance_.attr(ATTR_EXTENSIONS); py::isinstance<py::function>(exts))
@@ -502,20 +516,18 @@ public:
 
         try {
 
-            if (py::isinstance<Extension>(instance_))
-                if (auto *e = instance_.cast<shared_ptr<Extension>>().get())
+            if (py::isinstance<Extension>(instance_->pyinst_))
+                if (auto *e = instance_->pyinst_.cast<shared_ptr<Extension>>().get())
                     registry_.remove(e);
 
-            if (py::hasattr(instance_, ATTR_FINALIZE))
-                if (auto fini = instance_.attr(ATTR_FINALIZE); py::isinstance<py::function>(fini))
-                    fini();
+            instance_->finalize();
 
 //            if (py::hasattr(instance_, ATTR_EXTENSIONS))
 //                if (auto exts = instance_.attr(ATTR_EXTENSIONS); py::isinstance<py::function>(exts))
 //                    for (auto *e : exts())
 //                        registry_.remove(e);
 
-            instance_ = py::object();
+            instance_.reset();
             module_ = py::object();
             state_ = PluginState::Unloaded;
             state_info_.clear();
@@ -533,7 +545,7 @@ private:
     pybind11::module module_;
     Plugin *provider_;
     albert::ExtensionRegistry &registry_;
-    py::object instance_;
+    unique_ptr<PyPluginInstance> instance_;
     PyPluginMetaData metadata_;
 };
 
