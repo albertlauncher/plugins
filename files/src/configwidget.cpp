@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #include "configwidget.h"
 #include "mimefilterdialog.h"
@@ -43,6 +43,10 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
             }
             else delete p;
         }
+        ui.listView_paths->setFixedHeight(
+                ui.listView_paths->contentsMargins().bottom() +
+                ui.listView_paths->contentsMargins().top() +
+                paths_model.rowCount()*ui.listView_paths->sizeHintForRow(0));
     });
 
     connect(ui.toolButton_rem, &QPushButton::clicked, this, [this]()
@@ -51,6 +55,10 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
             plugin->fsIndex().remPath(ui.listView_paths->currentIndex().data().toString());
             paths_model.removeRow(ui.listView_paths->currentIndex().row());
         }
+        ui.listView_paths->setFixedHeight(
+            ui.listView_paths->contentsMargins().bottom() +
+            ui.listView_paths->contentsMargins().top() +
+            paths_model.rowCount()*ui.listView_paths->sizeHintForRow(0));
     });
 
     connect(plugin, &Plugin::statusInfo, this, [this](const QString& text){
@@ -153,6 +161,11 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
             patterns.push_back("inode/directory");
         plugin->fsIndex().indexPaths().at(current_path)->setMimeFilters(patterns);
     });
+
+    ui.listView_paths->setFixedHeight(
+            ui.listView_paths->contentsMargins().bottom() +
+            ui.listView_paths->contentsMargins().top() +
+            paths_model.rowCount()*ui.listView_paths->sizeHintForRow(0));
 }
 
 void ConfigWidget::adjustMimeCheckboxes()
