@@ -1,8 +1,8 @@
 project(widgetsboxmodel VERSION 1.3)
 albert_plugin(
-    NAME "Qt Widgets BoxModel"
+    NAME "Widgets BoxModel"
     DESCRIPTION "The native frontend"
-    LONG_DESCRIPTION "[README.md](https://github.com/albertlauncher/plugins/blob/master/widgetsboxmodel/README.md)"
+    LONG_DESCRIPTION "See the [online documentation](https://github.com/albertlauncher/plugins/blob/master/widgetsboxmodel/README.md)."
     LICENSE ALL
     URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
     MAINTAINERS @manuelschneid3r

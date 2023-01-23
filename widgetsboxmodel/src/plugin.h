@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #pragma once
 #include "albert.h"
@@ -60,12 +60,15 @@ public:
     bool showFallbacksOnEmptyMatches() const;
     void setShowFallbacksOnEmptyMatches(bool value);
 
+    // albert::Plugin
+    QWidget* buildConfigWidget() override;
+
     // albert::Frontend
     bool isVisible() const override;
     void setVisible(bool visible) override;
     QString input() const override;
     void setInput(const QString&) override;
-    QWidget* createSettingsWidget() override;
+    QWidget* createFrontendConfigWidget() override;
 
     // albert::QueryHandler
     QString defaultTrigger() const override;

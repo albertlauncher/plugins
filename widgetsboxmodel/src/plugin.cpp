@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #include "albert/albert.h"
 #include "albert/logging.h"
@@ -570,7 +570,12 @@ void Plugin::setVisible(bool visible)
     }
 }
 
-QWidget* Plugin::createSettingsWidget()
+QWidget* Plugin::buildConfigWidget()
+{
+    return new QLabel("Configure the frontend in the 'General' tab.");
+}
+
+QWidget* Plugin::createFrontendConfigWidget()
 {
     auto widget = new QWidget;
     Ui::ConfigWidget ui;
