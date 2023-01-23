@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #pragma once
 #include "albert.h"
@@ -25,6 +25,7 @@ private:
     std::vector<std::shared_ptr<BookmarkItem>> bookmarks_;
     albert::BackgroundExecutor<std::vector<std::shared_ptr<BookmarkItem>>> indexer;
     void setPaths(const QStringList &paths);
+    void resetPaths();
 signals:
     void statusChanged(const QString& status);
 };

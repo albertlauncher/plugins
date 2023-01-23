@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #include "albert/logging.h"
 #include "albert/util/timeprinter.hpp"
@@ -85,25 +85,16 @@ static std::vector<std::shared_ptr<BookmarkItem>> parseBookmarks(const QStringLi
 
 Plugin::Plugin()
 {
-
     auto s = settings();
     index_hostname_ = s->value(CFG_INDEX_HOSTNAME, DEF_INDEX_HOSTNAME).toBool();
 
     // If not configured try to automatically set paths
-    if (!s->contains(CFG_BOOKMARKS_PATH)){
-        for (auto loc : {QStandardPaths::GenericDataLocation, QStandardPaths::GenericConfigLocation})
-            for (const auto &path : QStandardPaths::standardLocations(loc))
-                for (const char *app_dir_name : app_dirs)
-                    for (QDirIterator it(QDir(path).filePath(app_dir_name), {"Bookmarks"},
-                                         QDir::Files, QDirIterator::Subdirectories); it.hasNext();)
-                        paths_ << it.next();
-        s->setValue(CFG_BOOKMARKS_PATH, paths_);
-    }
+    if (!s->contains(CFG_BOOKMARKS_PATH))
+        resetPaths();
     else
-        paths_ = s->value(CFG_BOOKMARKS_PATH).toStringList();
+        // caution: setPath does some important things;
+        setPaths(s->value(CFG_BOOKMARKS_PATH).toStringList());
 
-
-    file_system_watcher_.addPaths(paths_);
     connect(&file_system_watcher_, &QFileSystemWatcher::fileChanged, this, [this](){
         // Update watches. Chromium seems to mv the file (inode change).
         file_system_watcher_.removePaths(file_system_watcher_.files());
@@ -121,15 +112,30 @@ Plugin::Plugin()
         emit statusChanged(msg);
         updateIndexItems();
     };
-    indexer.run();
+    indexer.run();  // < called on setindex
 }
 
 void Plugin::setPaths(const QStringList& paths)
 {
     paths_ = paths;
     paths_.sort();
+    if (!file_system_watcher_.files().isEmpty())
+        file_system_watcher_.removePaths(file_system_watcher_.files());
+    file_system_watcher_.addPaths(paths_);
     settings()->setValue(CFG_BOOKMARKS_PATH, paths_);
     indexer.run();
+}
+
+void Plugin::resetPaths()
+{
+    QStringList paths;
+    for (auto loc : {QStandardPaths::GenericDataLocation, QStandardPaths::GenericConfigLocation})
+        for (const auto &path : QStandardPaths::standardLocations(loc))
+            for (const char *app_dir_name : app_dirs)
+                for (QDirIterator it(QDir(path).filePath(app_dir_name), {"Bookmarks"},
+                                     QDir::Files, QDirIterator::Subdirectories); it.hasNext();)
+                    paths << it.next();
+    setPaths(paths);
 }
 
 void Plugin::updateIndexItems()
@@ -153,8 +159,10 @@ QWidget *Plugin::buildConfigWidget()
     string_list_model->setStringList(paths_);
 
     ui.listView_paths->setModel(string_list_model);
+
     ui.label_status->setText(QString("%1 bookmarks indexed.").arg(bookmarks_.size()));
 
+    // Checkbox index hostnames
     ui.checkBox_index_hostname->setChecked(index_hostname_);
     connect(ui.checkBox_index_hostname, &QCheckBox::toggled, [this](bool checked){
         settings()->setValue(CFG_INDEX_HOSTNAME, checked);
@@ -164,24 +172,31 @@ QWidget *Plugin::buildConfigWidget()
 
     connect(this, &Plugin::statusChanged, ui.label_status, &QLabel::setText);
 
-    connect(ui.toolButton_add, &QToolButton::clicked, this,
-            [this,w,string_list_model]() {
+    connect(ui.pushButton_add, &QPushButton::clicked, this,
+            [this,w,m=string_list_model]() {
         auto path = QFileDialog::getOpenFileName(w, tr("Select Bookmarks file"),
                                                  QDir::homePath(), "Bookmarks (Bookmarks)");
         if (!path.isNull() && !paths_.contains(path)) {
             paths_ << path;
             setPaths(paths_);
-            string_list_model->setStringList(paths_);
+            m->setStringList(paths_);
         }
     });
 
-    connect(ui.toolButton_remove, &QToolButton::clicked, this,
-            [this,listView_paths=ui.listView_paths,string_list_model]() {
-        paths_.removeAt(listView_paths->currentIndex().row());
+    connect(ui.pushButton_rem, &QPushButton::clicked, this,
+            [this,v=ui.listView_paths,m=string_list_model]() {
+        if (!v->currentIndex().isValid())
+            return;
+        paths_.removeAt(v->currentIndex().row());
         setPaths(paths_);
-        string_list_model->setStringList(paths_);
+        m->setStringList(paths_);
+    });
+
+    connect(ui.pushButton_reset, &QPushButton::clicked, this,
+            [this,m=string_list_model]() {
+        resetPaths();
+        m->setStringList(paths_);
     });
 
     return w;
 }
-
