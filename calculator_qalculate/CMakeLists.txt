@@ -7,6 +7,7 @@ albert_plugin(
     MAINTAINERS @manuelschneid3r
     QT_DEPENDENCIES Widgets
     LIB_DEPENDENCIES libqalculate
+    CREDITS "qalculate GPL-2"
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

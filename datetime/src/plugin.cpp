@@ -9,6 +9,10 @@ static RankItem::Score score(const QString &s, const QString &t)
     return (double)s.size()/t.size()*RankItem::MAX_SCORE;
 }
 
+Plugin::Plugin() { registry().add(&tzh); }
+
+Plugin::~Plugin() { registry().remove(&tzh); }
+
 vector<RankItem> Plugin::handleQuery(const Query &query) const
 {
     vector<RankItem> r;
@@ -22,8 +26,8 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
             StandardItem::make(
                 t, ldate, "Current date", {":datetime"},
                 {
-                    {"copy", "Copy", [=](){setClipboardText(ldate);} },
-                    {"copy", "Copy short form", [=](){setClipboardText(sdate);} }
+                    {"lcp", "Copy", [=](){setClipboardText(ldate);} },
+                    {"scp", "Copy short form", [=](){setClipboardText(sdate);} }
                 }
             ), score(s, t)
         );
@@ -36,8 +40,8 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
             StandardItem::make(
                 t, stime, "Current time", {":datetime"},
                 {
-                    {"copy", "Copy", [=](){setClipboardText(stime);} },
-                    {"copy", "Copy long form", [=](){setClipboardText(ltime);} }
+                    {"scp", "Copy", [=](){setClipboardText(stime);} },
+                    {"lcp", "Copy long form", [=](){setClipboardText(ltime);} }
                 }
             ), score(s, t)
         );
@@ -54,11 +58,15 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
     }
 
     if (QString t("utc"); t.startsWith(query.string())){
-        auto utc = QLocale::system().toString(dt.toUTC(), QLocale::LongFormat);
+        auto l = QLocale::system().toString(dt.toUTC(), QLocale::LongFormat);
+        auto s = QLocale::system().toString(dt.toUTC(), QLocale::ShortFormat);
         r.emplace_back(
             StandardItem::make(
-                t, utc, "Current UTC date and time", {":datetime"},
-                {{ "copy", "Copy", [=](){setClipboardText(utc);} }}
+                t, s, "Current UTC date and time", {":datetime"},
+                {
+                        {"scp", "Copy", [=](){setClipboardText(s);} },
+                        {"lcp", "Copy long form", [=](){setClipboardText(l);} }
+                }
             ), score(s, t)
         );
     }
@@ -76,4 +84,44 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
     }
 
     return r;
+}
+
+QString TimeZoneHandler::id() const { return QStringLiteral("timezones"); }
+
+QString TimeZoneHandler::name() const { return QStringLiteral("TimeZones"); }
+
+QString TimeZoneHandler::description() const { return QStringLiteral("Get times around the world"); }
+
+QString TimeZoneHandler::synopsis() const { return QStringLiteral("<tz id/name>"); }
+
+QString TimeZoneHandler::defaultTrigger() const { return QStringLiteral("tz "); }
+
+void TimeZoneHandler::handleQuery(QueryHandler::Query &query) const
+{
+    auto loc = QLocale::system();
+    auto utc = QDateTime::currentDateTimeUtc();
+
+    for (auto &tz_id_barray: QTimeZone::availableTimeZoneIds()){
+        if (!query.isValid()) return;
+
+        auto tz = QTimeZone(tz_id_barray);
+        auto tz_id = QString::fromLocal8Bit(tz_id_barray);
+        auto dt = utc.toTimeZone(tz);
+        auto tz_info = QString("%1, %2").arg(tz_id, tz.displayName(QTimeZone::StandardTime, QTimeZone::LongName, loc));
+
+        if (tz_info.contains(query.string(), Qt::CaseInsensitive)) {
+            query.add(StandardItem::make(
+                    tz_id,
+                    QLocale::system().toString(dt, QLocale::ShortFormat),
+                    tz_info,
+                    {":datetime"},
+                    {
+                            {"scp", "Copy short form",
+                                    [=]() { setClipboardText(QLocale::system().toString(dt, QLocale::ShortFormat)); }},
+                            {"lcp", "Copy long form",
+                                    [=]() { setClipboardText(QLocale::system().toString(dt, QLocale::LongFormat)); }}
+                    }
+            ));
+        }
+    }
 }
