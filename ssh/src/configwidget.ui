@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>ConfigWidget</class>
  <widget class="QWidget" name="ConfigWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>343</width>
-    <height>205</height>
-   </rect>
-  </property>
   <layout class="QVBoxLayout">
    <property name="leftMargin">
     <number>0</number>
@@ -24,34 +16,11 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>This extension scans your /etc/ssh/config and ~/.ssh/config and makes your ssh hosts accessible by Albert. This is a pure convenience extension. If you want to use ssh to the full extend consider using it directly via the Terminal extension.</string>
-     </property>
-     <property name="wordWrap">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
     <widget class="QCheckBox" name="checkBox_knownhosts">
      <property name="text">
       <string>Use 'known_hosts'</string>
      </property>
     </widget>
-   </item>
-   <item>
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
    </item>
   </layout>
  </widget>
