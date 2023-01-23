@@ -8,6 +8,7 @@ albert_plugin(
     MAINTAINERS @manuelschneid3r
     QT_DEPENDENCIES Widgets
     LIB_DEPENDENCIES libmuparser
+    CREDITS "muparser BSD-2-Clause"
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
