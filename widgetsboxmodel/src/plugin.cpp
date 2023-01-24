@@ -572,7 +572,9 @@ void Plugin::setVisible(bool visible)
 
 QWidget* Plugin::buildConfigWidget()
 {
-    return new QLabel("Configure the frontend in the 'General' tab.");
+    auto *l = new QLabel("Configure the frontend in the 'General' tab.");
+    l->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    return l;
 }
 
 QWidget* Plugin::createFrontendConfigWidget()
