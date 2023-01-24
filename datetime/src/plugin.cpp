@@ -18,10 +18,11 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
     vector<RankItem> r;
     const auto &s = query.string();
     QDateTime dt = QDateTime::currentDateTime();
+    QLocale loc;
 
     if (QString t("date"); t.startsWith(query.string())){
-        auto ls = QLocale::system().toString(dt.date(), QLocale::LongFormat);
-        auto ss = QLocale::system().toString(dt.date(), QLocale::ShortFormat);
+        auto ls = loc.toString(dt.date(), QLocale::LongFormat);
+        auto ss = loc.toString(dt.date(), QLocale::ShortFormat);
         r.emplace_back(
             StandardItem::make(
                     t, ls, "Current date", {":datetime"},
@@ -35,8 +36,8 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
     }
 
     if (QString t("time"); t.startsWith(query.string())){
-        auto ls = QLocale::system().toString(dt.time(), QLocale::LongFormat);
-        auto ss = QLocale::system().toString(dt.time(), QLocale::ShortFormat);
+        auto ls = loc.toString(dt.time(), QLocale::LongFormat);
+        auto ss = loc.toString(dt.time(), QLocale::ShortFormat);
         r.emplace_back(
             StandardItem::make(
                     t, ss, "Current time", {":datetime"},
@@ -61,8 +62,8 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
     }
 
     if (QString t("utc"); t.startsWith(query.string())){
-        auto ls = QLocale::system().toString(dt.toUTC(), QLocale::LongFormat);
-        auto ss = QLocale::system().toString(dt.toUTC(), QLocale::ShortFormat);
+        auto ls = loc.toString(dt.toUTC(), QLocale::LongFormat);
+        auto ss = loc.toString(dt.toUTC(), QLocale::ShortFormat);
         r.emplace_back(
             StandardItem::make(
                 t, ss, "Current UTC date and time", {":datetime"},
@@ -78,7 +79,7 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
     bool isNumber;
     ulong unixtime = s.toULong(&isNumber);
     if (isNumber){
-        auto ls = QLocale::system().toString(QDateTime::fromSecsSinceEpoch(unixtime), QLocale::LongFormat);
+        auto ls = loc.toString(QDateTime::fromSecsSinceEpoch(unixtime), QLocale::LongFormat);
         r.emplace_back(
             StandardItem::make(
                 "fromunix", ls, "Datetime from unix time", {":datetime"},
@@ -102,7 +103,7 @@ QString TimeZoneHandler::defaultTrigger() const { return QStringLiteral("tz "); 
 
 void TimeZoneHandler::handleQuery(QueryHandler::Query &query) const
 {
-    auto loc = QLocale::system();
+    QLocale loc;
     auto utc = QDateTime::currentDateTimeUtc();
 
     for (auto &tz_id_barray: QTimeZone::availableTimeZoneIds()){
@@ -116,14 +117,14 @@ void TimeZoneHandler::handleQuery(QueryHandler::Query &query) const
         if (tz_info.contains(query.string(), Qt::CaseInsensitive)) {
             query.add(StandardItem::make(
                     tz_id,
-                    QLocale::system().toString(dt, QLocale::ShortFormat),
+                    loc.toString(dt, QLocale::ShortFormat),
                     tz_info,
                     {":datetime"},
                     {
                             {"scp", "Copy short form",
-                                    [=]() { setClipboardText(QLocale::system().toString(dt, QLocale::ShortFormat)); }},
+                                    [=]() { setClipboardText(QLocale().toString(dt, QLocale::ShortFormat)); }},
                             {"lcp", "Copy long form",
-                                    [=]() { setClipboardText(QLocale::system().toString(dt, QLocale::LongFormat)); }}
+                                    [=]() { setClipboardText(QLocale().toString(dt, QLocale::LongFormat)); }}
                     }
             ));
         }
