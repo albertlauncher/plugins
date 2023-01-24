@@ -1,0 +1,1 @@
+Math expression evaluator based on the powerful qalculate library. Check the [Qalculate! docs](https://qalculate.github.io/) for built-in fuctions and operators. Basic math expressions are always evaluated. To enable sophisticated features like units, functions and equation solving use the triggered handler.
