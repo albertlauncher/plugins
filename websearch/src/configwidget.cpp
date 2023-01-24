@@ -1,4 +1,4 @@
-// Copyright (C) 2014-2021 Manuel Schneider
+// Copyright (c) 2023 Manuel Schneider
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -83,10 +83,13 @@ void ConfigWidget::onButton_new()
 
 void ConfigWidget::onButton_remove()
 {
+    auto index = ui.tableView_searches->currentIndex();
+    if (!index.isValid())
+        return;
+
     // Ask if sure
-    int row = ui.tableView_searches->currentIndex().row();
     QString engineName = ui.tableView_searches->model()
-            ->data(ui.tableView_searches->model()->index(row, 1)).toString();
+            ->data(ui.tableView_searches->model()->index(index.row(), 1)).toString();
     QMessageBox::StandardButton reply =
             QMessageBox::question(this, "Sure?",
                                   QString("Do you really want to remove '%1' from the search engines?")
