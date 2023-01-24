@@ -20,30 +20,32 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
     QDateTime dt = QDateTime::currentDateTime();
 
     if (QString t("date"); t.startsWith(query.string())){
-        auto ldate = QLocale::system().toString(dt.date(), QLocale::LongFormat);
-        auto sdate = QLocale::system().toString(dt.date(), QLocale::ShortFormat);
+        auto ls = QLocale::system().toString(dt.date(), QLocale::LongFormat);
+        auto ss = QLocale::system().toString(dt.date(), QLocale::ShortFormat);
         r.emplace_back(
             StandardItem::make(
-                t, ldate, "Current date", {":datetime"},
-                {
-                    {"lcp", "Copy", [=](){setClipboardText(ldate);} },
-                    {"scp", "Copy short form", [=](){setClipboardText(sdate);} }
+                    t, ls, "Current date", {":datetime"},
+                    {
+                    {"lcp", "Copy", [=](){setClipboardText(ls);} },
+                    {"scp", "Copy short form", [=](){setClipboardText(ss);} }
                 }
-            ), score(s, t)
+            ),
+            score(s, t)
         );
     }
 
     if (QString t("time"); t.startsWith(query.string())){
-        auto ltime = QLocale::system().toString(dt.time(), QLocale::LongFormat);
-        auto stime = QLocale::system().toString(dt.time(), QLocale::ShortFormat);
+        auto ls = QLocale::system().toString(dt.time(), QLocale::LongFormat);
+        auto ss = QLocale::system().toString(dt.time(), QLocale::ShortFormat);
         r.emplace_back(
             StandardItem::make(
-                t, stime, "Current time", {":datetime"},
-                {
-                    {"scp", "Copy", [=](){setClipboardText(stime);} },
-                    {"lcp", "Copy long form", [=](){setClipboardText(ltime);} }
+                    t, ss, "Current time", {":datetime"},
+                    {
+                    {"scp", "Copy", [=](){setClipboardText(ss);} },
+                    {"lcp", "Copy long form", [=](){setClipboardText(ls);} }
                 }
-            ), score(s, t)
+            ),
+            score(s, t)
         );
     }
 
@@ -53,32 +55,34 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
             StandardItem::make(
                 t, unixtime, "Current seconds since epoch (unixtime)", {":datetime"},
                 {{ "copy", "Copy", [=](){setClipboardText(unixtime);} }}
-            ), score(s, t)
+            ),
+            score(s, t)
         );
     }
 
     if (QString t("utc"); t.startsWith(query.string())){
-        auto l = QLocale::system().toString(dt.toUTC(), QLocale::LongFormat);
-        auto s = QLocale::system().toString(dt.toUTC(), QLocale::ShortFormat);
+        auto ls = QLocale::system().toString(dt.toUTC(), QLocale::LongFormat);
+        auto ss = QLocale::system().toString(dt.toUTC(), QLocale::ShortFormat);
         r.emplace_back(
             StandardItem::make(
-                t, s, "Current UTC date and time", {":datetime"},
+                t, ss, "Current UTC date and time", {":datetime"},
                 {
-                        {"scp", "Copy", [=](){setClipboardText(s);} },
-                        {"lcp", "Copy long form", [=](){setClipboardText(l);} }
+                        {"scp", "Copy", [=](){setClipboardText(ss);} },
+                        {"lcp", "Copy long form", [=](){setClipboardText(ls);} }
                 }
-            ), score(s, t)
+            ),
+            score(s, t)
         );
     }
 
     bool isNumber;
     ulong unixtime = s.toULong(&isNumber);
     if (isNumber){
-        auto dt = QLocale::system().toString(QDateTime::fromSecsSinceEpoch(unixtime), QLocale::LongFormat);
+        auto ls = QLocale::system().toString(QDateTime::fromSecsSinceEpoch(unixtime), QLocale::LongFormat);
         r.emplace_back(
             StandardItem::make(
-                "fromunix", dt, "Datetime from unix time", {":datetime"},
-                {{ "copy", "Copy", [=](){setClipboardText(dt);} }}
+                "fromunix", ls, "Datetime from unix time", {":datetime"},
+                {{ "copy", "Copy", [=](){setClipboardText(ls);} }}
             ), 0
         );
     }

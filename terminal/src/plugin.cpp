@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #include "albert.h"
 #include "albert/util/util.h"
@@ -23,6 +23,7 @@ static QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":termina
         for (const QString &path : paths) {
             QDirIterator dirIt(path, QDir::NoDotAndDotDot|QDir::Files|QDir::Executable, QDirIterator::Subdirectories);
             while (dirIt.hasNext()) {
+                if (abort) return result;
                 dirIt.next();
                 result.insert(dirIt.fileName());
             }

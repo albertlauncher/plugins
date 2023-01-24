@@ -73,7 +73,7 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
 
     // Update ui on index change
     connect(ui.listView_paths->selectionModel(), &QItemSelectionModel::currentChanged,
-            this, [this](const QModelIndex &current, const QModelIndex &previous){
+            this, [this](const QModelIndex &current, const QModelIndex&){
                 if (!current.isValid()) {
                     ui.groupBox_path->setEnabled(false);
                 } else {

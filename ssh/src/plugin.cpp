@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #include "plugin.h"
 #include "ui_configwidget.h"
@@ -69,14 +69,15 @@ struct SshItem : Item
     }
 };
 
-static void getConfigHosts(vector<shared_ptr<SshItem>> &hosts, const bool &cancel)
+static void getConfigHosts(vector<shared_ptr<SshItem>> &hosts, const bool &abort)
 {
-    std::function<void(const QString &)> scanfile = [&scanfile, &hosts](const QString &path) {
+    std::function<void(const QString &)> scanfile = [&scanfile, &hosts, &abort](const QString &path) {
         if (QFile::exists(path)) {
             QFile file(path);
             if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
                 QTextStream in(&file);
                 while (!in.atEnd()) {
+                    if (abort) return;
                     QStringList fields = in.readLine().split(" ", Qt::SkipEmptyParts);
                     if (fields.size() > 1 && fields[0] == "Host") {
                         for (int i = 1; i < fields.size(); ++i)
@@ -98,24 +99,28 @@ static void getConfigHosts(vector<shared_ptr<SshItem>> &hosts, const bool &cance
 
     // Get the hosts in config
     for (const QString &path: {system_conf_file_path, user_conf_file_path})
-        scanfile(path);
+        if (!abort)
+            scanfile(path);
 }
 
-static void getKnownHosts(vector<shared_ptr<SshItem>> &hosts, const bool &cancel)
+static void getKnownHosts(vector<shared_ptr<SshItem>> &hosts, const bool &abort)
 {
     map<QString, shared_ptr<SshItem>> unique_hosts;
     // Get the hosts in known_hosts
     if (QFile file(known_hosts_file_path); file.exists()) {
         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             QTextStream in(&file);
-            while (!in.atEnd())
+            while (!in.atEnd()) {
+                if (abort) break;
                 if (auto match = re_known_hosts.match(in.readLine()); match.hasMatch())
                     unique_hosts.emplace(match.captured(1), make_shared<SshItem>(match.captured(1),
                                                                                  match.captured(2),
                                                                                  known_hosts_file_path));
+            }
             file.close();
         }
     }
+    if (abort) return;
     for (auto &[hostname, item] : unique_hosts)
         hosts.emplace_back(::move(item));
 }

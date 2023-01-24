@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #include <Cocoa/Cocoa.h>
 #include "plugin.h"
@@ -29,90 +29,91 @@ static const QStringList watched_dirs = {"Applications", "/Applications"};
 
 static QStringList getAppBundlePaths()
 {
-  QStringList results;
-  @autoreleasepool {
-    // Run a spotlight query
-    NSMetadataQuery * query = [[NSMetadataQuery alloc] init];
-    [query setSearchScopes: [NSArray arrayWithObjects: @"Applications", @"/Applications", @"/System/Applications", @"/System/Library/CoreServices/Applicatis", nil]];
-    [query setPredicate:[NSPredicate predicateWithFormat:@"kMDItemContentType == 'com.apple.application-bundle'"]]; //  || kMDItemContentType == 'com.apple.systempreference.prefpane'"]];
-    if ([query startQuery]){
-      while ([query isGathering])
-        [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
-      [query stopQuery];
+    QStringList results;
+    @autoreleasepool {
+        // Run a spotlight query
+        NSMetadataQuery *query = [[NSMetadataQuery alloc] init];
+        [query setSearchScopes:[NSArray arrayWithObjects:@"Applications", @"/Applications", @"/System/Applications", @"/System/Library/CoreServices/Applicatis", nil]];
+        [query setPredicate:[NSPredicate predicateWithFormat:@"kMDItemContentType == 'com.apple.application-bundle'"]]; //  || kMDItemContentType == 'com.apple.systempreference.prefpane'"]];
+        if ([query startQuery]) {
+            while ([query isGathering])
+                [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+            [query stopQuery];
+        }
+
+        for (NSMetadataItem *item in query.results) {
+            results << QString::fromNSString([item valueForAttribute:NSMetadataItemPathKey]);
+        }
     }
 
-    for (NSMetadataItem * item in query.results) {
-      results << QString::fromNSString([item valueForAttribute:NSMetadataItemPathKey]);
-    }
-  }
+    results << "/System/Library/CoreServices/Finder.app";
+    results << "/System/Library/CoreServices/Finder.app/Contents/Applications/AirDrop.app";
+    results << "/System/Library/CoreServices/Finder.app/Contents/Applications/Network.app";
+    results << "/System/Library/CoreServices/Finder.app/Contents/Applications/Computer.app";
+    results << "/System/Library/CoreServices/Finder.app/Contents/Applications/iCloud Drive.app";
+    results << "/System/Library/CoreServices/Finder.app/Contents/Applications/Recents.app";
 
-  results << "/System/Library/CoreServices/Finder.app";
-  results << "/System/Library/CoreServices/Finder.app/Contents/Applications/AirDrop.app";
-  results << "/System/Library/CoreServices/Finder.app/Contents/Applications/Network.app";
-  results << "/System/Library/CoreServices/Finder.app/Contents/Applications/Computer.app";
-  results << "/System/Library/CoreServices/Finder.app/Contents/Applications/iCloud Drive.app";
-  results << "/System/Library/CoreServices/Finder.app/Contents/Applications/Recents.app";
-
-  return results;
+    return results;
 }
 
 static shared_ptr<Item> createAppItem(const QString &bundle_path)
 {
-  @autoreleasepool {
-    NSBundle * bundle = [NSBundle bundleWithPath:bundle_path.toNSString()];
+    @autoreleasepool {
+        NSBundle *bundle = [NSBundle bundleWithPath:bundle_path.toNSString()];
 
 //    printNSMetadataItem(item);
 //    printBundleInfo(bundle);
 
-    QString name;
-    if (NSString *nss = [bundle objectForInfoDictionaryKey:@"CFBundleDisplayName"]; nss != nil)
-      name = QString::fromNSString(nss);
-    else if (nss = [bundle objectForInfoDictionaryKey:(NSString*)kCFBundleNameKey]; nss != nil)
-      name = QString::fromNSString(nss);
-    else {
-      name = bundle_path.section("/", -1, -1);
-    }
-
-    if (name.endsWith(".app"))
-      name.chop(4);
-
-    return StandardItem::make(
-      QString::fromNSString(bundle.bundleIdentifier),
-      name,
-      bundle_path,
-      {QString("qfip:%1").arg(bundle_path)},
-      {
-        {
-          "launch",
-          "Launch app",
-          [bundle_path](){ runDetachedProcess({"open", bundle_path}); }
+        QString name;
+        if (NSString *nss = [bundle objectForInfoDictionaryKey:@"CFBundleDisplayName"]; nss != nil)
+            name = QString::fromNSString(nss);
+        else if (nss = [bundle objectForInfoDictionaryKey:(NSString *) kCFBundleNameKey]; nss != nil)
+            name = QString::fromNSString(nss);
+        else {
+            name = bundle_path.section("/", -1, -1);
         }
-      }
-    );
-  }
+
+        if (name.endsWith(".app"))
+            name.chop(4);
+
+        return StandardItem::make(
+                QString::fromNSString(bundle.bundleIdentifier),
+                name,
+                bundle_path,
+                {QString("qfip:%1").arg(bundle_path)},
+                {
+                        {
+                                "launch",
+                                "Launch app",
+                                [bundle_path]() { runDetachedProcess({"open", bundle_path}); }
+                        }
+                }
+        );
+    }
 }
 
 Plugin::Plugin()
 {
-  connect(&fs_watcher_, &QFileSystemWatcher::directoryChanged, this, [this](){ indexer.run(); });
-  fs_watcher_.addPaths(watched_dirs);
+    connect(&fs_watcher_, &QFileSystemWatcher::directoryChanged, this, [this]() { indexer.run(); });
+    fs_watcher_.addPaths(watched_dirs);
 
-  indexer.parallel = [](const bool &abort){
-    vector<IndexItem> results;
-    for (const QString &bundle_path : getAppBundlePaths()){
-      auto app_item = createAppItem(bundle_path);
-      results.emplace_back(app_item, app_item->text());
-    }
-    return results;
-  };
-  indexer.finish = [this](vector<IndexItem> &&result){
-    setIndexItems(::move(result));
-  };
+    indexer.parallel = [](const bool &abort) {
+        vector<IndexItem> results;
+        for (const QString &bundle_path: getAppBundlePaths()) {
+            if (abort) return results;
+            auto app_item = createAppItem(bundle_path);
+            results.emplace_back(app_item, app_item->text());
+        }
+        return results;
+    };
+    indexer.finish = [this](vector<IndexItem> &&result) {
+        setIndexItems(::move(result));
+    };
 }
 
 void Plugin::updateIndexItems()
 {
-  indexer.run();
+    indexer.run();
 }
 
 

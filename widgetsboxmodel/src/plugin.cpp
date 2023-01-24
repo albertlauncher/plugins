@@ -331,7 +331,7 @@ void Plugin::init_statemachine()
         // let selection model currentChanged set input hint
         disconnect(&m, &QAbstractItemModel::rowsInserted, this, &Plugin::resultsReady);
         connect(window.results_list->selectionModel(), &QItemSelectionModel::currentChanged, this,
-                [this](const QModelIndex &current, const QModelIndex &previous) {
+                [this](const QModelIndex &current, const QModelIndex&) {
                     if (window.results_list->currentIndex().isValid())
                         window.input_line->setInputHint(
                                 current.data((int) albert::ItemRoles::InputActionRole).toString());
@@ -429,7 +429,7 @@ void Plugin::init_statemachine()
                                                                   index.row());});
 }
 
-bool Plugin::eventFilter(QObject *watched, QEvent *event)
+bool Plugin::eventFilter(QObject*, QEvent *event)
 {
     if (event->type() == QEvent::FocusOut && hideOnFocusLoss_)
         setVisible(false);

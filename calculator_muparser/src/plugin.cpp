@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #include "plugin.h"
 #include "ui_configwidget.h"
@@ -18,7 +18,7 @@ Plugin::Plugin()
 {
     if (QString loc = qgetenv("LC_NUMERIC"); !loc.isEmpty())
         locale = QLocale(loc);
-    else if (QString loc = qgetenv("LC_ALL"); !loc.isEmpty())
+    else if (loc = qgetenv("LC_ALL"); !loc.isEmpty())
         locale = QLocale(loc);
     else
         locale = QLocale(QLocale::system().name());
