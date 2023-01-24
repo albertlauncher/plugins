@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 
 #include <QDir>
@@ -110,7 +110,7 @@ QVariant EnginesModel::data(const QModelIndex &index, int role) const
         break;
     }
     case Qt::ToolTipRole:
-        return "Double click to edit";
+        return "Double click to edit. Drag and drop to reorder.";
     }
     return {};
 }
