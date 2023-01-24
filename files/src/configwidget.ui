@@ -17,6 +17,12 @@
    </property>
    <item>
     <widget class="QListView" name="listView_paths">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
      </property>
@@ -46,6 +52,12 @@
      </item>
      <item>
       <widget class="QLabel" name="label_statusbar">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string/>
        </property>
@@ -197,43 +209,78 @@
           <property name="title">
            <string>MIME types</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_3">
-           <item>
+          <layout class="QFormLayout" name="formLayout_2">
+           <item row="0" column="0">
             <widget class="QCheckBox" name="checkBox_dirs">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QCheckBox" name="checkBox_docs">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QCheckBox" name="checkBox_audio">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QCheckBox" name="checkBox_video">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QCheckBox" name="checkBox_image">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLabel" name="label">
              <property name="text">
               <string>Directories</string>
              </property>
             </widget>
            </item>
-           <item>
-            <widget class="QCheckBox" name="checkBox_docs">
+           <item row="1" column="1">
+            <widget class="QLabel" name="label_2">
              <property name="text">
               <string>Documents</string>
              </property>
             </widget>
            </item>
-           <item>
-            <widget class="QCheckBox" name="checkBox_audio">
+           <item row="2" column="1">
+            <widget class="QLabel" name="label_3">
              <property name="text">
               <string>Audio</string>
              </property>
             </widget>
            </item>
-           <item>
-            <widget class="QCheckBox" name="checkBox_video">
+           <item row="3" column="1">
+            <widget class="QLabel" name="label_4">
              <property name="text">
               <string>Video</string>
              </property>
             </widget>
            </item>
-           <item>
-            <widget class="QCheckBox" name="checkBox_image">
+           <item row="4" column="1">
+            <widget class="QLabel" name="label_5">
              <property name="text">
               <string>Images</string>
              </property>
             </widget>
            </item>
-           <item>
+           <item row="5" column="1">
             <widget class="QPushButton" name="pushButton_mimefilters">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -253,6 +300,19 @@
       </item>
      </layout>
     </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>
