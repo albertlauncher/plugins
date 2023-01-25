@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Manuel Schneider
+// Copyright (c) 2023 Manuel Schneider
 
 #include "plugin.h"
 #include "ui_configwidget.h"
@@ -9,45 +9,44 @@ using namespace albert;
 namespace {
 const char* URL_MANUAL = "https://qalculate.github.io/manual/index.html";
 const char* CFG_ANGLEUNIT = "angle_unit";
-const uint  DEF_ANGLEUNIT = 1;
+const uint  DEF_ANGLEUNIT = (int)ANGLE_UNIT_RADIANS;
 const char* CFG_PARSINGMODE = "parsing_mode";
-const uint  DEF_PARSINGMODE = 0;
+const uint  DEF_PARSINGMODE = (int)PARSING_MODE_CONVENTIONAL;
 const char* CFG_PRECISION = "precision";
 const uint  DEF_PRECISION = 16;
 }
 
 Plugin::Plugin()
 {
+    auto s = settings();
+
+    // init calculator
     qalc.reset(new Calculator());
+    qalc->loadExchangeRates();
+    qalc->loadGlobalCurrencies();
     qalc->loadGlobalDefinitions();
     qalc->loadLocalDefinitions();
-    qalc->loadGlobalCurrencies();
-    qalc->loadExchangeRates();
+    qalc->setPrecision(s->value(CFG_PRECISION, DEF_PRECISION).toInt());
 
+    // evaluation options
+    eo.auto_post_conversion = POST_CONVERSION_BEST;
+    eo.structuring = STRUCTURING_SIMPLIFY;
+
+    // parse options
+    eo.parse_options.angle_unit = static_cast<AngleUnit>(s->value(CFG_ANGLEUNIT, DEF_ANGLEUNIT).toInt());
     eo.parse_options.functions_enabled = false;
+    eo.parse_options.limit_implicit_multiplication = true;
+    eo.parse_options.parsing_mode = static_cast<ParsingMode>(s->value(CFG_PARSINGMODE, DEF_PARSINGMODE).toInt());
     eo.parse_options.units_enabled = false;
     eo.parse_options.unknowns_enabled = false;
 
-    // Set evaluation options
-    eo.parse_options.angle_unit = ANGLE_UNIT_RADIANS;
-    eo.structuring = STRUCTURING_SIMPLIFY;
-    eo.auto_post_conversion = POST_CONVERSION_OPTIMAL;
-    eo.keep_zero_units = false;
-    eo.parse_options.limit_implicit_multiplication = true;
-
-    // Set print options
-    po.lower_case_e = true;
-    po.preserve_precision = true;
-    po.use_unicode_signs = true;
+    // print options
     po.indicate_infinite_series = true;
     po.interval_display = INTERVAL_DISPLAY_SIGNIFICANT_DIGITS;
-
-
-    // Load settings
-    auto s = settings();
-    eo.parse_options.angle_unit = static_cast<AngleUnit>(s->value(CFG_ANGLEUNIT, DEF_ANGLEUNIT).toInt());
-    eo.parse_options.parsing_mode = static_cast<ParsingMode>(s->value(CFG_PARSINGMODE, DEF_PARSINGMODE).toInt());
-    qalc->setPrecision(s->value(CFG_PRECISION, DEF_PRECISION).toInt());
+    po.lower_case_e = true;
+    //po.preserve_precision = true;  // https://github.com/albertlauncher/plugins/issues/92
+    po.use_unicode_signs = true;
+    //po.abbreviate_names = true;
 }
 
 QWidget *Plugin::buildConfigWidget()
