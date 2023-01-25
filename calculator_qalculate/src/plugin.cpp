@@ -100,7 +100,9 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
         return results;
     }
 
+    mstruct.format(po);
     auto result = QString::fromStdString(mstruct.print(po));
+
     results.emplace_back(
         StandardItem::make(
             "qalc-res",
@@ -140,6 +142,7 @@ void Plugin::handleQuery(QueryHandler::Query &query) const
     QStringList errors;
     for (auto msg = qalc->message(); msg; msg = qalc->nextMessage())
         errors << QString::fromUtf8(qalc->message()->c_message());
+    mstruct.format(po);
 
     if (errors.empty()){
         auto result = QString::fromStdString(mstruct.print(po));
