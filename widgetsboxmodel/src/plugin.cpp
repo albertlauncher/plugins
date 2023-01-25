@@ -63,25 +63,25 @@ constexpr Qt::Key mods_keys[] = {
 
 struct CondEventTransition : public QEventTransition {
     CondEventTransition(QObject *object, QEvent::Type type, function<bool()> test):
-            QEventTransition(object, type), test(std::move(test)){}
-    bool eventTest(QEvent *e) override { return QEventTransition::eventTest(e) && test(); }
-    function<bool()> test;
+            QEventTransition(object, type), test_(std::move(test)){}
+    bool eventTest(QEvent *e) override { return QEventTransition::eventTest(e) && test_(); }
+    function<bool()> test_;
 };
 
 struct CondKeyEventTransition : public QKeyEventTransition {
     CondKeyEventTransition(QObject *object, QEvent::Type type, int key, function<bool()> test):
-            QKeyEventTransition(object, type, key), test(std::move(test)){}
-    bool eventTest(QEvent *e) override { return QKeyEventTransition::eventTest(e) && test(); }
-    function<bool()> test;
+            QKeyEventTransition(object, type, key), test_(std::move(test)){}
+    bool eventTest(QEvent *e) override { return QKeyEventTransition::eventTest(e) && test_(); }
+    function<bool()> test_;
 };
 
 struct CondSignalTransition : public QSignalTransition {
     template <typename Func>
     CondSignalTransition(const typename QtPrivate::FunctionPointer<Func>::Object *sender,
-                         Func signal, function<bool()> test):
-            QSignalTransition(sender, signal), test(std::move(test)){}
-    bool eventTest(QEvent *e) override { return QSignalTransition::eventTest(e) && test(); }
-    function<bool()> test;
+                         Func sig, function<bool()> test):
+            QSignalTransition(sender, sig), test_(std::move(test)){}
+    bool eventTest(QEvent *e) override { return QSignalTransition::eventTest(e) && test_(); }
+    function<bool()> test_;
 };
 }
 
@@ -355,7 +355,8 @@ void Plugin::init_statemachine()
         window.results_list->show();
     });
 
-    QObject::connect(s_results_actions_visible, &QState::entered, this, [=](){
+    QObject::connect(s_results_actions_visible, &QState::entered, this,
+                     [this, s_results_model_matches, s_results_model_fallbacks](){
         // if item is selected and has actions display
         if (window.results_list->currentIndex().isValid()){
             auto *sm = window.actions_list->selectionModel();

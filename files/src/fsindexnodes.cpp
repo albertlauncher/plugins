@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #include "fileitems.h"
 #include "fsindexnodes.h"
@@ -25,7 +25,7 @@ static QMimeDatabase mdb;
 static QMimeType dirmimetype = mdb.mimeTypeForName(QStringLiteral("inode/directory"));
 
 
-NameFilter::NameFilter(QRegularExpression regex, PatternType type) : regex(std::move(regex)), type(type) {}
+NameFilter::NameFilter(QRegularExpression re, PatternType t) : regex(std::move(re)), type(t) {}
 
 NameFilter::NameFilter(const QString &pattern) : regex(pattern), type(PatternType::Exclude) {
     if (pattern.startsWith('!')){

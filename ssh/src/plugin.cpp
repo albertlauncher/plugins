@@ -25,8 +25,8 @@ static const QRegularExpression re_input(R"raw(^(?:(\w+)@)?\[?((?:[\w\.-]*))\]?(
 
 struct SshItem : Item
 {
-    explicit SshItem(QString host, QString port, QString info):
-            host(std::move(host)), port(std::move(port)), info(std::move(info)) {}
+    explicit SshItem(QString h, QString p, QString i):
+            host(std::move(h)), port(std::move(p)), info(std::move(i)) {}
     SshItem(const SshItem&) = default;
 
     QString user;
@@ -192,11 +192,11 @@ void Plugin::handleQuery(QueryHandler::Query &query) const
             QString q_cmdln = match.captured(4);
 
             struct GQ : public GlobalQueryHandler::Query {
-                const QString &q;
-                const bool &v;
-                GQ(const QString &q, const bool &v) : q(q), v(v) {}
-                const QString &string() const { return q; }
-                bool isValid() const { return v; }
+                const QString &string_;
+                const bool &valid_;
+                GQ(const QString &s, const bool &v) : string_(s), valid_(v) {}
+                const QString &string() const { return string_; }
+                bool isValid() const { return valid_; }
             } gq(q_host, query.isValid());
 
             vector<RankItem> rank_items{IndexQueryHandler::handleQuery(gq)};

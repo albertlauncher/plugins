@@ -91,7 +91,7 @@ PYBIND11_EMBEDDED_MODULE(albert, m)  // interface id 0.5
      */
     struct GilAwareFunctor {
         py::object callable;
-        GilAwareFunctor(const py::object &callable) : callable(callable){}
+        GilAwareFunctor(const py::object &c) : callable(c){}
         GilAwareFunctor(GilAwareFunctor&&) = default;
         GilAwareFunctor & operator=(GilAwareFunctor&&) = default;
         GilAwareFunctor(const GilAwareFunctor &other){

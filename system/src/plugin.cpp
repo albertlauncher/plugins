@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #include "plugin.h"
 using albert::StandardItem;
@@ -140,13 +140,13 @@ QWidget* Plugin::buildConfigWidget()
     auto *w = new QWidget;
     auto *formLayout = new QFormLayout(w);
     formLayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-    for (auto &si : items_){
-        auto *label = new QLabel(si.item->text(), w);
-        auto *line_edit = new QLineEdit(si.command, w);
+    for (auto &sys_item : items_){
+        auto *label = new QLabel(sys_item.item->text(), w);
+        auto *line_edit = new QLineEdit(sys_item.command, w);
         formLayout->addRow(label, line_edit);
-        connect(line_edit, &QLineEdit::editingFinished, this, [=, &si]() {
-            si.command = line_edit->text();
-            settings()->setValue(si.item->id(), si.command);
+        connect(line_edit, &QLineEdit::editingFinished, this, [this, line_edit, &sys_item]() {
+            sys_item.command = line_edit->text();
+            settings()->setValue(sys_item.item->id(), sys_item.command);
         });
     }
     return w;

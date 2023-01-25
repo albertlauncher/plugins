@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #include <QStandardPaths>
 #include <QRegularExpression>
@@ -136,6 +136,8 @@ vector<IndexItem> Plugin::indexApps(const bool &abort) const
 
     // Iterate over all desktop files
     for (const auto &id_path_pair : desktopFiles) {
+
+        if (abort) return results;
 
         const QString &id = id_path_pair.first;
         const QString &path = id_path_pair.second;
