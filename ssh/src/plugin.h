@@ -12,8 +12,7 @@ struct SshItem;
 
 class Plugin:
         public albert::ExtensionPlugin,
-        public albert::IndexQueryHandler,
-        public albert::ConfigWidgetProvider
+        public albert::IndexQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 public:

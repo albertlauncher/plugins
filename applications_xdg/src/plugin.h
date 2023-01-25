@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2023 Manuel Schneider
 
 #pragma once
 #include "albert.h"
@@ -8,8 +8,7 @@
 
 class Plugin:
         public albert::ExtensionPlugin,
-        public albert::IndexQueryHandler,
-        public albert::ConfigWidgetProvider
+        public albert::IndexQueryHandler
 
 {
     Q_OBJECT ALBERT_PLUGIN

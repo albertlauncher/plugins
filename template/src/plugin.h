@@ -5,8 +5,7 @@
 
 class Plugin :
         public albert::ExtensionPlugin,
-        public albert::QueryHandler,
-        public albert::ConfigWidgetProvider
+        public albert::QueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 public:

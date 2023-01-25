@@ -7,8 +7,7 @@
 #include <memory>
 
 class Plugin : public albert::ExtensionPlugin,
-               public albert::GlobalQueryHandler,
-               public albert::ConfigWidgetProvider
+               public albert::GlobalQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 public:

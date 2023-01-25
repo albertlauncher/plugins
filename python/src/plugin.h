@@ -8,8 +8,7 @@ namespace pybind11 { class gil_scoped_release; }
 
 class Plugin:
     public albert::ExtensionPlugin,
-    public albert::PluginProvider,
-    public albert::ConfigWidgetProvider
+    public albert::PluginProvider
 {
     Q_OBJECT ALBERT_PLUGIN
 public:

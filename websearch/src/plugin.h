@@ -9,7 +9,6 @@ class ConfigWidget;
 
 
 class Plugin final : public albert::ExtensionPlugin,
-                     public albert::ConfigWidgetProvider,
                      public albert::FallbackHandler,
                      public albert::GlobalQueryHandler
 {
