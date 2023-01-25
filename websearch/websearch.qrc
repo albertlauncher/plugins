@@ -1,13 +1,18 @@
+<!--
+  ~ Copyright (c) 2023 Manuel Schneider
+  -->
+
 <RCC>
     <qresource prefix="/">
         <file alias="amazon">resources/amazon.svg</file>
         <file alias="default">resources/default.svg</file>
+        <file alias="duckduckgo">resources/duckduckgo.svg</file>
         <file alias="ebay">resources/ebay.svg</file>
-        <file alias="google">resources/google.svg</file>
-        <file alias="youtube">resources/youtube.svg</file>
         <file alias="github">resources/github.svg</file>
+        <file alias="google">resources/google.svg</file>
+        <file alias="maps">resources/maps.svg</file>
         <file alias="wikipedia">resources/wikipedia.svg</file>
         <file alias="wolfram">resources/wolfram.svg</file>
-        <file alias="duckduckgo">resources/duckduckgo.svg</file>
+        <file alias="youtube">resources/youtube.svg</file>
     </qresource>
 </RCC>
