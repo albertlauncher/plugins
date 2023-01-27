@@ -478,9 +478,9 @@ public:
 
             } catch (py::error_already_set &e) {
                 if (e.matches(PyExc_ModuleNotFoundError)) {
-                    QString text("Looks like something is missing:\n\n");
-                    text.append(e.what());
-                    text.append("\n\nTry installing missing dependencies into albert site-packages?\n\nNote that you have to reload the plugin afterwards.");
+                    auto text = QString::fromStdString(e.what()).section("\n",0,0);
+                    text.append(QString("\n\nTry installing missing dependencies (%1) into albert site-packages?\n\n"
+                                        "Note that you have to reload the plugin afterwards.").arg(metadata_.runtime_dependencies.join(", ")));
                     auto b = QMessageBox::warning(nullptr, "Module not found", text,
                                                   QMessageBox::Yes|QMessageBox::No, QMessageBox::Yes);
                     if (b==QMessageBox::Yes)
@@ -642,6 +642,10 @@ QWidget *Plugin::buildConfigWidget()
     ui.checkBox_watchSources->setChecked(watchSources());
     connect(ui.checkBox_watchSources, &QCheckBox::toggled,
             this, &Plugin::setWatchSources);
+
+    connect(ui.pushButton_packages, &QPushButton::clicked, this, [this](){
+        openUrl("file://" + dataDir().filePath("site-packages"));
+    });
 
     return w;
 }
