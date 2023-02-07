@@ -448,7 +448,12 @@ bool Plugin::eventFilter(QObject*, QEvent *event)
         // that have been shown once. Well as long as this does not introduce ugly
         // flicker this may be okay.
         if (showCentered_) {
-            auto geo = QGuiApplication::screenAt(QCursor::pos())->geometry();
+            QScreen *screen = QGuiApplication::screenAt(QCursor::pos());
+            if (!screen){
+                WARN << "Could not retrieve screen for cursor position. Using primary screen.";
+                screen = QGuiApplication::primaryScreen();
+            }
+            auto geo = screen->geometry();
             window.move(geo.center().x() - window.frameSize().width() / 2, geo.top() + geo.height() / 5);
         }
     }
