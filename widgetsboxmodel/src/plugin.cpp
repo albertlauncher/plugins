@@ -421,7 +421,11 @@ void Plugin::init_statemachine()
         else
             WARN << "Activated action in neither Match nor Fallback state.";
         history_.add(window.input_line->text());
-        window.hide(); // dont move up, may change text (therfore also state and current_query) depending on config
+        if (!QApplication::keyboardModifiers().testFlag(Qt::ControlModifier))
+            window.hide();
+        else
+            // run a new query, things may have changed
+            emit window.input_line->textChanged(window.input_line->text());
     };
 
     QObject::connect(window.results_list, &ItemsList::activated,
