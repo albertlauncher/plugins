@@ -1,9 +1,9 @@
 // Copyright (c) 2022 Manuel Schneider
 
-#include "albert.h"
 #include "ui_configwidget.h"
 #include "plugin.h"
 using namespace std;
+using namespace albert;
 
 
 Plugin::Plugin()
