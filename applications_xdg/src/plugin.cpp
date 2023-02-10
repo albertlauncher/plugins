@@ -368,6 +368,7 @@ vector<IndexItem> Plugin::indexApps(const bool &abort) const
 Plugin::Plugin()
 {
     qunsetenv("DESKTOP_AUTOSTART_ID");
+    qunsetenv("QT_QPA_PLATFORM");
 
     // Load settings
     ignoreShowInKeys = settings()->value(CFG_IGNORESHOWINKEYS, DEF_IGNORESHOWINKEYS).toBool();
