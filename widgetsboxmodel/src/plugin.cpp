@@ -139,6 +139,8 @@ Plugin::Plugin() : history_(dataDir().filePath("input_history"))
         current_query = query(text);
         connect(current_query.get(), &albert::Query::finished, this, &Plugin::queryFinsished);
         connect(&current_query->matches(), &QAbstractItemModel::rowsInserted, this, &Plugin::resultsReady);
+        queries_.push_back(current_query);
+
 //        connect(q, &albert::Query::finished, [](){CRIT << "Query::finished";});
 //        connect(&q->matches(), &QAbstractItemModel::rowsInserted, [](){CRIT << "QAbstractItemModel::rowsInserted";});
         window.input_line->setInputHint(current_query->string().isEmpty() ? current_query->synopsis() : QString());
@@ -465,6 +467,10 @@ bool Plugin::eventFilter(QObject*, QEvent *event)
             window.input_line->clear();
         } else
             window.input_line->selectAll();
+
+        // clear all obsolete queries
+        queries_.remove_if([this](auto &q){return !(q == current_query || q == displayed_query);});
+
     }
 
     else if (event->type() == QEvent::FocusOut && hideOnFocusLoss_)

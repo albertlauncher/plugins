@@ -85,6 +85,7 @@ private:
     albert::History history_;
     QString user_text; // used for history search
     std::map<QString, QString> themes_;
+    std::list<std::shared_ptr<albert::Query>> queries_;
     QString theme_;
     bool show_fallbacks_on_empty_query = true;
     bool hideOnFocusLoss_{};
