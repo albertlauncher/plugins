@@ -93,6 +93,7 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
             );
           }
         }
+        return results;
       }
       default:
         WARN << "Unknown CNAuthorizationStatus.";
