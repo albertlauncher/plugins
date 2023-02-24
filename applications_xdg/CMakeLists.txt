@@ -7,7 +7,6 @@ albert_plugin(
     LICENSE ALL
     URL https://github.com/albertlauncher/plugins/tree/master/applications_xdg
     MAINTAINERS @manuelschneid3r
-    AUTHORS @manuelschneid3r
     QT_DEPENDENCIES Widgets
 )
 endif()
