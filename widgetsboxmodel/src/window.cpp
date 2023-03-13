@@ -56,7 +56,7 @@ Window::Window():
     actions_list->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
 
-    setWindowFlags(Qt::FramelessWindowHint);
+    setWindowFlags(Qt::Tool|Qt::FramelessWindowHint);
     setAttribute(Qt::WA_TranslucentBackground);
 
 #ifdef Q_OS_MAC
