@@ -18,14 +18,15 @@ ALBERT_LOGGING
 const char * ENGINES_FILE_NAME = "engines.json";
 
 vector<SearchEngine> defaultSearchEngines = {
-    {"Google",        "gg ",   ":google",    "https://www.google.com/search?q=%s"},
-    {"Youtube",       "yt ",   ":youtube",   "https://www.youtube.com/results?search_query=%s"},
-    {"Amazon",        "ama ",  ":amazon",    "http://www.amazon.com/s/?field-keywords=%s"},
-    {"Ebay",          "eb ",   ":ebay",      "http://www.ebay.com/sch/i.html?_nkw=%s"},
-    {"Google Maps",   "maps ", ":maps",      "https://www.google.com/maps/search/%s/"},
-    {"GitHub",        "gh ",   ":github",    "https://github.com/search?utf8=✓&q=%s"},
-    {"Wolfram Alpha", "=",     ":wolfram",   "https://www.wolframalpha.com/input/?i=%s"},
-    {"DuckDuckGo",    "dd ",   ":duckduckgo","https://duckduckgo.com/?q=%s"},
+    {"Google",         "gg ",      ":google",     "https://www.google.com/search?q=%s"},
+    {"Youtube",        "yt ",      ":youtube",    "https://www.youtube.com/results?search_query=%s"},
+    {"Amazon",         "ama ",     ":amazon",     "http://www.amazon.com/s/?field-keywords=%s"},
+    {"Ebay",           "eb ",      ":ebay",       "http://www.ebay.com/sch/i.html?_nkw=%s"},
+    {"Google Maps",    "maps ",    ":maps",       "https://www.google.com/maps/search/%s/"},
+    {"Google Scholar", "scholar ", ":scholar",    "https://scholar.google.com/scholar?q=%s"},
+    {"GitHub",         "gh ",      ":github",     "https://github.com/search?utf8=✓&q=%s"},
+    {"Wolfram Alpha",  "=",        ":wolfram",    "https://www.wolframalpha.com/input/?i=%s"},
+    {"DuckDuckGo",     "dd ",      ":duckduckgo", "https://duckduckgo.com/?q=%s"},
 };
 
 

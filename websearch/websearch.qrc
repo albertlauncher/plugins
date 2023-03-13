@@ -1,7 +1,3 @@
-<!--
-  ~ Copyright (c) 2023 Manuel Schneider
-  -->
-
 <RCC>
     <qresource prefix="/">
         <file alias="amazon">resources/amazon.svg</file>
@@ -14,5 +10,6 @@
         <file alias="wikipedia">resources/wikipedia.svg</file>
         <file alias="wolfram">resources/wolfram.svg</file>
         <file alias="youtube">resources/youtube.svg</file>
+        <file alias="scholar">resources/scholar.svg</file>
     </qresource>
 </RCC>
