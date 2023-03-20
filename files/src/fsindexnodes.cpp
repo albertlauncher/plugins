@@ -214,7 +214,11 @@ QMimeType DirNode::dirMimeType() {return dirmimetype; }
 
 RootNode::RootNode(QString filePath): DirNode(QFileInfo(filePath).fileName())
 {
-    path_ = QFileInfo(filePath).path();
+    // Qt appends a slash if the dir is root.
+    // Workaround path building problems by undoing this
+    auto location = QFileInfo(filePath).dir();
+    if (!location.isRoot())  // Leave root path_ empty
+        path_ = QFileInfo(filePath).path();
     path_.shrink_to_fit();
 }
 
