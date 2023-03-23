@@ -357,6 +357,10 @@ vector<IndexItem> Plugin::indexApps(const bool &abort) const
                 });
         }
 
+        actionList.emplace_back("reveal-entry", "Open desktop entry in file browser", [=](){
+            albert::openUrl(QFileInfo(id_path_pair.second).path());
+        });
+
         auto item = StandardItem::make(id, name, subtext, name, icon_urls, actionList);
         for (const auto &index_string : index_strings){
             results.emplace_back(item, index_string);
