@@ -23,6 +23,7 @@ public:
     const std::map<QString, QString> &themes() const;
     const QString &theme() const;
     bool setTheme(const QString& theme);
+    void reloadTheme () override;
 
     uint maxResults() const;
     void setMaxResults(uint max);

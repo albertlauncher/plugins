@@ -874,3 +874,10 @@ void Plugin::handleQuery(Query &query) const
             );
 }
 
+void Plugin::reloadTheme ()
+{
+    theme_ = settings ()->value (CFG_THEME, DEF_THEME).toString ();
+
+    if (!setTheme (theme_))
+        WARN << "Stylefile not found on reload:" << theme_.toStdString().c_str();
+}
