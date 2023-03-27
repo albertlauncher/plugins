@@ -30,6 +30,9 @@ public:
     bool showCentered() const;
     void setShowCentered(bool b = true);
 
+    bool followCursor() const;
+    void setFollowCursor(bool b = true);
+
     bool hideOnFocusLoss() const;
     void setHideOnFocusLoss(bool b = true);
 
@@ -90,6 +93,7 @@ private:
     bool show_fallbacks_on_empty_query = true;
     bool hideOnFocusLoss_{};
     bool showCentered_{};
+    bool followCursor_{};
     bool quitOnClose_{};
     bool clearOnHide_{};
     bool history_search_{};

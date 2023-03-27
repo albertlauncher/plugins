@@ -150,7 +150,7 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>Center on current display</string>
+      <string>Show centered</string>
      </property>
      <property name="buddy">
       <cstring>checkBox_center</cstring>
@@ -160,11 +160,11 @@
    <item row="6" column="1">
     <widget class="QCheckBox" name="checkBox_center">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Center the main window on the screen containing the mouse pointer on show.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Position the window centered on the screen. See also &amp;quot;Center on active screen&amp;quot;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
    </item>
-   <item row="7" column="0">
+   <item row="8" column="0">
     <widget class="QLabel" name="label_style">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -180,7 +180,7 @@
      </property>
     </widget>
    </item>
-   <item row="7" column="1">
+   <item row="8" column="1">
     <widget class="QComboBox" name="comboBox_themes">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -193,7 +193,7 @@
      </property>
     </widget>
    </item>
-   <item row="8" column="1">
+   <item row="9" column="1">
     <widget class="QLabel" name="label_themeinfo">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
@@ -221,7 +221,7 @@
      </property>
     </widget>
    </item>
-   <item row="9" column="0">
+   <item row="10" column="0">
     <widget class="QLabel" name="label_results">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -237,7 +237,7 @@
      </property>
     </widget>
    </item>
-   <item row="9" column="1">
+   <item row="10" column="1">
     <widget class="QSpinBox" name="spinBox_results">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -256,7 +256,7 @@
      </property>
     </widget>
    </item>
-   <item row="10" column="0">
+   <item row="11" column="0">
     <widget class="QLabel" name="label_system_shadow">
      <property name="text">
       <string>Display system shadow</string>
@@ -266,7 +266,7 @@
      </property>
     </widget>
    </item>
-   <item row="10" column="1">
+   <item row="11" column="1">
     <widget class="QCheckBox" name="checkBox_system_shadow">
      <property name="toolTip">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Tell the system to draw a shadow around the window. Note that on some systems this may look pretty ugly. Use the client shadow in this case.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -276,7 +276,7 @@
      </property>
     </widget>
    </item>
-   <item row="11" column="0">
+   <item row="12" column="0">
     <widget class="QLabel" name="label_client_shadow">
      <property name="text">
       <string>Display client shadow</string>
@@ -286,14 +286,14 @@
      </property>
     </widget>
    </item>
-   <item row="11" column="1">
+   <item row="12" column="1">
     <widget class="QCheckBox" name="checkBox_client_shadow">
      <property name="toolTip">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Draw a shadow on the client side.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
    </item>
-   <item row="12" column="0">
+   <item row="13" column="0">
     <widget class="QLabel" name="label_icons">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -309,14 +309,14 @@
      </property>
     </widget>
    </item>
-   <item row="12" column="1">
+   <item row="13" column="1">
     <widget class="QCheckBox" name="checkBox_icons">
      <property name="toolTip">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Display icons provided by the items.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
    </item>
-   <item row="13" column="0">
+   <item row="14" column="0">
     <widget class="QLabel" name="label_scrollbar">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -332,10 +332,27 @@
      </property>
     </widget>
    </item>
-   <item row="13" column="1">
+   <item row="14" column="1">
     <widget class="QCheckBox" name="checkBox_scrollbar">
      <property name="toolTip">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Displays a scrollbar in the results list.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QLabel" name="label_followCursor">
+     <property name="text">
+      <string>Center on active screen</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="1">
+    <widget class="QCheckBox" name="checkBox_followCursor">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the window on the active screen (the one containing the mouse cursor) rather than the primary one. This option applies when &amp;quot;Show centered&amp;quot; is activated, but also if the window has to be centered on another screen (e.g. because a display has been disconnected).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string/>
      </property>
     </widget>
    </item>

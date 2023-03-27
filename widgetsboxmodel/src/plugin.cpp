@@ -21,6 +21,8 @@ namespace  {
 const char*   CFG_WND_POS  = "windowPosition";
 const char*   CFG_CENTERED = "showCentered";
 const bool    DEF_CENTERED = true;
+const char*   CFG_FOLLOW_CURSOR = "followCursor";
+const bool    DEF_FOLLOW_CURSOR = true;
 const char*   CFG_THEME = "theme";
 const char*   DEF_THEME = "Spotlight";
 const char*   CFG_HIDE_ON_FOCUS_LOSS = "hideOnFocusLoss";
@@ -103,6 +105,7 @@ Plugin::Plugin() : history_(dataDir().filePath("input_history"))
     // Settings
     auto s = settings();
     setShowCentered(s->value(CFG_CENTERED, DEF_CENTERED).toBool());
+    setFollowCursor(s->value(CFG_FOLLOW_CURSOR, DEF_FOLLOW_CURSOR).toBool());
     if (!showCentered() && s->contains(CFG_WND_POS) && s->value(CFG_WND_POS).canConvert(QMetaType(QMetaType::QPoint)))
         window.move(s->value(CFG_WND_POS).toPoint());
     setHideOnFocusLoss(s->value(CFG_HIDE_ON_FOCUS_LOSS, DEF_HIDE_ON_FOCUS_LOSS).toBool());
@@ -450,15 +453,19 @@ bool Plugin::eventFilter(QObject*, QEvent *event)
         // Trigger a new query on show
         emit window.input_line->textChanged(window.input_line->text());
 
-        // Move widget after showing it since QWidget::move works only on widgets
-        // that have been shown once. Well as long as this does not introduce ugly
-        // flicker this may be okay.
-        if (showCentered_) {
-            QScreen *screen = QGuiApplication::screenAt(QCursor::pos());
-            if (!screen){
-                WARN << "Could not retrieve screen for cursor position. Using primary screen.";
-                screen = QGuiApplication::primaryScreen();
+        // If showCentered or off screen (e.g. display disconnected) move into visible area
+        if (showCentered_ || !window.screen()) {
+            QScreen *screen = nullptr;
+            if (followCursor_){
+                if (screen = QGuiApplication::screenAt(QCursor::pos()); !screen){
+                    WARN << "Could not retrieve screen for cursor position. Using primary screen.";
+                    screen = QGuiApplication::primaryScreen();
+                }
             }
+            else
+                screen = QGuiApplication::primaryScreen();
+
+            // move window
             auto geo = screen->geometry();
             window.move(geo.center().x() - window.frameSize().width() / 2, geo.top() + geo.height() / 5);
         }
@@ -476,9 +483,6 @@ bool Plugin::eventFilter(QObject*, QEvent *event)
         queries_.remove_if([this](auto &q){return !(q == current_query || q == displayed_query);});
 
     }
-
-    else if (event->type() == QEvent::FocusOut && hideOnFocusLoss_)
-        setVisible(false);
 
     else if (event->type() == QEvent::KeyPress) {
         auto *keyEvent = static_cast<QKeyEvent *>(event);
@@ -603,6 +607,10 @@ QWidget* Plugin::createFrontendConfigWidget()
     connect(ui.checkBox_center, &QCheckBox::toggled,
             this, &Plugin::setShowCentered);
 
+    ui.checkBox_followCursor->setChecked(followCursor());
+    connect(ui.checkBox_followCursor, &QCheckBox::toggled,
+            this, &Plugin::setFollowCursor);
+
     ui.checkBox_onTop->setChecked(alwaysOnTop());
     connect(ui.checkBox_onTop, &QCheckBox::toggled,
             this, &Plugin::setAlwaysOnTop);
@@ -665,25 +673,13 @@ QWidget* Plugin::createFrontendConfigWidget()
 
 // PROPERTIES
 
-QString Plugin::input() const
-{
-    return window.input_line->text();
-}
+QString Plugin::input() const { return window.input_line->text(); }
 
-void Plugin::setInput(const QString &input)
-{
-    window.input_line->setText(input);
-}
+void Plugin::setInput(const QString &input) { window.input_line->setText(input); }
 
-const std::map<QString, QString> &Plugin::themes() const
-{
-    return themes_;
-}
+const std::map<QString, QString> &Plugin::themes() const { return themes_; }
 
-const QString &Plugin::theme() const
-{
-    return theme_;
-}
+const QString &Plugin::theme() const { return theme_; }
 
 bool Plugin::setTheme(const QString &theme)
 {
@@ -702,10 +698,7 @@ bool Plugin::setTheme(const QString &theme)
     return false;
 }
 
-uint Plugin::maxResults() const
-{
-    return window.results_list->maxItems();
-}
+uint Plugin::maxResults() const { return window.results_list->maxItems(); }
 
 void Plugin::setMaxResults(uint maxItems)
 {
@@ -713,10 +706,7 @@ void Plugin::setMaxResults(uint maxItems)
     window.results_list->setMaxItems(maxItems);
 }
 
-bool Plugin::showCentered() const
-{
-    return showCentered_;
-}
+bool Plugin::showCentered() const { return showCentered_; }
 
 void Plugin::setShowCentered(bool b)
 {
@@ -724,10 +714,15 @@ void Plugin::setShowCentered(bool b)
     showCentered_ = b;
 }
 
-bool Plugin::hideOnFocusLoss() const
+bool Plugin::followCursor() const { return followCursor_; }
+
+void Plugin::setFollowCursor(bool b)
 {
-    return hideOnFocusLoss_;
+    settings()->setValue(CFG_FOLLOW_CURSOR, b);
+    followCursor_ = b;
 }
+
+bool Plugin::hideOnFocusLoss() const { return hideOnFocusLoss_; }
 
 void Plugin::setHideOnFocusLoss(bool b)
 {
@@ -735,10 +730,7 @@ void Plugin::setHideOnFocusLoss(bool b)
     hideOnFocusLoss_ = b;
 }
 
-bool Plugin::quitOnClose() const
-{
-    return quitOnClose_;
-}
+bool Plugin::quitOnClose() const { return quitOnClose_; }
 
 void Plugin::setQuitOnClose(bool b)
 {
@@ -746,10 +738,7 @@ void Plugin::setQuitOnClose(bool b)
     settings()->setValue(CFG_QUIT_ON_CLOSE, b);
 }
 
-bool Plugin::clearOnHide() const
-{
-    return clearOnHide_;
-}
+bool Plugin::clearOnHide() const { return clearOnHide_; }
 
 void Plugin::setClearOnHide(bool b)
 {
@@ -757,10 +746,7 @@ void Plugin::setClearOnHide(bool b)
     clearOnHide_ = b;
 }
 
-bool Plugin::historySearchEnabled() const
-{
-    return history_search_;
-}
+bool Plugin::historySearchEnabled() const { return history_search_; }
 
 void Plugin::setHistorySearchEnabled(bool b)
 {
@@ -768,10 +754,7 @@ void Plugin::setHistorySearchEnabled(bool b)
     history_search_ = b;
 }
 
-bool Plugin::showFallbacksOnEmptyMatches() const
-{
-    return show_fallbacks_on_empty_query;
-}
+bool Plugin::showFallbacksOnEmptyMatches() const { return show_fallbacks_on_empty_query; }
 
 void Plugin::setShowFallbacksOnEmptyMatches(bool b)
 {
@@ -790,10 +773,7 @@ void Plugin::setAlwaysOnTop(bool alwaysOnTop)
     window.setWindowFlags(window.windowFlags().setFlag(Qt::WindowStaysOnTopHint, alwaysOnTop));
 }
 
-bool Plugin::displayIcons() const
-{
-    return window.results_list->displayIcons();
-}
+bool Plugin::displayIcons() const { return window.results_list->displayIcons(); }
 
 void Plugin::setDisplayIcons(bool value)
 {
@@ -813,10 +793,7 @@ void Plugin::setDisplayScrollbar(bool value)
             value ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff);
 }
 
-bool Plugin::displayClientShadow() const
-{
-    return window.graphicsEffect() != nullptr;
-}
+bool Plugin::displayClientShadow() const { return window.graphicsEffect() != nullptr; }
 
 void Plugin::setDisplayClientShadow(bool value)
 {
