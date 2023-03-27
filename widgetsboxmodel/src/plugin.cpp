@@ -467,6 +467,7 @@ bool Plugin::eventFilter(QObject*, QEvent *event)
 
             // move window
             auto geo = screen->geometry();
+            DEBG << screen->name() << screen->manufacturer() << screen->model() << screen->devicePixelRatio() << geo;
             window.move(geo.center().x() - window.frameSize().width() / 2, geo.top() + geo.height() / 5);
         }
     }
