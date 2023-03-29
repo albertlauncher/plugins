@@ -1,7 +1,7 @@
-project(system VERSION 1.3)
+project(system VERSION 1.4)
 albert_plugin(
     NAME System
-    DESCRIPTION "Control your machines state"
+    DESCRIPTION "Control your machine state"
     LICENSE BSD-2-Clause
     URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
     MAINTAINERS @manuelschneid3r
