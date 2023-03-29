@@ -65,14 +65,14 @@ constexpr Qt::Key mods_keys[] = {
 
 struct CondEventTransition : public QEventTransition {
     CondEventTransition(QObject *object, QEvent::Type type, function<bool()> test):
-            QEventTransition(object, type), test_(std::move(test)){}
+            QEventTransition(object, type), test_(::move(test)){}
     bool eventTest(QEvent *e) override { return QEventTransition::eventTest(e) && test_(); }
     function<bool()> test_;
 };
 
 struct CondKeyEventTransition : public QKeyEventTransition {
     CondKeyEventTransition(QObject *object, QEvent::Type type, int key, function<bool()> test):
-            QKeyEventTransition(object, type, key), test_(std::move(test)){}
+            QKeyEventTransition(object, type, key), test_(::move(test)){}
     bool eventTest(QEvent *e) override { return QKeyEventTransition::eventTest(e) && test_(); }
     function<bool()> test_;
 };
@@ -81,7 +81,7 @@ struct CondSignalTransition : public QSignalTransition {
     template <typename Func>
     CondSignalTransition(const typename QtPrivate::FunctionPointer<Func>::Object *sender,
                          Func sig, function<bool()> test):
-            QSignalTransition(sender, sig), test_(std::move(test)){}
+            QSignalTransition(sender, sig), test_(::move(test)){}
     bool eventTest(QEvent *e) override { return QSignalTransition::eventTest(e) && test_(); }
     function<bool()> test_;
 };
@@ -465,10 +465,17 @@ bool Plugin::eventFilter(QObject*, QEvent *event)
             else
                 screen = QGuiApplication::primaryScreen();
 
-            // move window
+            // move window  TODO remove debugging stuff heree
             auto geo = screen->geometry();
+
+            auto win_width = window.frameSize().width();
+            auto newX = geo.center().x() - win_width / 2;
+            auto newY = geo.top() + geo.height() / 5;
+
             DEBG << screen->name() << screen->manufacturer() << screen->model() << screen->devicePixelRatio() << geo;
-            window.move(geo.center().x() - window.frameSize().width() / 2, geo.top() + geo.height() / 5);
+            DEBG << "win_width" << win_width  << "newX" << newX << "newY" << newY;
+
+            window.move(newX, newY);
         }
     }
 
@@ -678,7 +685,7 @@ QString Plugin::input() const { return window.input_line->text(); }
 
 void Plugin::setInput(const QString &input) { window.input_line->setText(input); }
 
-const std::map<QString, QString> &Plugin::themes() const { return themes_; }
+const map<QString, QString> &Plugin::themes() const { return themes_; }
 
 const QString &Plugin::theme() const { return theme_; }
 
@@ -693,7 +700,7 @@ bool Plugin::setTheme(const QString &theme)
             theme_ = theme;
             return true;
         }
-    } catch (const std::out_of_range&) {
+    } catch (const out_of_range&) {
         CRIT << "Set theme does not exist.";
     }
     return false;
