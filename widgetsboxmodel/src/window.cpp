@@ -95,8 +95,14 @@ bool Window::event(QEvent *event)
     if (event->type() == QEvent::Close){  // Never close
         hide();
         return true;
+    }
 
-    } else if (event->type() == QEvent::Resize)  // Let settingsbutton be in top right corner of frame
+    else if (event->type() == QEvent::Move) {
+        auto *moveEvent = static_cast<QMoveEvent*>(event);
+        DEBG << "moveEvent" << moveEvent->oldPos() << ">" << moveEvent->pos();
+    }
+
+    else if (event->type() == QEvent::Resize)  // Let settingsbutton be in top right corner of frame
         settings_button->move(frame->geometry().topRight() - QPoint(settings_button->width()-1,0));
 
     else if (event->type() == QEvent::MouseMove && !clickOffset_.isNull())
