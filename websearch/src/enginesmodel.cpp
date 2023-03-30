@@ -90,8 +90,10 @@ QVariant EnginesModel::data(const QModelIndex &index, int role) const
         switch (static_cast<Section>(index.column())) {
         case Section::Name:
             return extension_->engines()[static_cast<ulong>(index.row())].name;
-        case Section::Trigger:
-            return extension_->engines()[static_cast<ulong>(index.row())].trigger;
+        case Section::Trigger:{
+            auto trigger = extension_->engines()[static_cast<ulong>(index.row())].trigger;
+            return trigger.replace(" ", "•");
+        }
         case Section::URL:
             return extension_->engines()[static_cast<ulong>(index.row())].url;
         }
