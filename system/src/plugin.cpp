@@ -48,7 +48,7 @@ static const constexpr char *config_keys_command[] = {
 
 static const constexpr char *default_title[] = {
     "Lock",
-    "Log out",
+    "Logout",
     "Suspend",
     "Hibernate",
     "Reboot",
@@ -184,44 +184,56 @@ QWidget* Plugin::buildConfigWidget()
              REBOOT,
              POWEROFF}){
 
-        auto *checkbox = new QCheckBox();
-        auto *label = new QLabel(descriptions[action]);
-        auto *line_edit_title = new QLineEdit(s->value(config_keys_title[action], default_title[action]).toString());
-        auto *line_edit_command = new QLineEdit(s->value(config_keys_command[action], defaultCommand(action)).toString());
+        auto *checkbox = new QCheckBox(w);
+        auto *label = new QLabel(descriptions[action], w);
+        auto *line_edit_title = new QLineEdit(w);
+        auto *line_edit_command = new QLineEdit(w);
 
         bool enabled = s->value(config_keys_enabled[action], true).toBool();
+
         checkbox->setCheckState(enabled ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
-        label->setEnabled(enabled);
-        line_edit_title->setEnabled(enabled);
-        line_edit_command->setEnabled(enabled);
-
-        line_edit_title->setFixedWidth(100);
-        line_edit_title->setPlaceholderText("Title");
-        connect(line_edit_title, &QLineEdit::editingFinished, this, [this, line_edit_title, action]() {
-            settings()->setValue(config_keys_title[action], line_edit_title->text());
-            updateIndexItems();
-        });
-
-        line_edit_command->setPlaceholderText("Command");
-        connect(line_edit_command, &QLineEdit::editingFinished, this, [this, line_edit_command, action]() {
-            settings()->setValue(config_keys_command[action], line_edit_command->text());
-            updateIndexItems();
-        });
-
         connect(checkbox, &QCheckBox::clicked, this, [=, this](bool checked) {
             settings()->setValue(config_keys_enabled[action], checked);
+
+            // Restore defaults if unchecked
             if (!checked){
-                line_edit_title->setText(default_title[action]);
-                line_edit_command->setText(defaultCommand(action));
-                settings()->setValue(config_keys_title[action], default_title[action]);
-                settings()->setValue(config_keys_command[action], defaultCommand(action));
+                settings()->remove(config_keys_title[action]);
+                settings()->remove(config_keys_command[action]);
+                line_edit_title->clear();
+                line_edit_command->clear();
             }
+
             label->setEnabled(checked);
             line_edit_title->setEnabled(checked);
             line_edit_command->setEnabled(checked);
+
             updateIndexItems();
         });
 
+        label->setEnabled(enabled);
+
+        line_edit_title->setEnabled(enabled);
+        line_edit_title->setFixedWidth(100);
+        line_edit_title->setPlaceholderText(default_title[action]);
+        line_edit_title->setText(s->value(config_keys_title[action]).toString());
+        connect(line_edit_title, &QLineEdit::editingFinished, this, [this, line_edit_title, action]() {
+            if (line_edit_title->text().isEmpty())
+                settings()->remove(config_keys_title[action]);
+            else
+                settings()->setValue(config_keys_title[action], line_edit_title->text());
+            updateIndexItems();
+        });
+
+        line_edit_command->setEnabled(enabled);
+        line_edit_command->setPlaceholderText(defaultCommand(action));
+        line_edit_command->setText(s->value(config_keys_command[action]).toString());
+        connect(line_edit_command, &QLineEdit::editingFinished, this, [this, line_edit_command, action]() {
+            if (line_edit_command->text().isEmpty())
+                settings()->remove(config_keys_command[action]);
+            else
+                settings()->setValue(config_keys_command[action], line_edit_command->text());
+            updateIndexItems();
+        });
 
         l->addWidget(checkbox, row*2, 0);
         l->addWidget(label, row*2, 1, 1, 2);
