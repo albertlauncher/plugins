@@ -86,7 +86,7 @@ static QString defaultCommand(SupportedCommands command)
             case HIBERNATE: break ;
             case REBOOT:    return "gnome-session-quit --reboot";
             case POWEROFF:  return "gnome-session-quit --power-off";
-            }
+        }
 
         else if (de == "kde-plasma" || de == "KDE")
             switch (command) {
@@ -96,7 +96,7 @@ static QString defaultCommand(SupportedCommands command)
             case HIBERNATE: break ;
             case REBOOT:    return "qdbus org.kde.ksmserver /KSMServer logout 0 1 0";
             case POWEROFF:  return "qdbus org.kde.ksmserver /KSMServer logout 0 2 0";
-            }
+        }
 
         else if (de == "X-Cinnamon" || de == "Cinnamon")
             switch (command) {
@@ -106,7 +106,7 @@ static QString defaultCommand(SupportedCommands command)
             case HIBERNATE: break ;
             case REBOOT:    return "cinnamon-session-quit --reboot";
             case POWEROFF:  return "cinnamon-session-quit --power-off";
-            }
+        }
 
         else if (de == "MATE")
             switch (command) {
@@ -116,7 +116,7 @@ static QString defaultCommand(SupportedCommands command)
             case HIBERNATE: return "sh -c \"mate-screensaver-command --lock && systemctl hibernate -i\"";
             case REBOOT:    return "mate-session-save --shutdown-dialog";
             case POWEROFF:  return "mate-session-save --shutdown-dialog";
-            }
+        }
 
         else if (de == "XFCE")
             switch (command) {
@@ -126,7 +126,17 @@ static QString defaultCommand(SupportedCommands command)
             case HIBERNATE: return "xfce4-session-logout --hibernate";
             case REBOOT:    return "xfce4-session-logout --reboot";
             case POWEROFF:  return "xfce4-session-logout --halt";
-            }
+        }
+
+        else if (de == "LXQt")
+            switch (command) {
+            case LOCK:      return "lxqt-leave --lockscreen";
+            case LOGOUT:    return "lxqt-leave --logout";
+            case SUSPEND:   return "lxqt-leave --suspend";
+            case HIBERNATE: return "lxqt-leave --hibernate";
+            case REBOOT:    return "lxqt-leave --reboot";
+            case POWEROFF:  return "lxqt-leave --shutdown";
+        }
     }
     switch (command) {
     case LOCK:      return "xdg-screensaver lock";
@@ -156,7 +166,14 @@ QWidget* Plugin::buildConfigWidget()
     auto *l = new QGridLayout(w);
     w->setLayout(l);
 
+
+
+    auto *infoLabel = new QLabel("Disabling restores default values. If your are "
+                                 "missing sensible default values for your system "
+                                 "leave a note on the GitHub issue tracker.");
+    infoLabel->setWordWrap(true);
     int row = 0;
+    l->addWidget(infoLabel, row++, 0, 1, 3);
     for (SupportedCommands action : {
              LOCK,
              LOGOUT,
@@ -215,7 +232,7 @@ QWidget* Plugin::buildConfigWidget()
     }
     l->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding), row*2, 0, 1, 3);
     l->setColumnStretch(1,2);  // strech last column
-
+    l->setContentsMargins(0,0,0,0);
     return w;
 }
 
