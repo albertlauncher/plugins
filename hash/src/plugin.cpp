@@ -31,7 +31,7 @@ static shared_ptr<Item> buildItem(int algo_index, const QString& string_to_hash)
     );
 };
 
-vector<RankItem> Plugin::handleQuery(const Query &query) const
+vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
 {
     vector<RankItem> results;
     for (int i = 0; i < algo_count; ++i){
@@ -44,7 +44,7 @@ vector<RankItem> Plugin::handleQuery(const Query &query) const
     return results;
 }
 
-void Plugin::handleQuery(QueryHandler::Query &query) const
+void Plugin::handleTriggerQuery(TriggerQuery &query) const
 {
     for (int i = 0; i < algo_count; ++i)
         query.add(buildItem(i, query.string()));
