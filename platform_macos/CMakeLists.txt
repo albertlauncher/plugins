@@ -1,5 +1,5 @@
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    project(platform VERSION 1.0)
+    project(platform VERSION 1.1)
     albert_plugin(
         NAME "PlatformServices"
         DESCRIPTION "Access platform services"

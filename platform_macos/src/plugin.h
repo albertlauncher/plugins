@@ -4,7 +4,7 @@
 #include "albert.h"
 
 
-class DictHandler final : public albert::QueryHandler
+class DictHandler final : public albert::TriggerQueryHandler
 {
 public:
     QString id() const override;
@@ -12,7 +12,7 @@ public:
     QString description() const override;
     QString synopsis() const override;
     QString defaultTrigger() const override;
-    void handleQuery(Query &query) const override;
+    void handleTriggerQuery(TriggerQuery &query) const override;
 };
 
 

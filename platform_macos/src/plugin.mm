@@ -34,7 +34,7 @@ QString DictHandler::synopsis() const { return QStringLiteral("<word>"); }
 
 QString DictHandler::defaultTrigger() const { return QStringLiteral("def "); }
 
-void DictHandler::handleQuery(QueryHandler::Query &query) const
+void DictHandler::handleTriggerQuery(TriggerQuery &query) const
 {
     @autoreleasepool {
         DCSDictionaryRef dic = NULL;
