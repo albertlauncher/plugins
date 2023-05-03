@@ -56,7 +56,7 @@ QString Plugin::defaultTrigger() const { return "="; }
 
 QString Plugin::synopsis() const { return "<math expression>"; }
 
-vector<RankItem> Plugin::handleQuery(const Query &query) const
+vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
 {
     if (query.string().isEmpty())
         return {};
