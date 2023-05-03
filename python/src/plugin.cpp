@@ -46,22 +46,58 @@ struct PyPluginMetaData : public albert::PluginMetaData
     QString min_python;
 };
 
-class PyQueryhandler : albert::QueryHandler
+
+/*
+ * CLASS TRAMPOLINES (*)
+ * - Python has no function overloading and Pybind does not support reference parameters
+ * - Wrap native api and expose a distictively named method with a pointer parameter.
+ */
+
+class PyTriggerQueryHandler : TriggerQueryHandler
 {
 public:
 //    PyQueryhandler(){ CRIT << "PyQueryhandler created";}
 //    ~PyQueryhandler(){ CRIT << "PyQueryhandler destroyed";}
-    using QueryHandler::QueryHandler;  // Inherit the constructors
-    QString id() const override { PYBIND11_OVERRIDE_PURE(QString, QueryHandler, id); }
-    QString name() const override { PYBIND11_OVERRIDE_PURE(QString, QueryHandler, name); }
-    QString description() const override { PYBIND11_OVERRIDE_PURE(QString, QueryHandler, description); }
+    using TriggerQueryHandler::TriggerQueryHandler;  // Inherit the constructors, pybind requirement
+    QString id() const override { PYBIND11_OVERRIDE_PURE(QString, TriggerQueryHandler, id, ); }
+    QString name() const override { PYBIND11_OVERRIDE_PURE(QString, TriggerQueryHandler, name, ); }
+    QString description() const override { PYBIND11_OVERRIDE_PURE(QString, TriggerQueryHandler, description, ); }
+    QString synopsis() const override { PYBIND11_OVERRIDE(QString, TriggerQueryHandler, synopsis, ); }
+    QString defaultTrigger() const override { PYBIND11_OVERRIDE(QString, TriggerQueryHandler, defaultTrigger, ); }
+    bool allowTriggerRemap() const override { PYBIND11_OVERRIDE(bool, TriggerQueryHandler, allowTriggerRemap, ); }
 
-    virtual void handleQuery_(Query *query) const { PYBIND11_OVERRIDE_NAME(void, PyQueryhandler, "handleQuery", handleQuery_, query); }
-    void handleQuery(Query &query) const override { handleQuery_(&query); }
+    // See (*) above
+    virtual void handleTriggerQuery_(TriggerQuery *query) const
+    { PYBIND11_OVERRIDE_PURE_NAME(void, PyTriggerQueryHandler, "handleTriggerQuery", handleTriggerQuery_, query); }
+    void handleTriggerQuery(TriggerQuery &query) const override { handleTriggerQuery_(&query); }
 
-    QString synopsis() const override { PYBIND11_OVERRIDE(QString, QueryHandler, synopsis); }
-    QString defaultTrigger() const override { PYBIND11_OVERRIDE(QString, QueryHandler, defaultTrigger); }
-    bool allowTriggerRemap() const override { PYBIND11_OVERRIDE(bool, QueryHandler, allowTriggerRemap); }
+};
+
+class PyGlobalQueryHandler : GlobalQueryHandler {
+    using GlobalQueryHandler::GlobalQueryHandler;  // Inherit the constructors, pybind requirement
+    QString id() const override { PYBIND11_OVERRIDE_PURE(QString, GlobalQueryHandler, id, ); }
+    QString name() const override { PYBIND11_OVERRIDE_PURE(QString, GlobalQueryHandler, name, ); }
+    QString description() const override { PYBIND11_OVERRIDE_PURE(QString, GlobalQueryHandler, description, ); }
+
+    // See (*) above
+    virtual vector<RankItem> handleGlobalQuery_(const GlobalQuery *query) const
+    { PYBIND11_OVERRIDE_PURE_NAME(vector<RankItem>, PyGlobalQueryHandler, "handleGlobalQuery", handleGlobalQuery_, query); }
+    vector<RankItem> handleGlobalQuery(const GlobalQuery &query) const override { return handleGlobalQuery_(&query); }
+};
+
+class PyQueryHandler : QueryHandler {
+    using QueryHandler::QueryHandler;  // Inherit the constructors, pybind requirement
+    QString id() const override { PYBIND11_OVERRIDE_PURE(QString, QueryHandler, id, ); }
+    QString name() const override { PYBIND11_OVERRIDE_PURE(QString, QueryHandler, name, ); }
+    QString description() const override { PYBIND11_OVERRIDE_PURE(QString, QueryHandler, description, ); }
+    QString synopsis() const override { PYBIND11_OVERRIDE(QString, QueryHandler, synopsis, ); }
+    QString defaultTrigger() const override { PYBIND11_OVERRIDE(QString, QueryHandler, defaultTrigger, ); }
+    bool allowTriggerRemap() const override { PYBIND11_OVERRIDE(bool, QueryHandler, allowTriggerRemap, ); }
+
+    // See (*) above
+    virtual vector<RankItem> handleGlobalQuery_(const GlobalQuery *query) const
+    { PYBIND11_OVERRIDE_PURE_NAME(vector<RankItem>, PyQueryHandler, "handleGlobalQuery", handleGlobalQuery_, query); }
+    vector<RankItem> handleGlobalQuery(const GlobalQuery &query) const override { return handleGlobalQuery_(&query); }
 };
 
 //class PyIndexQueryHandler : albert::IndexQueryHandler {
@@ -74,12 +110,11 @@ public:
 //    QString synopsis() const override { PYBIND11_OVERRIDE(QString, IndexQueryHandler, synopsis); }
 //    QString defaultTrigger() const override { PYBIND11_OVERRIDE(QString, IndexQueryHandler, defaultTrigger); }
 //    bool allowTriggerRemap() const override { PYBIND11_OVERRIDE(bool, IndexQueryHandler, allowTriggerRemap); }
-
 //};
 
-static const uint majorInterfaceVersion = 0;
-static const uint minorInterfaceVersion = 5;
-PYBIND11_EMBEDDED_MODULE(albert, m)  // interface id 0.5
+static const uint majorInterfaceVersion = 1;
+static const uint minorInterfaceVersion = 0;
+PYBIND11_EMBEDDED_MODULE(albert, m)
 {
     using namespace albert;
 
@@ -142,13 +177,6 @@ PYBIND11_EMBEDDED_MODULE(albert, m)  // interface id 0.5
         .def_property("icon", &StandardItem::iconUrls, &StandardItem::setIconUrls)
         .def_property("actions", &StandardItem::actions, &StandardItem::setActions);
 
-    using Query = QueryHandler::Query;
-    py::class_<Query>(m, "Query")
-        .def_property_readonly("trigger", &Query::trigger, py::return_value_policy::reference)
-        .def_property_readonly("string", &Query::string, py::return_value_policy::reference)
-        .def_property_readonly("isValid", &Query::isValid, py::return_value_policy::reference)
-        .def("add", py::overload_cast<const shared_ptr<Item> &>(&Query::add), py::return_value_policy::reference)
-        .def("add", py::overload_cast<const vector<shared_ptr<Item>> &>(&Query::add), py::return_value_policy::reference);
 
     py::class_<Extension, shared_ptr<Extension>>(m, "Extension")
         .def("id", &Extension::id)
@@ -156,13 +184,49 @@ PYBIND11_EMBEDDED_MODULE(albert, m)  // interface id 0.5
         .def("description", &Extension::description)
         ;
 
-    py::class_<QueryHandler, Extension, PyQueryhandler, shared_ptr<QueryHandler>>(m, "QueryHandler")
+
+    using TriggerQuery = TriggerQueryHandler::TriggerQuery;
+    py::class_<TriggerQuery>(m, "TriggerQuery")
+        .def_property_readonly("trigger", &TriggerQuery::trigger, py::return_value_policy::reference)
+        .def_property_readonly("string", &TriggerQuery::string, py::return_value_policy::reference)
+        .def_property_readonly("isValid", &TriggerQuery::isValid, py::return_value_policy::reference)
+        .def("add", py::overload_cast<const shared_ptr<Item> &>(&TriggerQuery::add), py::return_value_policy::reference)
+        .def("add", py::overload_cast<const vector<shared_ptr<Item>> &>(&TriggerQuery::add), py::return_value_policy::reference);
+
+    py::class_<TriggerQueryHandler, Extension, PyTriggerQueryHandler, shared_ptr<TriggerQueryHandler>>(m, "TriggerQueryHandler")
         .def(py::init<>())
-        .def("handleQuery", &QueryHandler::handleQuery, py::return_value_policy::reference)
-        .def("synopsis", &QueryHandler::synopsis)
-        .def("defaultTrigger", &QueryHandler::defaultTrigger)
-        .def("allowTriggerRemap", &QueryHandler::allowTriggerRemap)
+        .def("synopsis", &TriggerQueryHandler::synopsis)
+        .def("defaultTrigger", &TriggerQueryHandler::defaultTrigger)
+        .def("allowTriggerRemap", &TriggerQueryHandler::allowTriggerRemap)
+        .def("handleTriggerQuery", &TriggerQueryHandler::handleTriggerQuery, py::return_value_policy::reference)
         ;
+
+
+    using GlobalQuery = GlobalQueryHandler::GlobalQuery;
+    py::class_<GlobalQuery>(m, "GlobalQuery")
+        .def_property_readonly("string", &GlobalQuery::string, py::return_value_policy::reference)
+        .def_property_readonly("isValid", &GlobalQuery::isValid, py::return_value_policy::reference)
+        ;
+
+    py::class_<albert::RankItem>(m, "RankItem")
+        .def(py::init<shared_ptr<Item>,albert::RankItem::Score>(),
+             py::arg("item"),
+             py::arg("score"))
+        .def_readwrite("item", &albert::RankItem::item)
+        .def_readwrite("score", &albert::RankItem::score)
+        ;
+
+    py::class_<GlobalQueryHandler, Extension, PyGlobalQueryHandler, shared_ptr<GlobalQueryHandler>>(m, "GlobalQueryHandler")
+        .def(py::init<>())
+        .def("handleGlobalQuery", &GlobalQueryHandler::handleGlobalQuery, py::return_value_policy::reference)
+        ;
+
+
+    py::class_<QueryHandler, GlobalQueryHandler, PyQueryHandler, shared_ptr<QueryHandler>>(m, "QueryHandler", py::multiple_inheritance())
+        .def(py::init<>())
+        .def("handleGlobalQuery", &GlobalQueryHandler::handleGlobalQuery, py::return_value_policy::reference)
+        ;
+
 
 //    py::class_<albert::IndexItem>(m, "IndexItem")
 //        .def(py::init<shared_ptr<Item>,QString>(),
