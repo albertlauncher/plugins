@@ -1,4 +1,4 @@
-project(files VERSION 1.3)
+project(files VERSION 1.4)
 albert_plugin(
     NAME Files
     DESCRIPTION "Open and browse files"
