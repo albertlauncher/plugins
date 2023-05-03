@@ -17,7 +17,7 @@ Plugin::Plugin()
     std::sort(valid_tlds.begin(), valid_tlds.end());
 }
 
-vector<RankItem> Plugin::handleQuery(const Query &query) const
+vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
 {
     vector<RankItem> results;
     auto trimmed = query.string().trimmed();
