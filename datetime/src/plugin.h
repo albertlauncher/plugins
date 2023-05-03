@@ -3,7 +3,7 @@
 #pragma once
 #include "albert.h"
 
-class TimeZoneHandler final : public albert::QueryHandler
+class TimeZoneHandler final : public albert::TriggerQueryHandler
 {
 public:
     QString id() const override;
@@ -11,7 +11,7 @@ public:
     QString description() const override;
     QString synopsis() const override;
     QString defaultTrigger() const override;
-    void handleQuery(Query &query) const override;
+    void handleTriggerQuery(TriggerQuery &query) const override;
 };
 
 
@@ -23,7 +23,7 @@ public:
     Plugin();
     ~Plugin();
 
-    std::vector<albert::RankItem> handleQuery(const Query&) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery&) const override;
 private:
     TimeZoneHandler tzh;
 };

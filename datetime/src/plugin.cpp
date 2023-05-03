@@ -13,7 +13,7 @@ Plugin::Plugin() { registry().add(&tzh); }
 
 Plugin::~Plugin() { registry().remove(&tzh); }
 
-vector<RankItem> Plugin::handleQuery(const Query &query) const
+vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
 {
     vector<RankItem> r;
     const auto &s = query.string();
@@ -101,7 +101,7 @@ QString TimeZoneHandler::synopsis() const { return QStringLiteral("<tz id/name>"
 
 QString TimeZoneHandler::defaultTrigger() const { return QStringLiteral("tz "); }
 
-void TimeZoneHandler::handleQuery(QueryHandler::Query &query) const
+void TimeZoneHandler::handleTriggerQuery(TriggerQuery &query) const
 {
     QLocale loc;
     auto utc = QDateTime::currentDateTimeUtc();
