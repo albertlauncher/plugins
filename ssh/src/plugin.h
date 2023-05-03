@@ -18,7 +18,7 @@ class Plugin:
 public:
     Plugin();
     QString synopsis() const override;
-    void handleQuery(QueryHandler::Query&) const override;
+    void handleTriggerQuery(TriggerQuery&) const override;
     void updateIndexItems() override;
     QWidget* buildConfigWidget() override;
 
@@ -31,5 +31,5 @@ private:
     std::vector<std::shared_ptr<SshItem>> hosts_;
     bool useKnownHosts_;
 
-    using IndexQueryHandler::handleQuery;  // hide -Woverloaded-virtual
+    //using IndexQueryHandler::handleQuery;  // hide -Woverloaded-virtual
 };

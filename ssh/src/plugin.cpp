@@ -175,11 +175,11 @@ QString Plugin::synopsis() const
     return "[usr@]<hst>[:prt] [cmdln]";
 }
 
-void Plugin::handleQuery(QueryHandler::Query &query) const
+void Plugin::handleTriggerQuery(TriggerQuery &query) const
 {
     auto trimmed = query.string().trimmed();
     if (trimmed.isEmpty())
-        GlobalQueryHandler::handleQuery(query);
+        handleGlobalQuery(dynamic_cast<GlobalQuery&>(query));
     else {
         // Check sanity of input
         QRegularExpressionMatch match = re_input.match(trimmed);
@@ -191,7 +191,7 @@ void Plugin::handleQuery(QueryHandler::Query &query) const
             QString q_port = match.captured(3);
             QString q_cmdln = match.captured(4);
 
-            struct GQ : public GlobalQueryHandler::Query {
+            struct GQ : public GlobalQuery {
                 const QString &string_;
                 const bool &valid_;
                 GQ(const QString &s, const bool &v) : string_(s), valid_(v) {}
@@ -199,7 +199,7 @@ void Plugin::handleQuery(QueryHandler::Query &query) const
                 bool isValid() const { return valid_; }
             } gq(q_host, query.isValid());
 
-            vector<RankItem> rank_items{IndexQueryHandler::handleQuery(gq)};
+            vector<RankItem> rank_items{IndexQueryHandler::handleGlobalQuery(gq)};
             sort(rank_items.begin(), rank_items.end(), [](const auto &a, const auto &b){ return a.score > b.score; });
             vector<shared_ptr<Item>> results;
 

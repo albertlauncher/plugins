@@ -1,4 +1,4 @@
-project(ssh VERSION 1.5)
+project(ssh VERSION 1.6)
 albert_plugin(
     NAME SecureShell
     DESCRIPTION "Run secure shell sessions"
