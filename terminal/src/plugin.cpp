@@ -42,7 +42,7 @@ static QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":termina
     indexer.run();
 }
 
-void ::Plugin::handleQuery(Query &query) const
+void ::Plugin::handleTriggerQuery(TriggerQuery &query) const
 {
     if (query.string().trimmed().isEmpty())
         return;

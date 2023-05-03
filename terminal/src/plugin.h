@@ -6,7 +6,7 @@
 
 class Plugin:
         public albert::ExtensionPlugin,
-        public albert::QueryHandler
+        public albert::TriggerQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 
@@ -14,7 +14,7 @@ public:
     Plugin();
     QString synopsis() const override { return "<command> [params]"; }
     QString defaultTrigger() const override { return ">"; }
-    void handleQuery(Query &query) const override;
+    void handleTriggerQuery(TriggerQuery &query) const override;
 
 private:
     QFileSystemWatcher watcher;
