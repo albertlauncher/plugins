@@ -1,5 +1,5 @@
 if(APPLE)
-project(contacts_macos VERSION 1.0)
+project(contacts_macos VERSION 1.1)
 find_library(CONTACTS_FRAMEWORK Contacts)
 albert_plugin(
     NAME Contacts
