@@ -12,7 +12,7 @@ Plugin::Plugin()
     // E.g. `throw "Description of error.";`
 }
 
-void Plugin::handleQuery(Query &) const
+void Plugin::handleTriggerQuery(TriggerQuery &) const
 {
     // Check the include headers to see how things work.
     // In virtually any case you want to add albert::Item's or one of its subclasses

@@ -5,11 +5,11 @@
 
 class Plugin :
         public albert::ExtensionPlugin,
-        public albert::QueryHandler
+        public albert::TriggerQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
     Plugin();
-    void handleQuery(Query&) const override;
+    void handleTriggerQuery(TriggerQuery&) const override;
     QWidget* buildConfigWidget() override;
 };
