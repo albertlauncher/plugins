@@ -13,7 +13,7 @@ class InputLine;
 
 
 class Plugin : public albert::ExtensionPlugin,
-               public albert::QueryHandler,
+               public albert::TriggerQueryHandler,
                public albert::Frontend
 {
     Q_OBJECT ALBERT_PLUGIN
@@ -75,7 +75,7 @@ public:
 
     // albert::QueryHandler
     QString defaultTrigger() const override;
-    void handleQuery(Query &query) const override;
+    void handleTriggerQuery(TriggerQuery &query) const override;
 
 private:
     void init_statemachine();

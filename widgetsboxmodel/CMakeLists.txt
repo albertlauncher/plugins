@@ -1,4 +1,4 @@
-project(widgetsboxmodel VERSION 1.3)
+project(widgetsboxmodel VERSION 1.4)
 albert_plugin(
     NAME "Widgets BoxModel"
     DESCRIPTION "The native frontend"
