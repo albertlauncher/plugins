@@ -19,7 +19,7 @@ QString Plugin::description() const { return tr("Check the API functionality.");
 
 bool Plugin::allowTriggerRemap() const { return false; }
 
-void Plugin::handleQuery(Query &query) const
+void Plugin::handleTriggerQuery(TriggerQuery &query) const
 {
     for(int i = 0; query.isValid() && i < 7; ++i) {
         for (int nap = 0; nap < 300; ++nap){

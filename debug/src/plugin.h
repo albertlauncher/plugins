@@ -4,7 +4,7 @@
 
 class Plugin final :
         public albert::ExtensionPlugin,
-        public albert::QueryHandler
+        public albert::TriggerQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
@@ -15,5 +15,5 @@ public:
     QString description() const override;
     bool allowTriggerRemap() const override;
     QString synopsis() const override;
-    void handleQuery(Query&) const override;
+    void handleTriggerQuery(TriggerQuery&) const override;
 };
