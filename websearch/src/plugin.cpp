@@ -104,7 +104,7 @@ static shared_ptr<StandardItem> buildItem(const SearchEngine &se, const QString 
     );
 }
 
-vector<RankItem> Plugin::handleQuery(const Query &query) const
+vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
 {
     vector<RankItem> results;
     if (!query.string().isEmpty())
