@@ -106,7 +106,7 @@ Represents the internal `albert::Action` class.
 
 #### `albert.Item(id:str='', text:str='', subtext:str='', completion:str='', icon:list(str)=[], actions:list(Action)=[])`
 
-Corresponds to the internal class [`albert::StandardItem`](https://github.com/albertlauncher/albert/blob/master/include/albert/util/standarditem.h) See the C++ documentation for more info.
+See the C++ documentation on [`albert::Item`](https://github.com/albertlauncher/albert/blob/master/include/albert/extensions/item.h) interface for more info. Corresponds to the internal class [`albert::StandardItem`](https://github.com/albertlauncher/albert/blob/master/include/albert/util/standarditem.h) 
 
 #### `albert.Extension()`
 
