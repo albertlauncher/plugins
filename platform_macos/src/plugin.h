@@ -12,7 +12,7 @@ public:
     QString description() const override;
     QString synopsis() const override;
     QString defaultTrigger() const override;
-    void handleTriggerQuery(TriggerQuery &query) const override;
+    void handleTriggerQuery(TriggerQuery *query) const override;
 };
 
 

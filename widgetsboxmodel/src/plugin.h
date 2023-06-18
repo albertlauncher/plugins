@@ -75,7 +75,7 @@ public:
 
     // albert::QueryHandler
     QString defaultTrigger() const override;
-    void handleTriggerQuery(TriggerQuery &query) const override;
+    void handleTriggerQuery(TriggerQuery *query) const override;
 
 private:
     void init_statemachine();

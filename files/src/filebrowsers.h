@@ -15,7 +15,7 @@ class RootBrowser : public AbstractBrowser
     QString id() const override;
     QString name() const override;
     QString defaultTrigger() const override;
-    void handleTriggerQuery(TriggerQuery &query) const override;
+    void handleTriggerQuery(TriggerQuery *query) const override;
 };
 
 class HomeBrowser : public AbstractBrowser
@@ -23,5 +23,5 @@ class HomeBrowser : public AbstractBrowser
     QString id() const override;
     QString name() const override;
     QString defaultTrigger() const override;
-    void handleTriggerQuery(TriggerQuery &query) const override;
+    void handleTriggerQuery(TriggerQuery *query) const override;
 };

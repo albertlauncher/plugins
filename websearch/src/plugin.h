@@ -18,7 +18,7 @@ public:
 
     Plugin();
 
-    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery&) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery*) const override;
     std::vector<std::shared_ptr<albert::Item>> fallbacks(const QString &) const override;
     QWidget *buildConfigWidget() override;
 

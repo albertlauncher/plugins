@@ -85,15 +85,15 @@ QWidget *Plugin::buildConfigWidget()
     return widget;
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
+vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
 {
     vector<RankItem> results;
 
-    auto trimmed = query.string().trimmed();
+    auto trimmed = query->string().trimmed();
     if (trimmed.isEmpty())
         return results;
 
-    auto expression = qalc->unlocalizeExpression(query.string().toStdString(), eo.parse_options);
+    auto expression = qalc->unlocalizeExpression(query->string().toStdString(), eo.parse_options);
     auto mstruct = qalc->calculate(expression, eo);
     if (qalc->message()){
         qalc->clearMessages();
@@ -126,9 +126,9 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
 
 
 
-void Plugin::handleTriggerQuery(TriggerQuery &query) const
+void Plugin::handleTriggerQuery(TriggerQuery *query) const
 {
-    auto trimmed = query.string().trimmed();
+    auto trimmed = query->string().trimmed();
     if (trimmed.isEmpty())
         return;
 
@@ -137,7 +137,7 @@ void Plugin::handleTriggerQuery(TriggerQuery &query) const
     eo_.parse_options.units_enabled = true;
     eo_.parse_options.unknowns_enabled = true;
 
-    auto expression = qalc->unlocalizeExpression(query.string().toStdString(), eo_.parse_options);
+    auto expression = qalc->unlocalizeExpression(query->string().toStdString(), eo_.parse_options);
     auto mstruct = qalc->calculate(expression, eo_);
     QStringList errors;
     for (auto msg = qalc->message(); msg; msg = qalc->nextMessage())
@@ -146,12 +146,12 @@ void Plugin::handleTriggerQuery(TriggerQuery &query) const
 
     if (errors.empty()){
         auto result = QString::fromStdString(mstruct.print(po));
-        query.add(
+        query->add(
             StandardItem::make(
                 "qalc-res",
                 result,
                 QString("%1esult of %2").arg(mstruct.isApproximate()?"Approximate r":"R", trimmed),
-                QString("%1%2").arg(query.trigger(), result),
+                QString("%1%2").arg(query->trigger(), result),
                 {"xdg:calc", ":qalculate"},
                 {
                     {
@@ -166,7 +166,7 @@ void Plugin::handleTriggerQuery(TriggerQuery &query) const
         );
     }
     else
-        query.add(
+        query->add(
             StandardItem::make(
                 "qalc-err",
                 "Evaluation error.",

@@ -34,7 +34,7 @@ QString DictHandler::synopsis() const { return QStringLiteral("<word>"); }
 
 QString DictHandler::defaultTrigger() const { return QStringLiteral("def "); }
 
-void DictHandler::handleTriggerQuery(TriggerQuery &query) const
+void DictHandler::handleTriggerQuery(TriggerQuery *query) const
 {
     @autoreleasepool {
         DCSDictionaryRef dic = NULL;
@@ -42,7 +42,7 @@ void DictHandler::handleTriggerQuery(TriggerQuery &query) const
         for (NSObject *aDict in dicts) {
             dic = static_cast<DCSDictionaryRef>(aDict);
 
-            NSString *word = query.string().toNSString();
+            NSString *word = query->string().toNSString();
             NSString *long_name = DCSDictionaryGetName((DCSDictionaryRef)aDict);
 //            NSString *short_name = DCSDictionaryGetShortName((DCSDictionaryRef)aDict);
             NSString *result = (NSString*)DCSCopyTextDefinition(
@@ -52,12 +52,12 @@ void DictHandler::handleTriggerQuery(TriggerQuery &query) const
             );
             if (result){
                 auto text = QString::fromNSString(result);
-                query.add(StandardItem::make(
+                query->add(StandardItem::make(
                     id(),
                     QString::fromNSString(long_name),
                     text,
                     {":dict"},
-                    Actions{{"open","Open in Apple dictionary",[s=query.string()](){ openUrl("dict://"+s); }}}
+                    Actions{{"open","Open in Apple dictionary",[s=query->string()](){ openUrl("dict://"+s); }}}
                  ));
             }
         }

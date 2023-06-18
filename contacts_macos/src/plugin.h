@@ -10,5 +10,5 @@ class Plugin :
     Q_OBJECT ALBERT_PLUGIN
 public:
     QString defaultTrigger() const override { return QStringLiteral("cn "); }
-    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery&) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery*) const override;
 };

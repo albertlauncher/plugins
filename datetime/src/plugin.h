@@ -11,7 +11,7 @@ public:
     QString description() const override;
     QString synopsis() const override;
     QString defaultTrigger() const override;
-    void handleTriggerQuery(TriggerQuery &query) const override;
+    void handleTriggerQuery(TriggerQuery *query) const override;
 };
 
 
@@ -23,7 +23,7 @@ public:
     Plugin();
     ~Plugin();
 
-    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery&) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery*) const override;
 private:
     TimeZoneHandler tzh;
 };

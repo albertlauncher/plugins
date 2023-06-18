@@ -14,7 +14,7 @@ public:
     Plugin();
     QString synopsis() const override { return "<command> [params]"; }
     QString defaultTrigger() const override { return ">"; }
-    void handleTriggerQuery(TriggerQuery &query) const override;
+    void handleTriggerQuery(TriggerQuery *query) const override;
 
 private:
     QFileSystemWatcher watcher;

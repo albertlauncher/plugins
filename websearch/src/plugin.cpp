@@ -104,14 +104,14 @@ static shared_ptr<StandardItem> buildItem(const SearchEngine &se, const QString 
     );
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
+vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
 {
     vector<RankItem> results;
-    if (!query.string().isEmpty())
+    if (!query->string().isEmpty())
         for (const SearchEngine &se: searchEngines_)
             for (const auto &keyword : {se.trigger.toLower(), QString("%1 ").arg(se.name.toLower())})
-                if (auto prefix = query.string().toLower().left(keyword.size()); keyword.startsWith(prefix)){
-                    results.emplace_back(buildItem(se, query.string().mid(prefix.size())),
+                if (auto prefix = query->string().toLower().left(keyword.size()); keyword.startsWith(prefix)){
+                    results.emplace_back(buildItem(se, query->string().mid(prefix.size())),
                                          (RankItem::Score) ((double) prefix.length()
                                                            / (double) keyword.size()
                                                            * RankItem::MAX_SCORE));

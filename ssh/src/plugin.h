@@ -18,7 +18,7 @@ class Plugin:
 public:
     Plugin();
     QString synopsis() const override;
-    void handleTriggerQuery(TriggerQuery&) const override;
+    void handleTriggerQuery(TriggerQuery*) const override;
     void updateIndexItems() override;
     QWidget* buildConfigWidget() override;
 

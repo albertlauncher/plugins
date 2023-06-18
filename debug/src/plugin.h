@@ -15,5 +15,5 @@ public:
     QString description() const override;
     bool allowTriggerRemap() const override;
     QString synopsis() const override;
-    void handleTriggerQuery(TriggerQuery&) const override;
+    void handleTriggerQuery(TriggerQuery*) const override;
 };

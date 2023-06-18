@@ -10,7 +10,7 @@ class Plugin:
     Q_OBJECT ALBERT_PLUGIN
 public:
     Plugin();
-    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery&) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery*) const override;
 private:
     QStringList valid_tlds;
 };

@@ -51,9 +51,9 @@ QString RootBrowser::name() const { return "Root browser"; }
 
 QString RootBrowser::defaultTrigger() const { return "/"; }
 
-void RootBrowser::handleTriggerQuery(TriggerQuery &query) const
+void RootBrowser::handleTriggerQuery(TriggerQuery *query) const
 {
-    query.add(buildItems(QString("/%1").arg(query.string())));
+    query->add(buildItems(QString("/%1").arg(query->string())));
 }
 
 
@@ -63,9 +63,9 @@ QString HomeBrowser::name() const { return "Home browser"; }
 
 QString HomeBrowser::defaultTrigger() const { return "~"; }
 
-void HomeBrowser::handleTriggerQuery(TriggerQuery &query) const
+void HomeBrowser::handleTriggerQuery(TriggerQuery *query) const
 {
-    query.add(buildItems(QString("%1%2").arg(QDir::homePath(), query.string())));
+    query->add(buildItems(QString("%1%2").arg(QDir::homePath(), query->string())));
 }
 
 

@@ -9,6 +9,6 @@ class Plugin:
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
-    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery&) const override;
-    void handleTriggerQuery(TriggerQuery&) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery*) const override;
+    void handleTriggerQuery(TriggerQuery*) const override;
 };

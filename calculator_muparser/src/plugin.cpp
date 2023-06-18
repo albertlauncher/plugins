@@ -56,19 +56,19 @@ QString Plugin::defaultTrigger() const { return "="; }
 
 QString Plugin::synopsis() const { return "<math expression>"; }
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
+vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
 {
-    if (query.string().isEmpty())
+    if (query->string().isEmpty())
         return {};
 
     // http://beltoforion.de/article.php?a=muparser&p=errorhandling
     QString result;
     try {
-        if(iparser && query.string().contains("0x")) {
-            iparser->SetExpr(query.string().toStdString());
+        if(iparser && query->string().contains("0x")) {
+            iparser->SetExpr(query->string().toStdString());
             result = locale.toString(iparser->Eval(), 'G', 16);
         } else {
-            parser->SetExpr(query.string().toStdString());
+            parser->SetExpr(query->string().toStdString());
             result = locale.toString(parser->Eval(), 'G', 16);
         }
     } catch (mu::Parser::exception_type &exception) {
@@ -79,14 +79,14 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
     items.emplace_back(StandardItem::make(
         "muparser",
         result,
-        QString("Result of '%1'").arg(query.string()),
+        QString("Result of '%1'").arg(query->string()),
         result,
         {"xdg:calc", ":calc"},
         {
                 {"cp-res", "Copy result to clipboard",
                  [=](){ setClipboardText(result); }},
                 {"cp-equ", "Copy equation to clipboard",
-                 [=, q=query.string()](){ setClipboardText(QString("%1 = %2").arg(q, result)); }}
+                 [=, q=query->string()](){ setClipboardText(QString("%1 = %2").arg(q, result)); }}
         })
         , RankItem::MAX_SCORE);
     return items;

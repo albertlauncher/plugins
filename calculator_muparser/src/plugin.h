@@ -18,7 +18,7 @@ public:
 
     QString defaultTrigger() const override;
     QString synopsis() const override;
-    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery&) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery*) const override;
     QWidget* buildConfigWidget() override;
 
     void setGroupSeparatorEnabled(bool enabled);

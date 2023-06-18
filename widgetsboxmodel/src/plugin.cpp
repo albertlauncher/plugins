@@ -836,11 +836,11 @@ void Plugin::setDisplaySystemShadow(bool value)
 
 QString Plugin::defaultTrigger() const { return "themes "; }
 
-void Plugin::handleTriggerQuery(TriggerQuery &query) const
+void Plugin::handleTriggerQuery(TriggerQuery *query) const
 {
     for (const auto &[name, path] : themes_)
-        if (name.startsWith(query.string(), Qt::CaseInsensitive))
-            query.add(
+        if (name.startsWith(query->string(), Qt::CaseInsensitive))
+            query->add(
                 StandardItem::make(
                     QString("theme_%1").arg(name),
                     name,

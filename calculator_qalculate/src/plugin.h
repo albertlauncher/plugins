@@ -15,8 +15,8 @@ public:
 
     QString defaultTrigger() const override { return "="; }
     QString synopsis() const override { return "<math expression>"; }
-    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery&) const override;
-    void handleTriggerQuery(TriggerQuery&) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery*) const override;
+    void handleTriggerQuery(TriggerQuery*) const override;
     QWidget* buildConfigWidget() override;
 
 private:

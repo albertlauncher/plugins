@@ -10,6 +10,6 @@ class Plugin :
     Q_OBJECT ALBERT_PLUGIN
 public:
     Plugin();
-    void handleTriggerQuery(TriggerQuery&) const override;
+    void handleTriggerQuery(TriggerQuery*) const override;
     QWidget* buildConfigWidget() override;
 };

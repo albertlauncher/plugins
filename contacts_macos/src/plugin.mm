@@ -7,7 +7,7 @@ using namespace std;
 using namespace albert;
 
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
+vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
 {
   vector<RankItem> results;
   @autoreleasepool {
@@ -39,7 +39,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
       }
       case CNAuthorizationStatusAuthorized: {
         NSError *error = nil;
-        NSPredicate *predicate = [CNContact predicateForContactsMatchingName:query.string().toNSString()];
+        NSPredicate *predicate = [CNContact predicateForContactsMatchingName:query->string().toNSString()];
         NSArray<CNContact *> *contacts = [store unifiedContactsMatchingPredicate:predicate
                                                 keysToFetch:@[CNContactGivenNameKey,
                                                               CNContactFamilyNameKey,
@@ -71,7 +71,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
                   {"call", "iMessage", [number](){openUrl("sms:"+number);}}
                 }
               ),
-              (double)query.string().length()/(double)fullname.size()*RankItem::MAX_SCORE
+              (double)query->string().length()/(double)fullname.size()*RankItem::MAX_SCORE
             );
           }
 
@@ -89,7 +89,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
                   {"mail", "Send mail", [mail](){openUrl("mailto:"+mail);}},
                 }
               ),
-              (double)query.string().length()/(double)fullname.size()*RankItem::MAX_SCORE
+              (double)query->string().length()/(double)fullname.size()*RankItem::MAX_SCORE
             );
           }
         }

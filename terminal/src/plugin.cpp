@@ -42,16 +42,16 @@ static QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":termina
     indexer.run();
 }
 
-void ::Plugin::handleTriggerQuery(TriggerQuery &query) const
+void ::Plugin::handleTriggerQuery(TriggerQuery *query) const
 {
-    if (query.string().trimmed().isEmpty())
+    if (query->string().trimmed().isEmpty())
         return;
 
     vector<shared_ptr<Item>> results;
 
     // Extract data from input string: [0] program. The rest: args
-    QString potentialProgram = query.string().section(' ', 0, 0, QString::SectionSkipEmpty);
-    QString remainder = query.string().section(' ', 1, -1, QString::SectionSkipEmpty);
+    QString potentialProgram = query->string().section(' ', 0, 0, QString::SectionSkipEmpty);
+    QString remainder = query->string().section(' ', 1, -1, QString::SectionSkipEmpty);
 
     QString commonPrefix;
     if (auto it = lower_bound(index.begin(), index.end(), potentialProgram); it != index.end()){
@@ -83,7 +83,7 @@ void ::Plugin::handleTriggerQuery(TriggerQuery &query) const
         }
 
         // Apply completion string to items
-        QString completion = QString("%1%2 %3").arg(query.trigger(), commonPrefix, remainder);
+        QString completion = QString("%1%2 %3").arg(query->trigger(), commonPrefix, remainder);
         for (auto &item: results)
             std::static_pointer_cast<StandardItem>(item)->setInputActionText(completion);
     }
@@ -92,15 +92,15 @@ void ::Plugin::handleTriggerQuery(TriggerQuery &query) const
     results.emplace_back(StandardItem::make(
             {},
             "I'm Feeling Lucky",
-            QString("Try running '%1'").arg(query.string()),
+            QString("Try running '%1'").arg(query->string()),
             icon_urls,
             {{"", "Run",
-              [cmdln=query.string()](){ runTerminal(cmdln); }},
+              [cmdln=query->string()](){ runTerminal(cmdln); }},
              {"", "Run and close on exit",
-              [cmdln=query.string()](){ runTerminal(cmdln, {}, true); }},
+              [cmdln=query->string()](){ runTerminal(cmdln, {}, true); }},
              {"", "Run in background (without terminal)",
-              [cmdln=query.string()](){ runDetachedProcess({"sh", "-c", cmdln}); }}}
+              [cmdln=query->string()](){ runDetachedProcess({"sh", "-c", cmdln}); }}}
     ));
 
-    query.add(results);
+    query->add(results);
 }

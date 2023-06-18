@@ -17,10 +17,10 @@ Plugin::Plugin()
     std::sort(valid_tlds.begin(), valid_tlds.end());
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
+vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
 {
     vector<RankItem> results;
-    auto trimmed = query.string().trimmed();
+    auto trimmed = query->string().trimmed();
     auto url = QUrl::fromUserInput(trimmed);
 
     // Check syntax and TLD validity

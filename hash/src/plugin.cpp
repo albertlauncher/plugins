@@ -31,21 +31,21 @@ static shared_ptr<Item> buildItem(int algo_index, const QString& string_to_hash)
     );
 };
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery &query) const
+vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
 {
     vector<RankItem> results;
     for (int i = 0; i < algo_count; ++i){
         auto prefix = QString("%1 ").arg(QMetaEnum::fromType<QCryptographicHash::Algorithm>().key(i)).toLower();
-        if (query.string().size() >= prefix.size() && query.string().startsWith(prefix, Qt::CaseInsensitive)) {
-            QString string_to_hash = query.string().mid(prefix.size());
+        if (query->string().size() >= prefix.size() && query->string().startsWith(prefix, Qt::CaseInsensitive)) {
+            QString string_to_hash = query->string().mid(prefix.size());
             results.emplace_back(buildItem(i, string_to_hash), RankItem::MAX_SCORE);
         }
     }
     return results;
 }
 
-void Plugin::handleTriggerQuery(TriggerQuery &query) const
+void Plugin::handleTriggerQuery(TriggerQuery *query) const
 {
     for (int i = 0; i < algo_count; ++i)
-        query.add(buildItem(i, query.string()));
+        query->add(buildItem(i, query->string()));
 }
