@@ -434,7 +434,7 @@ public:
 
 
         QStringList errors;
-        QRegularExpression regex_version(R"R(^(\d)\.(\d)$)R");
+        static const QRegularExpression regex_version(R"R(^(\d)\.(\d)$)R");
 
         if (auto match = regex_version.match(metadata_.iid); !match.hasMatch())
             errors << QString("Invalid version format: '%1'. Expected <major>.<minor>.")
@@ -452,7 +452,7 @@ public:
         if (!ast_classes.contains(ATTR_PLUGIN_CLASS))
             errors << "Module does not have the mandatory class 'Plugin'";
 
-        QRegularExpression regex_id(R"R(\w+)R");
+        static const QRegularExpression regex_id(R"R(\w+)R");
         if (!regex_id.match(metadata_.id).hasMatch())
             errors << QString("Invalid plugin id '%1'. Use [a-z0-9_].").arg(metadata_.id);
 
@@ -596,7 +596,7 @@ public:
             state_ = PluginState::Unloaded;
             state_info_.clear();
         } catch(std::exception const &e) {
-            WARN << QString("Error while unloading '%1': %2.").arg(metadata_.id).arg(e.what());
+            WARN << QString("Error while unloading '%1': %2.").arg(metadata_.id, e.what());
         } catch(...) {
             WARN << QString("Unknown error while unloading '%1'").arg(metadata_.id);
         }
@@ -673,7 +673,7 @@ void Plugin::setWatchSources(bool val)
         sources_watcher_.reset();
     } else if (!watchSources() && val){
         sources_watcher_ = make_unique<QFileSystemWatcher>();
-        connect(sources_watcher_.get(), &QFileSystemWatcher::fileChanged, [this](){
+        connect(sources_watcher_.get(), &QFileSystemWatcher::fileChanged, this,  [this](){
             for (auto &loader : plugins_)
                 if (loader.state() == PluginState::Loaded ||
                     (loader.state() == PluginState::Unloaded && !loader.stateInfo().isEmpty())){
