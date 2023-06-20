@@ -2,7 +2,7 @@ project(python VERSION 1.7)
 albert_plugin(
     NAME "Python"
     DESCRIPTION "Load Python plugins"
-    LONG_DESCRIPTION "See the [online documentation](https://github.com/albertlauncher/plugins/blob/master/python/README.md)."
+    LONG_DESCRIPTION "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
     LICENSE ALL
     URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
     MAINTAINERS @manuelschneid3r
