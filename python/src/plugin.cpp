@@ -39,7 +39,7 @@ static const char *ATTR_MD_CREDITS     = "md_credits";
 static const char *ATTR_PLUGIN_CLASS   = "Plugin";
 static const char *ATTR_INITIALIZE     = "initialize";
 static const char *ATTR_FINALIZE       = "finalize";
-//static const char *ATTR_EXTENSIONS     = "extensions";
+static const char *ATTR_EXTENSIONS     = "extensions";
 
 struct PyPluginMetaData : public albert::PluginMetaData
 {
@@ -115,6 +115,54 @@ public:
 //    { PYBIND11_OVERRIDE(vector<RankItem>, Base, handleGlobalQuery, query); }
 //};
 
+
+class PyPluginInstance : public albert::PluginInstance
+{
+public:
+    PyPluginInstance(py::object pyinst) : pyinst_(pyinst) { }
+
+    void initialize() override {
+        if (py::hasattr(pyinst_, ATTR_INITIALIZE))
+            if (auto func = pyinst_.attr(ATTR_INITIALIZE); py::isinstance<py::function>(func))
+                func();
+    }
+
+    void finalize() override {
+        if (py::hasattr(pyinst_, ATTR_FINALIZE))
+            if (auto func = pyinst_.attr(ATTR_FINALIZE); py::isinstance<py::function>(func))
+                func();
+    }
+
+    const vector<py::object> &extensions() {
+        if (extensions_.empty()){
+            if (py::hasattr(pyinst_, ATTR_EXTENSIONS)){
+                if (auto func = pyinst_.attr(ATTR_EXTENSIONS); py::isinstance<py::function>(func))
+                    if (auto ret = func(); py::isinstance<py::list>(ret))
+                        for (auto extension_handle : ret.cast<py::list>())
+                            if (py::isinstance<Extension>(extension_handle))
+                                extensions_.push_back(py::reinterpret_borrow<py::object>(extension_handle));
+            }
+            else if (py::isinstance<Extension>(pyinst_))
+                extensions_.push_back(pyinst_);
+        }
+        return extensions_;
+    }
+
+    py::object pyinst_;
+    vector<py::object> extensions_;
+};
+
+
+class PyFallbackHandler : public FallbackHandler
+{
+public:
+    using FallbackHandler::FallbackHandler;  // Inherit the constructors, pybind requirement
+    QString id() const override { PYBIND11_OVERRIDE_PURE(QString, FallbackHandler, id, ); }
+    QString name() const override { PYBIND11_OVERRIDE_PURE(QString, FallbackHandler, name, ); }
+    QString description() const override { PYBIND11_OVERRIDE_PURE(QString, FallbackHandler, description, ); }
+    vector<std::shared_ptr<Item>> fallbacks(const QString &query_string) const override
+    { PYBIND11_OVERRIDE_PURE(vector<std::shared_ptr<Item>>, FallbackHandler, fallbacks, query_string); }
+};
 
 class PyTriggerQueryHandler : public TriggerQueryHandler
 {
@@ -249,6 +297,16 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
 
     // ------------------------------------------------------------------------
 
+    py::class_<FallbackHandler, Extension, PyFallbackHandler, shared_ptr<FallbackHandler>>(m, "FallbackHandler")
+        .def(py::init_alias<>())
+        ;
+
+    // ------------------------------------------------------------------------
+
+    py::class_<TriggerQueryHandler, Extension, PyTriggerQueryHandler, shared_ptr<TriggerQueryHandler>>(m, "TriggerQueryHandler")
+        .def(py::init<>())
+        ;
+
     using TriggerQuery = TriggerQueryHandler::TriggerQuery;
     py::class_<TriggerQuery>(m, "TriggerQuery")
         .def_property_readonly("trigger", &TriggerQuery::trigger, py::return_value_policy::reference)
@@ -257,11 +315,12 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
         .def("add", py::overload_cast<const shared_ptr<Item> &>(&TriggerQuery::add), py::return_value_policy::reference)
         .def("add", py::overload_cast<const vector<shared_ptr<Item>> &>(&TriggerQuery::add), py::return_value_policy::reference);
 
-    py::class_<TriggerQueryHandler, Extension, PyTriggerQueryHandler, shared_ptr<TriggerQueryHandler>>(m, "TriggerQueryHandler")
-        .def(py::init<>())
-        ;
 
     // ------------------------------------------------------------------------
+
+    py::class_<GlobalQueryHandler, Extension, PyGlobalQueryHandler, shared_ptr<GlobalQueryHandler>>(m, "GlobalQueryHandler")
+        .def(py::init<>())
+        ;
 
     using GlobalQuery = GlobalQueryHandler::GlobalQuery;
     py::class_<GlobalQuery>(m, "GlobalQuery")
@@ -278,18 +337,21 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
         .def_readonly_static("MAX_SCORE", &albert::RankItem::MAX_SCORE)
         ;
 
-    py::class_<GlobalQueryHandler, Extension, PyGlobalQueryHandler, shared_ptr<GlobalQueryHandler>>(m, "GlobalQueryHandler")
-        .def(py::init<>())
-        ;
-
     // ------------------------------------------------------------------------
-
 
     py::class_<QueryHandler, TriggerQueryHandler, GlobalQueryHandler, PyQueryHandler, shared_ptr<QueryHandler>>(m, "QueryHandler")
         .def(py::init<>())
+        .def("handleTriggerQuery", &QueryHandler::handleTriggerQuery)
         ;
 
     // ------------------------------------------------------------------------
+
+    py::class_<IndexQueryHandler, QueryHandler, PyIndexQueryHandler, shared_ptr<IndexQueryHandler>>(m, "IndexQueryHandler")
+        .def(py::init<>())
+        .def("updateIndexItems", &IndexQueryHandler::updateIndexItems)
+        .def("setIndexItems", &IndexQueryHandler::setIndexItems, py::arg("indexItems"))
+        .def("handleGlobalQuery", &IndexQueryHandler::handleGlobalQuery)
+        ;
 
     py::class_<albert::IndexItem>(m, "IndexItem")
         .def(py::init<shared_ptr<Item>,QString>(),
@@ -299,20 +361,7 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
         .def_readwrite("string", &albert::IndexItem::string)
         ;
 
-    py::class_<IndexQueryHandler, QueryHandler, PyIndexQueryHandler, shared_ptr<IndexQueryHandler>>(m, "IndexQueryHandler")
-        .def(py::init<>())
-        .def("updateIndexItems", &IndexQueryHandler::updateIndexItems)
-        .def("setIndexItems", &IndexQueryHandler::setIndexItems)
-        ;
-
     // ------------------------------------------------------------------------
-
-//    py::class_<PyPlugin, PyPluginTrampoline, shared_ptr<PyPlugin>>(m, "Plugin")
-//        .def(py::init<>())
-//        .def("initialize", &PyPlugin::initialize)
-//        .def("finalize", &PyPlugin::finalize)
-//        .def("extensions", &PyPlugin::extensions)
-//        ;
 
     m.def("debug", [](const py::object &obj) { DEBG << py::str(obj).cast<QString>(); });
     m.def("info", [](const py::object &obj) { INFO << py::str(obj).cast<QString>(); });
@@ -346,27 +395,6 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
 
 
 
-class PyPluginInstance : public albert::PluginInstance
-{
-public:
-    PyPluginInstance(py::object pyinst) : pyinst_(pyinst) { }
-
-    void initialize() override
-    {
-        if (py::hasattr(pyinst_, ATTR_INITIALIZE))
-            if (auto func = pyinst_.attr(ATTR_INITIALIZE); py::isinstance<py::function>(func))
-                func();
-    }
-
-    void finalize() override
-    {
-        if (py::hasattr(pyinst_, ATTR_FINALIZE))
-            if (auto func = pyinst_.attr(ATTR_FINALIZE); py::isinstance<py::function>(func))
-                func();
-    }
-
-    py::object pyinst_;
-};
 
 class PyPluginLoader : public albert::PluginLoader
 {
@@ -403,19 +431,17 @@ public:
         py::module ast = py::module::import("ast");
         py::object ast_root = ast.attr("parse")(source.toStdString());
 
-        set<QString> ast_classes;
         map<QString, py::object> ast_assignments;
+        bool has_plugin_class = false;
 
         for (auto node : ast_root.attr("body")){
 
-//            if (py::isinstance(node, ast.attr("FunctionDef")))
-//                metadata_values.emplace(node.attr("name").cast<QString>(), node.attr("args").attr("args"));
-
-            if (py::isinstance(node, ast.attr("ClassDef"))){
-                ast_classes.emplace(node.attr("name").cast<QString>());
-//                INFO << node.attr("bases").cast<py::str>().cast<QString>();
-//                for (auto &n : node.attr("bases").cast<vector<py::object>>())
-//                    INFO << n.attr("id").cast<QString>();
+            if (py::isinstance(node, ast.attr("ClassDef"))
+                && node.attr("name").cast<QString>() == ATTR_PLUGIN_CLASS){
+                if (has_plugin_class)
+                    throw runtime_error("Multple Plugin classes defined");
+                else
+                    has_plugin_class = true;
             }
 
             else if (py::isinstance(node, ast.attr("Assign"))){
@@ -511,7 +537,7 @@ public:
         if (!regex_version.match(metadata_.version).hasMatch())
             errors << "Invalid version scheme. Use '<version>.<patch>'.";
 
-        if (!ast_classes.contains(ATTR_PLUGIN_CLASS))
+        if (!has_plugin_class)
             errors << "Module does not have the mandatory class 'Plugin'";
 
         static const QRegularExpression regex_id(R"R(\w+)R");
@@ -533,24 +559,6 @@ public:
             state_info_ = errors.join(", ");
         }
 
-        //        {
-        //            if (!metadata_values.count("handleQuery"))
-        //                sthrow QString("Modules does not contain a function definition for 'handleQuery'");
-        //
-        //            if (py::len(metadata_values.at("handleQuery")) != 1)
-        //                sthrow QString("handleQuery function definition does not take exactly one argument");
-        //        }
-        //        {
-        //            for (const auto& exec : spec.executableDependecies)
-        //                if (QStandardPaths::findExecutable(exec).isNull())
-        //                    errorString = QString("No '%1' in $PATH.").arg(exec);
-        //
-        //            if (!errorString.isNull()){
-        //                INFO << errorString;
-        //                state = State::MissingDeps;
-        //                return;
-        //            }
-        //        }
     }
     PyPluginLoader(PyPluginLoader&&) = default;
     ~PyPluginLoader() = default;
@@ -594,10 +602,9 @@ public:
                 instance_.reset(new PyPluginInstance(module_.attr("Plugin")()));
                 instance_->initialize();
 
-                // auto register
-                if (py::isinstance<Extension>(instance_->pyinst_))
-                    if (auto *e = instance_->pyinst_.cast<shared_ptr<Extension>>().get())
-                        registry_.add(e);
+                // Register extensions
+                for (auto &e : instance_->extensions())
+                    registry_.add(e.cast<shared_ptr<Extension>>().get());
 
                 state_ = PluginState::Loaded;
                 state_info_.clear();
@@ -614,12 +621,6 @@ public:
                 }
                 throw e;
             }
-
-
-//            if (py::hasattr(instance_, ATTR_EXTENSIONS))
-//                if (auto exts = instance_.attr(ATTR_EXTENSIONS); py::isinstance<py::function>(exts))
-//                    for (auto *e : exts())
-//                        registry_.add(e);
 
             return;
         } catch(const std::exception &e) {
@@ -642,17 +643,11 @@ public:
 
         try {
 
-            if (py::isinstance<Extension>(instance_->pyinst_))
-                if (auto *e = instance_->pyinst_.cast<shared_ptr<Extension>>().get())
-                    registry_.remove(e);
+            // Unregister extensions
+            for (auto &e : instance_->extensions())
+                registry_.remove(e.cast<shared_ptr<Extension>>().get());
 
             instance_->finalize();
-
-//            if (py::hasattr(instance_, ATTR_EXTENSIONS))
-//                if (auto exts = instance_.attr(ATTR_EXTENSIONS); py::isinstance<py::function>(exts))
-//                    for (auto *e : exts())
-//                        registry_.remove(e);
-
             instance_.reset();
             module_ = py::object();
             state_ = PluginState::Unloaded;

@@ -1,4 +1,4 @@
-project(python VERSION 1.7)
+project(python VERSION 1.8)
 albert_plugin(
     NAME "Python"
     DESCRIPTION "Load Python plugins"
