@@ -451,7 +451,7 @@ ConfigWidget::ConfigWidget(Plugin *p) : plugin(p)
 
     connect(plugin, &Plugin::statusInfo, ui.status_label, &QLabel::setText);
 
-    connect(plugin, &Plugin::downloadStateChanged, [this](){
+    connect(plugin, &Plugin::downloadStateChanged, this, [this](){
         ui.cancel_button->setVisible(plugin->isDownloading());
         ui.list_widget->setEnabled(!plugin->isDownloading());
         ui.update_button->setEnabled(!plugin->isDownloading());

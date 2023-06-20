@@ -1,4 +1,4 @@
-project(docs VERSION 1.0)
+project(docs VERSION 1.1)
 albert_plugin(
     NAME Docs
     DESCRIPTION "Documentation quick access"
