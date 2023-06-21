@@ -6,7 +6,7 @@
 
 struct ClipboardEntry
 {
-    ClipboardEntry(QString text, QDateTime datetime) : text(std::move(text)), datetime(datetime) {}
+    ClipboardEntry(QString t, QDateTime dt) : text(std::move(t)), datetime(dt) {}
     QString text;
     QDateTime datetime;
 };
@@ -18,8 +18,17 @@ class Plugin : public albert::ExtensionPlugin,
     Q_OBJECT ALBERT_PLUGIN
 public:
     Plugin();
+
     QString defaultTrigger() const override { return "cb "; }
     void handleTriggerQuery(TriggerQuery*) const override;
+    QWidget *buildConfigWidget() override;
+
+    void writeHistory() const;
+    void readHistory();
+
+    QTimer timer;
     QClipboard * const clipboard;
-    std::vector<ClipboardEntry> history;
+    mutable std::list<ClipboardEntry> history;
+    bool persistent;
+    uint length;
 };
