@@ -112,9 +112,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
             for (const auto &keyword : {se.trigger.toLower(), QString("%1 ").arg(se.name.toLower())})
                 if (auto prefix = query->string().toLower().left(keyword.size()); keyword.startsWith(prefix)){
                     results.emplace_back(buildItem(se, query->string().mid(prefix.size())),
-                                         (RankItem::Score) ((double) prefix.length()
-                                                           / (double) keyword.size()
-                                                           * RankItem::MAX_SCORE));
+                                         (float)prefix.length()/keyword.size());
                     break;  // max one of these icons, assumption: tigger is shorter and yields higer scores
 
                 }

@@ -76,19 +76,25 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
     }
 
     vector<RankItem> items;
-    items.emplace_back(StandardItem::make(
-        "muparser",
-        result,
-        QString("Result of '%1'").arg(query->string()),
-        result,
-        {"xdg:calc", ":calc"},
-        {
-                {"cp-res", "Copy result to clipboard",
-                 [=](){ setClipboardText(result); }},
-                {"cp-equ", "Copy equation to clipboard",
-                 [=, q=query->string()](){ setClipboardText(QString("%1 = %2").arg(q, result)); }}
-        })
-        , RankItem::MAX_SCORE);
+    items.emplace_back(
+        StandardItem::make(
+            "muparser",
+            result,
+            QString("Result of '%1'").arg(query->string()),
+            result,
+            {"xdg:calc", ":calc"},
+            {
+                {
+                    "cp-res", "Copy result to clipboard",
+                    [=](){ setClipboardText(result); }},
+                {
+                    "cp-equ", "Copy equation to clipboard",
+                    [=, q=query->string()](){ setClipboardText(QString("%1 = %2").arg(q, result)); }
+                }
+            }
+        ),
+        1.0f
+    );
     return items;
 }
 

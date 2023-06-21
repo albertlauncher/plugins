@@ -4,11 +4,6 @@
 using namespace std;
 using namespace albert;
 
-static RankItem::Score score(const QString &s, const QString &t)
-{
-    return (double)s.size()/t.size()*RankItem::MAX_SCORE;
-}
-
 Plugin::Plugin() { registry().add(&tzh); }
 
 Plugin::~Plugin() { registry().remove(&tzh); }
@@ -31,7 +26,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
                     {"scp", "Copy short form", [=](){setClipboardText(ss);} }
                 }
             ),
-            score(s, t)
+            (float)s.size()/t.size()
         );
     }
 
@@ -46,7 +41,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
                     {"lcp", "Copy long form", [=](){setClipboardText(ls);} }
                 }
             ),
-            score(s, t)
+            (float)s.size()/t.size()
         );
     }
 
@@ -57,7 +52,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
                 t, unixtime, "Current seconds since epoch (unixtime)", {":datetime"},
                 {{ "copy", "Copy", [=](){setClipboardText(unixtime);} }}
             ),
-            score(s, t)
+            (float)s.size()/t.size()
         );
     }
 
@@ -72,7 +67,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
                         {"lcp", "Copy long form", [=](){setClipboardText(ls);} }
                 }
             ),
-            score(s, t)
+            (float)s.size()/t.size()
         );
     }
 
@@ -84,7 +79,8 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
             StandardItem::make(
                 "fromunix", ls, "Datetime from unix time", {":datetime"},
                 {{ "copy", "Copy", [=](){setClipboardText(ls);} }}
-            ), 0
+            ),
+            0
         );
     }
 

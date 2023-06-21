@@ -120,7 +120,8 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
                 }
             }
         ),
-        RankItem::MAX_SCORE);
+        1.0f
+    );
     return results;
 }
 

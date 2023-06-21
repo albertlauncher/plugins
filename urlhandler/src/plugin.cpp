@@ -45,15 +45,12 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
                 "Open URL in browser",
                 QString("Visit %1").arg(url.authority()),
                 {"xdg:www", "xdg:web-browser", "xdg:emblem-web", ":default"},
-                {{
-                    "open_url",
-                    "Open URL",
-                    [url](){
-                        QDesktopServices::openUrl(url);
-                    }
-                }})
-            , RankItem::MAX_SCORE
-            );
+                {
+                    {"open_url", "Open URL", [url](){ QDesktopServices::openUrl(url); }}
+                }
+            ),
+            1.0f
+        );
     }
     return results;
 }

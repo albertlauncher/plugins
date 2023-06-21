@@ -329,12 +329,11 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
         ;
 
     py::class_<albert::RankItem>(m, "RankItem")
-        .def(py::init<shared_ptr<Item>,albert::RankItem::Score>(),
+        .def(py::init<shared_ptr<Item>,float>(),
              py::arg("item"),
              py::arg("score"))
         .def_readwrite("item", &albert::RankItem::item)
         .def_readwrite("score", &albert::RankItem::score)
-        .def_readonly_static("MAX_SCORE", &albert::RankItem::MAX_SCORE)
         ;
 
     // ------------------------------------------------------------------------

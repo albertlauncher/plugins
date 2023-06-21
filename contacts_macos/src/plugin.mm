@@ -71,7 +71,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
                   {"call", "iMessage", [number](){openUrl("sms:"+number);}}
                 }
               ),
-              (double)query->string().length()/(double)fullname.size()*RankItem::MAX_SCORE
+              (float)query->string().length()/fullname.size()
             );
           }
 
@@ -89,7 +89,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
                   {"mail", "Send mail", [mail](){openUrl("mailto:"+mail);}},
                 }
               ),
-              (double)query->string().length()/(double)fullname.size()*RankItem::MAX_SCORE
+              (float)query->string().length()/fullname.size()
             );
           }
         }

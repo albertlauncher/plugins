@@ -38,7 +38,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
         auto prefix = QString("%1 ").arg(QMetaEnum::fromType<QCryptographicHash::Algorithm>().key(i)).toLower();
         if (query->string().size() >= prefix.size() && query->string().startsWith(prefix, Qt::CaseInsensitive)) {
             QString string_to_hash = query->string().mid(prefix.size());
-            results.emplace_back(buildItem(i, string_to_hash), RankItem::MAX_SCORE);
+            results.emplace_back(buildItem(i, string_to_hash), 1.0f);
         }
     }
     return results;
