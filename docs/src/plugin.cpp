@@ -113,9 +113,7 @@ public:
                 id(),
                 "Open documentation",
                 [this](){
-                    auto p = QString("file://%1/Contents/Resources/Documents/%2").arg(docset->path, path);
-                    INFO << p;
-                    openUrl(p);
+                    openUrl(QString("file://%1/Contents/Resources/Documents/%2").arg(docset->path, path));
                 }
             }
         };
