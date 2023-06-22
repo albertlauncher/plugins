@@ -367,9 +367,9 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
     m.def("warning", [](const py::object &obj) { WARN << py::str(obj).cast<QString>(); });
     m.def("critical", [](const py::object &obj) { CRIT << py::str(obj).cast<QString>(); });
 
-    m.def("configLocation", []() { return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation); });
-    m.def("dataLocation", []() { return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation); });
-    m.def("cacheLocation", []() { return QStandardPaths::writableLocation(QStandardPaths::CacheLocation); });
+    m.def("configLocation", []() { return albert::configLocation(); });
+    m.def("dataLocation", []() { return albert::dataLocation(); });
+    m.def("cacheLocation", []() { return albert::cacheLocation(); });
 
     m.def("setClipboardText", &albert::setClipboardText,
           py::arg("text") = QString());
