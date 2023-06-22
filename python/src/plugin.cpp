@@ -293,6 +293,9 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
     // ------------------------------------------------------------------------
 
     py::class_<Extension, shared_ptr<Extension>>(m, "Extension")
+        .def("cacheDir", [](const Extension &self) { return self.cacheDir().path(); })
+        .def("configDir", [](const Extension &self) { return self.configDir().path(); })
+        .def("dataDir", [](const Extension &self) { return self.dataDir().path(); })
         ;
 
     // ------------------------------------------------------------------------
