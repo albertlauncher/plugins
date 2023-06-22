@@ -2,7 +2,6 @@
 
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QStandardPaths>
 #include "configwidget.h"
 #include "enginesmodel.h"
 #include "plugin.h"

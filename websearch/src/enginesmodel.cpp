@@ -6,7 +6,6 @@
 #include <QFileInfo>
 #include <QIcon>
 #include <QMimeData>
-#include <QStandardPaths>
 #include <QUuid>
 #include "enginesmodel.h"
 #include "plugin.h"
@@ -165,7 +164,7 @@ bool EnginesModel::setData(const QModelIndex &index, const QVariant &value, int 
         iconCache.erase(extension_->engines()[static_cast<ulong>(index.row())].iconPath);
 
         // Create extension dir if necessary
-        QDir configDir = QDir(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
+        QDir configDir = QDir(albert::configLocation());
         if ( !configDir.exists(extension_->id()) ) {
             if ( !configDir.mkdir(extension_->id()) ) {
                 qWarning() << "Could not create extension data dir.";
