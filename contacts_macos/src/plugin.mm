@@ -50,20 +50,26 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
             return results;
         }
 
+        static const QRegularExpression re(R"R(_\$!<|>!\$_)R");
+
         for (CNContact *contact in contacts) {
           auto identifier = QString::fromNSString(contact.identifier);
           auto fullname = QString("%1 %2").arg(QString::fromNSString(contact.givenName),
                                                QString::fromNSString(contact.familyName));
 
           vector<Action> actions;
-          NSArray<CNLabeledValue<CNPhoneNumber *> *> *phoneNumbers = contact.phoneNumbers;
-          for (CNLabeledValue<CNPhoneNumber *> *phoneNumber in phoneNumbers) {
+
+//          NSArray<CNLabeledValue<CNPhoneNumber *> *> *phoneNumbers = contact.phoneNumbers;
+          for (CNLabeledValue<CNPhoneNumber *> *phoneNumber in contact.phoneNumbers) {
             auto label = QString::fromNSString(phoneNumber.label);
+            label.remove(re);
             auto number = QString::fromNSString(phoneNumber.value.stringValue);
+
+
             results.emplace_back(StandardItem::make(
                 identifier + "phone" + label,
                 number,
-                QString("%1 of %2").arg(label, fullname),
+                QString("Phone number '%1' of %2").arg(label, fullname),
                 {"qfip:/System/Applications/Contacts.app"},
                 {
                   {"copy", "Copy", [number](){setClipboardText(number);}},
@@ -75,14 +81,15 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
             );
           }
 
-          NSArray<CNLabeledValue<NSString *> *> *emailAddresses = contact.emailAddresses;
-          for (CNLabeledValue<NSString *> *emailAddress in emailAddresses) {
+//          NSArray<CNLabeledValue<NSString *> *> *emailAddresses = contact.emailAddresses;
+          for (CNLabeledValue<NSString *> *emailAddress in contact.emailAddresses) {
             auto label = QString::fromNSString(emailAddress.label);
+            label.remove(re);
             auto mail = QString::fromNSString(emailAddress.value);
             results.emplace_back(StandardItem::make(
                 identifier + "mail" + label,
                 mail,
-                QString("%1 of %2").arg(label, fullname),
+                QString("Mail address '%1' of %2").arg(label, fullname),
                 {"qfip:/System/Applications/Contacts.app"},
                 {
                   {"copy", "Copy", [mail](){setClipboardText(mail);}},
