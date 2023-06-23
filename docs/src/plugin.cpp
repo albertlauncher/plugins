@@ -91,8 +91,8 @@ static QString fixPath(QString path) {
 class DocumentationItem : public albert::Item
 {
 public:
-    DocumentationItem(const Docset *docset, QString name, QString path)
-        : docset(docset), name(::move(name)), path(fixPath(path)) {}
+    DocumentationItem(const Docset *ds, QString n, QString p)
+        : docset(ds), name(::move(n)), path(fixPath(p)) {}
 
     const Docset * const docset;
     const QString name;
@@ -314,8 +314,8 @@ void Plugin::removeDocset(const QString &name)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Docset::Docset(QString source_id, QString identifier, QString title, QString icon_path)
-    : source_id(source_id), identifier(identifier), title(title), icon_path(icon_path)
+Docset::Docset(QString sid, QString id, QString t, QString ip)
+    : source_id(sid), identifier(id), title(t), icon_path(ip)
 {
 
 }
