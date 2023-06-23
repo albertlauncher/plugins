@@ -47,13 +47,6 @@ struct PyPluginMetaData : public albert::PluginMetaData
 };
 
 
-/*
- * CLASS TRAMPOLINES (*)
- * - Python has no function overloading and Pybind does not support reference parameters
- * - Wrap native api and expose a distictively named method with a pointer parameter.
- */
-
-
 class PyItem : Item
 {
 public:
@@ -63,7 +56,6 @@ public:
     QString subtext() const override { PYBIND11_OVERRIDE_PURE(QString, Item, subtext, ); }
     QStringList iconUrls() const override { PYBIND11_OVERRIDE_PURE_NAME(QStringList, Item, "icon",iconUrls, ); }
     QString inputActionText() const override { PYBIND11_OVERRIDE_NAME(QString, Item, "completion", inputActionText, ); }
-    bool hasActions() const override { PYBIND11_OVERRIDE_PURE(bool, Item, hasActions, ); }
     vector<Action> actions() const override { PYBIND11_OVERRIDE(vector<Action>, Item, actions, ); }
 };
 
@@ -266,13 +258,12 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
 
     py::class_<Item, PyItem, shared_ptr<Item>>(m, "AbstractItem")
         .def(py::init<>())
-        .def("id", &Item::id)
-        .def("text", &Item::text)
-        .def("subtext", &Item::subtext)
-        .def("completion", &Item::inputActionText)
-        .def("icon", &Item::iconUrls)
-        .def("actions", &Item::actions)
-        .def("hasActions", &Item::hasActions)
+        .def_property_readonly("id", &Item::id)
+        .def_property_readonly("text", &Item::text)
+        .def_property_readonly("subtext", &Item::subtext)
+        .def_property_readonly("completion", &Item::inputActionText)
+        .def_property_readonly("icon", &Item::iconUrls)
+        .def_property_readonly("actions", &Item::actions)
         ;
 
     py::class_<StandardItem, Item, shared_ptr<StandardItem>>(m, "Item")
@@ -293,9 +284,9 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
     // ------------------------------------------------------------------------
 
     py::class_<Extension, shared_ptr<Extension>>(m, "Extension")
-        .def("cacheDir", [](const Extension &self) { return self.cacheDir().path(); })
-        .def("configDir", [](const Extension &self) { return self.configDir().path(); })
-        .def("dataDir", [](const Extension &self) { return self.dataDir().path(); })
+        .def("cacheLocation", [](const Extension &self) { return self.cacheDir().path(); })
+        .def("configLocation", [](const Extension &self) { return self.configDir().path(); })
+        .def("dataLocation", [](const Extension &self) { return self.dataDir().path(); })
         ;
 
     // ------------------------------------------------------------------------
@@ -369,10 +360,6 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
     m.def("info", [](const py::object &obj) { INFO << py::str(obj).cast<QString>(); });
     m.def("warning", [](const py::object &obj) { WARN << py::str(obj).cast<QString>(); });
     m.def("critical", [](const py::object &obj) { CRIT << py::str(obj).cast<QString>(); });
-
-    m.def("configLocation", []() { return albert::configLocation(); });
-    m.def("dataLocation", []() { return albert::dataLocation(); });
-    m.def("cacheLocation", []() { return albert::cacheLocation(); });
 
     m.def("setClipboardText", &albert::setClipboardText,
           py::arg("text") = QString());
