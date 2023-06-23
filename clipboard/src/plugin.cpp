@@ -77,7 +77,7 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
                     {
                         Action("copy", "Copy to clipboard", [t=entry.text](){ setClipboardText(t); }),
                         Action("rem", "Remove from history", [this, t=entry.text](){
-                            history.remove_if([t](const ClipboardEntry& entry){ return entry.text == t; });
+                            history.remove_if([t](const ClipboardEntry& ce){ return ce.text == t; });
                              if (persistent)
                                  writeHistory();
                         })
