@@ -22,43 +22,6 @@ using namespace albert;
 
 static const char *docsets_dir = "docsets";
 
-static bool extract(const QString &src, const QString &dst)
-{
-    struct archive* a;
-    struct archive_entry* entry;
-    int flags;
-    int result = ARCHIVE_OK;
-
-    a = archive_read_new();
-    archive_read_support_format_all(a);
-    archive_read_support_filter_all(a);
-
-    if (archive_read_open_filename(a, src.toUtf8().constData(), 10240) != ARCHIVE_OK) {
-        WARN << "Failed to open source archive: " << archive_error_string(a);
-        return false;
-    }
-
-    if (chdir(dst.toUtf8().constData()) != 0) {
-        WARN << "Failed to change directory: " << strerror(errno);
-        archive_read_close(a);
-        archive_read_free(a);
-        return false;
-    }
-
-    while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
-        flags = ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS;
-        result = archive_read_extract(a, entry, flags);
-        if (result != ARCHIVE_OK) {
-            WARN << "Extraction failed: " << archive_error_string(a);
-            break;
-        }
-    }
-
-    archive_read_close(a);
-    archive_read_free(a);
-
-    return !result;
-}
 
 static void saveBase64ImageToFile(const QByteArray& base64Data, const QString& filePath)
 {
@@ -100,14 +63,10 @@ public:
 
     QString id() const override { return path; }
     QString text() const override { return name; }
-    QString subtext() const override
-    {
-        return QString("%1 documentation").arg(docset->identifier);
-    }
+    QString subtext() const override { return QString("%1 documentation").arg(docset->identifier); }
     QStringList iconUrls() const override { return {docset->icon_path}; }
     QString inputActionText() const override { return name; }
-    std::vector<Action> actions() const override
-    {
+    std::vector<Action> actions() const override {
         return {
             {
                 id(),
@@ -165,17 +124,15 @@ const std::map<QString, Docset> &Plugin::docsets() const { return docsets_; }
 
 void Plugin::updateDocsetList()
 {
-    static const char *docsets_list_url = "https://api.zealdocs.org/v1/docsets";
-    QNetworkReply *reply = albert::networkManager()->get(QNetworkRequest(QUrl{docsets_list_url}));
+    static const char *url = "https://api.zealdocs.org/v1/docsets";
+    debug(QString("Downloading docset list from '%1'").arg(url));
+    QNetworkReply *reply = albert::networkManager()->get(QNetworkRequest(QUrl{url}));
+
     connect(reply, &QNetworkReply::finished, this, [this, reply](){
         reply->deleteLater();
 
-        if (reply->error() != QNetworkReply::NoError) {
-            auto msg = QString("Error fetching docset list: %1").arg(reply->errorString());
-            WARN << msg;
-            emit statusInfo(msg);
-            return;
-        }
+        if (reply->error() != QNetworkReply::NoError)
+            return error(QString("Error fetching docset list: %1").arg(reply->errorString()));
 
         docsets_.clear();
 
@@ -199,12 +156,11 @@ void Plugin::updateDocsetList()
                 QDir dir(QString("%1/%2.docset").arg(dataDir().filePath(docsets_dir), identifier));
                 if (dir.exists())
                     it->second.path = dir.path();
-
-
             }
+            debug("Docset list updated.");
         }
         else
-            WARN << "Failed to parse docset list." << parse_error.errorString();
+            error(QString("Failed to parse docset list: %1").arg(parse_error.errorString()));
 
         emit docsetsChanged();
     });
@@ -217,7 +173,7 @@ void Plugin::downloadDocset(const QString &name)
     auto *docset = &docsets_.at(name);
     static const char *docsets_url_template = "https://go.zealdocs.org/d/%1/%2/latest";
     auto url = QUrl{QString(docsets_url_template).arg(docset->source_id, docset->identifier)};
-    DEBG << "Downloading" << url;
+    debug(QString("Downloading docset from '%1'").arg(url.toString()));
     download_ = albert::networkManager()->get(QNetworkRequest(url));
 
     connect(download_, &QNetworkReply::downloadProgress,
@@ -230,55 +186,55 @@ void Plugin::downloadDocset(const QString &name)
     connect(download_, &QNetworkReply::finished, this, [this, docset](){
         if (download_){  // else aborted
 
-            QTemporaryDir tmp_dir;
+            auto tmp_dir = QTemporaryDir();
+            if (tmp_dir.isValid()){
 
-            // write to file
-            QFile tmp(tmp_dir.filePath(download_->url().fileName()));
-            if (!tmp.open(QIODevice::WriteOnly))
-                qFatal("Failed to open the file");
-            while (download_->bytesAvailable())
-                tmp.write(download_->read(1000000));
-            tmp.close();
+                // write downloaded data to file
+                if (QFile file(tmp_dir.filePath(download_->url().fileName())); file.open(QIODevice::WriteOnly)){
+                    while (download_->bytesAvailable())
+                        file.write(download_->read(1000000));
+                    file.close();
 
-            // delete reply
-            download_->deleteLater();
+                    debug(QString("Extracting file '%1'").arg(file.fileName()));
+                    if (extract(file.fileName(), cacheDir().path())){
+
+                        debug(QString("Searching docset in '%1'").arg(cacheDir().path()));
+                        if (QDirIterator it(cacheDir().path(), {"*.docset"}, QDir::Dirs, QDirIterator::Subdirectories); it.hasNext()){
+
+                            auto src = it.next();
+                            auto dst = QString("%1/%2.docset").arg(dataDir().filePath(docsets_dir), docset->identifier);
+                            debug(QString("Renaming '%1' to '%2'").arg(src, dst));
+                            if (QFile::rename(src, dst)){
+
+                                docset->path = dst;
+                                emit docsetsChanged();
+                                updateIndexItems();
+                                emit statusInfo(QString("Docset '%1' ready.").arg(docset->identifier));
+
+                            } else
+                                error(QString("Failed renaming dir '%1' to '%2'.").arg(src, dst));
+                        } else
+                            error(QString("Failed finding extracted docset in %1").arg(cacheDir().path()));
+                    } else
+                        error(QString("Extracting docset failed: '%1'").arg(file.fileName()));
+
+                    QFile::remove(file.fileName());
+
+                } else
+                    error(QString("Failed to write to file: '%1'").arg(file.fileName()));
+            } else
+                error("Failed creating temporary directory");
+
             download_ = nullptr;
 
-            // extract temp file
-            DEBG << "Extracting" << tmp.fileName();
-            emit statusInfo("Extracting…");
-            if (!extract(tmp.fileName(), tmp_dir.path())){
-                DEBG << "Extracting docset failed" << tmp.fileName();
-                emit statusInfo("Extracting docset failed.");
-            } else {
-                // rename the extracted dir to the identifier
-                QDirIterator it(tmp_dir.path(), {"*.docset"}, QDir::Dirs, QDirIterator::Subdirectories);
-                if (!it.hasNext()){
-                    DEBG << "Failed finding extracted docset" << tmp.fileName();
-                    emit statusInfo("Failed finding extracted docset.");
-                } else {
-                    auto extract_path = it.next();
-                    auto target_path = QString("%1/%2.docset").arg(dataDir().filePath(docsets_dir), docset->identifier);
-                    if (!QDir().rename(extract_path, target_path))
-                        qFatal("Failed renaming dir");
-
-                    docset->path = target_path;
-
-                    emit statusInfo("Download finished.");
-                    updateIndexItems();
-                }
-            }
-
-            emit docsetsChanged();
-
-            QFile::remove(tmp.fileName());
-        } else {
-            DEBG << "Downloading docset cancelled:" << docset->identifier;
-            emit statusInfo("Download cancelled.");
-        }
+        } else
+            debug(QString("Cancelled '%1' docset download.").arg(docset->identifier));
 
         emit downloadStateChanged();
     });
+
+    // Delete reply in any case. may be cancelled.
+    connect(download_, &QNetworkReply::finished, download_, &QNetworkReply::deleteLater);
 
     emit downloadStateChanged();
 }
@@ -286,14 +242,9 @@ void Plugin::downloadDocset(const QString &name)
 void Plugin::cancelDownload()
 {
     Q_ASSERT(download_);
-
-//    QEventLoop loop;
-//    connect(download_, &QNetworkReply::finished, &loop, &QEventLoop::quit);
     auto d = download_;
-    download_->deleteLater();
     download_ = nullptr;  // state aborted in finished()
     d->abort(); // emits finished directly
-//    loop.exec(); // wait for finished
 }
 
 bool Plugin::isDownloading() const { return download_; }
@@ -303,13 +254,60 @@ void Plugin::removeDocset(const QString &name)
     auto &docset = docsets_.at(name);
     QDir dir(docset.path);
     if (dir.exists() && dir.removeRecursively()){  // Note this may fail if filebrowser is open on macos
-        DEBG << "Directory removed" << docset.path;
+        debug(QString("Directory removed '%1'").arg(docset.path));
         docset.path.clear();
-        updateDocsetList();
+        emit docsetsChanged();
     }
     else
-        CRIT << "Failed to remove directory" << docset.path;
+        error(QString("Failed to remove directory '%1'").arg(docset.path));
+}
 
+bool Plugin::extract(const QString &src, const QString &dst) const
+{
+    struct archive* a;
+    int ret;
+
+    a = archive_read_new();
+    archive_read_support_format_all(a);
+    archive_read_support_filter_all(a);
+    if ((ret = archive_read_open_filename(a, src.toUtf8().constData(), 10240)) == ARCHIVE_OK) {
+
+        struct archive_entry* entry;
+        while ((ret = archive_read_next_header(a, &entry)) == ARCHIVE_OK){
+
+            archive_entry_set_pathname(entry, QDir(dst).filePath(archive_entry_pathname(entry)).toLocal8Bit().constData());
+            if ((ret = archive_read_extract(a, entry,
+                                            ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM
+                                            | ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS))  != ARCHIVE_OK) {
+                error(QString("Extraction failed: %1").arg(archive_error_string(a)));
+                break;
+            }
+        }
+
+        if (ret == ARCHIVE_EOF) // success
+            ret = ARCHIVE_OK;
+
+        archive_read_close(a);
+
+    } else
+        error(QString("Failed to open source archive: '%1'").arg(archive_error_string(a)));
+
+    archive_read_free(a);
+
+    return !ret;
+}
+
+void Plugin::debug(const QString &msg) const
+{
+    DEBG << msg;
+    emit statusInfo(msg);
+}
+
+void Plugin::error(const QString &msg, QWidget * modal_parent) const
+{
+    WARN << msg;
+    emit statusInfo(msg);
+    QMessageBox::warning(modal_parent, qApp->applicationDisplayName(), msg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

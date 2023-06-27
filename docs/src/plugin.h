@@ -39,13 +39,17 @@ public:
     void removeDocset(const QString &name);
 
 private:
+    bool extract(const QString &src, const QString &dst) const;
+    void debug(const QString &) const;
+    void error(const QString &, QWidget *modal_parent = nullptr) const;
+
     std::map<QString, Docset> docsets_;
     QNetworkReply *download_ = nullptr;
 
 signals:
-    void docsetsChanged();
-    void downloadStateChanged();
-    void statusInfo(const QString&);
+    void docsetsChanged() const;
+    void downloadStateChanged() const;
+    void statusInfo(const QString&) const;
 };
 
 class ConfigWidget final : public QWidget
