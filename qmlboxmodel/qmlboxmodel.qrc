@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="gear.svg">resources/gear.svg</file>
+        <file alias="DebugRect.qml">resources/qml/DebugRect.qml</file>
+        <file alias="DefaultStyle.qml">resources/qml/DefaultStyle.qml</file>
+        <file alias="albert.js">resources/qml/albert.js</file>
+        <file alias="HistoryTextInput.qml">resources/qml/HistoryTextInput.qml</file>
+        <file alias="ActionItemDelegate.qml">resources/qml/ActionItemDelegate.qml</file>
+        <file alias="DesktopListView.qml">resources/qml/DesktopListView.qml</file>
+        <file alias="ResultItemDelegate.qml">resources/qml/ResultItemDelegate.qml</file>
+        <file alias="SettingsButton.qml">resources/qml/SettingsButton.qml</file>
+    </qresource>
+</RCC>
