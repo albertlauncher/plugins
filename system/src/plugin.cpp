@@ -1,13 +1,16 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
 #include "plugin.h"
 #include <QCheckBox>
 #include <QGridLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QSettings>
 #include <QSpacerItem>
 #include <QWidget>
-using albert::StandardItem;
+using namespace albert;
 using namespace std;
 
 enum SupportedCommands {
