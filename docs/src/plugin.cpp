@@ -1,7 +1,15 @@
 // Copyright (c) 2022 Manuel Schneider
 
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/item.h"
+#include "albert/logging.h"
 #include "plugin.h"
+#include <QDir>
+#include <QDirIterator>
+#include <QFileInfo>
 #include <QImageWriter>
+#include <QJsonArray>
+#include <QJsonParseError>
 #include <QLabel>
 #include <QListWidget>
 #include <QMessageBox>
@@ -12,12 +20,13 @@
 #include <QSqlDriver>
 #include <QSqlError>
 #include <QSqlQuery>
-#include <QTemporaryFile>
+#include <QTemporaryDir>
+#include <QXmlStreamReader>
 #include <archive.h>
 #include <archive_entry.h>
 ALBERT_LOGGING
-using namespace std;
 using namespace albert;
+using namespace std;
 
 
 static const char *docsets_dir = "docsets";
@@ -64,7 +73,7 @@ public:
     QString id() const override { return path; }
     QString text() const override { return name; }
     QString subtext() const override { return QString("%1 documentation").arg(docset->identifier); }
-    QStringList iconUrls() const override { return {docset->icon_path}; }
+    QStringList iconUrls() const override { return {"file:"+docset->icon_path}; }
     QString inputActionText() const override { return name; }
     std::vector<Action> actions() const override {
         return {
@@ -85,10 +94,10 @@ Plugin::Plugin()
     if(!QSqlDatabase::isDriverAvailable("QSQLITE"))
         throw "QSQLITE driver unavailable";
 
-    if (!dataDir().mkpath(docsets_dir))
+    if (!dataDir()->mkpath(docsets_dir))
         throw "Unable to create docsets dir";
 
-    if (!cacheDir().mkpath("icons"))
+    if (!cacheDir()->mkpath("icons"))
         throw "Unable to create icons dir";
 
     connect(this, &Plugin::docsetsChanged, this, &Plugin::updateIndexItems);
@@ -136,6 +145,8 @@ void Plugin::updateDocsetList()
 
         docsets_.clear();
 
+        auto data_dir = dataDir();
+        auto cache_dir = cacheDir();
         QJsonParseError parse_error;
         const QJsonDocument json_document = QJsonDocument::fromJson(reply->readAll(), &parse_error);
         if (parse_error.error == QJsonParseError::NoError) {
@@ -145,15 +156,15 @@ void Plugin::updateDocsetList()
                 auto source = jsonObject[QStringLiteral("sourceId")].toString();
                 auto identifier = jsonObject[QStringLiteral("name")].toString();
                 auto title = jsonObject[QStringLiteral("title")].toString();
-                auto icon_path = cacheDir().filePath(QString("icons/%1.png").arg(identifier));
-                auto path = dataDir().filePath(QString("%1/%2").arg(docsets_dir, identifier));
+                auto icon_path = cache_dir->filePath(QString("icons/%1.png").arg(identifier));
+//                auto path = data_dir->filePath(QString("%1/%2").arg(docsets_dir, identifier));
 
                 auto rawBase64 = jsonObject[QStringLiteral("icon2x")].toString().toLocal8Bit();
                 saveBase64ImageToFile(rawBase64, icon_path);
 
                 auto [it, success] = docsets_.emplace(identifier, Docset{source, identifier, title, icon_path});
 
-                QDir dir(QString("%1/%2.docset").arg(dataDir().filePath(docsets_dir), identifier));
+                QDir dir(QString("%1/%2.docset").arg(data_dir->filePath(docsets_dir), identifier));
                 if (dir.exists())
                     it->second.path = dir.path();
             }
@@ -196,13 +207,13 @@ void Plugin::downloadDocset(const QString &name)
                     file.close();
 
                     debug(QString("Extracting file '%1'").arg(file.fileName()));
-                    if (extract(file.fileName(), cacheDir().path())){
+                    if (extract(file.fileName(), cacheDir()->path())){
 
-                        debug(QString("Searching docset in '%1'").arg(cacheDir().path()));
-                        if (QDirIterator it(cacheDir().path(), {"*.docset"}, QDir::Dirs, QDirIterator::Subdirectories); it.hasNext()){
+                        debug(QString("Searching docset in '%1'").arg(cacheDir()->path()));
+                        if (QDirIterator it(cacheDir()->path(), {"*.docset"}, QDir::Dirs, QDirIterator::Subdirectories); it.hasNext()){
 
                             auto src = it.next();
-                            auto dst = QString("%1/%2.docset").arg(dataDir().filePath(docsets_dir), docset->identifier);
+                            auto dst = QString("%1/%2.docset").arg(dataDir()->filePath(docsets_dir), docset->identifier);
                             debug(QString("Renaming '%1' to '%2'").arg(src, dst));
                             if (QFile::rename(src, dst)){
 
@@ -214,7 +225,7 @@ void Plugin::downloadDocset(const QString &name)
                             } else
                                 error(QString("Failed renaming dir '%1' to '%2'.").arg(src, dst));
                         } else
-                            error(QString("Failed finding extracted docset in %1").arg(cacheDir().path()));
+                            error(QString("Failed finding extracted docset in %1").arg(cacheDir()->path()));
                     } else
                         error(QString("Extracting docset failed: '%1'").arg(file.fileName()));
 
@@ -242,9 +253,9 @@ void Plugin::downloadDocset(const QString &name)
 void Plugin::cancelDownload()
 {
     Q_ASSERT(download_);
-    auto d = download_;
+    auto dn = download_;
     download_ = nullptr;  // state aborted in finished()
-    d->abort(); // emits finished directly
+    dn->abort(); // emits finished directly
 }
 
 bool Plugin::isDownloading() const { return download_; }
