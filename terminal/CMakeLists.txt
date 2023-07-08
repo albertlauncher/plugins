@@ -1,4 +1,4 @@
-project(terminal VERSION 1.3)
+project(terminal VERSION 1.4)
 albert_plugin(
     NAME Terminal
     DESCRIPTION "Run executables from PATH"

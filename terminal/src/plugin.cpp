@@ -1,7 +1,7 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
-#include "albert.h"
-#include "albert/util/util.h"
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
 #include "plugin.h"
 #include <QDirIterator>
 #include <QFileSystemWatcher>
@@ -9,8 +9,8 @@
 #include <QtConcurrent>
 #include <functional>
 ALBERT_LOGGING
-using namespace std;
 using namespace albert;
+using namespace std;
 
 static QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":terminal"};
 
