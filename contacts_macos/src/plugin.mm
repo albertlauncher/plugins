@@ -1,10 +1,14 @@
 // Copyright (c) 2023 Manuel Schneider
 
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
+#include "albert/logging.h"
 #include "plugin.h"
 #include <Contacts/Contacts.h>
+#include <QRegularExpression>
 ALBERT_LOGGING
-using namespace std;
 using namespace albert;
+using namespace std;
 
 
 vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
