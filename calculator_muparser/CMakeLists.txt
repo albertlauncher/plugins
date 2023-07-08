@@ -1,4 +1,4 @@
-project(calculator_muparser VERSION 1.6)
+project(calculator_muparser VERSION 1.7)
 albert_plugin(
     NAME Calculator
     DESCRIPTION "Evaluate math expressions using muparser"

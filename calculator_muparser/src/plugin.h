@@ -1,15 +1,15 @@
 // Copyright (c) 2022 Manuel Schneider
 
 #pragma once
-#include "albert.h"
+#include "albert/extension/queryhandler/globalqueryhandler.h"
+#include "albert/plugin.h"
 #include "muParser.h"
 #include "muParserInt.h"
-#include <memory>
 #include <QLocale>
+#include <memory>
 
-class Plugin:
-        public albert::ExtensionPlugin,
-        public albert::QueryHandler
+
+class Plugin : public albert::plugin::ExtensionPlugin<albert::GlobalQueryHandler>
 {
     Q_OBJECT ALBERT_PLUGIN
 

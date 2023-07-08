@@ -1,7 +1,11 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
+#include "albert/logging.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
+#include <QSettings>
 #include <QString>
 ALBERT_LOGGING
 using namespace std;
