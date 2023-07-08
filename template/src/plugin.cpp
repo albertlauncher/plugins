@@ -1,9 +1,11 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2023 Manuel Schneider
 
-#include "ui_configwidget.h"
+#include "albert/logging.h"
 #include "plugin.h"
-using namespace std;
+#include "ui_configwidget.h"
+ALBERT_LOGGING
 using namespace albert;
+using namespace std;
 
 
 Plugin::Plugin()
