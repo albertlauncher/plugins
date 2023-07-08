@@ -1,12 +1,13 @@
 // Copyright (c) 2022 Manuel Schneider
 
+#include "albert/extension/queryhandler/standarditem.h"
 #include "plugin.h"
 #include <QDesktopServices>
 #include <QFile>
 #include <QTextStream>
 #include <QUrl>
-using namespace std;
 using namespace albert;
+using namespace std;
 
 Plugin::Plugin()
 {
