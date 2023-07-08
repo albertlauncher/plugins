@@ -1,15 +1,15 @@
 // Copyright (c) 2022 Manuel Schneider
 
 #pragma once
-#include <QTimer>
+#include <QPoint>
 #include <QWidget>
-#include <map>
-#include <memory>
-#include <QFrame>
-#include "inputline.h"
-#include "settingsbutton.h"
-#include "itemslist.h"
-#include "actionslist.h"
+class ActionDelegate;
+class InputLine;
+class ItemDelegate;
+class QEvent;
+class QFrame;
+class ResizingList;
+class SettingsButton;
 
 class Window : public QWidget
 {
@@ -19,8 +19,10 @@ public:
     QFrame *frame;
     InputLine *input_line;
     SettingsButton *settings_button;
-    ItemsList *results_list;
-    ActionsList *actions_list;
+    ResizingList *results_list;
+    ResizingList *actions_list;
+    ItemDelegate *item_delegate;
+    ActionDelegate *action_delegate;
 
 private:
     bool event(QEvent *event) override;

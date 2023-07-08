@@ -1,20 +1,18 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
 #pragma once
-#include "albert.h"
+#include "albert/extension/frontend/frontend.h"
+#include "albert/extension/frontend/inputhistory.h"
+#include "albert/extension/queryhandler/triggerqueryhandler.h"
+#include "albert/plugin.h"
 #include "window.h"
 #include <QString>
+#include <QTimer>
 #include <map>
 #include <memory>
-class ItemsList;
-class ActionsList;
-class SettingsButton;
-class InputLine;
 
-
-class Plugin : public albert::ExtensionPlugin,
-               public albert::TriggerQueryHandler,
-               public albert::Frontend
+class Plugin : public albert::plugin::ExtensionPlugin<albert::Frontend>,
+               public albert::TriggerQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
@@ -48,9 +46,6 @@ public:
     bool alwaysOnTop() const;
     void setAlwaysOnTop(bool alwaysOnTop);
 
-    bool displayIcons() const;
-    void setDisplayIcons(bool value);
-
     bool displayScrollbar() const;
     void setDisplayScrollbar(bool value);
 
@@ -72,10 +67,11 @@ public:
     QString input() const override;
     void setInput(const QString&) override;
     QWidget* createFrontendConfigWidget() override;
+    unsigned long long winId() const override;
 
-    // albert::QueryHandler
+    // albert::TriggerQueryHandler
     QString defaultTrigger() const override;
-    void handleTriggerQuery(TriggerQuery *query) const override;
+    void handleTriggerQuery(TriggerQuery*) const override;
 
 private:
     void init_statemachine();
@@ -85,7 +81,7 @@ private:
     std::shared_ptr<albert::Query> current_query;
     std::shared_ptr<albert::Query> displayed_query;
     QTimer display_delay_timer;
-    albert::History history_;
+    albert::InputHistory history_;
     QString user_text; // used for history search
     std::map<QString, QString> themes_;
     std::list<std::shared_ptr<albert::Query>> queries_;

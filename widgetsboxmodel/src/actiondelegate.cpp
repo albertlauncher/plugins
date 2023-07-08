@@ -1,15 +1,11 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2014-2023 Manuel Schneider
 
-#include <QKeyEvent>
+#include "actiondelegate.h"
 #include <QPainter>
-#include "actionslist.h"
 
-ActionsList::ActionsList(QWidget *parent) : ResizingList(parent)
-{
-    setItemDelegate(new ActionDelegate);
-}
+ActionDelegate::ActionDelegate(QObject *parent) : QStyledItemDelegate(parent) {}
 
-void ActionsList::ActionDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options, const QModelIndex &index) const
+void ActionDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options, const QModelIndex &index) const
 {
     painter->save();
 
@@ -31,3 +27,4 @@ void ActionsList::ActionDelegate::paint(QPainter *painter, const QStyleOptionVie
                                          (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::WindowText);
     painter->restore();
 }
+

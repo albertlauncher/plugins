@@ -1,14 +1,22 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
 #include "albert/albert.h"
+#include "albert/extension/frontend/itemroles.h"
+#include "albert/extension/frontend/query.h"
+#include "albert/extension/queryhandler/standarditem.h"
 #include "albert/logging.h"
+#include "inputline.h"
 #include "plugin.h"
+#include "resizinglist.h"
 #include "ui_configwidget.h"
+#include <QDir>
 #include <QGraphicsEffect>
 #include <QKeyEvent>
+#include <QLineEdit>
 #include <QMessageBox>
-#include <QStandardPaths>
+#include <QSettings>
 #include <QSignalBlocker>
+#include <QStandardPaths>
 #include <QtStateMachine/QKeyEventTransition>
 #include <QtStateMachine/QSignalTransition>
 #include <QtStateMachine/QStateMachine>
@@ -41,8 +49,6 @@ const char*   CFG_MAX_RESULTS = "itemCount";
 const uint    DEF_MAX_RESULTS = 5;
 const char*   CFG_DISPLAY_SCROLLBAR = "displayScrollbar";
 const bool    DEF_DISPLAY_SCROLLBAR = false;
-const char*   CFG_DISPLAY_ICONS = "displayIcons";
-const bool    DEF_DISPLAY_ICONS = true;
 const char*   CFG_CLIENT_SHADOW = "clientShadow";
 const bool    DEF_CLIENT_SHADOW = true;
 const char*   CFG_SYSTEM_SHADOW = "systemShadow";
@@ -87,7 +93,7 @@ struct CondSignalTransition : public QSignalTransition {
 };
 }
 
-Plugin::Plugin() : history_(dataDir().filePath("input_history"))
+Plugin::Plugin()
 {
     display_delay_timer.setSingleShot(true);
     display_delay_timer.setInterval(100);
@@ -116,7 +122,6 @@ Plugin::Plugin() : history_(dataDir().filePath("input_history"))
     setShowFallbacksOnEmptyMatches(s->value(CFG_SHOW_FALLBACKS, DEF_SHOW_FALLBACKS).toBool());
     setMaxResults(s->value(CFG_MAX_RESULTS, DEF_MAX_RESULTS).toUInt());
     setDisplayScrollbar(s->value(CFG_DISPLAY_SCROLLBAR, DEF_DISPLAY_SCROLLBAR).toBool());
-    setDisplayIcons(s->value(CFG_DISPLAY_ICONS, DEF_DISPLAY_ICONS).toBool());
     setDisplayClientShadow(s->value(CFG_CLIENT_SHADOW, DEF_CLIENT_SHADOW).toBool());
     setDisplaySystemShadow(s->value(CFG_SYSTEM_SHADOW, DEF_SYSTEM_SHADOW).toBool());
     theme_ = s->value(CFG_THEME, DEF_THEME).toString();
@@ -137,11 +142,11 @@ Plugin::Plugin() : history_(dataDir().filePath("input_history"))
         if (current_query){
             current_query->cancel();
             disconnect(current_query.get(), &albert::Query::finished, this, &Plugin::queryFinsished);
-            disconnect(&current_query->matches(), &QAbstractItemModel::rowsInserted, this, &Plugin::resultsReady);
+            disconnect(current_query->matches(), &QAbstractItemModel::rowsInserted, this, &Plugin::resultsReady);
         }
         current_query = query(text);
         connect(current_query.get(), &albert::Query::finished, this, &Plugin::queryFinsished);
-        connect(&current_query->matches(), &QAbstractItemModel::rowsInserted, this, &Plugin::resultsReady);
+        connect(current_query->matches(), &QAbstractItemModel::rowsInserted, this, &Plugin::resultsReady);
         queries_.push_back(current_query);
 
 //        connect(q, &albert::Query::finished, [](){CRIT << "Query::finished";});
@@ -150,7 +155,7 @@ Plugin::Plugin() : history_(dataDir().filePath("input_history"))
         current_query->run();
     });
 
-    QTimer::singleShot(0, this, [this](){emit window.input_line->textChanged("");});  // initial query
+    //QTimer::singleShot(0, this, [this](){emit window.input_line->textChanged("");});  // fails because engine is not set
 
     window.results_list->hide();
     window.actions_list->hide();
@@ -237,16 +242,16 @@ void Plugin::init_statemachine()
     setTransition(s_results_postpone, s_results_hidden,
                   new CondSignalTransition(this, &Plugin::queryFinsished,
                                            [this](){return !show_fallbacks_on_empty_query
-                                                           || current_query->fallbacks().rowCount() == 0;}));
+                                                           || current_query->fallbacks()->rowCount() == 0;}));
 
     setTransition(s_results_postpone, s_results_model_fallbacks,
                   new CondSignalTransition(this, &Plugin::queryFinsished,
                                            [this](){return show_fallbacks_on_empty_query
-                                                           && current_query->fallbacks().rowCount() > 0;}));
+                                                           && current_query->fallbacks()->rowCount() > 0;}));
 
     setTransition(s_results_postpone, s_results_model_fallbacks,
                   new CondKeyEventTransition(window.input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
-                                             [this](){return current_query->fallbacks().rowCount() > 0;}));
+                                             [this](){return current_query->fallbacks()->rowCount() > 0;}));
 
     setTransition(s_results_postpone, s_results_model_matches,
                   new QSignalTransition(this, &Plugin::resultsReady));
@@ -255,11 +260,11 @@ void Plugin::init_statemachine()
     setTransition(s_results_hidden, s_results_model_fallbacks,
                   new CondSignalTransition(this, &Plugin::queryFinsished,
                                            [this](){return show_fallbacks_on_empty_query
-                                                           && current_query->fallbacks().rowCount() > 0;}));
+                                                           && current_query->fallbacks()->rowCount() > 0;}));
 
     setTransition(s_results_hidden, s_results_model_fallbacks,
                   new CondKeyEventTransition(window.input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
-                                             [this](){return current_query->fallbacks().rowCount() > 0;}));
+                                             [this](){return current_query->fallbacks()->rowCount() > 0;}));
 
     setTransition(s_results_hidden, s_results_model_matches,
                   new QSignalTransition(this, &Plugin::resultsReady));
@@ -267,16 +272,16 @@ void Plugin::init_statemachine()
 
     setTransition(s_results_model_fallbacks, s_results_hidden,
                   new CondKeyEventTransition(window.input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
-                                             [this](){return current_query->matches().rowCount() == 0;}));
+                                             [this](){return current_query->matches()->rowCount() == 0;}));
 
     setTransition(s_results_model_fallbacks, s_results_model_matches,
                   new CondKeyEventTransition(window.input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
-                                             [this](){return current_query->matches().rowCount() != 0;}));
+                                             [this](){return current_query->matches()->rowCount() != 0;}));
 
 
     setTransition(s_results_model_matches, s_results_model_fallbacks,
                   new CondKeyEventTransition(window.input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
-                                             [this](){return current_query->fallbacks().rowCount() > 0;}));
+                                             [this](){return current_query->fallbacks()->rowCount() > 0;}));
 
 
     setTransition(s_results_actions_hidden, s_results_actions_visible,
@@ -329,12 +334,12 @@ void Plugin::init_statemachine()
     });
 
     QObject::connect(s_results_model_matches, &QState::entered, this, [this](){
-        auto &m = current_query->matches();
+        auto *m = current_query->matches();
         auto *sm = window.results_list->selectionModel();
-        window.results_list->setModel(&m);
+        window.results_list->setModel(m);
         delete sm;
         // let selection model currentChanged set input hint
-        disconnect(&m, &QAbstractItemModel::rowsInserted, this, &Plugin::resultsReady);
+        disconnect(m, &QAbstractItemModel::rowsInserted, this, &Plugin::resultsReady);
         connect(window.results_list->selectionModel(), &QItemSelectionModel::currentChanged, this,
                 [this](const QModelIndex &current, const QModelIndex&) {
                     if (window.results_list->currentIndex().isValid())
@@ -343,14 +348,14 @@ void Plugin::init_statemachine()
                 });
         if (current_query->string().isEmpty()){ // avoid setting completion when synopsis should be shown
             const QSignalBlocker block(window.results_list->selectionModel());
-            window.results_list->setCurrentIndex(m.index(0, 0)); // should be okay since this state requires rc>0
+            window.results_list->setCurrentIndex(m->index(0, 0)); // should be okay since this state requires rc>0
         } else
-            window.results_list->setCurrentIndex(m.index(0, 0)); // should be okay since this state requires rc>0
+            window.results_list->setCurrentIndex(m->index(0, 0)); // should be okay since this state requires rc>0
         window.results_list->show();
     });
 
     QObject::connect(s_results_model_fallbacks, &QState::entered, this, [this](){
-        auto *m = &current_query->fallbacks();
+        auto *m = current_query->fallbacks();
         if (m != window.results_list->model()){ // Needed because fallback model may already be set
             auto *sm = window.results_list->selectionModel();
             window.results_list->setModel(m);
@@ -431,10 +436,10 @@ void Plugin::init_statemachine()
             emit window.input_line->textChanged(window.input_line->text());
     };
 
-    QObject::connect(window.results_list, &ItemsList::activated,
+    QObject::connect(window.results_list, &ResizingList::activated,
                      [activate](const auto &index){activate(index.row(), 0);});
 
-    QObject::connect(window.actions_list, &ItemsList::activated, this,
+    QObject::connect(window.actions_list, &ResizingList::activated, this,
                      [this, activate](const auto &index){activate(window.results_list->currentIndex().row(),
                                                                   index.row());});
 }
@@ -590,10 +595,11 @@ void Plugin::setVisible(bool visible)
 {
     window.setVisible(visible);
     if (visible){
+#if not defined Q_OS_MACOS // steals focus on macos
         window.raise();
         window.activateWindow();
-    }
-    else{
+#endif
+    } else {
         settings()->setValue(CFG_WND_POS, window.pos());
     }
 }
@@ -651,10 +657,6 @@ QWidget* Plugin::createFrontendConfigWidget()
     connect(ui.checkBox_scrollbar, &QCheckBox::toggled,
             this, &Plugin::setDisplayScrollbar);
 
-    ui.checkBox_icons->setChecked(displayIcons());
-    connect(ui.checkBox_icons, &QCheckBox::toggled,
-            this, &Plugin::setDisplayIcons);
-
     ui.checkBox_client_shadow->setChecked(displayClientShadow());
     connect(ui.checkBox_client_shadow, &QCheckBox::toggled,
             this, &Plugin::setDisplayClientShadow);
@@ -678,6 +680,8 @@ QWidget* Plugin::createFrontendConfigWidget()
 
     return widget;
 }
+
+unsigned long long Plugin::winId() const { return window.winId(); }
 
 // PROPERTIES
 
@@ -779,14 +783,6 @@ void Plugin::setAlwaysOnTop(bool alwaysOnTop)
 {
     settings()->setValue(CFG_ALWAYS_ON_TOP, alwaysOnTop);
     window.setWindowFlags(window.windowFlags().setFlag(Qt::WindowStaysOnTopHint, alwaysOnTop));
-}
-
-bool Plugin::displayIcons() const { return window.results_list->displayIcons(); }
-
-void Plugin::setDisplayIcons(bool value)
-{
-    settings()->setValue(CFG_DISPLAY_ICONS, value);
-    window.results_list->setDisplayIcons(value);
 }
 
 bool Plugin::displayScrollbar() const

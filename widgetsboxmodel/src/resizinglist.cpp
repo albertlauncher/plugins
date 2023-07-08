@@ -10,6 +10,7 @@ ResizingList::ResizingList(QWidget *parent) : QListView(parent), maxItems_(5)
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 //    setLayoutMode(LayoutMode::Batched);
     setUniformItemSizes(true);
+    connect(this, &ResizingList::clicked, this, &ResizingList::activated, Qt::QueuedConnection);
  }
 
 uint ResizingList::maxItems() const

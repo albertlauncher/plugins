@@ -14,6 +14,8 @@ function makeStyle(){
     -e "s/%selection_border_color%/$9/g" > "${10}"
 }
 
+mkdir themes -p
+
 #makeStyle            bg       fg       input    border   button   scrollbar sel_bg sel_border  output
 makeStyle "$TEMPLATE" "e7e8eb" "727A8F" "fdfdfd" "CFD6E6" "ffffff" "b8babf" "95c4fb" "cfd6e6" "themes/Arc Blue.qss"
 makeStyle "$TEMPLATE" "e7e8eb" "727A8F" "fdfdfd" "CFD6E6" "ffffff" "b8babf" "F5F6F7" "4084D6" "themes/Arc Grey.qss"

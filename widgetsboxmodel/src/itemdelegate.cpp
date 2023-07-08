@@ -1,48 +1,15 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2014-2023 Manuel Schneider
 
-#include <QAbstractTextDocumentLayout>
-#include <QApplication>
-#include <QDebug>
-#include <QKeyEvent>
+#include "albert/extension/frontend/itemroles.h"
+#include "itemdelegate.h"
 #include <QPainter>
-#include <QPixmapCache>
-#include <QTextDocument>
-#include "itemslist.h"
-#include "albert.h"
+using namespace albert;
 
-class ItemsList::ItemDelegate final : public QStyledItemDelegate
+
+ItemDelegate::ItemDelegate(QObject *parent) : QStyledItemDelegate(parent) {}
+
+void ItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options, const QModelIndex &index) const
 {
-public:
-    ItemDelegate(QObject *parent = nullptr) : QStyledItemDelegate(parent) {}
-
-    void paint(QPainter *painter, const QStyleOptionViewItem &options, const QModelIndex &index) const override;
-
-    bool drawIcon = true;
-    albert::ItemRoles subTextRole = albert::ItemRoles::SubTextRole;
-};
-
-ItemsList::ItemsList(QWidget *parent) : ResizingList(parent)
-{
-    setItemDelegate(delegate_ = new ItemDelegate(this));
-
-    // Single click activation (segfaults without queued connection)
-    connect(this, &ItemsList::clicked, this, &ItemsList::activated, Qt::QueuedConnection);
-}
-
-bool ItemsList::displayIcons() const
-{
-    return delegate_->drawIcon;
-}
-
-void ItemsList::setDisplayIcons(bool value)
-{
-    delegate_->drawIcon = value;
-    update();
-}
-
-void ItemsList::ItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options, const QModelIndex &index) const
-{
-
     painter->save();
 
     QStyleOptionViewItem option = options;
@@ -74,16 +41,15 @@ void ItemsList::ItemDelegate::paint(QPainter *painter, const QStyleOptionViewIte
     option.widget->style()->drawPrimitive(QStyle::PE_PanelItemViewItem, &option, painter, option.widget);
 
     // Draw icon
-    if (drawIcon) {
-        QRect iconRect = QRect(
-                QPoint((option.rect.height() - option.decorationSize.width())/2 + option.rect.x(),
-                       (option.rect.height() - option.decorationSize.height())/2 + option.rect.y()),
-                option.decorationSize);
+    QRect iconRect = QRect(
+        QPoint((option.rect.height() - option.decorationSize.width())/2 + option.rect.x(),
+               (option.rect.height() - option.decorationSize.height())/2 + option.rect.y()),
+        option.decorationSize);
 
-
-        painter->drawPixmap(iconRect, index.data(static_cast<int>(albert::ItemRoles::IconRole)).value<QIcon>()
-                .pixmap(option.decorationSize * option.widget->devicePixelRatioF()));
-    }
+    auto icon_urls = index.data(static_cast<int>(albert::ItemRoles::IconUrlsRole)).value<QStringList>();
+    QSize size;
+    auto pm = icon_provider.getPixmap(icon_urls, &size, option.decorationSize * option.widget->devicePixelRatioF()); // yes, needed
+    painter->drawPixmap(iconRect, pm);
 
     // Calculate content rects
     QFont font1 = option.font;
@@ -92,7 +58,7 @@ void ItemsList::ItemDelegate::paint(QPainter *painter, const QStyleOptionViewIte
     QFontMetrics fontMetrics1 = QFontMetrics(font1);
     QFontMetrics fontMetrics2 = QFontMetrics(font2);
     QRect contentRect = option.rect;
-    contentRect.setLeft(drawIcon ? option.rect.height() : 0);
+    contentRect.setLeft(option.rect.height());
     contentRect.setTop(option.rect.y()+option.rect.height()/2-(fontMetrics1.height()+fontMetrics2.height())/2);
     contentRect.setBottom(option.rect.y()+option.rect.height()/2+(fontMetrics1.height()+fontMetrics2.height())/2);
     QRect textRect = contentRect.adjusted(0,-2,0,-fontMetrics2.height()-2);
@@ -111,9 +77,7 @@ void ItemsList::ItemDelegate::paint(QPainter *painter, const QStyleOptionViewIte
                                          (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::WindowText);
 
     // Draw item subtext
-    text = fontMetrics2.elidedText(index.data((int)(option.state.testFlag(QStyle::State_Selected)
-                                              ? subTextRole
-                                              : albert::ItemRoles::SubTextRole)).toString(),
+    text = fontMetrics2.elidedText(index.data((int)albert::ItemRoles::SubTextRole).toString(),
                                    option.textElideMode, subTextRect.width());
     painter->setFont(font2);
     option.widget->style()->drawItemText(painter,
@@ -126,17 +90,54 @@ void ItemsList::ItemDelegate::paint(QPainter *painter, const QStyleOptionViewIte
 
 
     //    // Test
-//    painter->drawRect(option.rect);
-//    painter->setPen(Qt::red);
-//    painter->drawRect(contentRect);
-//    painter->setPen(Qt::blue);
-//    painter->drawRect(textRect);
-//    painter->setPen(Qt::green);
-//    painter->drawRect(subTextRect);
-//    painter->fillRect(option.rect, Qt::magenta);
-//    painter->fillRect(contentRect, Qt::red);
-//    painter->fillRect(textRect, Qt::blue);
-//    painter->fillRect(subTextRect, Qt::yellow);
+    //    painter->drawRect(option.rect);
+    //    painter->setPen(Qt::red);
+    //    painter->drawRect(contentRect);
+    //    painter->setPen(Qt::blue);
+    //    painter->drawRect(textRect);
+    //    painter->setPen(Qt::green);
+    //    painter->drawRect(subTextRect);
+    //    painter->fillRect(option.rect, Qt::magenta);
+    //    painter->fillRect(contentRect, Qt::red);
+    //    painter->fillRect(textRect, Qt::blue);
+    //    painter->fillRect(subTextRect, Qt::yellow);
+
+    // Debug
+//    if (true){
+//        // Std paint
+//        //style->drawControl(QStyle::CE_ItemViewItem, &option, painter, option.widget);
+
+//        QPen debugPen;
+//        debugPen.setColor(Qt::red);
+//        debugPen.setStyle(Qt::DashLine);
+//        debugPen.setDashOffset(5);
+//        painter->setPen(debugPen);
+//        painter->drawRect(option.rect);
+
+//        // Std subElementRects
+////        debugPen.setColor(Qt::magenta);
+////        painter->setPen(debugPen);
+////        painter->drawRect(option.widget->style()->subElementRect(QStyle::SE_ItemViewItemDecoration, &option, option.widget));
+////        painter->drawRect(option.widget->style()->subElementRect(QStyle::SE_ItemViewItemCheckIndicator, &option, option.widget));
+////        painter->drawRect(option.widget->style()->subElementRect(QStyle::SE_ItemViewItemText, &option, option.widget));
+////        painter->drawRect(option.widget->style()->subElementRect(QStyle::SE_ItemViewItemFocusRect, &option, option.widget));
+////        //    painter->drawRect(style->subElementRect(QStyle::SE_FrameContents, &option, option.widget));
+////        painter->drawRect(option.widget->style()->subElementRect(QStyle::SE_FrameLayoutItem, &option, option.widget));
+
+//        // Style rects, dont respect positions
+//        //debugPen.setColor(Qt::blue);
+//        //painter->setPen(debugPen);
+//        //painter->drawRect(style->itemTextRect(fontMetrics1,option.rect,option.displayAlignment,true,text1));
+//        //painter->drawRect(style->itemTextRect(fontMetrics2,option.rect,option.displayAlignment,true,text2));
+//        //painter->drawRect(style->itemPixmapRect(option.rect,option.displayAlignment,option.icon.pixmap(option.decor>
+
+//        // own rects
+//        debugPen.setColor(QColor("#80FF0000"));
+//        painter->setPen(debugPen);
+//        painter->drawRect(iconRect);
+//        painter->drawRect(textRect);
+//        painter->drawRect(subTextRect);
+//    }
 
 
     painter->restore();

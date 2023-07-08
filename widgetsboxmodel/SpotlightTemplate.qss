@@ -8,65 +8,56 @@
 
 * {
     border: none;
-    color : #808080;
-    background-color: #404040;
+    color : #%foreground_color%;
+    background-color: #%background_color%;
 }
 
 #frame {
-    padding: 6px;
-    border-radius: 12px;
-    background-color: #404040;
-    border: 6px solid #00FF80;
-
-    /* Workaround for Qt to get fixed size button*/
+    padding: 6px 0px;
+    border-radius: 8px;
+    background-color: #%background_color%;
     min-width:640px;
     max-width:640px;
 }
 
 #inputLine {
-    padding: 2px;
-    border-radius: 2px;
+    padding: 0px 8px;
     font-size: 36px;
-    selection-color: #404040;
-    selection-background-color: #808080;
-    background-color: #202020;
+    selection-color: #%background_color%;
+    selection-background-color: #%foreground_color%;
+    background-color: transparent;
 }
 
 #settingsButton {
-    color : #00FF80;
-    background-color: #404040;
-    padding: 4px;
-
-    /* Respect the frame border */
     margin: 6px 6px 0px 0px;
-    border-top-right-radius: 6px;
-    border-bottom-left-radius: 10px;
-
-    /* Workaround for Qt to get fixed size button*/
-    min-width:13px;
-    min-height:13px;
-    max-width:13px;
-    max-height:13px;
+    color: #%button_color%;
+    background-color: transparent;
+    padding: 2px;
+    min-width:14px;
+    min-height:14px;
+    max-width:14px;
+    max-height:14px;
 }
 
-/********** ListViews **********/
+/********** ListViews ************/
 
 QListView {
     background: transparent;
-    selection-color: #808080;
+    selection-color: #%selection_foreground_color%;
 }
 
 QListView::item:selected {
-    background: qlineargradient(x1:0, x2:1, stop:0.0 #2000FF80, stop:0.5 #1000FF80, stop:1.0 #2000FF80 );
+    background: #%selection_background_color%;
 }
 
 QListView QScrollBar:vertical  {
-    width: 5px;
+    width: 3px;
     background: transparent;
 }
 
 QListView QScrollBar::handle:vertical  {
-    background: #00FF80;
+    background: #%scroll_color%;
+    border-radius: 1px;
     min-height: 24px;
 }
 
@@ -79,23 +70,20 @@ QListView QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
     background: transparent;
 }
 
+/********** resultsList **********/
+
+QListView#resultsList {
+    icon-size: 40px;
+    font-size: 24px;
+}
+
+QListView#resultsList::item{
+    padding: 8px 0px 0px 0px;
+    height:48px;
+}
+
 /********** actionList **********/
 
 QListView#actionList {
     font-size: 20px;
-}
-
-QListView#actionList::item{
-    height:28px;
-}
-
-/********** resultsList **********/
-
-QListView#resultsList {
-    icon-size: 44px;
-    font-size: 26px;
-}
-
-QListView#resultsList::item{
-    height:48px;
 }

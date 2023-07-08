@@ -69,6 +69,7 @@ QListView#resultsList {
 
 QListView#resultsList::item {
     margin: 4px 0px 4px 0px;
+    height: 44px;
 }
 
 

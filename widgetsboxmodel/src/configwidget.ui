@@ -152,6 +152,23 @@
      </property>
     </widget>
    </item>
+   <item row="7" column="0">
+    <widget class="QLabel" name="label_followCursor">
+     <property name="text">
+      <string>Center on active screen</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="1">
+    <widget class="QCheckBox" name="checkBox_followCursor">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the window on the active screen (the one containing the mouse cursor) rather than the primary one. This option applies when &amp;quot;Show centered&amp;quot; is activated, but also if the window has to be centered on another screen (e.g. because a display has been disconnected).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
    <item row="8" column="0">
     <widget class="QLabel" name="label_style">
      <property name="sizePolicy">
@@ -282,29 +299,6 @@
     </widget>
    </item>
    <item row="13" column="0">
-    <widget class="QLabel" name="label_icons">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="text">
-      <string>Display icons</string>
-     </property>
-     <property name="buddy">
-      <cstring>checkBox_icons</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="13" column="1">
-    <widget class="QCheckBox" name="checkBox_icons">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Display icons provided by the items.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-    </widget>
-   </item>
-   <item row="14" column="0">
     <widget class="QLabel" name="label_scrollbar">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -320,27 +314,10 @@
      </property>
     </widget>
    </item>
-   <item row="14" column="1">
+   <item row="13" column="1">
     <widget class="QCheckBox" name="checkBox_scrollbar">
      <property name="toolTip">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Displays a scrollbar in the results list.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="0">
-    <widget class="QLabel" name="label_followCursor">
-     <property name="text">
-      <string>Center on active screen</string>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="1">
-    <widget class="QCheckBox" name="checkBox_followCursor">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the window on the active screen (the one containing the mouse cursor) rather than the primary one. This option applies when &amp;quot;Show centered&amp;quot; is activated, but also if the window has to be centered on another screen (e.g. because a display has been disconnected).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="text">
-      <string/>
      </property>
     </widget>
    </item>
@@ -358,7 +335,6 @@
   <tabstop>spinBox_results</tabstop>
   <tabstop>checkBox_system_shadow</tabstop>
   <tabstop>checkBox_client_shadow</tabstop>
-  <tabstop>checkBox_icons</tabstop>
   <tabstop>checkBox_scrollbar</tabstop>
  </tabstops>
  <resources/>

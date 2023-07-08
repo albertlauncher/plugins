@@ -25,8 +25,8 @@ SettingsButton::SettingsButton(QWidget *parent) : QPushButton(parent)
     auto *action = new QAction("Settings", this);
     action->setShortcuts({QKeySequence("Ctrl+,"), QKeySequence("Alt+,")});
 
-    connect(action, &QAction::triggered, this, &albert::showSettings);
-    connect(this, &QPushButton::clicked, this, &albert::showSettings);
+    connect(action, &QAction::triggered, this, [](){ albert::showSettings(); });
+    connect(this, &QPushButton::clicked, this, [](){ albert::showSettings(); });
 }
 
 SettingsButton::~SettingsButton() = default;

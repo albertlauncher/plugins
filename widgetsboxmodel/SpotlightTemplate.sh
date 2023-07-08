@@ -12,6 +12,8 @@ function makeStyle(){
     -e "s/%selection_background_color%/$7/g" > "${8}"
 }
 
+mkdir themes -p
+
 #makeStyle            bg       fg       button   scroll   sel_fg   sel_bg   output
-makeStyle "$TEMPLATE" "fcfcfc" "808080" "808080" "c0c0c0" "606060" "e0e0e0" "${1}Spotlight.qss"
-makeStyle "$TEMPLATE" "030303" "808080" "808080" "404040" "a0a0a0" "202020" "${1}Spotlight Dark.qss"
+makeStyle "$TEMPLATE" "fcfcfc" "808080" "808080" "c0c0c0" "606060" "e0e0e0" "themes/Spotlight.qss"
+makeStyle "$TEMPLATE" "030303" "808080" "808080" "404040" "a0a0a0" "202020" "themes/Spotlight Dark.qss"
