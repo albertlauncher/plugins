@@ -1,10 +1,12 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
-#include <Cocoa/Cocoa.h>
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
 #include "plugin.h"
+#include <Cocoa/Cocoa.h>
 ALBERT_LOGGING
-using namespace std;
 using namespace albert;
+using namespace std;
 
 static const QStringList watched_dirs = {"Applications", "/Applications"};
 
@@ -110,6 +112,8 @@ Plugin::Plugin()
         setIndexItems(::move(result));
     };
 }
+
+QString Plugin::defaultTrigger() const { return QStringLiteral("apps "); }
 
 void Plugin::updateIndexItems()
 {
