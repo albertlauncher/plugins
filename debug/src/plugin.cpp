@@ -1,11 +1,13 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2023 Manuel Schneider
 
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
+#include "albert/logging.h"
+#include "plugin.h"
 #include <chrono>
 #include <thread>
-#include "plugin.h"
-#include "albert/logging.h"
-using namespace std;
 ALBERT_LOGGING
+using namespace std;
 
 Plugin::Plugin() { INFO << "'Debug' created."; }
 
