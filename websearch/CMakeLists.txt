@@ -1,4 +1,4 @@
-project(websearch VERSION 1.5)
+project(websearch VERSION 1.6)
 albert_plugin(
     NAME WebSearch
     DESCRIPTION "Open websearches"

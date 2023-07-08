@@ -1,9 +1,13 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
+
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
+#include "albert/logging.h"
 #include "configwidget.h"
-#include "enginesmodel.h"
 #include "plugin.h"
 #include <QDesktopServices>
+#include <QDir>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -11,96 +15,102 @@
 #include <QUrl>
 #include <array>
 #include <vector>
-using namespace std;
-using namespace albert;
 ALBERT_LOGGING
+using namespace albert;
+using namespace std;
 
 const char * ENGINES_FILE_NAME = "engines.json";
 
-vector<SearchEngine> defaultSearchEngines = {
-    {"Google",         "gg ",      ":google",     "https://www.google.com/search?q=%s"},
-    {"Youtube",        "yt ",      ":youtube",    "https://www.youtube.com/results?search_query=%s"},
-    {"Amazon",         "ama ",     ":amazon",     "http://www.amazon.com/s/?field-keywords=%s"},
-    {"Ebay",           "eb ",      ":ebay",       "http://www.ebay.com/sch/i.html?_nkw=%s"},
-    {"Google Maps",    "maps ",    ":maps",       "https://www.google.com/maps/search/%s/"},
-    {"Google Scholar", "scholar ", ":scholar",    "https://scholar.google.com/scholar?q=%s"},
-    {"GitHub",         "gh ",      ":github",     "https://github.com/search?utf8=✓&q=%s"},
-    {"Wolfram Alpha",  "=",        ":wolfram",    "https://www.wolframalpha.com/input/?i=%s"},
-    {"DuckDuckGo",     "dd ",      ":duckduckgo", "https://duckduckgo.com/?q=%s"},
-};
-
-
-Plugin::Plugin() : engines_json(configDir().filePath(ENGINES_FILE_NAME))
+static QByteArray serializeEngines(const vector<SearchEngine> &engines)
 {
-    // Deserialize engines
-    QFile file(engines_json);
-    if (file.open(QIODevice::ReadOnly)) {
-        QJsonArray array = QJsonDocument::fromJson(file.readAll()).array();
+    QJsonArray array;
+    for (const SearchEngine& engine : engines) {
+        QJsonObject object;
+        object["guid"] = engine.guid;
+        object["name"] = engine.name;
+        object["url"] = engine.url;
+        object["trigger"] = engine.trigger;
+        object["iconPath"] = engine.iconUrl;
+        array.append(object);
+    }
+    return QJsonDocument(array).toJson();
+}
+
+static vector<SearchEngine> deserializeEngines(const QByteArray &json)
+{
+    vector<SearchEngine> searchEngines;
+    auto array = QJsonDocument::fromJson(json).array();
+    for (const auto &value : array) {
+        QJsonObject object = value.toObject();
         SearchEngine searchEngine;
+        searchEngine.guid = object["guid"].toString();
+        searchEngine.name = object["name"].toString();
+        searchEngine.trigger = object["trigger"].toString();
+        searchEngine.iconUrl = object["iconPath"].toString();
+        searchEngine.url = object["url"].toString();
+        searchEngines.push_back(searchEngine);
+    }
+    return searchEngines;
+}
+
+Plugin::Plugin()
+{
+    if (QFile file(configDir()->filePath(ENGINES_FILE_NAME));
+        file.open(QIODevice::ReadOnly))
+        setEngines(deserializeEngines(file.readAll()));
+    else
+        restoreDefaultEngines();
+}
+
+const vector<SearchEngine> &Plugin::engines() const { return searchEngines_; }
+
+void Plugin::setEngines(vector<SearchEngine> engines)
+{
+    sort(begin(engines), end(engines),
+         [](auto a, auto b){ return a.name < b.name; });
+
+    searchEngines_ = ::move(engines);
+
+    if (QFile file(configDir()->filePath(ENGINES_FILE_NAME));
+        file.open(QIODevice::WriteOnly))
+        file.write(serializeEngines(searchEngines_));
+    else
+        CRIT << qPrintable(QString("Could not write to file: '%1'.").arg(file.fileName()));
+
+    emit enginesChanged(searchEngines_);
+}
+
+void Plugin::restoreDefaultEngines()
+{
+    vector<SearchEngine> searchEngines;
+    QFile file(QString(":%1").arg(ENGINES_FILE_NAME));
+    if (file.open(QIODevice::ReadOnly)){
+        auto array = QJsonDocument::fromJson(file.readAll()).array();
         for (const auto &value : array) {
             QJsonObject object = value.toObject();
-            searchEngine.name     = object["name"].toString();
-            searchEngine.trigger  = object["trigger"].toString();
-            searchEngine.iconPath = object["iconPath"].toString();
-            searchEngine.url      = object["url"].toString();
-            searchEngines_.push_back(searchEngine);
+            SearchEngine searchEngine;
+            searchEngine.guid = QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
+            searchEngine.name = object["name"].toString();
+            searchEngine.trigger = object["trigger"].toString();
+            searchEngine.iconUrl = object["iconPath"].toString();
+            searchEngine.url = object["url"].toString();
+            searchEngines.push_back(searchEngine);
         }
-    } else {
-        INFO << qPrintable(QString("No engines file found. Using defaults. (%1).").arg(engines_json));
-        setEngines(defaultSearchEngines);
-    }
-}
-
-
-QWidget *Plugin::buildConfigWidget()
-{
-    return new ConfigWidget(const_cast<Plugin*>(this));
-}
-
-
-const vector<SearchEngine> &Plugin::engines() const
-{
-    return searchEngines_;
-}
-
-void Plugin::setEngines(const vector<SearchEngine> &engines)
-{
-    searchEngines_ = engines;
-    emit enginesChanged(searchEngines_);
-
-    // Serialize the engines
-    QFile file(engines_json);
-    if (file.open(QIODevice::WriteOnly)) {
-        QJsonArray array;
-        for ( const SearchEngine& searchEngine : searchEngines_ ) {
-            QJsonObject object;
-            object["name"]     = searchEngine.name;
-            object["url"]      = searchEngine.url;
-            object["trigger"]  = searchEngine.trigger;
-            object["iconPath"] = searchEngine.iconPath;
-            array.append(object);
-        }
-        file.write(QJsonDocument(array).toJson());
     } else
-        CRIT << qPrintable(QString("Could not write to file: '%1'.").arg(file.fileName()));
-}
-
-
-void ::Plugin::restoreDefaultEngines()
-{
-    setEngines(defaultSearchEngines);
+        CRIT << "Failed reading default engines.";
+    setEngines(searchEngines);
 }
 
 static shared_ptr<StandardItem> buildItem(const SearchEngine &se, const QString &search_term)
 {
     QString url = QString(se.url).replace("%s", QUrl::toPercentEncoding(search_term));
     return StandardItem::make(
-            se.name,
-            se.name,
-            QString("Search %1 for '%2'").arg(se.name, search_term),
-            QString("%1 %2").arg(se.name, search_term),
-            {QString("xdg:%1").arg(se.name.toLower()), se.iconPath},
-            {{"run", "Run websearch", [url](){ openUrl(url); }}}
+        se.guid,
+        se.name,
+        QString("Search %1 for '%2'").arg(se.name, search_term),
+        QString("%1 %2").arg(se.name, search_term),
+        {se.iconUrl},
+        {{"run", "Run websearch", [url](){ openUrl(url); }}}
     );
 }
 
@@ -109,7 +119,8 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
     vector<RankItem> results;
     if (!query->string().isEmpty())
         for (const SearchEngine &se: searchEngines_)
-            for (const auto &keyword : {se.trigger.toLower(), QString("%1 ").arg(se.name.toLower())})
+            for (const auto &keyword : {QStringLiteral("%1 ").arg(se.trigger.toLower()),
+                                        QStringLiteral("%1 ").arg(se.name.toLower())})
                 if (auto prefix = query->string().toLower().left(keyword.size()); keyword.startsWith(prefix)){
                     results.emplace_back(buildItem(se, query->string().mid(prefix.size())),
                                          (float)prefix.length()/keyword.size());
@@ -127,3 +138,5 @@ vector<shared_ptr<Item>> Plugin::fallbacks(const QString &query) const
             results.emplace_back(buildItem(se, query.isEmpty()?"…":query));
     return results;
 }
+
+QWidget *Plugin::buildConfigWidget() { return new ConfigWidget(const_cast<Plugin*>(this)); }

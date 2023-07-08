@@ -1,40 +1,38 @@
 // Copyright (c) 2022 Manuel Schneider
 
 #pragma once
-#include <QPointer>
-#include "albert.h"
-#include "searchengine.h"
+#include "albert/extension/queryhandler/fallbackprovider.h"
+#include "albert/extension/queryhandler/globalqueryhandler.h"
+#include "albert/plugin.h"
+#include <QString>
 
-class ConfigWidget;
+struct SearchEngine
+{
+    QString guid;
+    QString name;
+    QString trigger;
+    QString iconUrl;
+    QString url;
+};
 
-
-class Plugin final : public albert::ExtensionPlugin,
-                     public albert::FallbackHandler,
-                     public albert::QueryHandler
+class Plugin final : public albert::plugin::ExtensionPlugin<albert::GlobalQueryHandler>,
+                     public albert::FallbackHandler
 {
     Q_OBJECT ALBERT_PLUGIN
-
 public:
-
     Plugin();
+    const std::vector<SearchEngine>& engines() const;
+    void setEngines(std::vector<SearchEngine> engines);
+    void restoreDefaultEngines();
 
+private:
     std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery*) const override;
     std::vector<std::shared_ptr<albert::Item>> fallbacks(const QString &) const override;
     QWidget *buildConfigWidget() override;
 
-    const std::vector<SearchEngine>& engines() const;
-    void setEngines(const std::vector<SearchEngine> &engines);
-
-    void restoreDefaultEngines();
-
-private:
-
-    const QString engines_json;
-    QPointer<ConfigWidget> widget_;
     std::vector<SearchEngine> searchEngines_;
 
 signals:
-
     void enginesChanged(const std::vector<SearchEngine> &engines);
 
 };

@@ -6,6 +6,7 @@
 
 class Plugin;
 class EnginesModel;
+class QSortFilterProxyModel;
 
 class ConfigWidget final : public QWidget
 {
@@ -25,4 +26,5 @@ private:
 
     Plugin *plugin_;
     EnginesModel *enginesModel_;
+    QSortFilterProxyModel *proxyModel;
 };

@@ -1,22 +1,26 @@
 // Copyright (C) 2014-2021 Manuel Schneider
 
 #pragma once
-#include <QDialog>
 #include "ui_searchengineeditor.h"
-#include "searchengine.h"
+#include <QDialog>
+#include <QImage>
 
 class SearchEngineEditor : public QDialog
 {
     Q_OBJECT
-
 public:
+    explicit SearchEngineEditor(const QString &icon_url,
+                                const QString &name,
+                                const QString &trigger,
+                                const QString &url,
+                                QWidget *parent);
 
-    explicit SearchEngineEditor(const SearchEngine &searchEngine, QWidget *parent = 0);
-    const SearchEngine &searchEngine() { return searchEngine_; }
+    std::unique_ptr<QImage> icon_image;
+    QString name() const;
+    QString trigger() const;
+    QString url() const;
 
 private:
-
-    SearchEngine searchEngine_;
     Ui::SearchEngineEditor ui;
-
+    bool eventFilter(QObject *watched, QEvent *event) override;
 };
