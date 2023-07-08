@@ -1,7 +1,9 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/item.h"
 #include "albert/logging.h"
-#include "albert/util/timeprinter.hpp"
+#include "albert/util/timeprinter.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
 #include <QDir>
@@ -11,8 +13,9 @@
 #include <QJsonObject>
 #include <QStandardPaths>
 #include <utility>
-using namespace std;
 ALBERT_LOGGING
+using namespace albert;
+using namespace std;
 
 static const char* CFG_BOOKMARKS_PATH = "bookmarks_path";
 static const char* CFG_INDEX_HOSTNAME = "indexHostname";
@@ -28,7 +31,7 @@ static const char *app_dirs[] = {
     "vivaldi"
 };
 
-struct BookmarkItem : albert::Item
+struct BookmarkItem : Item
 {
     BookmarkItem(QString i, QString n, QString u) : id_(::move(i)), name_(::move(n)), url_(::move(u)) {}
 
@@ -40,16 +43,16 @@ struct BookmarkItem : albert::Item
     QString text() const override { return name_; }
     QString subtext() const override { return url_; }
     QStringList iconUrls() const override { return icon_urls; }
-    vector<albert::Action> actions() const override { return {
-        {"open-url", "Open URL",              [this]() { albert::openUrl(url_); }},
-        {"copy-url", "Copy URL to clipboard", [this]() { albert::setClipboardText(url_); }}
+    vector<Action> actions() const override { return {
+        {"open-url", "Open URL",              [this]() { openUrl(url_); }},
+        {"copy-url", "Copy URL to clipboard", [this]() { setClipboardText(url_); }}
     }; }
 };
 
 
 static std::vector<std::shared_ptr<BookmarkItem>> parseBookmarks(const QStringList& paths, const bool &abort)
 {
-    albert::TimePrinter tp("Indexed bookmarks in %1 µs");
+    TimePrinter tp("Indexed bookmarks in %1 ms");
 
     function<void(const QJsonObject &json, std::vector<std::shared_ptr<BookmarkItem>> &items)> recursiveJsonTreeWalker =
             [&recursiveJsonTreeWalker](const QJsonObject &json, std::vector<std::shared_ptr<BookmarkItem>> &items){
@@ -140,11 +143,11 @@ void Plugin::resetPaths()
 
 void Plugin::updateIndexItems()
 {
-    vector<albert::IndexItem> index_items;
+    vector<IndexItem> index_items;
     for (const auto &bookmark : bookmarks_){
-        index_items.emplace_back(static_pointer_cast<albert::Item>(bookmark), bookmark->name_);
+        index_items.emplace_back(static_pointer_cast<Item>(bookmark), bookmark->name_);
         if (index_hostname_)
-            index_items.emplace_back(static_pointer_cast<albert::Item>(bookmark), QUrl(bookmark->url_).host());
+            index_items.emplace_back(static_pointer_cast<Item>(bookmark), QUrl(bookmark->url_).host());
     }
     setIndexItems(::move(index_items));
 }
@@ -164,7 +167,7 @@ QWidget *Plugin::buildConfigWidget()
 
     // Checkbox index hostnames
     ui.checkBox_index_hostname->setChecked(index_hostname_);
-    connect(ui.checkBox_index_hostname, &QCheckBox::toggled, [this](bool checked){
+    connect(ui.checkBox_index_hostname, &QCheckBox::toggled, this, [this](bool checked){
         settings()->setValue(CFG_INDEX_HOSTNAME, checked);
         index_hostname_ = checked;
         indexer.run();
