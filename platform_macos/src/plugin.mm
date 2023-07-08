@@ -1,17 +1,21 @@
 
 // Copyright (c) 2022-2023 Manuel Schneider
 
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
+#include "albert/logging.h"
+#include "plugin.h"
 #include <Cocoa/Cocoa.h>
 #include <CoreServices/CoreServices.h>
-#include "plugin.h"
 ALBERT_LOGGING
 using namespace std;
 using namespace albert;
 
 
-Plugin::Plugin() { registry().add(&dict_handler); }
-
-Plugin::~Plugin() { registry().remove(&dict_handler); }
+std::vector<Extension*> Plugin::extensions()
+{
+  return { &dict_handler };
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -57,8 +61,13 @@ void DictHandler::handleTriggerQuery(TriggerQuery *query) const
                     QString::fromNSString(long_name),
                     text,
                     {":dict"},
-                    Actions{{"open","Open in Apple dictionary",[s=query->string()](){ openUrl("dict://"+s); }}}
-                 ));
+                    {
+                        {
+                            "open", "Open in Apple dictionary",
+                            [s=query->string()](){ openUrl("dict://"+s); }
+                        }
+                    }
+                ));
             }
         }
     }
