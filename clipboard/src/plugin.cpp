@@ -1,17 +1,24 @@
 // Copyright (c) 2022 Manuel Schneider
 
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
+#include "albert/logging.h"
 #include "plugin.h"
 #include <QCheckBox>
+#include <QDir>
+#include <QFile>
+#include <QFormLayout>
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QMessageBox>
+#include <QSettings>
 #include <QSpinBox>
-using namespace std;
-using namespace albert;
 ALBERT_LOGGING
+using namespace albert;
+using namespace std;
 
 namespace {
 static const char* HISTORY_FILE_NAME = "clipboard_history";
@@ -22,8 +29,7 @@ static const uint DEF_HISTORY_LENGTH = 100;
 }
 
 
-Plugin::Plugin():
-    clipboard(QGuiApplication::clipboard())
+Plugin::Plugin() : clipboard(QGuiApplication::clipboard())
 {
     auto s = settings();
     persistent = s->value(CFG_PERSISTENCE, DEF_PERSISTENCE).toBool();
@@ -123,7 +129,7 @@ QWidget *Plugin::buildConfigWidget()
 
 void Plugin::writeHistory() const
 {
-    QFile file(dataDir().filePath(HISTORY_FILE_NAME));
+    QFile file(dataDir()->filePath(HISTORY_FILE_NAME));
 
     DEBG << "Wrinting clipboard history to" << file.fileName();
 
@@ -148,7 +154,7 @@ void Plugin::writeHistory() const
 
 void Plugin::readHistory()
 {
-    QFile file(dataDir().filePath(HISTORY_FILE_NAME));
+    QFile file(dataDir()->filePath(HISTORY_FILE_NAME));
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)){
         WARN << "Failed reading from clipboard history.";
         QMessageBox::warning(nullptr, qApp->applicationName(),

@@ -1,8 +1,11 @@
 // Copyright (c) 2022 Manuel Schneider
 
 #pragma once
-#include "albert.h"
+#include "albert/extension/queryhandler/triggerqueryhandler.h"
+#include "albert/plugin.h"
 #include <QClipboard>
+#include <QDateTime>
+#include <QTimer>
 
 struct ClipboardEntry
 {
@@ -12,8 +15,7 @@ struct ClipboardEntry
 };
 
 
-class Plugin : public albert::ExtensionPlugin,
-               public albert::TriggerQueryHandler
+class Plugin : public albert::plugin::ExtensionPlugin<albert::TriggerQueryHandler>
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
@@ -29,6 +31,6 @@ public:
     QTimer timer;
     QClipboard * const clipboard;
     mutable std::list<ClipboardEntry> history;
-    bool persistent;
+    mutable bool persistent;
     uint length;
 };
