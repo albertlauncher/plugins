@@ -22,6 +22,8 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
 {
     ui.setupUi(this);
 
+    ALBERT_PLUGIN_PROPERTY_CONNECT(plugin, fsBrowsersCaseSensitive, ui.checkBox_fsBrowsersCaseSensitive, setChecked, toggled)
+
     auto &index_paths = plu->fsIndex().indexPaths();
     paths_model.setStringList(getPaths(index_paths));
     ui.listView_paths->setModel(&paths_model);
@@ -33,15 +35,13 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
                 tr("Choose directory"),
                 QStandardPaths::writableLocation(QStandardPaths::HomeLocation));
         if (!path.isEmpty()){
-            auto *p = new FsIndexPath(path);
-            if (plugin->fsIndex().addPath(p)){
-                plugin->fsIndex().update(p);
-                paths_model.setStringList(getPaths(plugin->fsIndex().indexPaths()));
-                for (int i = 0; i < paths_model.stringList().size(); ++i)
-                    if (paths_model.stringList()[i] == path)
-                        ui.listView_paths->setCurrentIndex(paths_model.index(i, 0));
-            }
-            else delete p;
+            plugin->addPath(path);
+
+            auto paths = getPaths(plugin->fsIndex().indexPaths());
+            paths_model.setStringList(paths);
+            for (int i = 0; i < paths.size(); ++i)
+                if (paths[i] == path)
+                    ui.listView_paths->setCurrentIndex(paths_model.index(i, 0));
         }
         ui.listView_paths->setFixedHeight(
                 ui.listView_paths->contentsMargins().bottom() +
@@ -52,7 +52,7 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
     connect(ui.toolButton_rem, &QPushButton::clicked, this, [this]()
     {
         if (ui.listView_paths->currentIndex().isValid()){
-            plugin->fsIndex().remPath(ui.listView_paths->currentIndex().data().toString());
+            plugin->removePath(ui.listView_paths->currentIndex().data().toString());
             paths_model.removeRow(ui.listView_paths->currentIndex().row());
         }
         ui.listView_paths->setFixedHeight(
@@ -119,11 +119,11 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
     connect(ui.checkBox_followSymlinks, &QCheckBox::clicked, this,
             [this](bool value){ plugin->fsIndex().indexPaths().at(current_path)->setFollowSymlinks(value); });
 
-    connect(ui.spinBox_interval, &QSpinBox::valueChanged, this,
-            [this](int value){ plugin->fsIndex().indexPaths().at(current_path)->setScanInterval(value); });
+    connect(ui.spinBox_interval, &QSpinBox::editingFinished, this,
+            [this](){ plugin->fsIndex().indexPaths().at(current_path)->setScanInterval(ui.spinBox_interval->value()); });
 
-    connect(ui.spinBox_depth, &QSpinBox::valueChanged, this,
-            [this](int value){ plugin->fsIndex().indexPaths().at(current_path)->setMaxDepth(value); });
+    connect(ui.spinBox_depth, &QSpinBox::editingFinished, this,
+            [this](){ plugin->fsIndex().indexPaths().at(current_path)->setMaxDepth(ui.spinBox_depth->value()); });
 
     connect(ui.checkBox_fswatch, &QCheckBox::clicked, this,
             [this](bool value){

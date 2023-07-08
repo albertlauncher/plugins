@@ -2,13 +2,19 @@
 
 #include "filebrowsers.h"
 #include "fileitems.h"
+#include <QDir>
+#include <QFileInfo>
+#include <QMimeDatabase>
 using namespace std;
+
+
+AbstractBrowser::AbstractBrowser(bool &cs) : caseSensitive(cs){}
 
 QString AbstractBrowser::description() const { return "Browse files by path"; }
 
 bool AbstractBrowser::allowTriggerRemap() const { return false; }
 
-static vector<shared_ptr<albert::Item>> buildItems(const QString &input)
+vector<shared_ptr<albert::Item>> AbstractBrowser::buildItems(const QString &input) const
 {
     vector<shared_ptr<albert::Item>> results;
 
@@ -22,7 +28,7 @@ static vector<shared_ptr<albert::Item>> buildItems(const QString &input)
 
         for (const QFileInfo &dir_entry_info: dir.entryInfoList(QDir::AllEntries | QDir::Hidden | QDir::NoDotAndDotDot,
                                                                 QDir::DirsFirst | QDir::Name | QDir::IgnoreCase)) {
-            if (!dir_entry_info.fileName().startsWith(name_filter))
+            if (!dir_entry_info.fileName().startsWith(name_filter, caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive))
                 continue;
 
             QMimeType mimetype = mimeDatabase.mimeTypeForFile(dir_entry_info);
@@ -45,6 +51,8 @@ static vector<shared_ptr<albert::Item>> buildItems(const QString &input)
 }
 
 
+RootBrowser::RootBrowser(bool &cs) : AbstractBrowser(cs){}
+
 QString RootBrowser::id() const { return "rootbrowser"; }
 
 QString RootBrowser::name() const { return "Root browser"; }
@@ -56,6 +64,8 @@ void RootBrowser::handleTriggerQuery(TriggerQuery *query) const
     query->add(buildItems(QString("/%1").arg(query->string())));
 }
 
+
+HomeBrowser::HomeBrowser(bool &cs) : AbstractBrowser(cs){}
 
 QString HomeBrowser::id() const { return "homebrowser"; }
 

@@ -1,7 +1,7 @@
 // Copyright (c) 2022 Manuel Schneider
 
 #pragma once
-#include "albert/extensions/queryhandler.h"
+#include "albert/extension/queryhandler/item.h"
 #include <QMimeType>
 class DirNode;
 

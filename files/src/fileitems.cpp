@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Manuel Schneider
 
-#include "albert.h"
+#include "albert/albert.h"
 #include "fileitems.h"
 #include "fsindexnodes.h"
 #include <QApplication>
@@ -16,7 +16,7 @@ QString AbstractFileItem::id() const { return filePath(); }
 
 QString AbstractFileItem::text() const { return name(); }
 
-QString AbstractFileItem::subtext() const { return path(); }
+QString AbstractFileItem::subtext() const { return filePath(); }
 
 QString AbstractFileItem::inputActionText() const
 {
@@ -42,9 +42,9 @@ QStringList AbstractFileItem::iconUrls() const
     return urls;
 }
 
-Actions AbstractFileItem::actions() const
+vector<Action> AbstractFileItem::actions() const
 {
-    albert::Actions actions;
+    vector<Action> actions;
 
     actions.emplace_back("f-open", "Open with default application", [this](){
         openUrl(QUrl::fromLocalFile(filePath()).toString());
