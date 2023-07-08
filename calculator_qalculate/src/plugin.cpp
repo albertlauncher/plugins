@@ -1,10 +1,14 @@
 // Copyright (c) 2023 Manuel Schneider
 
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
+#include "albert/logging.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
+#include <QSettings>
 ALBERT_LOGGING
-using namespace std;
 using namespace albert;
+using namespace std;
 
 namespace {
 const char* URL_MANUAL = "https://qalculate.github.io/manual/index.html";
