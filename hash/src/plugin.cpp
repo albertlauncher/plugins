@@ -1,12 +1,13 @@
 // Copyright (c) 2022 Manuel Schneider
 
-#include "albert.h"
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
 #include "plugin.h"
 #include <QCryptographicHash>
 #include <QMetaEnum>
 #include <memory>
-using namespace std;
 using namespace albert;
+using namespace std;
 
 static int algo_count = QMetaEnum::fromType<QCryptographicHash::Algorithm>().keyCount();
 

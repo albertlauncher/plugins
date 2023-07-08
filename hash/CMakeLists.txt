@@ -1,4 +1,4 @@
-project(hash VERSION 1.7)
+project(hash VERSION 1.8)
 albert_plugin(
     NAME "Hash Generator"
     DESCRIPTION "Hash strings"
