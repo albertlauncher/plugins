@@ -1,4 +1,4 @@
-project(python VERSION 1.8)
+project(python VERSION 1.9)
 albert_plugin(
     NAME "Python"
     DESCRIPTION "Load Python plugins"
@@ -14,3 +14,42 @@ find_package(Python3 COMPONENTS Interpreter Development)
 find_package(pybind11)
 target_link_libraries(${PROJECT_NAME} PRIVATE pybind11::embed)
 install(DIRECTORY "plugins/" DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/${PROJECT_NAME}/plugins")
+
+#option(BUILD_PY_TESTS "Build ${PROJECT_NAME} tests (Reqiures doctest)" OFF)
+#if (BUILD_PY_TESTS)
+#    set(TARGET_TST ${PROJECT_NAME}_test)
+#    find_package(doctest)
+
+
+#    include(GenerateExportHeader)
+#    generate_export_header(${TARGET_LIB}
+#        BASE_NAME "ALBERT"
+#        EXPORT_FILE_NAME "${PROJECT_BINARY_DIR}/include/albert/export.h"
+#    )
+
+
+#    add_executable(${TARGET_TST}
+#        test/test.cpp
+#        "${PROJECT_BINARY_DIR}/include/albert/export.h"
+#        ../../src/plugininstanceprivate.h
+#        ../../src/plugininstanceprivate.cpp
+#        ../../src/pluginloaderprivate.h
+#        ../../include/albert/extension/pluginprovider/pluginloader.h
+#        ../../src/pluginloader.cpp
+#    )
+
+#    target_include_directories(${TARGET_TST} PRIVATE
+#        ${PROJECT_BINARY_DIR}/include
+#        include
+#        src
+#        ../../include
+#        ../../src
+#    )
+
+#    target_link_libraries(${TARGET_TST}
+#        PRIVATE
+#        pybind11::embed
+#        doctest::doctestQt6::Core
+##        albert::albert
+#    )
+#endif()

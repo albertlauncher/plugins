@@ -1,14 +1,14 @@
-// Copyright (c) 2017-2022 Manuel Schneider
+// Copyright (c) 2017-2023 Manuel Schneider
 
 #pragma once
-#include "albert.h"
+#include "albert/extension/pluginprovider/pluginprovider.h"
+#include "albert/plugin.h"
+#include <QFileSystemWatcher>
 #include <memory>
 class PyPluginLoader;
 namespace pybind11 { class gil_scoped_release; }
 
-class Plugin:
-    public albert::ExtensionPlugin,
-    public albert::PluginProvider
+class Plugin : public albert::plugin::ExtensionPlugin<albert::PluginProvider>
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
@@ -18,6 +18,8 @@ public:
     bool watchSources() const;
     void setWatchSources(bool);
 
+    void installPackages(const QStringList&) const;
+
 protected:
     QWidget* buildConfigWidget() override;
     std::vector<albert::PluginLoader*> plugins() override;
@@ -25,11 +27,10 @@ protected:
 private:
     void reloadModules();
     void updateSourceWatches();
-    void installPackages(const QStringList&) const;
 
-    std::vector<PyPluginLoader> plugins_;
+    std::vector<std::unique_ptr<PyPluginLoader>> plugins_;
     std::unique_ptr<pybind11::gil_scoped_release> release_;
     std::unique_ptr<QFileSystemWatcher> sources_watcher_;
-
-    friend class PyPluginLoader;
 };
+
+

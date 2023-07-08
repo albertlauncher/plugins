@@ -1,7 +1,8 @@
 // Copyright (c) 2017-2022 Manuel Schneider
 
 #pragma once
-#include <pybind11/embed.h>
+#include <pybind11/embed.h> // Has to be imported first
+#include <pybind11/stl.h> // Has to be imported first
 #include <QString>
 #include <QStringList>
 #include <list>
@@ -11,23 +12,26 @@ namespace py = pybind11;
 namespace pybind11 {
 namespace detail {
 
-    template <> struct type_caster<QString> {
-    PYBIND11_TYPE_CASTER(QString, _("QString"));
+template <> struct type_caster<QString> {
+    PYBIND11_TYPE_CASTER(QString, _("str"));
     private:
-        using str_caster_t = make_caster<std::string>;
+        using str_caster_t = make_caster<std::u16string>;
         str_caster_t str_caster;
     public:
         bool load(handle src, bool convert) {
-            if (str_caster.load(src, convert)) { value = QString::fromStdString(str_caster); return true; }
+            if (str_caster.load(src, convert)) {
+                value = QString::fromStdU16String(str_caster);
+                return true;
+            }
             return false;
         }
         static handle cast(const QString &s, return_value_policy policy, handle parent) {
-            return str_caster_t::cast(s.toStdString(), policy, parent);
+            return str_caster_t::cast(s.toStdU16String(), policy, parent);
         }
     };
 
     template <> struct type_caster<QStringList> {
-    PYBIND11_TYPE_CASTER(QStringList, _("QStringList"));
+    PYBIND11_TYPE_CASTER(QStringList, _("List[str]"));
     private:
         using list_caster_t = make_caster<std::list<QString>>;
         list_caster_t list_caster;
