@@ -1,4 +1,4 @@
-project(datetime VERSION 1.2)
+project(datetime VERSION 1.3)
 
 albert_plugin(
     NAME DateTime

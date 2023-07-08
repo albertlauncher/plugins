@@ -1,12 +1,19 @@
 // Copyright (c) 2023 Manuel Schneider
 
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
 #include "plugin.h"
-using namespace std;
+#include <QDateTime>
+#include <QLocale>
+#include <QTimeZone>
 using namespace albert;
+using namespace std;
 
-Plugin::Plugin() { registry().add(&tzh); }
 
-Plugin::~Plugin() { registry().remove(&tzh); }
+vector<Extension*> Plugin::extensions()
+{
+    return {this, &tzh};
+}
 
 vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
 {
