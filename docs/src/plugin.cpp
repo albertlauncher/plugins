@@ -54,12 +54,13 @@ static QString fixPath(QString path) {
 class DocumentationItem : public albert::Item
 {
 public:
-    DocumentationItem(const Docset *ds, QString n, QString p)
-        : docset(ds), name(::move(n)), path(fixPath(p)) {}
+    DocumentationItem(const Docset *ds, QString n, QString p, QString a)
+        : docset(ds), name(::move(n)), path(fixPath(p)), anchor(::move(a)) {}
 
     const Docset * const docset;
     const QString name;
     const QString path;
+    const QString anchor;
 
     QString id() const override { return path; }
     QString text() const override { return name; }
@@ -72,7 +73,20 @@ public:
                 id(),
                 "Open documentation",
                 [this](){
-                    openUrl(QString("file://%1/Contents/Resources/Documents/%2").arg(docset->path, path));
+                    if (anchor.isEmpty()) {
+                        openUrl(QString("file://%1/Contents/Resources/Documents/%2").arg(docset->path, path));
+                    } else {
+                        QString tmpfile = "/tmp/albert-doc-trampoline.html";
+                        QFile file(tmpfile);
+                        if (file.open(QIODevice::ReadWrite)) {
+                            QTextStream stream(&file);
+                            stream << "<html><head><meta http-equiv=\"refresh\" content=\"0; ";
+                            stream << QString("file:///%1/Contents/Resources/Documents/%2#%3").arg(docset->path, path, anchor);
+                            stream << "\"></head></html>\n";
+                        }
+                        file.close();
+                        openUrl(QString("file:///tmp/albert-doc-trampoline.html"));
+                    }
                 }
             }
         };
@@ -357,10 +371,7 @@ std::vector<IndexItem> Docset::createIndexItems() const
                     }
                 }
 
-                if (!a.isEmpty())
-                    continue; // Skip anchors, browsers cant handle them
-
-                auto item = make_shared<DocumentationItem>(this, n, p);
+                auto item = make_shared<DocumentationItem>(this, n, p, a);
                 items.emplace_back(item, item->text());
             }
         }
@@ -390,10 +401,14 @@ std::vector<IndexItem> Docset::createIndexItems() const
                     QString n = sql.value(0).toString();
                     QString t = sql.value(1).toString();
                     QString p = sql.value(2).toString();
-                    if (p.contains("#"))
-                        continue; // Skip anchors, browsers cant handle them
+                    QString a;
+                    if (p.contains("#")) {
+                        int index = p.indexOf("#");
+                        a = p.right(p.size() - index + 1);
+                        p = p.left(index);
+                    }
 
-                    auto item = make_shared<DocumentationItem>(this, n, p);
+                    auto item = make_shared<DocumentationItem>(this, n, p, a);
                     items.emplace_back(item, item->text());
                 }
 
@@ -415,10 +430,8 @@ std::vector<IndexItem> Docset::createIndexItems() const
                     QString t = sql.value(1).toString();
                     QString p = sql.value(2).toString();
                     QString a = sql.value(3).toString();
-                    if (!a.isEmpty())
-                        continue; // Skip anchors, browsers cant handle them
 
-                    auto item = make_shared<DocumentationItem>(this, n, p);
+                    auto item = make_shared<DocumentationItem>(this, n, p, a);
                     items.emplace_back(item, item->text());
                 }
             }
