@@ -1,13 +1,14 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
-#include <QStandardPaths>
-#include <QRegularExpression>
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/standarditem.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
+#include <QRegularExpression>
+#include <QStandardPaths>
 ALBERT_LOGGING
 using namespace std;
-using albert::StandardItem;
-using albert::IndexItem;
+using namespace albert;
 const char* CFG_IGNORESHOWINKEYS     = "ignore_show_in_keys";
 const bool  DEF_IGNORESHOWINKEYS     = false;
 const char* CFG_USEKEYWORDS          = "use_keywords";
@@ -319,7 +320,7 @@ vector<IndexItem> Plugin::indexApps(const bool &abort) const
          * Build actions
          */
 
-        albert::Actions actionList;
+        vector<Action> actionList;
 
         if (term)
             actionList.emplace_back("run", "Run", [=](){ albert::runTerminal(commandLine, workingDir, true); });

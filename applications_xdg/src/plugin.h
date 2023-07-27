@@ -1,15 +1,14 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
 #pragma once
-#include "albert.h"
-#include <memory>
+#include "albert/extension/queryhandler/indexqueryhandler.h"
+#include "albert/plugin.h"
+#include "albert/util/backgroundexecutor.h"
 #include <QFileSystemWatcher>
+#include <memory>
 
 
-class Plugin:
-        public albert::ExtensionPlugin,
-        public albert::IndexQueryHandler
-
+class Plugin : public albert::plugin::ExtensionPlugin<albert::IndexQueryHandler>
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
