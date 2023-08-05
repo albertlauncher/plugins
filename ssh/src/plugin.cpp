@@ -1,5 +1,7 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
+#include "albert/albert.h"
+#include "albert/extension/queryhandler/item.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
 #include <QDir>
@@ -10,12 +12,12 @@
 #include <QWidget>
 #include <utility>
 ALBERT_LOGGING
-using namespace std;
 using namespace albert;
+using namespace std;
 static const char* CFG_USE_KNOWN_HOSTS = "use_known_hosts";
 static const bool  DEF_USE_KNOWN_HOSTS = true;
 
-static const QString system_conf_file_path = QString("/etc/ssh/config");
+static const QString system_conf_file_path("/etc/ssh/config");
 static const QString user_conf_file_path = QDir::home().filePath(".ssh/config");
 static const QString known_hosts_file_path = QDir::home().filePath(".ssh/known_hosts");
 static const QStringList icon_urls = {"xdg:ssh", ":ssh"};
@@ -177,10 +179,19 @@ QString Plugin::synopsis() const
 
 void Plugin::handleTriggerQuery(TriggerQuery *query) const
 {
+
+
     auto trimmed = query->string().trimmed();
-    if (trimmed.isEmpty())
-        handleGlobalQuery(dynamic_cast<GlobalQuery*>(query));
-    else {
+    if (trimmed.isEmpty()){
+        struct : public GlobalQuery {
+            TriggerQuery *query;
+            QString trigger() const { return query->trigger(); }
+            QString string() const { return query->string(); }
+            const bool &isValid() const { return query->isValid(); }
+        } gq;
+        gq.query = query;
+        handleGlobalQuery(&gq);
+    } else {
         // Check sanity of input
         QRegularExpressionMatch match = re_input.match(trimmed);
 
@@ -190,14 +201,16 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
             QString q_host = match.captured(2);
             QString q_port = match.captured(3);
             QString q_cmdln = match.captured(4);
-
-            struct GQ : public GlobalQuery {
-                const QString &string_;
-                const bool &valid_;
-                GQ(const QString &s, const bool &v) : string_(s), valid_(v) {}
-                const QString &string() const { return string_; }
-                bool isValid() const { return valid_; }
-            } gq(q_host, query->isValid());
+            
+            struct : public GlobalQuery {
+                TriggerQuery *query;
+                QString s;
+                QString trigger() const { return {}; }
+                QString string() const { return s; }
+                const bool &isValid() const { return query->isValid(); }
+            } gq;
+            gq.query = query;
+            gq.s = q_host;
 
             vector<RankItem> rank_items{IndexQueryHandler::handleGlobalQuery(&gq)};
             sort(rank_items.begin(), rank_items.end(), [](const auto &a, const auto &b){ return a.score > b.score; });
