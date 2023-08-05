@@ -1,0 +1,10 @@
+{
+    "id" :              "org.albert.extension.github",
+    "name" :            "GitHub",
+    "version" :         "1.0",
+    "platform" :        "All",
+    "group" :           "Extensions",
+    "author" :          "Author missing",
+    "dependencies" :    [],
+    "enabledbydefault": false
+}
