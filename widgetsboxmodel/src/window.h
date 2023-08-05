@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <QFrame>
+#include <QSettings>
 #include "inputline.h"
 #include "settingsbutton.h"
 #include "itemslist.h"
@@ -22,9 +23,12 @@ public:
     ItemsList *results_list;
     ActionsList *actions_list;
 
+    void applyTheme(const QString &style_file_path);
+
 private:
     bool event(QEvent *event) override;
 
     QPoint clickOffset_;  // The offset from cursor to topleft. Used when the window is dagged
 
 };
+

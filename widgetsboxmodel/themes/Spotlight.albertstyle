@@ -1,0 +1,61 @@
+;border = 1px solid red
+color = #606060
+
+[#frame]
+border-radius = 8px
+padding = 0px
+padding = 6px 0px 6px 0px
+background-color = #ffffff
+
+[#inputLine]
+background-color = transparent
+font-size = 36px
+selection-background-color = transparent
+selection-color = #fcfcfc
+
+[#settingsButton]
+background = none
+color = #808080
+;margin = 6px 6px 0px 0px
+max-height = 14px
+max-width = 14px
+min-height = 14px
+min-width = 14px
+;padding = 3px
+
+[QListView]
+;margin = 0px
+;padding = 0px
+padding-top = 6px
+selection-color = #606060
+
+[QListView QScrollBar:vertical]
+width = 3px
+background = transparent
+
+
+[QListView::item:selected]
+background = #e0e0e0
+background-color = #80ddddff
+
+[#resultsList]
+icon-size = 64px
+font-size = 22px
+description-font-size = 12px
+
+[#resultsList::item]
+border = 1px solid #80ddddff;
+border-radius = 8px
+height=60px
+;border = 1px solid blue
+padding = 20px
+margin = 20px
+
+[#actionList]
+font-size = 20px
+
+
+[QListView QScrollBar::handle:vertical]
+background = #c0c0c0
+border-radius = 1px
+min-height = 24px

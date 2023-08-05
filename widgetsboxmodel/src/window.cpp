@@ -14,7 +14,32 @@
 #include <QFrame>
 #ifdef Q_OS_MAC
 #include <objc/objc-runtime.h>
+
+#include <QCommonStyle>
+#include <QProxyStyle>
+#include <map>
 #endif
+
+
+
+class ProxyStyle : public QProxyStyle
+{
+public:
+
+    ProxyStyle() : QProxyStyle(new QCommonStyle) { }  // Ownership of style is transferred to QProxyStyle.
+
+    void drawControl(ControlElement element,
+                     const QStyleOption *option,
+                     QPainter *painter,
+                     const QWidget *widget = nullptr) const override
+    {
+        if (element == ControlElement::CE_CustomBase){
+            widget->style()->drawControl(QStyle::CE_ItemViewItem, option, painter, widget);
+        }
+        return QProxyStyle::drawControl(element, option, painter, widget);
+    }
+};
+
 
 Window::Window():
     frame(new QFrame(this)),
@@ -43,6 +68,7 @@ Window::Window():
 
     window_layout->setContentsMargins(0,0,0,0);
     frame_layout->setContentsMargins(0,0,0,0);
+    frame_layout->setSpacing(0);
 
     window_layout->setSizeConstraint(QLayout::SetFixedSize);
 
@@ -56,8 +82,11 @@ Window::Window():
     actions_list->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
 
+
+    setStyle(new ProxyStyle);
     setWindowFlags(Qt::Tool|Qt::FramelessWindowHint);
     setAttribute(Qt::WA_TranslucentBackground);
+//    setAttribute(Qt::WA_ShowWithoutActivating);
 
 #ifdef Q_OS_MAC
     WId window_id = winId();
@@ -88,6 +117,7 @@ Window::Window():
     call_objc_1(ns_window, "setAnimationBehavior:", 2);  // NSWindowAnimationBehaviorNone
 //    ((objc_object* (*)(id, SEL, int))objc_msgSend)(ns_window, sel_registerName("setAnimationBehavior:"), 2);
 #endif
+
 }
 
 bool Window::event(QEvent *event)
@@ -122,6 +152,56 @@ bool Window::event(QEvent *event)
 //            if (app_state->applicationState() == Qt::ApplicationInactive)
 //                setVisible(false);
 //        }
-//    }
+    //    }
 }
+
+
+void Window::applyTheme(const QString &style_file_path)
+{
+    QSettings stylefile(style_file_path, QSettings::IniFormat);
+
+    std::map<QString, std::map<QString, QString>> style;  // group > (key > value)
+
+    // Add sensible defaults
+    style["*"]["border"] = "none";
+    style["#frame"]["min-width"] = "640px";
+    style["#frame"]["max-width"] = "640px";
+    style["QListView"]["background"] = "transparent";
+    static const char* handles = "QListView QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical, QListView QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical, QListView QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical";
+    style[handles]["border"] = "0px";
+    style[handles]["width"] = "0px";
+    style[handles]["height"] = "0px";
+    style[handles]["background"] = "transparent";
+
+    // Read the style file
+    for (const QString &group : stylefile.childGroups()) {
+        stylefile.beginGroup(group);
+        for (const QString &key : stylefile.childKeys())
+            if (key == "description-font-size")
+                style[group]["qproperty-description_font_size"] = stylefile.value(key).toString().remove("px");
+            else
+                style[group][key] = stylefile.value(key).toString();
+
+        stylefile.endGroup();
+    }
+    for (const QString &key : stylefile.childKeys())
+        style["*"][key] = stylefile.value(key).toString();  // general
+
+    // Buils QStyleSheet string
+    QString stylesheet;
+    for (const auto &[group, items] : style){
+        stylesheet.append(QString("%1 {\n").arg(group));
+        for(const auto &[key, value] : items)
+            stylesheet.append(QString("%1: %2;\n").arg(key, value));
+        stylesheet.append("}\n");
+    }
+
+    DEBG << stylesheet;
+    // Apply stylesheet
+    setStyleSheet(stylesheet);
+
+    // Extend stylesheet
+
+}
+
 

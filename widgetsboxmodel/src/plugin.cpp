@@ -41,8 +41,6 @@ const char*   CFG_MAX_RESULTS = "itemCount";
 const uint    DEF_MAX_RESULTS = 5;
 const char*   CFG_DISPLAY_SCROLLBAR = "displayScrollbar";
 const bool    DEF_DISPLAY_SCROLLBAR = false;
-const char*   CFG_DISPLAY_ICONS = "displayIcons";
-const bool    DEF_DISPLAY_ICONS = true;
 const char*   CFG_CLIENT_SHADOW = "clientShadow";
 const bool    DEF_CLIENT_SHADOW = true;
 const char*   CFG_SYSTEM_SHADOW = "systemShadow";
@@ -116,12 +114,23 @@ Plugin::Plugin() : history_(dataDir().filePath("input_history"))
     setShowFallbacksOnEmptyMatches(s->value(CFG_SHOW_FALLBACKS, DEF_SHOW_FALLBACKS).toBool());
     setMaxResults(s->value(CFG_MAX_RESULTS, DEF_MAX_RESULTS).toUInt());
     setDisplayScrollbar(s->value(CFG_DISPLAY_SCROLLBAR, DEF_DISPLAY_SCROLLBAR).toBool());
-    setDisplayIcons(s->value(CFG_DISPLAY_ICONS, DEF_DISPLAY_ICONS).toBool());
     setDisplayClientShadow(s->value(CFG_CLIENT_SHADOW, DEF_CLIENT_SHADOW).toBool());
     setDisplaySystemShadow(s->value(CFG_SYSTEM_SHADOW, DEF_SYSTEM_SHADOW).toBool());
     theme_ = s->value(CFG_THEME, DEF_THEME).toString();
-    if (!setTheme(theme_))
-        WARN << "Stylefile not found:" << theme_.toStdString().c_str();
+//    if (!setTheme(theme_))
+//        WARN << "Stylefile not found:" << theme_.toStdString().c_str();
+
+    auto path = "/Users/manuel/Documents/projects/albert/plugins/widgetsboxmodel/themes/Spotlight.albertstyle";
+    window.applyTheme(path);
+
+    auto *fsw = new QFileSystemWatcher;
+    fsw->addPath(path);
+    connect(fsw, &QFileSystemWatcher::fileChanged, this, [this](const QString &path){
+        CRIT << "Theme changed";
+        window.applyTheme(path);
+        setVisible(true);
+    });
+
 
     init_statemachine();
 
@@ -591,7 +600,7 @@ void Plugin::setVisible(bool visible)
     window.setVisible(visible);
     if (visible){
         window.raise();
-        window.activateWindow();
+//        window.activateWindow();
     }
     else{
         settings()->setValue(CFG_WND_POS, window.pos());
@@ -650,10 +659,6 @@ QWidget* Plugin::createFrontendConfigWidget()
     ui.checkBox_scrollbar->setChecked(displayScrollbar());
     connect(ui.checkBox_scrollbar, &QCheckBox::toggled,
             this, &Plugin::setDisplayScrollbar);
-
-    ui.checkBox_icons->setChecked(displayIcons());
-    connect(ui.checkBox_icons, &QCheckBox::toggled,
-            this, &Plugin::setDisplayIcons);
 
     ui.checkBox_client_shadow->setChecked(displayClientShadow());
     connect(ui.checkBox_client_shadow, &QCheckBox::toggled,
@@ -779,14 +784,6 @@ void Plugin::setAlwaysOnTop(bool alwaysOnTop)
 {
     settings()->setValue(CFG_ALWAYS_ON_TOP, alwaysOnTop);
     window.setWindowFlags(window.windowFlags().setFlag(Qt::WindowStaysOnTopHint, alwaysOnTop));
-}
-
-bool Plugin::displayIcons() const { return window.results_list->displayIcons(); }
-
-void Plugin::setDisplayIcons(bool value)
-{
-    settings()->setValue(CFG_DISPLAY_ICONS, value);
-    window.results_list->setDisplayIcons(value);
 }
 
 bool Plugin::displayScrollbar() const

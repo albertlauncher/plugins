@@ -48,9 +48,6 @@ public:
     bool alwaysOnTop() const;
     void setAlwaysOnTop(bool alwaysOnTop);
 
-    bool displayIcons() const;
-    void setDisplayIcons(bool value);
-
     bool displayScrollbar() const;
     void setDisplayScrollbar(bool value);
 
