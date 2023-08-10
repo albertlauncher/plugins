@@ -9,9 +9,9 @@
 ALBERT_LOGGING_CATEGORY("debug")
 using namespace std;
 
-Plugin::Plugin() { INFO << "'Debug' created."; }
+Plugin::Plugin() { DEBG << "'Debug' created."; }
 
-Plugin::~Plugin() { INFO << "'Debug' destroyed."; }
+Plugin::~Plugin() { DEBG << "'Debug' destroyed."; }
 
 QString Plugin::synopsis() const { return "debug-debug-debug-debug"; }
 
