@@ -17,23 +17,35 @@ using namespace std;
 class PyItemTrampoline : Item
 {
 public:
-    QString id() const override
-    { PYBIND11_OVERRIDE_PURE(QString, Item, id, ); }
+    QString id() const override {
+        try { PYBIND11_OVERRIDE_PURE(QString, Item, id, ); }
+        catch (const std::exception &e) { CRIT << e.what(); return {}; }
+    }
 
-    QString text() const override
-    { PYBIND11_OVERRIDE_PURE(QString, Item, text, ); }
+    QString text() const override {
+        try { PYBIND11_OVERRIDE_PURE(QString, Item, text, ); }
+        catch (const std::exception &e) { CRIT << e.what(); return {}; }
+    }
 
-    QString subtext() const override
-    { PYBIND11_OVERRIDE_PURE(QString, Item, subtext, ); }
+    QString subtext() const override {
+        try { PYBIND11_OVERRIDE_PURE(QString, Item, subtext, ); }
+        catch (const std::exception &e) { CRIT << e.what(); return {}; }
+    }
 
-    QStringList iconUrls() const override
-    { PYBIND11_OVERRIDE_PURE(QStringList, Item, iconUrls, ); }
+    QStringList iconUrls() const override {
+        try { PYBIND11_OVERRIDE_PURE(QStringList, Item, iconUrls, ); }
+        catch (const std::exception &e) { CRIT << e.what(); return {}; }
+    }
 
-    QString inputActionText() const override
-    { PYBIND11_OVERRIDE(QString, Item, inputActionText, ); }
+    QString inputActionText() const override     {
+        try { PYBIND11_OVERRIDE_PURE(QString, Item, inputActionText, ); }
+        catch (const std::exception &e) { CRIT << e.what(); return {}; }
+    }
 
-    vector<Action> actions() const override
-    { PYBIND11_OVERRIDE(vector<Action>, Item, actions, ); }
+    vector<Action> actions() const override {
+        try { PYBIND11_OVERRIDE_PURE(vector<Action>, Item, actions, ); }
+        catch (const std::exception &e) { CRIT << e.what(); return {}; }
+    }
 };
 
 
