@@ -7,7 +7,7 @@
 #include "plugin.h"
 #include <Cocoa/Cocoa.h>
 #include <CoreServices/CoreServices.h>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("macos")
 using namespace std;
 using namespace albert;
 

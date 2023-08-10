@@ -10,7 +10,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSettings>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("files")
 using namespace albert;
 using namespace std;
 

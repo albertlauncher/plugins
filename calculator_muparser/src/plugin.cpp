@@ -7,7 +7,7 @@
 #include "ui_configwidget.h"
 #include <QSettings>
 #include <QString>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("muparser")
 using namespace std;
 using namespace albert;
 

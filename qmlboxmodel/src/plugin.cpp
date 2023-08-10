@@ -25,7 +25,7 @@
 #include <QShortcut>
 #include <QStandardItemModel>
 #include <QStandardPaths>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("qml")
 using namespace std;
 using namespace albert;
 

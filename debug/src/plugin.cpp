@@ -6,7 +6,7 @@
 #include "plugin.h"
 #include <chrono>
 #include <thread>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("debug")
 using namespace std;
 
 Plugin::Plugin() { INFO << "'Debug' created."; }

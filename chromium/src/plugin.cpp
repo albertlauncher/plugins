@@ -13,7 +13,7 @@
 #include <QJsonObject>
 #include <QStandardPaths>
 #include <utility>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("chromium")
 using namespace albert;
 using namespace std;
 

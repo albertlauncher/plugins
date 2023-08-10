@@ -21,7 +21,7 @@
 #include <QtStateMachine/QSignalTransition>
 #include <QtStateMachine/QStateMachine>
 #include <utility>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("wbm")
 using namespace std;
 using namespace albert;
 

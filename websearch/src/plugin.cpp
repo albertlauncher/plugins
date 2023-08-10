@@ -15,7 +15,7 @@
 #include <QUrl>
 #include <array>
 #include <vector>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("websearch")
 using namespace albert;
 using namespace std;
 

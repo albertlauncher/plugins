@@ -6,7 +6,7 @@
 #include "ui_configwidget.h"
 #include <QRegularExpression>
 #include <QStandardPaths>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("apps")
 using namespace std;
 using namespace albert;
 const char* CFG_IGNORESHOWINKEYS     = "ignore_show_in_keys";

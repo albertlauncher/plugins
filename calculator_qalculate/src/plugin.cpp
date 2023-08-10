@@ -6,7 +6,7 @@
 #include "plugin.h"
 #include "ui_configwidget.h"
 #include <QSettings>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("qalculate")
 using namespace albert;
 using namespace std;
 

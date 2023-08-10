@@ -16,7 +16,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QSpinBox>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("clipboard")
 using namespace albert;
 using namespace std;
 

@@ -11,7 +11,7 @@
 #include <QDir>
 #include <QSettings>
 #include <QStandardPaths>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("python")
 using namespace albert;
 using namespace std;
 namespace py = pybind11;

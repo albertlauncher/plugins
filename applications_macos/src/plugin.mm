@@ -4,7 +4,7 @@
 #include "albert/extension/queryhandler/standarditem.h"
 #include "plugin.h"
 #include <Cocoa/Cocoa.h>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("apps")
 using namespace albert;
 using namespace std;
 

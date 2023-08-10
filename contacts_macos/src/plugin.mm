@@ -6,7 +6,7 @@
 #include "plugin.h"
 #include <Contacts/Contacts.h>
 #include <QRegularExpression>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("contacts")
 using namespace albert;
 using namespace std;
 

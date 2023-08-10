@@ -24,7 +24,7 @@
 #include <QXmlStreamReader>
 #include <archive.h>
 #include <archive_entry.h>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("docs")
 using namespace albert;
 using namespace std;
 

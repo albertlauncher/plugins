@@ -10,7 +10,7 @@
 #include <QMessageBox>
 #include <QTextStream>
 #include <memory>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("snippets")
 using namespace albert;
 using namespace std;
 

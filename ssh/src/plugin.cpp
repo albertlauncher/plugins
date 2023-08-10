@@ -11,7 +11,7 @@
 #include <QTextStream>
 #include <QWidget>
 #include <utility>
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("ssh")
 using namespace albert;
 using namespace std;
 static const char* CFG_USE_KNOWN_HOSTS = "use_known_hosts";

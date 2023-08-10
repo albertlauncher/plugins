@@ -3,7 +3,7 @@
 #include "albert/logging.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("template")
 using namespace albert;
 using namespace std;
 
