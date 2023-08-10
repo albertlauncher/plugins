@@ -92,7 +92,7 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
     // ------------------------------------------------------------------------
 
     py::class_<PluginInstance, PyPluginInstanceTrampoline<>, shared_ptr<PluginInstance>>(m, "PluginInstance", py::multiple_inheritance())
-        .def(py::init<vector<Extension*>>(),
+        .def(py::init_alias<vector<Extension*>>(),
              py::arg("extensions") = vector<Extension*>{})
         .def_property_readonly("id", &PluginInstance::id)
         .def_property_readonly("name", &PluginInstance::name)
@@ -221,11 +221,6 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
 //        ;
 
     // ------------------------------------------------------------------------
-
-    m.def("debug", [](const py::object &obj) { DEBG << py::str(obj).cast<QString>(); });
-    m.def("info", [](const py::object &obj) { INFO << py::str(obj).cast<QString>(); });
-    m.def("warning", [](const py::object &obj) { WARN << py::str(obj).cast<QString>(); });
-    m.def("critical", [](const py::object &obj) { CRIT << py::str(obj).cast<QString>(); });
 
     m.def("setClipboardText", &setClipboardText,
           py::arg("text") = QString());

@@ -181,6 +181,9 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
 #endif
         errors << QString("Platform not supported. Supported: %1").arg(metadata_.platforms.join(", "));
 
+    logging_category_name = metadata_.id.toUtf8().toStdString();
+    logging_category = make_unique<QLoggingCategory>(logging_category_name.c_str());
+
     // Finally set state based on errors
     if (!errors.isEmpty())
         throw runtime_error(errors.join(", ").toUtf8().constData());
@@ -189,6 +192,8 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
 PyPluginLoader::~PyPluginLoader() = default;
 
 const QString &PyPluginLoader::source_path() const { return source_path_; }
+
+const QLoggingCategory &PyPluginLoader::logging_category_factory() { return *logging_category; }
 
 const albert::PluginProvider &PyPluginLoader::provider() const { return provider_; }
 
@@ -210,6 +215,12 @@ QString PyPluginLoader::load()
         // Set default md_id
         if (!py::hasattr(module_, ATTR_MD_ID))
             module_.attr("md_id") = metadata_.id;
+
+        // Attach logcat functions
+        py::setattr(module_,"debug", py::cpp_function([this](const QString &s){ qCDebug(logging_category_factory) << s; }));
+        py::setattr(module_,"info", py::cpp_function([this](const QString &s){ qCInfo(logging_category_factory) << s; }));
+        py::setattr(module_,"warn", py::cpp_function([this](const QString &s){ qCWarning(logging_category_factory) << s; }));
+        py::setattr(module_,"critical", py::cpp_function([this](const QString &s){ qCCritical(logging_category_factory) << s; }));
 
         // Execute module
         pyspec.attr("loader").attr("exec_module")(module_);

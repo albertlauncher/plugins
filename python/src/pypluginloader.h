@@ -5,6 +5,7 @@
 #include "albert/extension/pluginprovider/pluginmetadata.h"
 #include "albert/extension/pluginprovider/pluginloader.h"
 #include <memory>
+#include <QLoggingCategory>
 namespace albert {
 class PluginProvider;
 class PluginInstance;
@@ -34,6 +35,9 @@ private:
     pybind11::object py_plugin_instance_;
     albert::PluginInstance *cpp_plugin_instance_;
     albert::PluginMetaData metadata_;
+    std::string logging_category_name;
+    std::unique_ptr<QLoggingCategory> logging_category;
+    const QLoggingCategory &logging_category_factory();
 };
 
 
