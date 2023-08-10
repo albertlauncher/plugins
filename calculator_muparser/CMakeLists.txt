@@ -18,3 +18,5 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE muparser)
 
+target_compile_options(${PROJECT_NAME} PRIVATE -Wno-nested-anon-types)
+
