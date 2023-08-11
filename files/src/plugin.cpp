@@ -16,9 +16,13 @@ using namespace std;
 
 const char* CFG_PATHS = "paths";
 const char* CFG_MIME_FILTERS = "mimeFilters";
-const QStringList DEF_MIME_FILTERS = { "inode/directory", "application/*" };
+const QStringList DEF_MIME_FILTERS = { "inode/directory" };
 const char* CFG_NAME_FILTERS = "nameFilters";
+#if defined Q_OS_MACOS
 const QStringList DEF_NAME_FILTERS = { ".DS_Store" };
+#else
+const QStringList DEF_NAME_FILTERS = {};
+#endif
 const char* CFG_INDEX_HIDDEN = "indexhidden";
 const bool DEF_INDEX_HIDDEN = false;
 const char* CFG_FOLLOW_SYMLINKS = "followSymlinks";
@@ -26,9 +30,9 @@ const bool DEF_FOLLOW_SYMLINKS = false;
 const char* CFG_FS_WATCHES = "useFileSystemWatches";
 const bool DEF_FS_WATCHES = false;
 const char* CFG_MAX_DEPTH = "maxDepth";
-const uint8_t DEF_MAX_DEPTH = 100;
+const uint8_t DEF_MAX_DEPTH = 255;
 const char* CFG_SCAN_INTERVAL = "scanInterval";
-const uint DEF_SCAN_INTERVAL = 15;
+const uint DEF_SCAN_INTERVAL = 5;
 const char* INDEX_FILE_NAME = "file_index.json";
 
 Plugin::Plugin():
@@ -143,7 +147,17 @@ QWidget *Plugin::buildConfigWidget() { return new ConfigWidget(this); }
 const FsIndex &Plugin::fsIndex() { return fs_index_; }
 
 void Plugin::addPath(const QString &path)
-{ fs_index_.addPath(make_unique<FsIndexPath>(path)); }
+{
+    auto fsp = make_unique<FsIndexPath>(path);
+    fsp->setFollowSymlinks(DEF_FOLLOW_SYMLINKS);
+    fsp->setIndexHidden(DEF_INDEX_HIDDEN);
+    fsp->setNameFilters(DEF_NAME_FILTERS);
+    fsp->setMimeFilters(DEF_MIME_FILTERS);
+    fsp->setMaxDepth(DEF_MAX_DEPTH);
+    fsp->setScanInterval(DEF_SCAN_INTERVAL);
+    fsp->setWatchFilesystem(DEF_FS_WATCHES);
+    fs_index_.addPath(::move(fsp));
+}
 
 void Plugin::removePath(const QString &path)
 {
