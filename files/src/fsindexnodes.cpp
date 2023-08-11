@@ -110,7 +110,9 @@ void DirNode::update(const std::shared_ptr<DirNode>& shared_this,
     if (const auto &[it, success] = indexed_dirs.emplace(fileInfo.canonicalFilePath()); !success)
         return;
 
-    if (auto mdate = (uint64_t)fileInfo.lastModified().toSecsSinceEpoch(); settings.forced || mdate_ < mdate) {
+    auto mdate = (uint64_t)fileInfo.lastModified().toSecsSinceEpoch();
+
+    if (settings.forced || mdate_ < mdate) {
         mdate_ = mdate;
 
         QString absFilePath = fileInfo.absoluteFilePath();
@@ -139,22 +141,18 @@ void DirNode::update(const std::shared_ptr<DirNode>& shared_this,
 
             // Index structure
             if (fi.isDir()) {
-                auto index_exclude = exclude || settings.max_depth < depth || (fi.isSymLink() && !settings.follow_symlinks);
-                if (cit != children_.end() && (*cit)->name_ == fi.fileName()) {  // _is_ already indexed
-                    if (index_exclude){
+                auto is_indexed = cit != children_.end() && (*cit)->name_ == fi.fileName();
+                if (exclude || settings.max_depth < depth || (fi.isSymLink() && !settings.follow_symlinks)){
+                    if (is_indexed) {
                         (*cit)->removeChildren();
                         cit = children_.erase(cit);
-                    } else {
-                        if (settings.scan_mode)
-                            (*cit)->update(*cit, abort, status, settings, indexed_dirs, depth+1);  // UPDATE new directories only in scan mode
-                        ++cit;
                     }
-                } else   // is _not_ indexed yet
-                    if (!index_exclude) {
+                } else {
+                    if (!is_indexed)
                         cit = children_.emplace(cit, DirNode::make(fi.fileName(), shared_this));
-                        (*cit)->update(*cit, abort, status, settings, indexed_dirs, depth+1);  // UPDATE new directories always
-                        ++cit;
-                    }
+                    (*cit)->update(*cit, abort, status, settings, indexed_dirs, depth+1);  // UPDATE new directories always
+                    ++cit;
+                }
             }
 
             // Items
@@ -184,6 +182,11 @@ void DirNode::update(const std::shared_ptr<DirNode>& shared_this,
         children_.shrink_to_fit();
         items_.shrink_to_fit();
 
+    } else {
+        // Not dirty or forced
+        // Check children anyway because mdates dont propagate upwards
+        for (auto &child : children_)
+            child->update(child, abort, status, settings, indexed_dirs, depth+1);
     }
 }
 
