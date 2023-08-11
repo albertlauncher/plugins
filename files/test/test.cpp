@@ -136,6 +136,7 @@ TEST_CASE("FsIndex")
     char *argv = {};
 
     QApplication app(argc, &argv);
+    QLoggingCategory::setFilterRules("*.debug=true");
 
     QTemporaryDir root;
     CHECK(root.isValid());
@@ -145,9 +146,15 @@ TEST_CASE("FsIndex")
     CHECK(dir.mkdir("b"));
 
     FsIndex fsi;
-    QObject::connect(&fsi, &FsIndex::updatedFinished, &app, &QApplication::quit);
+    QObject::connect(&fsi, &FsIndex::updatedFinished, &app, [](){
+        QApplication::processEvents();
+        QApplication::quit();
+    });
+    QObject::connect(&fsi, &FsIndex::status, &app, [](const QString &s){ qDebug() << s; });
+
     auto dead_holder = make_unique<FsIndexPath>(root.path());
     auto *fsp = dead_holder.get();
+    fsp->setMimeFilters({"inode/directory"});
     fsi.addPath(::move(dead_holder));
 
     CHECK(fsi.indexPaths().size() == 1);
@@ -156,8 +163,18 @@ TEST_CASE("FsIndex")
 
     app.processEvents();
 
+    vector<shared_ptr<AbstractFileItem>> items;
+    fsp->items(items);
 
+    CHECK(items.size() == 3);
+    QThread::sleep(2); // Sleep some time such that the mdates differ at all
+    CHECK(dir.mkdir("b/c"));
 
+    QTimer::singleShot(0, &app, [&](){fsi.update();});
+    app.exec();
 
+    items.clear();
+    fsp->items(items);
+    CHECK(items.size() == 4);
 
 }
