@@ -9,12 +9,14 @@ albert_plugin(
     QT_DEPENDENCIES Widgets Concurrent
 )
 
-option(BUILD_FILES_TESTS "Build ${PROJECT_NAME} tests (Reqiures doctest)" OFF)
-if (BUILD_FILES_TESTS)
+
+if (BUILD_TESTS)
     find_package(doctest)
     set(TARGET_TST ${PROJECT_NAME}_test)
     add_executable(${TARGET_TST} #${SRC}
         test/test.cpp
+        src/fsindex.h
+        src/fsindex.cpp
         src/fsindexpath.h
         src/fsindexpath.cpp
         src/fsindexnodes.h

@@ -1,5 +1,8 @@
 //// Copyright (c) 2022 Manuel Schneider
 
+#include "QtCore/qeventloop.h"
+#include "QtWidgets/qapplication.h"
+#include "src/fsindex.h"
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_COLORS_ANSI
 #include "albert/logging.h"
@@ -9,9 +12,9 @@
 #include <QTemporaryDir>
 #include "src/fsindexpath.h"
 using namespace std;
-ALBERT_LOGGING
+ALBERT_LOGGING_CATEGORY("files_test")
 
-TEST_CASE("Plugin instance")
+TEST_CASE("FsIndexPath")
 {
     QTemporaryDir root;
     CHECK(root.isValid());
@@ -44,7 +47,7 @@ TEST_CASE("Plugin instance")
 
     auto update = [&](){
         items.clear();
-        p->update(false, [](const QString &s){ /*qDebug() << s;*/ });
+        p->update(false, [](const QString &s){ qDebug() << s; });
         p->items(items);
     };
 
@@ -125,4 +128,36 @@ TEST_CASE("Plugin instance")
     p->setIndexHidden(false);
     update();
     CHECK(items.size() == 3);
+}
+
+TEST_CASE("FsIndex")
+{
+    int argc;
+    char *argv = {};
+
+    QApplication app(argc, &argv);
+
+    QTemporaryDir root;
+    CHECK(root.isValid());
+
+    QDir dir(root.path());
+    CHECK(dir.mkdir("a"));
+    CHECK(dir.mkdir("b"));
+
+    FsIndex fsi;
+    QObject::connect(&fsi, &FsIndex::updatedFinished, &app, &QApplication::quit);
+    auto dead_holder = make_unique<FsIndexPath>(root.path());
+    auto *fsp = dead_holder.get();
+    fsi.addPath(::move(dead_holder));
+
+    CHECK(fsi.indexPaths().size() == 1);
+    CHECK(fsi.indexPaths().contains(root.path()));
+    CHECK(fsi.indexPaths().at(root.path()).get() == fsp);
+
+    app.processEvents();
+
+
+
+
+
 }
