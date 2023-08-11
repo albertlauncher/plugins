@@ -182,7 +182,7 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
         errors << QString("Platform not supported. Supported: %1").arg(metadata_.platforms.join(", "));
 
     logging_category_name = metadata_.id.toUtf8().toStdString();
-    logging_category = make_unique<QLoggingCategory>(logging_category_name.c_str());
+    logging_category = make_unique<QLoggingCategory>(logging_category_name.c_str(), QtInfoMsg);
 
     // Finally set state based on errors
     if (!errors.isEmpty())
