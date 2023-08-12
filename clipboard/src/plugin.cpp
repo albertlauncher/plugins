@@ -81,12 +81,20 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
                     QString("#%1 %2").arg(rank).arg(loc.toString(entry.datetime, QLocale::LongFormat)),
                     {":clipboard"},
                     {
-                        Action("copy", "Copy to clipboard", [t=entry.text](){ setClipboardText(t); }),
-                        Action("rem", "Remove from history", [this, t=entry.text](){
-                            history.remove_if([t](const ClipboardEntry& ce){ return ce.text == t; });
-                             if (persistent)
-                                 writeHistory();
-                        })
+                        {
+                            "copy", "Copy and paste snippet",
+                            [t=entry.text](){ setClipboardTextAndPaste(t); }
+                        }, {
+                            "copy", "Copy to clipboard",
+                            [t=entry.text](){ setClipboardText(t); }
+                        }, {
+                            "rem", "Remove from history",
+                            [this, t=entry.text](){
+                                history.remove_if([t](const ClipboardEntry& ce){ return ce.text == t; });
+                                if (persistent)
+                                    writeHistory();
+                            }
+                        }
                     }
                 )
             );
