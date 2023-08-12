@@ -262,8 +262,8 @@ Item { DebugRect{ name: "root" }
 
         component StateDebug: State{
             property string name
-            onEntered: console.log("ENTER " + name)
-            onExited: console.log("EXIT " + name)
+//            onEntered: console.log("ENTER " + name)
+//            onExited: console.log("EXIT " + name)
         }
 
         StateDebug { name: "sNoQuery"
