@@ -220,12 +220,12 @@ QString PyPluginLoader::load()
 #if QT_VERSION < 0x060300
         py::setattr(module_,"debug", py::cpp_function([this](const QString &s){ qCDebug(logging_category_factory) << s; }));
         py::setattr(module_,"info", py::cpp_function([this](const QString &s){ qCInfo(logging_category_factory) << s; }));
-        py::setattr(module_,"warn", py::cpp_function([this](const QString &s){ qCWarning(logging_category_factory) << s; }));
+        py::setattr(module_,"warning", py::cpp_function([this](const QString &s){ qCWarning(logging_category_factory) << s; }));
         py::setattr(module_,"critical", py::cpp_function([this](const QString &s){ qCCritical(logging_category_factory) << s; }));
 #else
         py::setattr(module_,"debug", py::cpp_function([this](const QString &s){ qCDebug(*logging_category) << s; }));
         py::setattr(module_,"info", py::cpp_function([this](const QString &s){ qCInfo(*logging_category) << s; }));
-        py::setattr(module_,"warn", py::cpp_function([this](const QString &s){ qCWarning(*logging_category) << s; }));
+        py::setattr(module_,"warning", py::cpp_function([this](const QString &s){ qCWarning(*logging_category) << s; }));
         py::setattr(module_,"critical", py::cpp_function([this](const QString &s){ qCCritical(*logging_category) << s; }));
 #endif
 
