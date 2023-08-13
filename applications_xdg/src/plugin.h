@@ -14,6 +14,7 @@ class Plugin : public albert::plugin::ExtensionPlugin<albert::IndexQueryHandler>
 public:
     Plugin();
 
+    QString defaultTrigger() const override;
     void updateIndexItems() override;
     QWidget *buildConfigWidget() override;
 

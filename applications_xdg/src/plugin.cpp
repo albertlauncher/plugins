@@ -108,6 +108,9 @@ static QString getLocalizedKey(const QString &key, const map<QString,QString> &e
     return QString();
 }
 
+
+QString Plugin::defaultTrigger() const { return QStringLiteral("apps "); }
+
 vector<IndexItem> Plugin::indexApps(const bool &abort) const
 {
     vector<IndexItem> results;
