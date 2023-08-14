@@ -45,6 +45,7 @@ SearchEngineEditor::SearchEngineEditor(const QString &icon_url,
         if (fileName.isEmpty())
             return;
 
+        icon_image = std::make_unique<QImage>(fileName);
         ui.toolButton_icon->setIcon(QIcon(fileName));
     });
 
