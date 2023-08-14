@@ -13,6 +13,8 @@ class PluginInstance;
 class QFileInfo;
 class Plugin;
 
+class NoPluginException: public std::exception {};
+
 class PyPluginLoader : public albert::PluginLoader
 {
 public:

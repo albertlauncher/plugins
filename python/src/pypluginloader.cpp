@@ -142,7 +142,7 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
     // Validate metadata
 
     if (metadata_.iid.isEmpty())
-        throw runtime_error("Not an albert plugin");
+        throw NoPluginException();
 
 
     QStringList errors;
