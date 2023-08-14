@@ -8,7 +8,7 @@
 
 struct SearchEngine
 {
-    QString guid;
+    QString id;
     QString name;
     QString trigger;
     QString iconUrl;

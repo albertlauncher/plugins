@@ -26,7 +26,7 @@ static QByteArray serializeEngines(const vector<SearchEngine> &engines)
     QJsonArray array;
     for (const SearchEngine& engine : engines) {
         QJsonObject object;
-        object["guid"] = engine.guid;
+        object["id"] = engine.id;
         object["name"] = engine.name;
         object["url"] = engine.url;
         object["trigger"] = engine.trigger;
@@ -43,9 +43,19 @@ static vector<SearchEngine> deserializeEngines(const QByteArray &json)
     for (const auto &value : array) {
         QJsonObject object = value.toObject();
         SearchEngine searchEngine;
-        searchEngine.guid = object["guid"].toString();
+
+        // Todo remove this in future releasea
+        if (object.contains("id")){
+            searchEngine.id = object["id"].toString();
+        } else if (object.contains("guid")){
+            searchEngine.id = object["guid"].toString();
+        }
+
+        if (searchEngine.id.isEmpty())
+            searchEngine.id = QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
+
         searchEngine.name = object["name"].toString();
-        searchEngine.trigger = object["trigger"].toString();
+        searchEngine.trigger = object["trigger"].toString().trimmed();
         searchEngine.iconUrl = object["iconPath"].toString();
         searchEngine.url = object["url"].toString();
         searchEngines.push_back(searchEngine);
@@ -89,7 +99,7 @@ void Plugin::restoreDefaultEngines()
         for (const auto &value : array) {
             QJsonObject object = value.toObject();
             SearchEngine searchEngine;
-            searchEngine.guid = QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
+            searchEngine.id = QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
             searchEngine.name = object["name"].toString();
             searchEngine.trigger = object["trigger"].toString();
             searchEngine.iconUrl = object["iconPath"].toString();
@@ -105,7 +115,7 @@ static shared_ptr<StandardItem> buildItem(const SearchEngine &se, const QString 
 {
     QString url = QString(se.url).replace("%s", QUrl::toPercentEncoding(search_term));
     return StandardItem::make(
-        se.guid,
+        se.id,
         se.name,
         QString("Search %1 for '%2'").arg(se.name, search_term),
         QString("%1 %2").arg(se.name, search_term),

@@ -153,7 +153,7 @@ static void handleAcceptedEditor(const SearchEngineEditor &editor, SearchEngine 
 
         auto image = editor.icon_image->scaled(256, 256, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-        auto dst = plugin.dataDir()->filePath(QString("%1.png").arg(engine.guid));
+        auto dst = plugin.dataDir()->filePath(QString("%1.png").arg(engine.id));
         if (!image.save(dst)){
             GWARN(QString("Could not save image to '%1'.").arg(dst));
             return;
@@ -189,7 +189,7 @@ void ConfigWidget::onButton_new()
 {
     if (SearchEngineEditor editor(":default", "", "", "", this); editor.exec()){
         SearchEngine engine;
-        engine.guid = QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
+        engine.id = QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
         engine.iconUrl = ":default";
         handleAcceptedEditor(editor, engine, *plugin_);
         auto engines = plugin_->engines();
