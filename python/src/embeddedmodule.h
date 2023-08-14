@@ -241,10 +241,9 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
           py::arg("close_on_exit") = false);
 
     py::class_<Notification>(m, "Notification")
-        .def(py::init<const QString&, const QString&, const QString&>(),
+        .def(py::init<const QString&, const QString&>(),
              py::arg("title"),
-             py::arg("subtitle") = QString(),
-             py::arg("text") = QString())
+             py::arg("body") = QString())
         ;
 }
 
