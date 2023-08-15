@@ -51,7 +51,7 @@ Plugin::Plugin()
     for (const QString &plugin_dir : plugin_dirs) {
         if (QDir dir{plugin_dir}; dir.cd(PLUGIN_DIR)) {
             DEBG << "Searching Python plugins in" << dir.absolutePath();
-            for (const QFileInfo &file_info : dir.entryInfoList(QDir::Dirs|QDir::NoDotAndDotDot)) {
+            for (const QFileInfo &file_info : dir.entryInfoList(QDir::Files|QDir::Dirs|QDir::NoDotAndDotDot)) {
                 try {
                     auto &loader = plugins_.emplace_back(make_unique<PyPluginLoader>(*this, file_info));
                     DEBG << "Found valid Python plugin" << loader->path;
