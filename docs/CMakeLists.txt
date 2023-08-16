@@ -11,9 +11,16 @@ albert_plugin(
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    target_include_directories(${PROJECT_NAME} PRIVATE /opt/homebrew/opt/libarchive/include)
-    target_link_directories(${PROJECT_NAME} PRIVATE /opt/homebrew/opt/libarchive/lib)
+    # Homebrew ships libarchive keg only, include dirs have to be set manually
+    execute_process(
+        COMMAND brew --prefix libarchive
+        OUTPUT_VARIABLE LIBARCHIVE_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+    set(LibArchive_INCLUDE_DIR "${LIBARCHIVE_PREFIX}/include")
 endif()
+find_package(LibArchive REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE LibArchive::LibArchive)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE archive)
 
