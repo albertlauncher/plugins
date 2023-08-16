@@ -12,8 +12,14 @@ albert_plugin(
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    target_include_directories(${PROJECT_NAME} PRIVATE /opt/homebrew/include)
-    target_link_directories(${PROJECT_NAME} PRIVATE /opt/homebrew/lib)
+    execute_process(
+        COMMAND brew --prefix
+        OUTPUT_VARIABLE BREW_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+    target_include_directories(${PROJECT_NAME} PRIVATE "${BREW_PREFIX}/include")
+    target_link_directories(${PROJECT_NAME} PRIVATE "${BREW_PREFIX}/lib")
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE qalculate)
