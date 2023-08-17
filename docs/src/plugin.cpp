@@ -140,15 +140,24 @@ void Plugin::updateDocsetList()
     connect(reply, &QNetworkReply::finished, this, [this, reply](){
         reply->deleteLater();
 
-        if (reply->error() != QNetworkReply::NoError)
-            return error(QString("Error fetching docset list: %1").arg(reply->errorString()));
+        QByteArray replyData;
+        QFile cachedDocsetListFile(cacheDir()->filePath("zeal_docset_list.json"));
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (cachedDocsetListFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                replyData = cachedDocsetListFile.readAll();
+                cachedDocsetListFile.close();
+            } else
+                return error(QString("Error fetching docset list: %1").arg(reply->errorString()));
+        } else
+            replyData = reply->readAll();
 
         docsets_.clear();
 
         auto data_dir = dataDir();
         auto cache_dir = cacheDir();
         QJsonParseError parse_error;
-        const QJsonDocument json_document = QJsonDocument::fromJson(reply->readAll(), &parse_error);
+        const QJsonDocument json_document = QJsonDocument::fromJson(replyData, &parse_error);
         if (parse_error.error == QJsonParseError::NoError) {
             for (const QJsonValue &v : json_document.array()) {
                 QJsonObject jsonObject = v.toObject();
@@ -169,6 +178,14 @@ void Plugin::updateDocsetList()
                     it->second.path = dir.path();
             }
             debug("Docset list updated.");
+
+            if (reply->error() == QNetworkReply::NoError) {
+                if (cachedDocsetListFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                    cachedDocsetListFile.write(replyData);
+                    cachedDocsetListFile.close();
+                } else
+                    debug(QString("Failed to save fetched docset list: %1").arg(cachedDocsetListFile.errorString()));
+            }
         }
         else
             error(QString("Failed to parse docset list: %1").arg(parse_error.errorString()));
