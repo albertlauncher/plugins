@@ -39,12 +39,12 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
         if (path.endsWith(".py"))
             source_path_ = path;
         else
-            throw runtime_error("Path is not a python file");
+            throw NoPluginException();  // Path is not a python file
     }
     else if (QFileInfo fi(QDir(path).filePath("__init__.py")); fi.exists() && fi.isFile())
         source_path_ = fi.absoluteFilePath();
     else
-        throw runtime_error("Python package init file does not exist");
+        throw NoPluginException();  // Python package init file does not exist
 
     // Extract metadata
 
