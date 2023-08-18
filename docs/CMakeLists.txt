@@ -12,8 +12,9 @@ albert_plugin(
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     # Homebrew ships libarchive keg only, include dirs have to be set manually
+    find_program(BREW_EXECUTABLE brew)
     execute_process(
-        COMMAND brew --prefix libarchive
+        COMMAND "${BREW_EXECUTABLE}" --prefix libarchive
         OUTPUT_VARIABLE LIBARCHIVE_PREFIX
         OUTPUT_STRIP_TRAILING_WHITESPACE
         COMMAND_ERROR_IS_FATAL ANY
