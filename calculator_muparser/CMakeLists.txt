@@ -12,8 +12,9 @@ albert_plugin(
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    find_program(BREW_EXECUTABLE brew)
     execute_process(
-        COMMAND brew --prefix
+        COMMAND "${BREW_EXECUTABLE}" --prefix
         OUTPUT_VARIABLE BREW_PREFIX
         OUTPUT_STRIP_TRAILING_WHITESPACE
         COMMAND_ERROR_IS_FATAL ANY
