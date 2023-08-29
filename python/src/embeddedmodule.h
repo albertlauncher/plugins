@@ -100,6 +100,8 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
         .def_property_readonly("cacheLocation", [](PyPluginInstanceTrampoline<> *self){ return self->pathlibCachePath(); }, py::return_value_policy::reference)
         .def_property_readonly("configLocation", [](PyPluginInstanceTrampoline<> *self){ return self->pathlibConfigPath(); }, py::return_value_policy::reference)
         .def_property_readonly("dataLocation", [](PyPluginInstanceTrampoline<> *self){ return self->pathlibDataPath(); }, py::return_value_policy::reference)
+        .def("readConfig", [](PyPluginInstanceTrampoline<> *self, QString key, py::object type){ return self->readConfig(key, type); })
+        .def("writeConfig", [](PyPluginInstanceTrampoline<> *self, QString key, py::object value){ self->writeConfig(key, value); })
         ;
 
     // ------------------------------------------------------------------------

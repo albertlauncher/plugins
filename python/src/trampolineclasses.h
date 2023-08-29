@@ -9,7 +9,14 @@
 #include "albert/extension/queryhandler/item.h"
 #include "albert/extension/queryhandler/triggerqueryhandler.h"
 #include "albert/logging.h"
+#include <QCheckBox>
+#include <QComboBox>
+#include <QSettings>
 #include <QDir>
+#include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QLineEdit>
+#include <QWidget>
 using namespace albert;
 using namespace std;
 
@@ -58,6 +65,8 @@ public:
         Path = py::module_::import("pathlib").attr("Path");
     }
 
+    vector<Extension*> extensions() override { return extensions_; }
+
     // Drop param
     void initialize(ExtensionRegistry*) override {
         try {
@@ -80,13 +89,76 @@ public:
         }
     }
 
-    // Return extensions if no override
-    vector<Extension*> extensions() override {
-        return extensions_;
-    }
+    // Dynamically create widget
+    QWidget *buildConfigWidget() override {
+        auto *w = new QWidget;
+        auto *l = new QFormLayout(w);
+        w->setLayout(l);
 
-//    QWidget *buildConfigWidget()
-//    { PYBIND11_OVERRIDE(vector<Action>, PluginInstanceBase, buildConfigWidget, ); }
+        try {
+            py::gil_scoped_acquire a;
+            if (auto override = pybind11::get_override(static_cast<const PluginInstanceBase*>(this), "configWidget")){
+                for (auto item : py::list(override())) {
+                    auto dict = py::cast<py::dict>(item);
+                    auto property_name = dict["property"].cast<QString>();
+                    auto display_name = dict["label"].cast<QString>();
+                    static const char *widget_properties = "widget_properties";
+
+                    if (auto type = dict["type"].cast<QString>(); type == QStringLiteral("lineedit")){
+                        auto *fw = new QLineEdit(w);
+                        QObject::connect(fw, &QLineEdit::textEdited, fw, [this, property_name](const QString &text){
+                            py::gil_scoped_acquire a;
+                            py::setattr(py::cast(this), py::cast(property_name), py::cast(text));
+                        });
+                        fw->setText(py::getattr(py::cast(this), py::cast(property_name)).template cast<QString>());
+                        if (dict.contains(widget_properties))
+                            applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
+                        l->addRow(display_name, fw);
+
+                    } else if (type == QStringLiteral("checkbox")){
+                        auto *fw = new QCheckBox(w);
+                        QObject::connect(fw, &QCheckBox::toggled, fw, [this, property_name](bool checked){
+                            py::gil_scoped_acquire a;
+                            py::setattr(py::cast(this), py::cast(property_name), py::cast(checked));
+                        });
+                        fw->setChecked(py::getattr(py::cast(this), py::cast(property_name)).template cast<bool>());
+                        if (dict.contains(widget_properties))
+                            applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
+                        l->addRow(display_name, fw);
+
+                    } else if (type == QStringLiteral("spinbox")){
+                        auto *fw = new QSpinBox(w);
+                        QObject::connect(fw, &QSpinBox::valueChanged, fw, [this, property_name](int value){
+                            py::gil_scoped_acquire a;
+                            py::setattr(py::cast(this), py::cast(property_name), py::cast(value));
+                        });
+                        fw->setValue(py::getattr(py::cast(this), py::cast(property_name)).template cast<int>());
+                        if (dict.contains(widget_properties))
+                            applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
+                        l->addRow(display_name, fw);
+
+                    } else if (type == QStringLiteral("doublespinbox")){
+                        auto *fw = new QDoubleSpinBox(w);
+                        QObject::connect(fw, &QDoubleSpinBox::valueChanged, fw, [this, property_name](double value){
+                            py::gil_scoped_acquire a;
+                            py::setattr(py::cast(this), py::cast(property_name), py::cast(value));
+                        });
+                        fw->setValue(py::getattr(py::cast(this), py::cast(property_name)).template cast<double>());
+                        if (dict.contains(widget_properties))
+                            applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
+                        l->addRow(display_name, fw);
+
+                    } else
+                        throw runtime_error(QString("Invalid config widget form layout row widget type: %1").arg(type).toStdString());
+                }
+                return w;
+            }
+        } catch (const std::exception &e) {
+            CRIT << e.what();
+            delete w;
+        }
+        return nullptr;
+    }
 
     py::object pathlibCachePath() const {
         py::gil_scoped_acquire a;
@@ -101,6 +173,73 @@ public:
     py::object pathlibDataPath() const {
         py::gil_scoped_acquire a;
         return Path(PluginInstance::dataDir()->path());
+    }
+
+    void writeConfig(QString key, const py::object &value) const {
+        py::gil_scoped_acquire a;
+        auto s = this->settings();
+
+        if (py::isinstance<py::str>(value))
+            s->setValue(key, value.cast<QString>());
+
+        else if (py::isinstance<py::bool_>(value))
+            s->setValue(key, value.cast<bool>());
+
+        else if (py::isinstance<py::int_>(value))
+            s->setValue(key, value.cast<int>());
+
+        else if (py::isinstance<py::float_>(value))
+            s->setValue(key, value.cast<double>());
+
+        else
+            WARN << "Invalid data type to write to settings. Has to be one of bool|int|float|str.";
+    }
+
+    py::object readConfig(QString key, const py::object &type) const {
+        py::gil_scoped_acquire a;
+        QVariant var = this->settings()->value(key);
+
+        if (var.isNull())
+            return py::none();
+
+        if (type.attr("__name__").cast<QString>() == QStringLiteral("str"))
+            return py::cast(var.toString());
+
+        else if (type.attr("__name__").cast<QString>() == QStringLiteral("bool"))
+            return py::cast(var.toBool());
+
+        else if (type.attr("__name__").cast<QString>() == QStringLiteral("int"))
+            return py::cast(var.toInt());
+
+        else if (type.attr("__name__").cast<QString>() == QStringLiteral("float"))
+            return py::cast(var.toDouble());
+
+        else
+            WARN << "Invalid data type to read from settings. Has to be one of bool|int|float|str.";
+
+        return py::none();
+    }
+
+    static void applyWidgetProperties(QWidget *widget, py::dict widget_properties){
+        py::gil_scoped_acquire a;
+        for (auto &[k, v] : widget_properties) {
+            std::string property_name = k.cast<string>();
+
+            if (py::isinstance<py::bool_>(v))
+                widget->setProperty(property_name.c_str(), v.cast<bool>());
+
+            else if (py::isinstance<py::int_>(v))
+                widget->setProperty(property_name.c_str(), v.cast<int>());
+
+            else if (py::isinstance<py::float_>(v))
+                widget->setProperty(property_name.c_str(), v.cast<double>());
+
+            else if (py::isinstance<py::str>(v))
+                widget->setProperty(property_name.c_str(), v.cast<QString>());
+
+            else
+                WARN << "Invalid data type set as widget property. Has to be one of bool|int|float|str.";
+        }
     }
 
 private:
@@ -287,18 +426,20 @@ public:
 
 
 
-////QWidget *PyPluginInstance::buildConfigWidget()
-////{
-////    py::gil_scoped_acquire acquire;
-////    static const char * ATTR_BUILD_CONFIG_WIDGET = "buildConfigWidget";
-////    if (py::hasattr(*pyinst_, ATTR_BUILD_CONFIG_WIDGET))
-////        if (auto func = pyinst_->attr(ATTR_BUILD_CONFIG_WIDGET); py::isinstance<py::function>(func)){
-////            py::object pyWidgetObj = pyinst_->attr(ATTR_BUILD_CONFIG_WIDGET)();
-////            py::object cppWidgetObj = py::reinterpret_borrow<py::object>(pyWidgetObj);
-////            auto *w = py::cast<QWidget*>(cppWidgetObj);
-////            return w;
-////        }
-////    return nullptr;
-////}
-///
-///
+//QWidget *PyPluginInstance::buildConfigWidget()
+//{
+//    py::gil_scoped_acquire acquire;
+//    static const char * ATTR_BUILD_CONFIG_WIDGET = "buildConfigWidget";
+//    if (py::hasattr(*pyinst_, ATTR_BUILD_CONFIG_WIDGET))
+//        if (auto func = pyinst_->attr(ATTR_BUILD_CONFIG_WIDGET); py::isinstance<py::function>(func)){
+//            py::object pyWidgetObj = pyinst_->attr(ATTR_BUILD_CONFIG_WIDGET)();
+//            py::object cppWidgetObj = py::reinterpret_borrow<py::object>(pyWidgetObj);
+//            auto *w = py::cast<QWidget*>(cppWidgetObj);
+//            return w;
+//        }
+//    return nullptr;
+//}
+
+//py::dict pyDict = py::getattr(py::cast(this), "__dict__");
+//for (const auto& item : pyDict)
+//    std::cout << py::str(item.first) << ": " << py::str(item.second) << std::endl;

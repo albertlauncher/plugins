@@ -27,7 +27,7 @@ static const char *ATTR_MD_CREDITS     = "md_credits";
 static const char *ATTR_MD_PLATFORMS   = "md_platforms";
 //static const char *ATTR_MD_MINPY     = "md_min_python";
 static const uint majorInterfaceVersion = 2;
-static const uint minorInterfaceVersion = 0;
+static const uint minorInterfaceVersion = 1;
 
 
 PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
