@@ -223,19 +223,19 @@ public:
     static void applyWidgetProperties(QWidget *widget, py::dict widget_properties){
         py::gil_scoped_acquire a;
         for (auto &[k, v] : widget_properties) {
-            std::string property_name = k.cast<string>();
+            std::string property_name = py::cast<string>(k);
 
             if (py::isinstance<py::bool_>(v))
-                widget->setProperty(property_name.c_str(), v.cast<bool>());
+                widget->setProperty(property_name.c_str(), py::cast<bool>(v));
 
             else if (py::isinstance<py::int_>(v))
-                widget->setProperty(property_name.c_str(), v.cast<int>());
+                widget->setProperty(property_name.c_str(), py::cast<int>(v));
 
             else if (py::isinstance<py::float_>(v))
-                widget->setProperty(property_name.c_str(), v.cast<double>());
+                widget->setProperty(property_name.c_str(), py::cast<double>(v));
 
             else if (py::isinstance<py::str>(v))
-                widget->setProperty(property_name.c_str(), v.cast<QString>());
+                widget->setProperty(property_name.c_str(), py::cast<QString>(v));
 
             else
                 WARN << "Invalid data type set as widget property. Has to be one of bool|int|float|str.";
