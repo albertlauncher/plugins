@@ -106,47 +106,69 @@ public:
 
                     if (auto type = dict["type"].cast<QString>(); type == QStringLiteral("lineedit")){
                         auto *fw = new QLineEdit(w);
-                        QObject::connect(fw, &QLineEdit::textEdited, fw, [this, property_name](const QString &text){
-                            py::gil_scoped_acquire a;
-                            py::setattr(py::cast(this), py::cast(property_name), py::cast(text));
-                        });
                         fw->setText(py::getattr(py::cast(this), py::cast(property_name)).template cast<QString>());
                         if (dict.contains(widget_properties))
                             applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
                         l->addRow(display_name, fw);
+                        QObject::connect(fw, &QLineEdit::editingFinished, fw, [this, fw, property_name](){
+                            py::gil_scoped_acquire a;
+                            try { py::setattr(py::cast(this), py::cast(property_name), py::cast(fw->text())); }
+                            catch (const std::exception &e) { CRIT << e.what(); }
+
+                        });
 
                     } else if (type == QStringLiteral("checkbox")){
                         auto *fw = new QCheckBox(w);
-                        QObject::connect(fw, &QCheckBox::toggled, fw, [this, property_name](bool checked){
-                            py::gil_scoped_acquire a;
-                            py::setattr(py::cast(this), py::cast(property_name), py::cast(checked));
-                        });
                         fw->setChecked(py::getattr(py::cast(this), py::cast(property_name)).template cast<bool>());
                         if (dict.contains(widget_properties))
                             applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
                         l->addRow(display_name, fw);
+                        QObject::connect(fw, &QCheckBox::toggled, fw, [this, property_name](bool checked){
+                            py::gil_scoped_acquire a;
+                            try { py::setattr(py::cast(this), py::cast(property_name), py::cast(checked)); }
+                            catch (const std::exception &e) { CRIT << e.what(); }
+                        });
+
+                    } else if (type == QStringLiteral("combobox")){
+                        auto *fw = new QComboBox(w);
+                        auto text = py::getattr(py::cast(this), py::cast(property_name)).template cast<QString>();
+                        for (auto &value : dict["items"].cast<py::list>()){
+                            fw->addItem(value.cast<QString>());
+                        }
+                        fw->setCurrentText(text);
+                        if (dict.contains(widget_properties))
+                            applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
+                        l->addRow(display_name, fw);
+                        QObject::connect(fw, &QComboBox::currentIndexChanged, fw, [this, cb=fw, property_name](int index){
+                            auto text = cb->currentText();
+                            py::gil_scoped_acquire a;
+                            try { py::setattr(py::cast(this), py::cast(property_name), py::cast(text)); }
+                            catch (const std::exception &e) { CRIT << e.what(); }
+                        });
 
                     } else if (type == QStringLiteral("spinbox")){
                         auto *fw = new QSpinBox(w);
-                        QObject::connect(fw, &QSpinBox::valueChanged, fw, [this, property_name](int value){
-                            py::gil_scoped_acquire a;
-                            py::setattr(py::cast(this), py::cast(property_name), py::cast(value));
-                        });
                         fw->setValue(py::getattr(py::cast(this), py::cast(property_name)).template cast<int>());
                         if (dict.contains(widget_properties))
                             applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
                         l->addRow(display_name, fw);
+                        QObject::connect(fw, &QSpinBox::valueChanged, fw, [this, property_name](int value){
+                            py::gil_scoped_acquire a;
+                            try { py::setattr(py::cast(this), py::cast(property_name), py::cast(value)); }
+                            catch (const std::exception &e) { CRIT << e.what(); }
+                        });
 
                     } else if (type == QStringLiteral("doublespinbox")){
                         auto *fw = new QDoubleSpinBox(w);
-                        QObject::connect(fw, &QDoubleSpinBox::valueChanged, fw, [this, property_name](double value){
-                            py::gil_scoped_acquire a;
-                            py::setattr(py::cast(this), py::cast(property_name), py::cast(value));
-                        });
                         fw->setValue(py::getattr(py::cast(this), py::cast(property_name)).template cast<double>());
                         if (dict.contains(widget_properties))
                             applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
                         l->addRow(display_name, fw);
+                        QObject::connect(fw, &QDoubleSpinBox::valueChanged, fw, [this, property_name](double value){
+                            py::gil_scoped_acquire a;
+                            try { py::setattr(py::cast(this), py::cast(property_name), py::cast(value)); }
+                            catch (const std::exception &e) { CRIT << e.what(); }
+                        });
 
                     } else
                         throw runtime_error(QString("Invalid config widget form layout row widget type: %1").arg(type).toStdString());
