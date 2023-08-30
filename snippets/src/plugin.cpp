@@ -57,6 +57,12 @@ struct SnippetItem : Item
 
 Plugin::Plugin(): snippets_path(configDir()->path())
 {
+    // Todo remove in future
+    QDir snippets_dir(snippets_path);
+    for(const auto &fn : snippets_dir.entryList(QDir::Files))
+        if (!fn.endsWith(".txt"))
+            snippets_dir.rename(fn, fn + ".txt");
+
     fs_watcher.addPath(snippets_path);
     connect(&fs_watcher, &QFileSystemWatcher::directoryChanged, this, [this](){updateIndexItems();});
 
