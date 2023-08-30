@@ -111,7 +111,7 @@ public:
                             applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
                         l->addRow(display_name, fw);
                         QObject::connect(fw, &QLineEdit::editingFinished, fw, [this, fw, property_name](){
-                            py::gil_scoped_acquire a;
+                            py::gil_scoped_acquire aq;
                             try { py::setattr(py::cast(this), py::cast(property_name), py::cast(fw->text())); }
                             catch (const std::exception &e) { CRIT << e.what(); }
 
@@ -124,7 +124,7 @@ public:
                             applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
                         l->addRow(display_name, fw);
                         QObject::connect(fw, &QCheckBox::toggled, fw, [this, property_name](bool checked){
-                            py::gil_scoped_acquire a;
+                            py::gil_scoped_acquire aq;
                             try { py::setattr(py::cast(this), py::cast(property_name), py::cast(checked)); }
                             catch (const std::exception &e) { CRIT << e.what(); }
                         });
@@ -139,9 +139,9 @@ public:
                         if (dict.contains(widget_properties))
                             applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
                         l->addRow(display_name, fw);
-                        QObject::connect(fw, &QComboBox::currentIndexChanged, fw, [this, cb=fw, property_name](int index){
+                        QObject::connect(fw, &QComboBox::currentIndexChanged, fw, [this, cb=fw, property_name](){
                             auto text = cb->currentText();
-                            py::gil_scoped_acquire a;
+                            py::gil_scoped_acquire aq;
                             try { py::setattr(py::cast(this), py::cast(property_name), py::cast(text)); }
                             catch (const std::exception &e) { CRIT << e.what(); }
                         });
@@ -153,7 +153,7 @@ public:
                             applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
                         l->addRow(display_name, fw);
                         QObject::connect(fw, &QSpinBox::valueChanged, fw, [this, property_name](int value){
-                            py::gil_scoped_acquire a;
+                            py::gil_scoped_acquire aq;
                             try { py::setattr(py::cast(this), py::cast(property_name), py::cast(value)); }
                             catch (const std::exception &e) { CRIT << e.what(); }
                         });
@@ -165,7 +165,7 @@ public:
                             applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
                         l->addRow(display_name, fw);
                         QObject::connect(fw, &QDoubleSpinBox::valueChanged, fw, [this, property_name](double value){
-                            py::gil_scoped_acquire a;
+                            py::gil_scoped_acquire aq;
                             try { py::setattr(py::cast(this), py::cast(property_name), py::cast(value)); }
                             catch (const std::exception &e) { CRIT << e.what(); }
                         });
