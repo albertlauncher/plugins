@@ -4,7 +4,7 @@ Native plugins are based on [Qt Plugins](https://doc.qt.io/qt-6/plugins-howto.ht
 
 ## Getting started
 
-Define a project in your CMakeLists.txt. Use the Albert CMake macro `albert_plugin`. This macro does a lot of necessary Qt boilerplate for you. See the table below for parameters you can pass. If you are keen on seeing the details check the `cmake` dir in the project root.
+Define a project in your CMakeLists.txt. Use the Albert CMake macro `albert_plugin`. This macro implements a lot of necessary CMake boilerplate code for you. See the table below for parameters you can pass. If you are keen on seeing the details check the `cmake` dir in the project root.
 
 |         Parameter |  Type  | Notes                                                                                  |
 |------------------:|:------:|----------------------------------------------------------------------------------------|
@@ -13,7 +13,7 @@ Define a project in your CMakeLists.txt. Use the Albert CMake macro `albert_plug
 |  LONG_DESCRIPTION | value  | *Optional* Longer description or absolute file path to text file (supports Markdown).  |
 |           LICENSE | value  | **MANDATORY** Short form e.g. BSD-2-Clause or GPL-3.0                                  |
 |               URL | value  | **MANDATORY** Browsable source, issues etc                                             |
-|          FRONTEND | option | *Optional* Indicates that this plugin realizes the frontend interface                  |
+|          FRONTEND | option | *Optional* Indicates that this plugin implements the frontend interface                |
 |       MAINTAINERS |  list  | *Optional* Active maintainers. Preferrably using mentionable GitHub usernames          |
 |   QT_DEPENDENCIES |  list  | *Optional* Qt::Core is exported from albert, auto import and link                      |
 |  LIB_DEPENDENCIES |  list  | *Optional* Required libraries                                                          |
@@ -31,7 +31,7 @@ albert_plugin(
 )
 ```
 
-A minimal working example of an albert Plugin looks like:
+A minimal working example of an Albert plugin looks like:
 
 ```cpp
 #pragma once
@@ -43,4 +43,4 @@ class Plugin : public albert::Plugin
 };
 ```
 
-Let your plugin inherit extension classes to extend the application by loading this plugin. Check the [library interface classes](https://github.com/albertlauncher/albert/tree/master/include/albert) as they are documented and always up to date. Also see the [existing plugins](https://github.com/albertlauncher/plugins/tree/master/) to get a basic understanding. Join our [community chats](https://albertlauncher.github.io/help/#chats) if you need help.
+Let your plugin inherit extension classes to extend the application by loading this plugin. Check the [API reference](https://albertlauncher.github.io/reference/namespacealbert.html) or the [library interface headers](https://github.com/albertlauncher/albert/tree/master/include/albert). Probably the official [plugins](https://github.com/albertlauncher/plugins/tree/master/) are a good source to get you started. If you need help, join our [community chats](https://albertlauncher.github.io/help/#chats).
