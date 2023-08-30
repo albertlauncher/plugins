@@ -56,7 +56,6 @@ Item { DebugRect{ name: "root" }
                     anchors.verticalCenter: parent.verticalCenter
                     width: Math.min(implicitWidth, parent.width - 2*style.input_padding)
 
-
                     font.family: style.font_family
                     font.pixelSize: style.input_text_font_size
                     color: style.input_text_color
@@ -355,8 +354,15 @@ Item { DebugRect{ name: "root" }
 
         if (Util.testKey(event, Qt.Key_Meta))
             showFallbacks()
+
         else if (Util.testKey(event, Qt.Key_Alt))
             showActions()
+
+        else if (Util.testAnyKeyCombination(event, Qt.ControlModifier, [Qt.Key_Enter, Qt.Key_Return]))
+            if (sActionsHidden.active)
+                showActions()
+            else
+                hideActions()
 
         else if (sActionsHidden.active
                  && (resultsList.currentIndex < 1 && !event.isAutoRepeat && Util.testKey(event, Qt.Key_Up) // First
