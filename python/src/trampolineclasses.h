@@ -140,9 +140,9 @@ public:
                             applyWidgetProperties(fw, dict[widget_properties].cast<py::dict>());
                         l->addRow(display_name, fw);
                         QObject::connect(fw, &QComboBox::currentIndexChanged, fw, [this, cb=fw, property_name](){
-                            auto text = cb->currentText();
+                            auto current_text = cb->currentText();
                             py::gil_scoped_acquire aq;
-                            try { py::setattr(py::cast(this), py::cast(property_name), py::cast(text)); }
+                            try { py::setattr(py::cast(this), py::cast(property_name), py::cast(current_text)); }
                             catch (const std::exception &e) { CRIT << e.what(); }
                         });
 
