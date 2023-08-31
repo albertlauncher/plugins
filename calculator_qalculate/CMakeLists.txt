@@ -22,6 +22,10 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     target_include_directories(${PROJECT_NAME} PRIVATE "${BREW_PREFIX}/include")
     target_link_directories(${PROJECT_NAME} PRIVATE "${BREW_PREFIX}/lib")
 endif()
-
-target_link_libraries(${PROJECT_NAME} PRIVATE qalculate)
-
+if(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+        find_package(PkgConfig REQUIRED)
+        pkg_check_modules(LIBQALCULATE REQUIRED libqalculate)
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBQALCULATE_LIBS})
+else()
+        target_link_libraries(${PROJECT_NAME} PRIVATE qalculate)
+endif()
