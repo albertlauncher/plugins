@@ -10,15 +10,15 @@ Item { DebugRect{ name: "root" }
     property bool debug: style.debug
 
     width: frame.width + (style.shadow_enabled ? style.shadow_size*2 : 0)
-    height: frame.height + (style.shadow_enabled ? style.shadow_size*2 : 0)
+    height: frame.height + (style.shadow_enabled ? style.shadow_size*2 + style.shadow_size/3 : 0) // style.shadow_size/2 is vertical offset
 
     layer.enabled: true
     layer.effect: DropShadow {
         transparentBorder: true
-        verticalOffset: style.shadow_size / 4
+        verticalOffset: style.shadow_size/3
         radius: style.shadow_enabled ? style.shadow_size : 0
-        //samples: style.shadow_size * 2
-        color: style.shadow_color
+        //samples: style.shadow_size * 2 // not available in 6.2
+        color: style.shadow_enabled ? style.shadow_color : "#00000000"
     }
 
     Rectangle{ DebugRect{ name: "frame" }
@@ -187,8 +187,8 @@ Item { DebugRect{ name: "root" }
 
         // Shadow
         property bool   shadow_enabled: true
-        property color  shadow_color: "#40000000"
-        property int    shadow_size: 30
+        property color  shadow_color: "#60000000"
+        property int    shadow_size: 60
 
         // Frame
         property color  window_background_color: palette.window
