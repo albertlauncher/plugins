@@ -48,6 +48,7 @@ TextInput {
         if (Window.visibility === Window.Hidden){
             history.add(text)
             history.resetIterator()
+            userText = ''  // for
             selectAll()
         }
     }
