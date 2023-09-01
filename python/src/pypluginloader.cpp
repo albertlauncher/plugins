@@ -174,7 +174,7 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
     if (!metadata_.platforms.isEmpty())
 #if defined Q_OS_MACOS
         if (!metadata_.platforms.contains("Darwin"))
-#elif defined Q_OS_LINUX
+#elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
         if (!metadata_.platforms.contains("Linux"))
 #elif defined Q_OS_WIN
         if (!metadata_.platforms.contains("Windows"))
