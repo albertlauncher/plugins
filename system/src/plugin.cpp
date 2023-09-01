@@ -78,7 +78,7 @@ static const QStringList icon_urls[] = {
 
 static QString defaultCommand(SupportedCommands command)
 {
-#if defined(Q_OS_LINUX)
+#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
     for (const QString &de : QString(::getenv("XDG_CURRENT_DESKTOP")).split(":")) {
 
         if (de == "Unity" || de == "Pantheon" || de == "GNOME")
