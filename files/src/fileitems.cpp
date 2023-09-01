@@ -32,12 +32,10 @@ QString AbstractFileItem::inputActionText() const
 QStringList AbstractFileItem::iconUrls() const
 {
     QStringList urls;
-//    if (mimeType().name ().startsWith("image"))
-//        urls << filePath();
-//#ifdef Q_OS_LINUX
+#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
     urls << QString("xdg:%1").arg(mimeType().iconName());
     urls << QString("xdg:%1").arg(mimeType().genericIconName());
-//#endif
+#endif
     urls << QString("qfip:%1").arg(filePath());
     return urls;
 }
