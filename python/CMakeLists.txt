@@ -11,7 +11,7 @@ albert_plugin(
 )
 
 find_package(Python3 COMPONENTS Interpreter Development)
-find_package(pybind11)
+find_package(pybind11 CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE pybind11::embed)
 install(DIRECTORY "plugins/" DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/${PROJECT_NAME}/plugins")
 
