@@ -11,17 +11,8 @@ albert_plugin(
     CREDITS "qalculate GPL-2"
 )
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    find_program(BREW_EXECUTABLE brew)
-    execute_process(
-        COMMAND "${BREW_EXECUTABLE}" --prefix
-        OUTPUT_VARIABLE BREW_PREFIX
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        COMMAND_ERROR_IS_FATAL ANY
-    )
-    target_include_directories(${PROJECT_NAME} PRIVATE "${BREW_PREFIX}/include")
-    target_link_directories(${PROJECT_NAME} PRIVATE "${BREW_PREFIX}/lib")
-endif()
-
-target_link_libraries(${PROJECT_NAME} PRIVATE qalculate)
-
+find_package(PkgConfig)
+pkg_check_modules(LIBQALCULATE REQUIRED libqalculate)
+target_include_directories(${PROJECT_NAME} PRIVATE ${LIBQALCULATE_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBQALCULATE_LIBRARIES})
+target_link_directories(${PROJECT_NAME} PRIVATE ${LIBQALCULATE_LIBRARY_DIRS})
