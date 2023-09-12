@@ -13,7 +13,12 @@ albert_plugin(
 find_package(Python3 COMPONENTS Interpreter Development)
 find_package(pybind11 CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE pybind11::embed)
-install(DIRECTORY "plugins/" DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/${PROJECT_NAME}/plugins")
+install(
+    DIRECTORY "plugins/"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/${PROJECT_NAME}/plugins"
+    REGEX "/\\..*" EXCLUDE  # exclude hidden files
+    PATTERN "__pycache__" EXCLUDE
+)
 
 #option(BUILD_PY_TESTS "Build ${PROJECT_NAME} tests (Reqiures doctest)" OFF)
 #if (BUILD_PY_TESTS)
