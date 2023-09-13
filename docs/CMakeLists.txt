@@ -1,3 +1,4 @@
+if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 project(docs VERSION 1.4)
 albert_plugin(
     NAME Docs
@@ -12,5 +13,4 @@ albert_plugin(
 
 find_package(LibArchive REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE LibArchive::LibArchive)
-
-
+endif()
