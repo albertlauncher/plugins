@@ -124,18 +124,28 @@ void Plugin::updateIndexItems()
     ii.emplace_back(update_item, update_item->text());
 
     // Add trash item
-#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
-    auto trash_path = "trash:///";
-#elif defined(Q_OS_MAC)
-    auto trash_path = QString("file://%1/.Trash").arg(QDir::homePath());
-#endif
-
     ii.emplace_back(StandardItem::make(
             "trash",
             "Trash",
             "Your trash folder",
             {"xdg:user-trash-full", "qsp:SP_TrashIcon"},
-            { {"open", "Open", [=](){ openUrl(trash_path); } } }
+            {
+                {
+                    "open", "Open trash",
+#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+                    [=](){ openUrl(QStringLiteral("trash:///")); }
+#elif defined(Q_OS_MAC)
+                    [=](){ openUrl(QString("file://%1/.Trash").arg(QDir::homePath())); }
+#endif
+                }
+#if defined(Q_OS_MAC)
+                ,
+                {
+                    "empty", "Empty trash",
+                    [=](){ runDetachedProcess({"osascript", "-e", "tell application \"Finder\" to empty trash"}); }
+                }
+#endif
+            }
         ), "trash"
     );
 
