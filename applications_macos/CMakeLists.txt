@@ -1,5 +1,5 @@
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    project(applications_macos VERSION 1.2)
+    project(applications_macos VERSION 1.3)
     albert_plugin(
         NAME Applications
         DESCRIPTION "Launch applications"
