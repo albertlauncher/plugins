@@ -56,7 +56,7 @@ Read their documentation before you proceed.
 Check the inheritance diagram of the [`albert::Extension`](https://albertlauncher.github.io/reference/classalbert_1_1Extension.html) class for available extensions, especially the `albert::TriggerQueryHandler` and its subclasses.
 By now you should understand a plugin class declaration like this: 
 
-```
+```cpp
 #pragma once
 #include "albert/extension/queryhandler/triggerqueryhandler.h"
 #include "albert/plugin.h"
