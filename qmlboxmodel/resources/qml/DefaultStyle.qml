@@ -14,12 +14,19 @@ Item { DebugRect{ name: "root" }
 
     layer.enabled: true
     layer.effect: DropShadow {
+        id: shadow
         transparentBorder: true
         verticalOffset: style.shadow_size/3
         radius: style.shadow_enabled ? style.shadow_size : 0
-        //samples: style.shadow_size * 2 // not available in 6.2
         color: style.shadow_enabled ? style.shadow_color : "#00000000"
+
+        // samples: Not available in below 6.4. Branch and set dynamically
+        Component.onCompleted: {
+            if (QT_VERSION_MAJOR === 6 || QT_VERSION_MINOR >= 4)
+                shadow.samples = style.shadow_size * 2
+        }
     }
+
 
     Rectangle{ DebugRect{ name: "frame" }
         id: frame

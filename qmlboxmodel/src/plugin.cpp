@@ -59,7 +59,7 @@ Plugin::Plugin():
     restore_alwaysOnTop();
 
     // ENGINE
-    
+
     qmlRegisterUncreatableType<albert::Query*>("Albert", 1, 0, "Query", "");
     engine_.addImageProvider(QLatin1String("albert"), image_provider_ = new ImageProvider); // The QQmlEngine takes ownership of provider.
     connect(&engine_, &QQmlEngine::quit, qApp, &QApplication::quit);
@@ -70,6 +70,9 @@ Plugin::Plugin():
     root_context->setContextProperty("albert", &qml_interface_);
     root_context->setContextProperty("history", &history_);
     root_context->setContextProperty("mainWindow", this);
+    // Hack to get version branching in qml
+    root_context->setContextProperty("QT_VERSION_MAJOR", QT_VERSION_MAJOR);
+    root_context->setContextProperty("QT_VERSION_MINOR", QT_VERSION_MINOR);
 }
 
 Plugin::~Plugin() { settings()->setValue(CFG_WND_POS, position()); }

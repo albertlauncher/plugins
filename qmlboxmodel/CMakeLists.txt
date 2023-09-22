@@ -1,4 +1,4 @@
-project(qmlboxmodel VERSION 2.0)
+project(qmlboxmodel VERSION 2.1)
 albert_plugin(
     NAME "QML Box Model"
     DESCRIPTION "The QML frontend"
