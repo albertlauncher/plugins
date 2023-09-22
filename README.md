@@ -18,38 +18,45 @@ Details may change every now and then anyway.
 
 A native plugin is a [Qt Plugin](https://doc.qt.io/qt-6/plugins-howto.html#the-low-level-api-extending-qt-applications), i.e. a shared library providing a particular interface.
 To build such a library you have to define CMake targets and create an appropiate metadata file.
-The `albert_plugin` macro defined in the [CMake module]([url](https://raw.githubusercontent.com/albertlauncher/albert/master/cmake/albert-macros.cmake)) takes care of this for you. You should probably skim through this module once to understand what it actually does. These are the parameters it takes:
-
-|         Parameter |  Type  | Notes                                                                                  |
-|------------------:|:------:|----------------------------------------------------------------------------------------|
-|              NAME | value  | **MANDATORY** Human readable name                                                      |
-|       DESCRIPTION | value  | **MANDATORY** Brief, imperative description                                            |
-|  LONG_DESCRIPTION | value  | *Optional* Longer description or absolute file path to text file (supports Markdown).  |
-|           LICENSE | value  | **MANDATORY** Short form e.g. BSD-2-Clause or GPL-3.0                                  |
-|               URL | value  | **MANDATORY** Browsable source, issues etc                                             |
-|          FRONTEND | option | *Optional* Indicates that this plugin implements the frontend interface                |
-|       MAINTAINERS |  list  | *Optional* Active maintainers. Preferrably using mentionable GitHub usernames          |
-|   QT_DEPENDENCIES |  list  | *Optional* Qt::Core is exported from albert, auto import and link                      |
-|  LIB_DEPENDENCIES |  list  | *Optional* Required libraries                                                          |
-| EXEC_DEPENDENCIES |  list  | *Optional* Required executables                                                        |
-
-A CMakeLists.txt of a regular plugin could look like this:
+The [CMake module](https://raw.githubusercontent.com/albertlauncher/albert/master/cmake/albert-macros.cmake) provides convenience macros for this purpose.
+You should probably skim through this module once.
+The `albert_plugin` macro should be sufficient for most trivial plugins:
 
 ```cmake
-project(plugin_identifier VERSION 1.0)
-albert_plugin(
-    NAME "Plugin pretty name"
-    DESCRIPTION "Brief description"
-    LICENSE GPL
-    URL https://mydomain.com/myurl
-    MAINTAINERS @yourname
+albert_plugin (
+    NAME name 
+    DESCRIPTION description
+    LICENSE licencse
+    URL url
+    [LONG_DESCRIPTION long_description]
+    [FRONTEND]
+    [MAINTAINERS ...]
+    [QT_DEPENDENCIES ...]
+    [LIB_DEPENDENCIES ...]
+    [EXEC_DEPENDENCIES ...]
 )
 ```
 
+
+|         Parameter |  Type  | Notes |
+|------------------:|:------:|---|
+|              NAME | value  | Human readable name. |
+|       DESCRIPTION | value  | Brief, imperative description, e.g. "Open files". |
+|           LICENSE | value  | Short form, e.g. BSD-2-Clause or GPL-3.0. |
+|               URL | value  | Browsable online source, issues etc. |
+|  LONG_DESCRIPTION | value  | Longer description or absolute file path to a text file (supports Markdown). |
+|          FRONTEND | option | Indicates that this plugin implements the frontend interface. |
+|       MAINTAINERS |  list  | A list of active maintainers. Preferrably using mentionable GitHub usernames. |
+|   QT_DEPENDENCIES |  list  | Qt dependencies to import and link. Qt::Core is in the public interface of libalbert. |
+|  LIB_DEPENDENCIES |  list  | Required libraries. Displayed to the user. |
+| EXEC_DEPENDENCIES |  list  | Required executables. Displayed to the user. |
+
+
 ## C++
 
-On the C++ side you have to tell the MOC which interface the plugin implements and where the metadata is located.
-This is done by the `ALBERT_PLUGIN` define. The MOC is triggered by the QOBJECT define.
+On the C++ side you have to tell the Qt MOC which interface the plugin implements and where the metadata is located.
+The `ALBERT_PLUGIN` define takes care of this.
+The MOC is triggered by the `QOBJECT` define.
 The fundamental base class for _all_ plugins is `albert::PluginInstance`.
 It is subclassed by the convenience classes for native plugins in the [`albert::plugin`](https://albertlauncher.github.io/reference/namespacealbert_1_1plugin.html) namespace.
 Read their documentation before you proceed.
