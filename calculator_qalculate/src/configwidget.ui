@@ -113,6 +113,11 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>angleUnitComboBox</tabstop>
+  <tabstop>parsingModeComboBox</tabstop>
+  <tabstop>precisionSpinBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
