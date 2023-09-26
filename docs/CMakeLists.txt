@@ -1,5 +1,5 @@
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-project(docs VERSION 1.4)
+project(docs VERSION 1.5)
 albert_plugin(
     NAME Docs
     DESCRIPTION "Documentation quick access"

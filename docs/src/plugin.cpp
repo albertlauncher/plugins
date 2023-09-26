@@ -200,7 +200,7 @@ void Plugin::downloadDocset(const QString &name)
 
     auto *docset = &docsets_.at(name);
     static const char *docsets_url_template = "https://go.zealdocs.org/d/%1/%2/latest";
-    auto url = QUrl{QString(docsets_url_template).arg(docset->source_id, docset->identifier)};
+    auto url = QUrl{QString(docsets_url_template).arg(docset->source_id.chopped(5), docset->identifier)};
     debug(QString("Downloading docset from '%1'").arg(url.toString()));
     download_ = albert::networkManager()->get(QNetworkRequest(url));
 
