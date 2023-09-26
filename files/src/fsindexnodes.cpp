@@ -134,9 +134,10 @@ void DirNode::update(const std::shared_ptr<DirNode>& shared_this,
 
             // Match against name filters
             auto exclude = false;
+            auto relative_path = fi.filePath().mid(settings.root_path.length()+1);
             for (const auto &filter: settings.name_filters)
                 if (((exclude && filter.type == PatternType::Include) || (!exclude && filter.type == PatternType::Exclude))
-                    && filter.regex.match(QDir(relativeFilePath()).filePath(fi.fileName())).hasMatch())
+                    && filter.regex.match(relative_path).hasMatch())
                     exclude = !exclude;
 
             // Index structure

@@ -25,6 +25,7 @@ struct NameFilter {
 
 struct IndexSettings
 {
+    QString root_path;
     std::vector<NameFilter> name_filters;
     std::vector<QRegularExpression> mime_filters;
     uint8_t max_depth;

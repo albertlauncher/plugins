@@ -37,6 +37,9 @@ QString FsIndexPath::path() const { return root_->filePath(); }
 void FsIndexPath::update(const bool &abort, std::function<void(const QString &)> status)
 {
     IndexSettings s;
+
+    s.root_path = this->path();
+
     for (const auto &pattern : name_filters)
         s.name_filters.emplace_back(pattern);
     for (const auto &pattern : mime_filters)

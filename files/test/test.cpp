@@ -10,6 +10,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QTemporaryDir>
+#include "src/fileitems.h"
 #include "src/fsindexpath.h"
 using namespace std;
 ALBERT_LOGGING_CATEGORY("files_test")
@@ -38,9 +39,12 @@ TEST_CASE("FsIndexPath")
     CHECK(QFile::link(root.filePath("a"),
                       root.filePath("b/c")));
 
-
-    //  --   --   --  //
-
+    // ─┬─── /
+    //  ├─┬─ a/
+    //  │ ├─ a/.foo.txt
+    //  │ └─ a/.foo.txt
+    //  └─┬─ b/
+    //    └─ b/c/
 
     vector<shared_ptr<AbstractFileItem>> items;
     FsIndexPath *p;
@@ -88,18 +92,16 @@ TEST_CASE("FsIndexPath")
     p->setFollowSymlinks(true);
     update();
     CHECK(items.size() == 6);
+    p->setFollowSymlinks(false);
 
     // namefilters
     p->setNameFilters({"b"});
     update();
     CHECK(items.size() == 4);
 
-
-    // namefilters
-    p->setNameFilters({"b"});
+    p->setNameFilters({"^a"});
     update();
-    CHECK(items.size() == 4);
-
+    CHECK(items.size() == 3);
 
     p = new FsIndexPath(dir.filePath("b"));
     update();

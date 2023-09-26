@@ -19,7 +19,7 @@ const char* CFG_MIME_FILTERS = "mimeFilters";
 const QStringList DEF_MIME_FILTERS = { "inode/directory" };
 const char* CFG_NAME_FILTERS = "nameFilters";
 #if defined Q_OS_MACOS
-const QStringList DEF_NAME_FILTERS = { ".DS_Store" };
+const QStringList DEF_NAME_FILTERS = { "\\.DS_Store" };
 #else
 const QStringList DEF_NAME_FILTERS = {};
 #endif
