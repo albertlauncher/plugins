@@ -137,7 +137,7 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
     if (py::object obj = ast.attr("get_docstring")(ast_root); py::isinstance<py::str>(obj))
         metadata_.long_description = obj.cast<py::str>().cast<QString>();
 
-    metadata_.user = true;
+    metadata_.load_type = LoadType::User;
 
     // Validate metadata
 

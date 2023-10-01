@@ -8,6 +8,7 @@ albert_plugin(
     MAINTAINERS @manuelschneid3r
     QT_DEPENDENCIES Widgets
     CREDITS "pybind11 BSD-3-Clause"
+    NOUNLOAD
 )
 
 find_package(Python3 COMPONENTS Interpreter Development)
