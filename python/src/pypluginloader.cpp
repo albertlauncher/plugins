@@ -217,7 +217,7 @@ QString PyPluginLoader::load()
             module_.attr("md_id") = metadata_.id;
 
         // Attach logcat functions
-#if QT_VERSION < 0x060300
+#if QT_VERSION != 0x060502
         py::setattr(module_,"debug", py::cpp_function([this](const QString &s){ qCDebug(logging_category_factory) << s; }));
         py::setattr(module_,"info", py::cpp_function([this](const QString &s){ qCInfo(logging_category_factory) << s; }));
         py::setattr(module_,"warning", py::cpp_function([this](const QString &s){ qCWarning(logging_category_factory) << s; }));
