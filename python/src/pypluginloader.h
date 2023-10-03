@@ -39,7 +39,6 @@ private:
     albert::PluginMetaData metadata_;
     std::string logging_category_name;
     std::unique_ptr<QLoggingCategory> logging_category;
-    const QLoggingCategory &logging_category_factory();
 };
 
 
