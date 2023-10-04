@@ -22,7 +22,7 @@ Item { DebugRect{ name: "root" }
 
         // samples: Not available in below 6.4. Branch and set dynamically
         Component.onCompleted: {
-            if (QT_VERSION_MAJOR === 6 || QT_VERSION_MINOR >= 4)
+            if (QT_VERSION_MAJOR === 6 && QT_VERSION_MINOR >= 4)
                 shadow.samples = style.shadow_size * 2
         }
     }
