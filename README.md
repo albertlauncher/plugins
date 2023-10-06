@@ -45,11 +45,12 @@ albert_plugin (
 |           LICENSE | value  | Short form, e.g. BSD-2-Clause or GPL-3.0. |
 |               URL | value  | Browsable online source, issues etc. |
 |  LONG_DESCRIPTION | value  | Longer description or absolute file path to a text file (supports Markdown). |
-|          FRONTEND | option | Indicates that this plugin implements the frontend interface. |
 |       MAINTAINERS |  list  | A list of active maintainers. Preferrably using mentionable GitHub usernames. |
 |   QT_DEPENDENCIES |  list  | Qt dependencies to import and link. Qt::Core is in the public interface of libalbert. |
 |  LIB_DEPENDENCIES |  list  | Required libraries. Displayed to the user. |
 | EXEC_DEPENDENCIES |  list  | Required executables. Displayed to the user. |
+|          FRONTEND | option | Indicates that this plugin implements the frontend interface. |
+|          NOUNLOAD | option | Prohibits unloading at runtime. |
 
 
 ## C++
