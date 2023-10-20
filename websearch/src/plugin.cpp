@@ -130,12 +130,12 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
     if (!query->string().isEmpty())
         for (const SearchEngine &se: searchEngines_)
             for (const auto &keyword : {QStringLiteral("%1 ").arg(se.trigger.toLower()),
+                                        se.trigger.toLower(),
                                         QStringLiteral("%1 ").arg(se.name.toLower())})
                 if (auto prefix = query->string().toLower().left(keyword.size()); keyword.startsWith(prefix)){
                     results.emplace_back(buildItem(se, query->string().mid(prefix.size())),
                                          (float)prefix.length()/keyword.size());
-                    break;  // max one of these icons, assumption: tigger is shorter and yields higer scores
-
+                    break;  // max one of these icons, assumption: trigger is shorter and yields higher scores
                 }
     return results;
 }
