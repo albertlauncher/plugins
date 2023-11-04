@@ -5,7 +5,9 @@
 #include "albert/plugin.h"
 #include "albert/util/backgroundexecutor.h"
 #include <QFileSystemWatcher>
+#include <QStringList>
 #include <memory>
+namespace albert { class StandardItem; }
 
 
 class Plugin : public albert::plugin::ExtensionPlugin<albert::IndexQueryHandler>
@@ -21,6 +23,9 @@ public:
 protected:
     std::vector<albert::IndexItem> indexApps(const bool &abort) const;
 
+    std::pair<std::shared_ptr<albert::StandardItem>, QStringList>
+    parseDesktopEntry(const QString &id, const QString& path) const;
+
     albert::BackgroundExecutor<std::vector<albert::IndexItem>> indexer;
     std::vector<albert::IndexItem> apps;
     QFileSystemWatcher fs_watcher_;
@@ -29,4 +34,5 @@ protected:
     bool useGenericName;
     bool useNonLocalizedName;
     bool useExec;
+    const QStringList xdg_current_desktop;
 };

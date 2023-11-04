@@ -1,5 +1,5 @@
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
-project(applications_xdg VERSION 1.7)
+project(applications_xdg VERSION 1.8)
 albert_plugin(
     NAME Applications
     DESCRIPTION "Launch applications"

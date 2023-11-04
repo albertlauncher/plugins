@@ -1,11 +1,19 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
+/*
+ *  https://specifications.freedesktop.org/desktop-entry-spec/1.5/
+ *  https://wiki.ubuntu.com/UbuntuDevelopment/Internationalisation/Packaging#Desktop_Entries
+ */
+
 #include "albert/albert.h"
 #include "albert/extension/queryhandler/standarditem.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <libintl.h>
+#include <locale.h>
+#include <ranges>
 ALBERT_LOGGING_CATEGORY("apps")
 using namespace std;
 using namespace albert;
@@ -19,6 +27,7 @@ const char* CFG_USEEXEC              = "use_exec";
 const bool  DEF_USEEXEC              = false;
 const char* CFG_USENONLOCALIZEDNAME  = "use_non_localized_name";
 const bool  DEF_USENONLOCALIZEDNAME  = false;
+
 
 static QString fieldCodesExpanded(const QString & exec, const QString & name, const QString & icon, const QString & de_path)
 {
@@ -64,8 +73,14 @@ static QString fieldCodesExpanded(const QString & exec, const QString & name, co
     return commandLine;
 }
 
-static QString xdgStringEscape(const QString & unescaped)
+/// Get escaped value for key
+/// \param key The key to fetch the value for
+/// \param key The raw desktop entry key/value pairs
+/// \return The value for key
+static QString stringAt(const map<QString, QString> &entries, const QString &key)
 {
+    const auto &unescaped = entries.at(key);
+
     /*
      * The escape sequences \s, \n, \t, \r, and \\ are supported for values of
      * type string and localestring, meaning ASCII space, newline, tab, carriage
@@ -98,282 +113,61 @@ static QString xdgStringEscape(const QString & unescaped)
     return result;
 }
 
-static QString getLocalizedKey(const QString &key, const map<QString,QString> &entries, const QLocale &loc)
+static QString localeStringAt(const map<QString, QString> &entries, const QString &key, const QLocale &locale)
 {
-    map<QString,QString>::const_iterator it;
-    if ( (it = entries.find(QString("%1[%2]").arg(key, loc.name()))) != entries.end()
-         || (it = entries.find(QString("%1[%2]").arg(key, loc.name().left(2)))) != entries.end()
-         || (it = entries.find(key)) != entries.end())
-        return it->second;
-    return QString();
+    // Localized values for keys - https://specifications.freedesktop.org/desktop-entry-spec/1.5/ar01s05.html
+
+    // > If a postfixed key occurs, the same key must be also present without the postfix.
+    // -> Missing unlocalized string implies the lack of localized strings
+    QString unlocalized = stringAt(entries, key);
+
+    // TODO: Properly fetch the localestring (lang_COUNTRY@MODIFIER, lang_COUNTRY, lang@MODIFIER, lang, default value)
+    try {
+        return stringAt(entries, QString("%1[%2]").arg(key, locale.name()));
+    } catch (const out_of_range &) { }
+
+    try {
+        return stringAt(entries, QString("%1[%2]").arg(key, locale.name().left(2)));
+    } catch (const out_of_range &) { }
+
+    try {
+        auto domain = entries.at("X-Ubuntu-Gettext-Domain").toStdString();
+        auto msgid = unlocalized.toStdString();
+        // The resulting string is statically allocated and must not be modified or freed
+        // Returns msgid on lookup failure
+        // https://linux.die.net/man/3/dgettext
+        return QString::fromUtf8(dgettext(domain.c_str(), msgid.c_str()));
+    } catch (const out_of_range &) { }
+
+    return unlocalized;
 }
 
-
-QString Plugin::defaultTrigger() const { return QStringLiteral("apps "); }
-
-vector<IndexItem> Plugin::indexApps(const bool &abort) const
+static map<QString, map<QString,QString>> readDesktopEntry(const QString &path)
 {
-    vector<IndexItem> results;
-
-    // Get a new index [O(n)]
-    QStringList xdg_current_desktop = QString(getenv("XDG_CURRENT_DESKTOP")).split(':', Qt::SkipEmptyParts);
-    QLocale loc;
-
-    /*
-     * Create a list of desktop files to index (unique ids)
-     * To determine the ID of a desktop file, make its full path relative to
-     * the $XDG_DATA_DIRS component in which the desktop file is installed,
-     * remove the "applications/" prefix, and turn '/' into '-'.
-     */
-
-    map<QString /*desktop file id*/, QString /*path*/> desktopFiles;
-    for ( const QString &dir : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation) ) {
-        QDirIterator fIt(dir, QStringList("*.desktop"), QDir::Files,
-                         QDirIterator::Subdirectories|QDirIterator::FollowSymlinks);
-        while (!fIt.next().isEmpty()) {
-            QString desktopFileId = fIt.filePath().remove(QRegularExpression("^.*applications/")).replace("/","-");
-            const auto &pair = desktopFiles.emplace(desktopFileId, fIt.filePath());
-            if (!pair.second)
-                INFO << QString("Desktop file skipped: '%1' overwritten in '%2'").arg(fIt.filePath(), desktopFiles[desktopFileId]);
-        }
-    }
-
-    // Iterate over all desktop files
-    for (const auto &id_path_pair : desktopFiles) {
-
-        if (abort) return results;
-
-        const QString &id = id_path_pair.first;
-        const QString &path = id_path_pair.second;
-
-        DEBG << "Indexing desktop file:" << id;
-
-        map<QString,map<QString,QString>> sectionMap;
-        map<QString,map<QString,QString>>::iterator sectionIterator;
-
-        /*
-         * Get the data from the desktop file
-         */
-
-        // Read the file into a map
-        {
-            QFile file(path);
-            if (!file.open(QIODevice::ReadOnly| QIODevice::Text)) continue;
-            QTextStream stream(&file);
-            QString currentGroup;
-            for (QString line=stream.readLine(); !line.isNull(); line=stream.readLine()) {
-                line = line.trimmed();
-                if (line.startsWith('#') || line.isEmpty())
-                    continue;
-                if (line.startsWith("[")){
-                    currentGroup = line.mid(1,line.size()-2).trimmed();
-                    continue;
-                }
-                sectionMap[currentGroup].emplace(line.section('=', 0,0).trimmed(),
-                                                 line.section('=', 1, -1).trimmed());
+    map<QString, map<QString,QString>> result;
+    if (QFile file(path); file.open(QIODevice::ReadOnly| QIODevice::Text)) {
+        QTextStream stream(&file);
+        QString currentGroup;
+        for (QString line=stream.readLine(); !line.isNull(); line=stream.readLine()) {
+            line = line.trimmed();
+            if (line.startsWith('#') || line.isEmpty())
+                continue;
+            if (line.startsWith("[")){
+                currentGroup = line.mid(1,line.size()-2).trimmed();
+                continue;
             }
-            file.close();
+            result[currentGroup].emplace(line.section('=', 0,0).trimmed(),
+                                         line.section('=', 1, -1).trimmed());
         }
-
-
-        // Skip if there is no "Desktop Entry" section
-        if ((sectionIterator = sectionMap.find("Desktop Entry")) == sectionMap.end())
-            continue;
-
-        map<QString,QString> const &entryMap = sectionIterator->second;
-        map<QString,QString>::const_iterator entryIterator;
-
-        // Skip, if type is not found or not application
-        if ((entryIterator = entryMap.find("Type")) == entryMap.end() ||
-            entryIterator->second != "Application")
-            continue;
-
-        // Skip, if this desktop entry must not be shown
-        if ((entryIterator = entryMap.find("NoDisplay")) != entryMap.end()
-            && entryIterator->second == "true")
-            continue;
-
-        if (!ignoreShowInKeys) {
-            // Skip if the current desktop environment is specified in "NotShowIn"
-            if ((entryIterator = entryMap.find("NotShowIn")) != entryMap.end())
-                for (const QString &str : entryIterator->second.split(';', Qt::SkipEmptyParts))
-                    if (xdg_current_desktop.contains(str))
-                        continue;
-
-            // Skip if the current desktop environment is not specified in "OnlyShowIn"
-            if ((entryIterator = entryMap.find("OnlyShowIn")) != entryMap.end()) {
-                bool found = false;
-                for (const QString &str : entryIterator->second.split(';', Qt::SkipEmptyParts))
-                    if (xdg_current_desktop.contains(str)){
-                        found = true;
-                        break;
-                    }
-                if (!found)
-                    continue;
-            }
-        }
-
-        bool term;
-        QString name;
-        QString nonLocalizedName;
-        QString genericName;
-        QString comment;
-        QString icon;
-        QString exec;
-        QString workingDir;
-        QStringList keywords;
-        QStringList actionIdentifiers;
-
-        // Try to get the localized name, skip if empty
-        name = xdgStringEscape(getLocalizedKey("Name", entryMap, loc));
-        if (name.isNull())
-            continue;
-
-        // Try to get the exec key, skip if not existant
-        if ((entryIterator = entryMap.find("Exec")) != entryMap.end())
-            exec = xdgStringEscape(entryIterator->second);
-        else
-            continue;
-
-        // Try to get the localized icon, skip if empty
-        icon = xdgStringEscape(getLocalizedKey("Icon", entryMap, loc));
-
-        // Check if this is a terminal app
-        term = (entryIterator = entryMap.find("Terminal")) != entryMap.end()
-               && entryIterator->second=="true";
-
-        // Try to get the localized genericName
-        genericName = xdgStringEscape(getLocalizedKey("GenericName", entryMap, loc));
-
-        // Try to get the non-localized name
-        if ((entryIterator = entryMap.find("Name")) != entryMap.end())
-            nonLocalizedName = xdgStringEscape(entryIterator->second);
-
-        // Try to get the localized comment
-        comment = xdgStringEscape(getLocalizedKey("Comment", entryMap, loc));
-
-        // Try to get the keywords
-        keywords = xdgStringEscape(getLocalizedKey("Keywords", entryMap, loc)).split(';', Qt::SkipEmptyParts);
-
-        // Try to get the workindir
-        if ((entryIterator = entryMap.find("Path")) != entryMap.end())
-            workingDir = xdgStringEscape(entryIterator->second);
-
-        // Try to get the keywords
-        if ((entryIterator = entryMap.find("Actions")) != entryMap.end())
-            actionIdentifiers = xdgStringEscape(entryIterator->second).split(';', Qt::SkipEmptyParts);
-
-//            // Try to get the mimetypes
-//            if ((valueIterator = entryMap.find("MimeType")) != entryMap.end())
-//                keywords = xdgStringEscape(valueIterator->second).split(';',QString::SkipEmptyParts);
-
-
-        /*
-         * Build the item
-         */
-
-        // Field code expandesd commandline
-        QString commandLine = fieldCodesExpanded(exec, name, icon, path);
-
-        // Icon path
-        QStringList icon_urls = {"xdg:" + icon, "xdg:application-x-executable", "xdg:exec",":application-x-executable"};
-
-        // Description
-        QString subtext;
-        if (!comment.isEmpty())
-            subtext = comment;
-        else if(useGenericName && !genericName.isEmpty())
-            subtext = genericName;
-        else if(useNonLocalizedName && !nonLocalizedName.isEmpty())
-            subtext = nonLocalizedName;
-        else
-            subtext = commandLine;
-
-        // Set index strings
-        QStringList index_strings;
-        index_strings << name;
-
-        if (useKeywords)
-            for (auto & kw : keywords)
-                index_strings << kw;
-
-        if (useGenericName && !genericName.isEmpty())
-            index_strings << genericName;
-
-        if (useNonLocalizedName && !nonLocalizedName.isEmpty())
-            index_strings << nonLocalizedName;
-
-        if (useExec){
-            static QStringList excludes = {
-                "/",
-                "bash ",
-                "dbus-send ",
-                "env ",
-                "java ",
-                "perl ",
-                "python ",
-                "ruby ",
-                "sh "
-            };
-            if (none_of(excludes.begin(), excludes.end(), [&exec](const QString &str){ return exec.startsWith(str); }))
-                index_strings << exec.section(QChar(QChar::Space), 0, 0, QString::SectionSkipEmpty);
-        }
-
-        /*
-         * Build actions
-         */
-
-        vector<Action> actionList;
-
-        if (term)
-            actionList.emplace_back("run", "Run", [=](){ albert::runTerminal(commandLine, workingDir, true); });
-        else
-            actionList.emplace_back("run", "Run", [=](){
-                albert::runDetachedProcess(QStringList() << "sh" << "-c" << commandLine, workingDir);
-            });
-
-        // Desktop Actions
-        for (const QString &actionIdentifier: actionIdentifiers){
-
-            // Get iterator to action section
-            if ((sectionIterator = sectionMap.find(QString("Desktop Action %1").arg(actionIdentifier))) == sectionMap.end())
-                continue;
-            map<QString,QString> &valueMap = sectionIterator->second;
-
-            // Try to get the localized action name
-            QString actionName = xdgStringEscape(getLocalizedKey("Name", valueMap, loc));
-            if (actionName.isNull())
-                continue;
-
-            // Get action command
-            if ((entryIterator = valueMap.find("Exec")) == valueMap.end())
-                continue;
-
-            // Unquote arguments and expand field codes
-            commandLine = fieldCodesExpanded(entryIterator->second, icon, name, path);
-            if (term)
-                actionList.emplace_back(actionName, actionName, [=](){
-                    albert::runTerminal(commandLine, workingDir, true);
-                });
-            else
-                actionList.emplace_back(actionName, actionName, [=](){
-                    albert::runDetachedProcess(QStringList() << "sh" << "-c" << commandLine, workingDir);
-                });
-        }
-
-        actionList.emplace_back("reveal-entry", "Open desktop entry in file browser", [=](){
-            albert::openUrl(QFileInfo(id_path_pair.second).path());
-        });
-
-        auto item = StandardItem::make(id, name, subtext, name, icon_urls, actionList);
-        for (const auto &index_string : index_strings){
-            results.emplace_back(item, index_string);
-        }
+        file.close();
     }
-    return results;
+    else
+        throw runtime_error(QString("Failed opening file '%1': %2").arg(path, file.errorString()).toStdString());
+
+    return result;
 }
 
-Plugin::Plugin()
+Plugin::Plugin() : xdg_current_desktop(QString(getenv("XDG_CURRENT_DESKTOP")).split(':', Qt::SkipEmptyParts))
 {
     qunsetenv("DESKTOP_AUTOSTART_ID");
 
@@ -407,6 +201,262 @@ Plugin::Plugin()
     };
     indexer.run();
 }
+
+std::pair<shared_ptr<StandardItem>, QStringList> Plugin::parseDesktopEntry(const QString &id, const QString &path) const
+{
+    DEBG << "Indexing desktop file at" << path;
+    const map<QString,map<QString,QString>> desktopEntry = readDesktopEntry(path);
+
+    try {
+
+        // Recognized desktop entry keys - https://specifications.freedesktop.org/desktop-entry-spec/1.5/ar01s06.html
+        // Possible value types - https://specifications.freedesktop.org/desktop-entry-spec/1.5/ar01s04.html
+
+
+        // Parse item values
+
+        auto general = desktopEntry.at(QStringLiteral("Desktop Entry"));
+        QLocale locale;
+
+        // Type - string, REQUIRED
+        try {
+            if (stringAt(general, QStringLiteral("Type")) != QStringLiteral("Application"))
+                throw runtime_error("Desktop entries of type other than 'Application' are not handled yet.");
+        } catch (const out_of_range &) {
+            throw runtime_error("Desktop entry does not contain a 'Desktop Entry' section.");
+        }
+
+        // NoDisplay - boolean
+        try {
+            if (general.at(QStringLiteral("NoDisplay")) == QStringLiteral("true"))
+                throw runtime_error("Key 'NoDisplay' set.");
+        } catch (const out_of_range &) { }
+
+        // OnlyShowIn, NotShowIn - string(s)
+        if (!ignoreShowInKeys) {
+            try {
+                for (const auto &desktop_environment : stringAt(general, QStringLiteral("NotShowIn")).split(';', Qt::SkipEmptyParts))
+                    if (xdg_current_desktop.contains(desktop_environment))
+                        throw runtime_error("Desktop entry excluded by 'NotShowIn'.");
+            } catch (const out_of_range &) { }
+
+            try {
+                if (!ranges::any_of(stringAt(general, QStringLiteral("OnlyShowIn")).split(';', Qt::SkipEmptyParts),
+                                    [this](const auto &desktop_env){ return xdg_current_desktop.contains(desktop_env); }))
+                    throw runtime_error("Desktop entry excluded by 'OnlyShowIn'.");
+            } catch (const out_of_range &) { }
+        }
+
+        // Name - localestring, REQUIRED
+        QString name;
+        try {
+            name = localeStringAt(general, QStringLiteral("Name"), locale);
+        } catch (const out_of_range &) {
+            throw runtime_error("Desktop entry does not contain 'Name' key.");
+        }
+
+        QString nonLocalizedName;
+        try {
+            nonLocalizedName = stringAt(general, QStringLiteral("Name"));
+        } catch (const out_of_range &) { }
+
+        // GenericName - localestring
+        QString genericName;
+        try {
+            genericName = localeStringAt(general, QStringLiteral("GenericName"), locale);
+        } catch (const out_of_range &) { }
+
+        // Comment - localestring
+        QString comment;
+        try {
+            comment = localeStringAt(general, QStringLiteral("Comment"), locale);
+        } catch (const out_of_range &) { }
+
+        // Keywords - localestring(s)
+        QStringList keywords;
+        try {
+            keywords = localeStringAt(general, QStringLiteral("Keywords"), locale).split(';', Qt::SkipEmptyParts);
+        } catch (const out_of_range &) { }
+
+        // Icon - iconstring (xdg icon naming spec)
+        QString icon;
+        try {
+            icon = localeStringAt(general, QStringLiteral("Icon"), locale);
+        } catch (const out_of_range &) { }
+
+        // Exec - string
+        QString exec;
+        try {
+            exec = fieldCodesExpanded(stringAt(general, QStringLiteral("Exec")), name, icon, path);
+        } catch (const out_of_range &) {
+            throw runtime_error("Desktop entry does not contain 'Exec' key.");
+        }
+
+        // Path - string
+        QString working_dir;
+        try {
+            working_dir = stringAt(general, QStringLiteral("Path"));
+        } catch (const out_of_range &) { }
+
+        // Terminal - boolean
+        bool term = false;
+        try {
+            term = general.at(QStringLiteral("Terminal")) == QStringLiteral("true");
+        } catch (const out_of_range &) { }
+
+        // Actions - string(s)
+        QStringList actions;
+        try {
+            actions = stringAt(general, QStringLiteral("Actions")).split(';', Qt::SkipEmptyParts);
+        } catch (const out_of_range &) { }
+
+
+        // --
+
+
+        vector<Action> actionList;
+
+        if (term)
+            actionList.emplace_back("run", "Run", [=](){ albert::runTerminal(exec, working_dir, true); });
+        else
+            actionList.emplace_back("run", "Run", [=](){
+                albert::runDetachedProcess(QStringList() << "sh" << "-c" << exec, working_dir);
+            });
+
+        for (const QString &action_identifier : actions){
+
+            try {
+                auto action_section = desktopEntry.at(QString("Desktop Action %1").arg(action_identifier));
+
+                // Name - localestring, REQUIRED
+                QString action_name;
+                try {
+                    action_name = localeStringAt(action_section, QStringLiteral("Name"), locale);
+                } catch (const out_of_range &) {
+                    throw runtime_error("Desktop action does not contain 'Name' key.");
+                }
+
+                // Icon - iconstring (xdg icon naming spec)
+                QString action_icon;
+                try {
+                    action_icon = localeStringAt(action_section, QStringLiteral("Icon"), locale);
+                } catch (const out_of_range &) { }
+
+                // Exec - string
+                QString action_exec;
+                try {
+                    action_exec = fieldCodesExpanded(stringAt(action_section, QStringLiteral("Exec")),
+                                                     name, icon, path);
+                } catch (const out_of_range &) {
+                    throw runtime_error("Desktop action does not contain 'Exec' key.");
+                }
+
+                if (term)
+                    actionList.emplace_back(action_name, action_name, [=](){
+                        albert::runTerminal(action_exec, working_dir, true);
+                    });
+                else
+                    actionList.emplace_back(action_name, action_name, [=](){
+                        albert::runDetachedProcess(QStringList() << "sh" << "-c" << action_exec, working_dir);
+                    });
+
+            } catch (const out_of_range &) {
+                WARN << "Desktop action" << action_identifier << "missing:" << path;
+            }
+        }
+
+        actionList.emplace_back("reveal-entry", "Open desktop entry in file browser", [=](){
+            albert::openUrl(QFileInfo(path).path());
+        });
+
+
+        // --
+
+
+        QStringList index_strings;
+        index_strings << name;
+        if (useKeywords)
+            index_strings << keywords;
+        if (useGenericName && !genericName.isEmpty())
+            index_strings << genericName;
+        if (useNonLocalizedName && !nonLocalizedName.isEmpty())
+            index_strings << nonLocalizedName;
+        if (useExec){
+            static QStringList excludes = {
+                "/",
+                "bash ",
+                "dbus-send ",
+                "env ",
+                "java ",
+                "perl ",
+                "python ",
+                "ruby ",
+                "sh "
+            };
+            if (ranges::none_of(excludes, [&exec](const QString &str){ return exec.startsWith(str); }))
+                index_strings << exec.section(QChar(QChar::Space), 0, 0, QString::SectionSkipEmpty);
+        }
+        index_strings.removeDuplicates();
+
+        QString subtext;
+        if (comment.isEmpty())
+            subtext = keywords.join(", ");
+        else
+            subtext = comment;
+
+        QStringList icon_urls = {"xdg:" + icon,
+                                 QStringLiteral("xdg:application-x-executable"),
+                                 QStringLiteral("xdg:exec"),
+                                 QStringLiteral(":application-x-executable")};
+
+        return {StandardItem::make(id, name, subtext, name, icon_urls, actionList), index_strings};
+
+    } catch (const out_of_range &) {
+        throw runtime_error("Desktop entry does not contain a 'Desktop Entry' section.");
+    }
+}
+
+vector<IndexItem> Plugin::indexApps(const bool &abort) const
+{
+    // Get a map of unique desktop entries according to the spec
+    map<QString /*desktop file id*/, QString /*path*/> desktopFiles;
+    for (const QString &dir : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation)) {
+
+        QDirIterator fIt(dir, QStringList("*.desktop"), QDir::Files,
+                         QDirIterator::Subdirectories|QDirIterator::FollowSymlinks);
+
+        while (!fIt.next().isEmpty()) {
+
+            // To determine the ID of a desktop file, make its full path relative to
+            // the $XDG_DATA_DIRS component in which the desktop file is installed,
+            // remove the "applications/" prefix, and turn '/' into '-'.
+            static QRegularExpression re("^.*applications/");
+            QString desktopFileId = fIt.filePath().remove(re).replace("/","-");
+
+            if (const auto &[it, success] = desktopFiles.emplace(desktopFileId, fIt.filePath()); !success)
+                DEBG << QString("Desktop file '%1' will be skipped: Shadowed by '%2'").arg(fIt.filePath(), desktopFiles[desktopFileId]);
+        }
+    }
+
+    // Index the unique desktop files
+    vector<IndexItem> results;
+    for (const auto &[id, path] : desktopFiles) {
+        if (abort)
+            return results;
+
+        try {
+            const auto &[item, index_strings] = parseDesktopEntry(id, path);
+            for (auto &index_string : index_strings)
+                results.emplace_back(item, index_string);
+        } catch (const std::exception &e) {
+            DEBG << QString("Skipped desktop entry '%1': %2").arg(path, e.what());
+        }
+
+    }
+    return results;
+}
+
+QString Plugin::defaultTrigger() const { return QStringLiteral("apps "); }
 
 void Plugin::updateIndexItems()
 {
