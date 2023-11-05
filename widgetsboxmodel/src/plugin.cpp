@@ -126,7 +126,7 @@ Plugin::Plugin()
     setDisplaySystemShadow(s->value(CFG_SYSTEM_SHADOW, DEF_SYSTEM_SHADOW).toBool());
     theme_ = s->value(CFG_THEME, DEF_THEME).toString();
     if (!setTheme(theme_))
-        WARN << "Stylefile not found:" << theme_.toStdString().c_str();
+        WARN << "Stylefile not found:" << theme_;
 
     init_statemachine();
 
