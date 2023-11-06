@@ -84,11 +84,11 @@ static QString defaultCommand(SupportedCommands command)
         if (de == "Unity" || de == "Pantheon" || de == "GNOME")
             switch (command) {
             case LOCK:      return "dbus-send --type=method_call --dest=org.gnome.ScreenSaver /org/gnome/ScreenSaver org.gnome.ScreenSaver.Lock";
-            case LOGOUT:    return "gnome-session-quit --logout";
+            case LOGOUT:    return "gnome-session-quit --logout --no-prompt";
             case SUSPEND:   break ;
             case HIBERNATE: break ;
-            case REBOOT:    return "gnome-session-quit --reboot";
-            case POWEROFF:  return "gnome-session-quit --power-off";
+            case REBOOT:    return "gnome-session-quit --reboot --no-prompt";
+            case POWEROFF:  return "gnome-session-quit --power-off --no-prompt";
         }
 
         else if (de == "kde-plasma" || de == "KDE")
