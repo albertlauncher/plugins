@@ -1,4 +1,4 @@
-project(calculator_qalculate VERSION 1.3)
+project(calculator_qalculate VERSION 1.4)
 albert_plugin(
     NAME Calculator
     DESCRIPTION "Evaluate math expressions using Qalculate"

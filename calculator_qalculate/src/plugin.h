@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Manuel Schneider
 
 #pragma once
-#include "albert/plugin.h"
 #include "albert/extension/queryhandler/globalqueryhandler.h"
+#include "albert/plugin.h"
 #include <QObject>
 #include <libqalculate/Calculator.h>
 #include <memory>
@@ -25,8 +25,3 @@ private:
     EvaluationOptions eo;
     PrintOptions po;
 };
-
-
-
-//    void setGroupSeparatorEnabled(bool enabled);
-//    void setIParserEnabled(bool enabled);

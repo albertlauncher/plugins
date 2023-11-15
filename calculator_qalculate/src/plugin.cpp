@@ -6,6 +6,7 @@
 #include "plugin.h"
 #include "ui_configwidget.h"
 #include <QSettings>
+#include <QThread>
 ALBERT_LOGGING_CATEGORY("qalculate")
 using namespace albert;
 using namespace std;
@@ -18,6 +19,8 @@ const char* CFG_PARSINGMODE = "parsing_mode";
 const uint  DEF_PARSINGMODE = (int)PARSING_MODE_CONVENTIONAL;
 const char* CFG_PRECISION = "precision";
 const uint  DEF_PRECISION = 16;
+const QStringList icon_urls = {"xdg:calc", ":qalculate"};
+std::mutex qalculate_mutex;
 }
 
 Plugin::Plugin()
@@ -65,6 +68,7 @@ QWidget *Plugin::buildConfigWidget()
             static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, [this](int index){
         settings()->setValue(CFG_ANGLEUNIT, index);
+        std::lock_guard locker(qalculate_mutex);
         eo.parse_options.angle_unit = static_cast<AngleUnit>(index);
     });
 
@@ -74,6 +78,7 @@ QWidget *Plugin::buildConfigWidget()
             static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, [this](int index){
         settings()->setValue(CFG_PARSINGMODE, index);
+        std::lock_guard locker(qalculate_mutex);
         eo.parse_options.parsing_mode = static_cast<ParsingMode>(index);
     });
 
@@ -83,6 +88,7 @@ QWidget *Plugin::buildConfigWidget()
             static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             this, [this](int value){
         settings()->setValue(CFG_PRECISION, value);
+        std::lock_guard locker(qalculate_mutex);
         qalc->setPrecision(value);
     });
 
@@ -97,10 +103,24 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
     if (trimmed.isEmpty())
         return results;
 
+    std::lock_guard locker(qalculate_mutex);
+
     auto expression = qalc->unlocalizeExpression(query->string().toStdString(), eo.parse_options);
-    auto mstruct = qalc->calculate(expression, eo);
+
+    qalc->startControl();
+    MathStructure mstruct;
+    qalc->calculate(&mstruct, expression, 0, eo);
+    for (; qalc->busy(); QThread::msleep(10))
+        if (!query->isValid())
+            qalc->abort();
+    qalc->stopControl();
+
+    if (!query->isValid())
+        return results;
+
     if (qalc->message()){
-        qalc->clearMessages();
+        for (auto msg = qalc->message(); msg; msg = qalc->nextMessage())
+            DEBG << QString::fromUtf8(qalc->message()->c_message());
         return results;
     }
 
@@ -113,7 +133,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
             result,
             QString("%1esult of %2").arg(mstruct.isApproximate()?"Approximate r":"R", trimmed),
             result,   // TODO if handler finally knows its trigger change this to fire a triggered query
-            {"xdg:calc", ":qalculate"},
+            icon_urls,
             {
                 {
                     "cpr", "Copy result to clipboard",
@@ -129,13 +149,13 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
     return results;
 }
 
-
-
 void Plugin::handleTriggerQuery(TriggerQuery *query) const
 {
     auto trimmed = query->string().trimmed();
     if (trimmed.isEmpty())
         return;
+
+    std::lock_guard locker(qalculate_mutex);
 
     auto eo_ = eo;
     eo_.parse_options.functions_enabled = true;
@@ -143,13 +163,24 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
     eo_.parse_options.unknowns_enabled = true;
 
     auto expression = qalc->unlocalizeExpression(query->string().toStdString(), eo_.parse_options);
-    auto mstruct = qalc->calculate(expression, eo_);
+
+    qalc->startControl();
+    MathStructure mstruct;
+    qalc->calculate(&mstruct, expression, 0, eo_);
+    for (; qalc->busy(); QThread::msleep(10))
+        if (!query->isValid())
+            qalc->abort();
+    qalc->stopControl();
+
+    if (!query->isValid())
+        return;
+
     QStringList errors;
     for (auto msg = qalc->message(); msg; msg = qalc->nextMessage())
         errors << QString::fromUtf8(qalc->message()->c_message());
-    mstruct.format(po);
 
     if (errors.empty()){
+        mstruct.format(po);
         auto result = QString::fromStdString(mstruct.print(po));
         query->add(
             StandardItem::make(
@@ -157,7 +188,7 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
                 result,
                 QString("%1esult of %2").arg(mstruct.isApproximate()?"Approximate r":"R", trimmed),
                 QString("%1%2").arg(query->trigger(), result),
-                {"xdg:calc", ":qalculate"},
+                icon_urls,
                 {
                     {
                         "cpr", "Copy result to clipboard",
@@ -176,7 +207,7 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
                 "qalc-err",
                 "Evaluation error.",
                 errors.join(" "),
-                {"xdg:calc", ":qalculate"},
+                icon_urls,
                 {{"manual", "Visit documentation", [=](){ openUrl(URL_MANUAL); }}}
             )
         );
