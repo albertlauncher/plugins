@@ -2,6 +2,7 @@
 
 #include "embeddedmodule.h"  // Has to be first include
 #include "plugin.h"
+#include "config.h"
 #include "pypluginloader.h"
 #include <QDir>
 #include <QEventLoop>
@@ -30,8 +31,6 @@ static const char *ATTR_MD_LIB_DEPS    = "md_lib_dependencies";
 static const char *ATTR_MD_CREDITS     = "md_credits";
 static const char *ATTR_MD_PLATFORMS   = "md_platforms";
 //static const char *ATTR_MD_MINPY     = "md_min_python";
-static const uint majorInterfaceVersion = 2;
-static const uint minorInterfaceVersion = 1;
 
 
 PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
@@ -155,12 +154,12 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
     if (auto match = regex_version.match(metadata_.iid); !match.hasMatch())
         errors << QString("Invalid version format: '%1'. Expected <major>.<minor>.")
                       .arg(match.captured(0));
-    else if (uint maj = match.captured(1).toUInt(); maj != majorInterfaceVersion)
+    else if (uint maj = match.captured(1).toUInt(); maj != MAJOR_INTERFACE_VERSION)
         errors << QString("Incompatible major interface version. Expected %1, got %2")
-                      .arg(majorInterfaceVersion).arg(maj);
-    else if (uint min = match.captured(2).toUInt(); min > minorInterfaceVersion)
+                      .arg(MAJOR_INTERFACE_VERSION).arg(maj);
+    else if (uint min = match.captured(2).toUInt(); min > MINOR_INTERFACE_VERSION)
         errors << QString("Incompatible minor interface version. Up to %1 supported, got %2.")
-                      .arg(minorInterfaceVersion).arg(min);
+                      .arg(MINOR_INTERFACE_VERSION).arg(min);
 
     if (!regex_version.match(metadata_.version).hasMatch())
         errors << "Invalid version scheme. Use '<version>.<patch>'.";
@@ -255,9 +254,12 @@ QString PyPluginLoader::load()
                 QMessageBox mb;
                 mb.setIcon(QMessageBox::Information);
                 mb.setWindowTitle("Module not found");
-                mb.setText("Some modules were not found. Probably this plugin has mandatory "
-                           "dependencies which are not installed on this system.\n\n"
-                           "Install dependencies into the Albert virtual environment?");
+                mb.setText(QString(
+                    "Some modules in the plugin '%1' were not found. Probably "
+                    "the plugin has mandatory dependencies which are not "
+                    "installed on this system.\n\nInstall dependencies into "
+                    "the Albert virtual environment?"
+                ).arg(metadata_.name));
                 mb.setStandardButtons(QMessageBox::Yes|QMessageBox::No);
                 mb.setDefaultButton(QMessageBox::Yes);
                 mb.setDetailedText(e.what());

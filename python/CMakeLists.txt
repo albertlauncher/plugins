@@ -1,4 +1,4 @@
-project(python VERSION 1.10)
+project(python VERSION 2.1.0)
 albert_plugin(
     NAME "Python"
     DESCRIPTION "Load Python plugins"
@@ -13,7 +13,16 @@ albert_plugin(
 
 find_package(Python3 COMPONENTS Interpreter Development)
 find_package(pybind11 CONFIG REQUIRED)
+
+configure_file(
+    "${PROJECT_SOURCE_DIR}/src/config.h.in"
+    "${PROJECT_BINARY_DIR}/src/config.h"
+    @ONLY
+)
+target_sources(${PROJECT_NAME} PRIVATE "${PROJECT_BINARY_DIR}/src/config.h")
+target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_BINARY_DIR}/src")
 target_link_libraries(${PROJECT_NAME} PRIVATE pybind11::embed)
+
 install(
     DIRECTORY "plugins/"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/${PROJECT_NAME}/plugins"

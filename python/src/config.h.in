@@ -1,0 +1,5 @@
+// Copyright (c) 2023 Manuel Schneider
+
+#pragma once
+static const int MAJOR_INTERFACE_VERSION = @PROJECT_VERSION_MAJOR@;
+static const int MINOR_INTERFACE_VERSION = @PROJECT_VERSION_MINOR@;
