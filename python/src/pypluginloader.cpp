@@ -4,10 +4,14 @@
 #include "plugin.h"
 #include "pypluginloader.h"
 #include <QDir>
+#include <QEventLoop>
 #include <QFileInfo>
+#include <QFontDatabase>
 #include <QMessageBox>
+#include <QProcess>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QTextEdit>
 using namespace albert;
 using namespace std;
 namespace py = pybind11;
@@ -200,55 +204,110 @@ const albert::PluginMetaData &PyPluginLoader::metaData() const { return metadata
 
 albert::PluginInstance *PyPluginLoader::instance() const { return cpp_plugin_instance_; }
 
-QString PyPluginLoader::load()
+QString PyPluginLoader::load_()
 {
     py::gil_scoped_acquire acquire;
+
+    // Import as __name__ = albert.package_name
+    py::module importlib_util = py::module::import("importlib.util");
+    py::object pyspec = importlib_util.attr("spec_from_file_location")(QString("albert.%1").arg(metadata_.id), source_path_); // Prefix to avoid conflicts
+    module_ = importlib_util.attr("module_from_spec")(pyspec);
+
+    // Set default md_id
+    if (!py::hasattr(module_, ATTR_MD_ID))
+        module_.attr("md_id") = metadata_.id;
+
+    // Attach logcat functions
+    // https://bugreports.qt.io/browse/QTBUG-117153
+    // https://code.qt.io/cgit/pyside/pyside-setup.git/commit/?h=6.5&id=2823763072ce3a2da0210dbc014c6ad3195fbeff
+    py::setattr(module_,"debug", py::cpp_function([this](const QString &s){ qCDebug((*logging_category)) << s; }));
+    py::setattr(module_,"info", py::cpp_function([this](const QString &s){ qCInfo((*logging_category)) << s; }));
+    py::setattr(module_,"warning", py::cpp_function([this](const QString &s){ qCWarning((*logging_category)) << s; }));
+    py::setattr(module_,"critical", py::cpp_function([this](const QString &s){ qCCritical((*logging_category)) << s; }));
+
+    // Execute module
+    pyspec.attr("loader").attr("exec_module")(module_);
+
+    // Instanciate plugin
+    py_plugin_instance_ = module_.attr(ATTR_PLUGIN_CLASS)();  // may throw
+    cpp_plugin_instance_ = py_plugin_instance_.cast<PluginInstance*>();  // may throw
+
+    for (const auto& exec : metadata_.binary_dependencies)
+        if (QStandardPaths::findExecutable(exec).isNull())
+        throw runtime_error(QString("No '%1' in $PATH.").arg(exec).toStdString());
+
+    return {};
+}
+
+QString PyPluginLoader::load()
+{
     QString err;
     try
     {
-        // Import as __name__ = albert.package_name
-        py::module importlib_util = py::module::import("importlib.util");
-        py::object pyspec = importlib_util.attr("spec_from_file_location")(QString("albert.%1").arg(metadata_.id), source_path_); // Prefix to avoid conflicts
-        module_ = importlib_util.attr("module_from_spec")(pyspec);
+        try {
+            return load_();
+        } catch (py::error_already_set &e) {
 
-        // Set default md_id
-        if (!py::hasattr(module_, ATTR_MD_ID))
-            module_.attr("md_id") = metadata_.id;
+            // Catch only import errors, rethrow anything else
+            if (e.matches(PyExc_ModuleNotFoundError)) {
 
-        // Attach logcat functions
-        // https://bugreports.qt.io/browse/QTBUG-117153
-        // https://code.qt.io/cgit/pyside/pyside-setup.git/commit/?h=6.5&id=2823763072ce3a2da0210dbc014c6ad3195fbeff
-        py::setattr(module_,"debug", py::cpp_function([this](const QString &s){ qCDebug((*logging_category)) << s; }));
-        py::setattr(module_,"info", py::cpp_function([this](const QString &s){ qCInfo((*logging_category)) << s; }));
-        py::setattr(module_,"warning", py::cpp_function([this](const QString &s){ qCWarning((*logging_category)) << s; }));
-        py::setattr(module_,"critical", py::cpp_function([this](const QString &s){ qCCritical((*logging_category)) << s; }));
+                // ask user if dependencies should be installed
+                QMessageBox mb;
+                mb.setIcon(QMessageBox::Information);
+                mb.setWindowTitle("Module not found");
+                mb.setText("Some modules were not found. Probably this plugin has mandatory "
+                           "dependencies which are not installed on this system.\n\n"
+                           "Install dependencies into the Albert virtual environment?");
+                mb.setStandardButtons(QMessageBox::Yes|QMessageBox::No);
+                mb.setDefaultButton(QMessageBox::Yes);
+                mb.setDetailedText(e.what());
+                if (mb.exec() == QMessageBox::Yes){
 
-        // Execute module
-        pyspec.attr("loader").attr("exec_module")(module_);
+                    // install dependencies
 
-        // Instanciate plugin
-        py_plugin_instance_ = module_.attr(ATTR_PLUGIN_CLASS)();  // may throw
-        cpp_plugin_instance_ = py_plugin_instance_.cast<PluginInstance*>();  // may throw
+                    QProcess proc;
+                    proc.start(
+                        "python3",
+                        {
+                            "-m",
+                            "pip",
+                            "install",
+                            "--disable-pip-version-check",
+                            "--target",
+                            provider_.dataDir()->filePath("site-packages"),
+                            metadata_.runtime_dependencies.join(" ")
+                        }
+                    );
 
-        for (const auto& exec : metadata_.binary_dependencies)
-            if (QStandardPaths::findExecutable(exec).isNull())
-                throw runtime_error(QString("No '%1' in $PATH.").arg(exec).toStdString());
+                    auto *te = new QTextEdit;
+                    te->setCurrentFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+                    te->setReadOnly(true);
+                    te->setWindowTitle(QString("Installing '%1' dependencies").arg(metadata_.name));
+                    te->resize(600, 480);
+                    te->setAttribute(Qt::WA_DeleteOnClose);
+                    te->show();
 
-        return {};
+                    QObject::connect(&proc, &QProcess::readyReadStandardOutput, te,
+                                     [te, &proc](){ te->append(QString::fromUtf8(proc.readAllStandardOutput())); });
+                    QObject::connect(&proc, &QProcess::readyReadStandardError, te,
+                                     [te, &proc](){ te->append(QString::fromUtf8(proc.readAllStandardError())); });
 
-    } catch (py::error_already_set &e) {
-        if (e.matches(PyExc_ModuleNotFoundError)) {
-            auto text = QString::fromStdString(e.what()).section("\n",0,0);
-            text.append(QString("\n\nTry installing missing dependencies (%1) into albert site-packages?\n\n"
-                                "Note that you have to reload the plugin afterwards.").arg(metadata_.runtime_dependencies.join(", ")));
-            auto b = QMessageBox::warning(nullptr, "Module not found", text,
-                                          QMessageBox::Yes|QMessageBox::No, QMessageBox::Yes);
-            if (b==QMessageBox::Yes)
-                provider_.installPackages(metadata_.runtime_dependencies);
+                    QEventLoop loop;
+                    QObject::connect(&proc, &QProcess::finished, &loop, &QEventLoop::quit);
+                    loop.exec();
 
-            err = text;
-        } else
-            err = e.what();
+                    if (proc.exitStatus() == QProcess::ExitStatus::NormalExit && proc.exitCode() == EXIT_SUCCESS){
+
+                        te->deleteLater();  // auto-close on success only
+                        return load_();  // On success try again
+
+                    } else
+                        err = "Installing dependencies failed.";
+                } else
+                    err = "Dependencies are missing.";
+            } else
+                throw e;
+        }
     } catch(const std::exception &e) {
         err = e.what();
     } catch(...) {

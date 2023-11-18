@@ -123,10 +123,3 @@ QWidget *Plugin::buildConfigWidget()
 
     return w;
 }
-
-void Plugin::installPackages(const QStringList &package_names) const
-{
-    auto script = QString(R"R(python3 -m pip install --disable-pip-version-check --target "%1" %2; cd "%1")R")
-                      .arg(dataDir()->filePath("site-packages"), package_names.join(" "));
-    runTerminal(script);
-}

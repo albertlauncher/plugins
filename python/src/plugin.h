@@ -18,8 +18,6 @@ public:
     bool watchSources() const;
     void setWatchSources(bool);
 
-    void installPackages(const QStringList&) const;
-
 protected:
     QWidget* buildConfigWidget() override;
     std::vector<albert::PluginLoader*> plugins() override;

@@ -31,6 +31,8 @@ public:
     const QString &source_path() const;
 
 private:
+    QString load_();
+
     QString source_path_;
     pybind11::module module_;
     Plugin &provider_;
