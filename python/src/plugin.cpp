@@ -17,6 +17,7 @@ using namespace std;
 namespace py = pybind11;
 
 static const constexpr char *PLUGIN_DIR = "plugins";
+static const constexpr char *SITE_PACKAGES= "site-packages";
 static const char *CFG_WATCH_SOURCES = "watchSources";
 static const bool DEF_WATCH_SOURCES = false;
 
@@ -39,7 +40,11 @@ Plugin::Plugin()
 
     auto data_dir = dataDir();
 
-    py::module::import("site").attr("addsitedir")(data_dir->filePath("site-packages"));
+    // Create and add site-packages dir
+    if (!data_dir->exists(SITE_PACKAGES))
+        if(!data_dir->mkdir(SITE_PACKAGES))
+            throw QString("Failed creating site dir %1").arg(data_dir->filePath(SITE_PACKAGES));
+    py::module::import("site").attr("addsitedir")(data_dir->filePath(SITE_PACKAGES));
 
     // Create module dirs
     if (!data_dir->exists(PLUGIN_DIR))
