@@ -4,16 +4,17 @@
 #include "cast_specialization.h"
 #include "albert/albert.h"
 #include "albert/logging.h"
-#include "albert/util/timeprinter.h"
 #include "plugin.h"
 #include "pypluginloader.h"
 #include "ui_configwidget.h"
 #include <QDir>
 #include <QSettings>
 #include <QStandardPaths>
+#include <chrono>
 ALBERT_LOGGING_CATEGORY("python")
 using namespace albert;
 using namespace std;
+using namespace chrono;
 namespace py = pybind11;
 
 static const constexpr char *PLUGIN_DIR = "plugins";
@@ -36,7 +37,7 @@ Plugin::Plugin()
     py::gil_scoped_acquire acquire;
 
     py::module sys = py::module::import("sys");
-    INFO << "Python version:" << sys.attr("version").cast<QString>();
+    DEBG << "Python version:" << sys.attr("version").cast<QString>();
 
     auto data_dir = dataDir();
 
@@ -50,7 +51,7 @@ Plugin::Plugin()
     if (!data_dir->exists(PLUGIN_DIR))
         data_dir->mkdir(PLUGIN_DIR);
 
-    TimePrinter tp("[%1 ms] Python plugin scan");
+    auto start = system_clock::now();
     using QSP = QStandardPaths;
     auto plugin_dirs = QSP::locateAll(QSP::AppDataLocation, id(), QSP::LocateDirectory);
     for (const QString &plugin_dir : plugin_dirs) {
@@ -68,6 +69,8 @@ Plugin::Plugin()
             }
         }
     }
+    INFO << QStringLiteral("[%1 ms] Python plugin scan")
+                .arg(duration_cast<milliseconds>(system_clock::now()-start).count());
 
     setWatchSources(settings()->value(CFG_WATCH_SOURCES, DEF_WATCH_SOURCES).toBool());
 }
