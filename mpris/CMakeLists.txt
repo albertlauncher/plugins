@@ -1,10 +1,14 @@
-project(mpris VERSION 1.2)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+project(mpris VERSION 2.0)
 albert_plugin(
-    NAME "MPRIS Control"
-    DESCRIPTION "Control MPRIS media players. If you have MPRIS-capable media players running (like Rhythmbox, VLC, ...) just type any of 'play', 'pause', 'stop', 'next', 'previous' and you can send these commands directly to your player from albert."
+    NAME "MPRIS"
+    DESCRIPTION "Control MPRIS capable media players"
+    LONG_DESCRIPTION
+        "Use 'play', 'pause', 'stop', 'next' or 'previous' to control \
+        MPRIS-capable media players (like Rhythmbox, VLC, …)."
     LICENSE BSD-2
     URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
     MAINTAINERS @idkcpp @manuelschneid3r @luksfarris
     QT_DEPENDENCIES Widgets DBus
 )
-
+endif()

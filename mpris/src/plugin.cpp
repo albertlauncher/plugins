@@ -1,309 +1,238 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2023 Manuel Schneider
 
 #include "albert/albert.h"
 #include "albert/extension/queryhandler/standarditem.h"
+#include "albert/logging.h"
 #include "plugin.h"
-#include <QMetaEnum>
-#include <QtDBus/QDBusMessage>
-#include <QtDBus/QDBusConnection>
-#include <QtDBus/QDBusInterface>
-#include <QtDBus/QDBusPendingCall>
-#include <QtDBus/QDBusPendingReply>
-#include <QtDBus/QDBusPendingCallWatcher>
-
+#include <QDBusConnection>
+#include <QDBusConnectionInterface>
+#include <QDBusInterface>
+#include <QDBusServiceWatcher>
+#include <QXmlStreamReader>
+ALBERT_LOGGING_CATEGORY("mpris")
 using namespace albert;
 using namespace std;
 
-/* Max timeout to wait for async dbus calls, in milisencods */
-static const int DBUS_TIMEOUT = 25;
+static const int dbus_timeout = 100;
+static const char * dbus_service_name = "org.mpris.MediaPlayer2";
+static const char * dbus_object_path = "/org/mpris/MediaPlayer2";
+static const char * dbus_iface_player = dbus_service_name;
+static const char * dbus_iface_control = "org.mpris.MediaPlayer2.Player";
+static const char * dbus_iface_introspecable = "org.freedesktop.DBus.Introspectable";
+static const char * dbus_iface_properties = "org.freedesktop.DBus.Properties";
 
-/**
- * Handle dbus async response. If there is no error, calls `onReplySuccessful` function with the reply message, if it has no errors.
- * @param watcher Async dbus call watcher pointer. Watched is disposed of after execution.
- * @param onReplySuccessful Callback that is called only if the reply has no error message.
- */
-void handlePendingReply(QDBusPendingCallWatcher *watcher, std::function<void(QDBusMessage)> onReplySuccessful)
+struct ThrowingQDBusInterface : private QDBusInterface
 {
-    QDBusPendingReply pendingReply = *watcher;
-    if (pendingReply.isError())
+    ThrowingQDBusInterface(const QString &service, const QString &path, const QString &iface)
+        : QDBusInterface(service, path, iface)
     {
-        QDBusError error = pendingReply.error();
-        qWarning() << qPrintable(QString("[DBus Async] message returned error: %1").arg(error.message()));
+        if (!isValid())
+            throw runtime_error(lastError().message().toStdString());
+        setTimeout(dbus_timeout);
     }
-    else
+
+    template<class TYPE>
+    TYPE getProperty(const char * property_name) const
     {
-        QDBusMessage replyMessage = pendingReply.reply();
-        if (!replyMessage.errorMessage().isEmpty())
-        {
-            qWarning() << qPrintable(QString("[DBus Async] message returned error: %1").arg(replyMessage.errorMessage()));
-        }
+        if (auto var = property(property_name); lastError().isValid())
+            throw runtime_error(lastError().message().toStdString());
         else
-        {
-            onReplySuccessful(replyMessage);
-        }
+            return var.value<TYPE>();
     }
-    watcher->deleteLater();
-}
 
-/**
- * Process a dbus request asynchronously.
- * @param message DBus message to send.
- * @param onReplySuccessful Callback that is called if the reply has no error message.
- */
-void processMessageAsync(QDBusMessage message, std::function<void(QDBusMessage)> onReplySuccessful)
-{
-    QDBusConnection connection = QDBusConnection::sessionBus();
-    // If there is no session bus, abort
-    if (!connection.isConnected())
-        return;
-    QDBusPendingCall asyncCall = connection.asyncCall(message, DBUS_TIMEOUT);
-    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(asyncCall);
-    if (watcher->isFinished())
-    {
-        handlePendingReply(watcher, onReplySuccessful);
-    }
-    else
-    {
-        // waits for the finished signal
-        QObject::connect(watcher, &QDBusPendingCallWatcher::finished, [=](QDBusPendingCallWatcher *watcherReply)
-                         { handlePendingReply(watcherReply, onReplySuccessful); });
-    }
-}
-
-/**
- * Fetch the ids of all available dbus endpoints asynchronously.
- * @param endpointsFound Callback that is invoked with the list of endpoints, in case they're found.
- */
-static void findBusEndpoints(std::function<void(QStringList)> onEndpointsFound)
-{
-    // Querying the DBus to list all available services
-    QDBusMessage listNamesMessage = QDBusMessage::createMethodCall("org.freedesktop.DBus", "/", "org.freedesktop.DBus", "ListNames");
-    processMessageAsync(listNamesMessage, [=](QDBusMessage response)
-                        {
-        QList<QVariant> args = response.arguments();
-        if (args.length() != 1)
-        {
-            qWarning() << qPrintable(QString("[DBus Async]: Expected 1 argument for DBus reply. Got %1").arg(args.length()));
-            return;
-        }
-        QVariant arg = args.at(0);
-        if (arg.isNull() || !arg.isValid())
-        {
-            qWarning("[DBus Async]: Reply argument not valid or null!");
-            return;
-        }
-        QStringList runningBusEndpoints = arg.toStringList();
-        if (runningBusEndpoints.isEmpty())
-        {
-            qWarning("[DBus Async]: Argument is either not type of QStringList or is empty!");
-            return;
-        }
-        qDebug() << qPrintable(QString("[DBus Async]: Found %1 running endpoints").arg(runningBusEndpoints.size()));
-        onEndpointsFound(runningBusEndpoints); });
-}
-
-/**
- * Asks a media player with the given dbus endpoint id for a specific player property.
- *
- * @param playerId dbus endpoint id of the media player
- * @param property media player property to query. Properties available at https://specifications.freedesktop.org/mpris-spec/2.2/Player_Interface.html
- * @param onPropertyFound Callback that is invoked with the player's value for the property, in case it's found.
- */
-static void findPlayerProperty(QString playerId, QString property, std::function<void(QVariant)> onPropertyFound)
-{
-    QDBusMessage message = QDBusMessage::createMethodCall(playerId, "/org/mpris/MediaPlayer2", "org.freedesktop.DBus.Properties", "Get");
-    QList<QVariant> args;
-    args.append("org.mpris.MediaPlayer2.Player");
-    args.append(property);
-    message.setArguments(args);
-    processMessageAsync(message, [=](QDBusMessage response)
-                        {
-        if (response.arguments().empty())
-        {
-            qWarning() << "DBus: Player property query returned empty response";
-        }
+    template<class TYPE>
+    TYPE call(const QString &method_name) {
+        QDBusReply<TYPE> reply = QDBusAbstractInterface::call(QDBus::Block, method_name);
+        if (reply.isValid())
+            return reply.value();
         else
-        {
-            QVariant variant = response.arguments().at(0).value<QDBusVariant>().variant();
-            onPropertyFound(variant);
-        } });
-}
-
-/**
- * Finds all media available media players (bus id must have a specific prefix) that have its properties matching the required values.
- *
- * @param propertyToCheck name of the `org.mpris.MediaPlayer2` property to check
- * @param expectedValue value a media player must have in order to be able to execute the command
- * @param onPlayerFound Callback that tells that the player with this ID is suitable to run the the desired command.
- */
-static void findRunningMediaPlayers(QString propertyToCheck, QVariant expectedValue, std::function<void(QString)> onPlayerFound)
-{
-    findBusEndpoints([=](QStringList runningBusEndpoints)
-                     {
-        vector<QString> mediaPlayers;
-        // Filter all mpris capable
-        QStringList busids;
-        for (QString &id : runningBusEndpoints)
-        {
-            if (id.startsWith("org.mpris.MediaPlayer2."))
-            {
-                qDebug() << qPrintable(QString("[DBus Async] Found running media player %1").arg(id));
-                findPlayerProperty(id, propertyToCheck, [=](QVariant playerProperty)
-                                   {
-                    qDebug() << qPrintable(QString("[DBus Async] Player has property %1 = %2").arg(propertyToCheck, playerProperty.toString()));
-                    if (playerProperty == expectedValue)
-                    {
-                        onPlayerFound(id);
-                    } else {
-                        qWarning() << qPrintable(QString("[DBus Async] Player %1 does not match the expected value %2 (was %3)").arg(id, expectedValue.toString(), playerProperty.toString()));
-                    } });
-            }
-        } });
-}
-
-/**
- * Runs a command in all media players whose property matches the expected value.
- *
- * @param command command to run on matching player. See this for a list of commands: https://specifications.freedesktop.org/mpris-spec/2.2/Player_Interface.html
- * @param property name of the player's property to evaluate
- * @param expectedValue value the property must have in order for the player to be able to run the command
- */
-static void runMediaCommand(QString command, QString property, QVariant expectedValue)
-{
-    findRunningMediaPlayers(property, expectedValue, [=](QString mediaPlayer)
-                            {
-        qDebug() << qPrintable(QString("[DBus Async] Calling %1 on player %2").arg(command, mediaPlayer));
-        QDBusMessage msg = QDBusMessage::createMethodCall(mediaPlayer, "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player", command);
-        processMessageAsync(msg, [=](QDBusMessage response) { 
-            (void) response;
-            qDebug() << qPrintable(QString("[DBus Async] Calling command %1 was successful").arg(command)); 
-            }); });
-}
-
-/**
- * Creates an MPRIS action item with the given attributes.
- *
- * @param title title of the action.
- * @param description description of the action.
- * @param icon_urls list of icon urls to use for the action.
- * @param command command to run on matching player. See this for a list of commands: https://specifications.freedesktop.org/mpris-spec/2.2/Player_Interface.html
- * @param property name of the player's property to evaluate
- * @param expectedValue value the property must have in order for the player to be able to run the command
- * @return a pointer to the created item.
- */
-static shared_ptr<Item> createItem(QString title, QString description, QStringList icon_urls, QString command, QString property, QVariant expectedValue)
-{
-    vector<Action> actions = {{title, description,
-                               [=]()
-                               { runMediaCommand(command, property, expectedValue); }}};
-    return StandardItem::make(
-        title,
-        title,
-        description,
-        icon_urls,
-        actions);
+            throw runtime_error(reply.error().message().toStdString());
+    }
 };
 
-/**
- * An MPRIS action item that pauses all media players that can be paused.
- * @return a pointer to the created item.
- */
-static shared_ptr<Item> pauseItem()
-{
-    return createItem("Pause", "Pause all playing media", QStringList({"qsp:SP_MediaPause"}), "Pause", "CanPause", QVariant(true));
+// specialize void
+template <>
+void ThrowingQDBusInterface::call(const QString &method_name) {
+    QDBusReply<void> reply = QDBusAbstractInterface::call(QDBus::Block, method_name);
+    if (!reply.isValid())
+        throw runtime_error(reply.error().message().toStdString());
 }
 
-/**
- * An MPRIS action item that plays all media players that can be played.
- * @return a pointer to the created item.
- */
-static shared_ptr<Item> playItem()
+// https://specifications.freedesktop.org/mpris-spec/2.2/Media_Player.html
+// https://specifications.freedesktop.org/mpris-spec/2.2/Player_Interface.html
+class Player
 {
-    return createItem("Play", "Play all paused media", QStringList({"qsp:SP_MediaPlay"}), "Play", "CanPlay", QVariant(true));
-}
+    const QString dbus_service_name;
+    ThrowingQDBusInterface player;
+    ThrowingQDBusInterface control;
+    QString identity;
 
-/**
- * An MPRIS action item that stops all media players that can be paused.
- * @return a pointer to the created item.
- */
-static shared_ptr<Item> stopItem()
-{
-    return createItem("Stop", "Stop all playing media", QStringList({"qsp:SP_MediaStop"}), "Stop", "CanPause", QVariant(true));
-}
-
-/**
- * An MPRIS action item that skips forward on all media players that can go next.
- * @return a pointer to the created item.
- */
-static shared_ptr<Item> nextItem()
-{
-    return createItem("Next", "Skip forward on playing media", QStringList({"qsp:SP_MediaSkipForward"}), "Next", "CanGoNext", QVariant(true));
-}
-
-/**
- * An MPRIS action item that skips backward on all media players that can go previous.
- * @return a pointer to the created item.
- */
-static shared_ptr<Item> previousItem()
-{
-    return createItem("Previous", "Skip backward on playing media", QStringList({"qsp:SP_MediaSkipBackward"}), "Previous", "CanGoPrevious", QVariant(true));
-}
-
-/**
- * Creates a list of MPRIS action items that match the given query.
- * @param query query string to match.
- * @return a list of pointers to the created items.
- */
-vector<shared_ptr<Item>> itemsForQuery(QString query)
-{
-    vector<shared_ptr<Item>> items;
-    if (query.size() >= 1)
+public:
+    Player(const QString &service_name):
+        dbus_service_name(service_name),
+        player(dbus_service_name, dbus_object_path, dbus_iface_player),
+        control(dbus_service_name, dbus_object_path, dbus_iface_control)
     {
-        QString queryLower = query.toLower();
-        if (QString("pause").startsWith(queryLower))
+        bool have_player = false, have_control = false, have_properties = false;
+        ThrowingQDBusInterface introspectable(dbus_service_name, dbus_object_path, dbus_iface_introspecable);
+        QXmlStreamReader xml(introspectable.call<QString>("Introspect"));
+
+        while (!xml.atEnd() && !xml.hasError())
+            if (auto token = xml.readNext(); token == QXmlStreamReader::StartElement)
+                if (xml.name() == QStringLiteral("interface"))
+                    if(auto interface_name = xml.attributes().value(QStringLiteral("name")).toString();
+                        !interface_name.isEmpty()){
+                        if (interface_name == dbus_iface_player)
+                            have_player = true;
+                        else if (interface_name == dbus_iface_control)
+                            have_control = true;
+                        else if (interface_name == dbus_iface_properties)
+                            have_properties = true;
+                    }
+
+        if (xml.hasError())
+            throw runtime_error(xml.errorString().toStdString());
+
+        if (!(have_player && have_control && have_properties))
+            throw runtime_error("Service does not provide all required interfaces.");
+
+        if (!control.getProperty<bool>("CanControl"))
+            throw runtime_error("This player does not allow control.");
+
+        identity = player.getProperty<QString>("Identity");
+    }
+
+    shared_ptr<Item> buildControlItem(const QString &command, const QStringList &icon_urls)
+    {
+        return StandardItem::make(
+            identity + command,
+            command,
+            QStringLiteral("%1 media player control").arg(identity),
+            icon_urls,
+            {{ command, command, [this, command]() { control.call<void>(command); } }}
+        );
+    }
+
+    vector<shared_ptr<Item>> createItems(const QString &query)
+    {
+        vector<shared_ptr<Item>> items;
+
+        // One of:
+        // Playing (Playing) - A track is currently playing.
+        // Paused (Paused) - A track is currently paused.
+        // Stopped (Stopped) - There is no track currently playing.
+        auto playbackStatus = control.getProperty<QString>("PlaybackStatus");
+        bool playing = (playbackStatus == QStringLiteral("Playing"));
+
+        if (playing)
         {
-            items.emplace_back(pauseItem());
+            if (static const QString cmd("Stop"); cmd.startsWith(query, Qt::CaseInsensitive))
+                items.push_back(buildControlItem(cmd, {"xdg:media-playback-stop", "qsp:SP_MediaStop"}));
+
+
+            if (static const QString cmd("Pause"); cmd.startsWith(query, Qt::CaseInsensitive)
+                                                   && control.getProperty<bool>("CanPause"))
+                items.push_back(buildControlItem(cmd, {"xdg:media-playback-pause", "qsp:SP_MediaPause"}));
         }
-        if (QString("play").startsWith(queryLower))
-        {
-            items.emplace_back(playItem());
-        }
-        if (QString("stop").startsWith(queryLower))
-        {
-            items.emplace_back(stopItem());
-        }
-        if (QString("next").startsWith(queryLower))
-        {
-            items.emplace_back(nextItem());
-        }
-        if (QString("previous").startsWith(queryLower))
-        {
-            items.emplace_back(previousItem());
+
+        else if (static const QString cmd("Play"); cmd.startsWith(query, Qt::CaseInsensitive)
+                                                   && control.getProperty<bool>("CanPlay"))
+                items.push_back(buildControlItem(cmd, {"xdg:media-playback-start", "qsp:SP_MediaPlay"}));
+
+        if (static const QString cmd("Next"); cmd.startsWith(query, Qt::CaseInsensitive)
+                                              && control.getProperty<bool>("CanGoNext"))
+            items.push_back(buildControlItem(cmd, {"xdg:media-skip-forward", "qsp:SP_MediaSkipForward"}));
+
+        if (static const QString cmd("Previous"); cmd.startsWith(query, Qt::CaseInsensitive)
+                                                  && control.getProperty<bool>("CanGoPrevious"))
+            items.push_back(buildControlItem(cmd, {"xdg:media-skip-backward", "qsp:SP_MediaSkipBackward"}));
+
+
+        // TODO: add a player item
+        //    getProperty<bool>("CanRaise");
+        //    call<void>(QStringLiteral("Raise"));
+        //    getProperty<bool>("CanQuit");
+        //    call<void>(QStringLiteral("Quit"));
+        //    getProperty<QString>("LoopStatus");
+        //    QVariantMap metadata() {
+        ////        a{sv} (Metadata_Map)	Read only
+        //        /*
+        //         * Variant: [Argument: a{sv}
+        //         *  {
+        //         *      "mpris:trackid" = [Variant(QString): "/com/spotify/track/6G6SAy7BwNGKttAFGjADmQ"],
+        //         *      "mpris:length" = [Variant(qulonglong): 396960000],
+        //         *      "mpris:artUrl" = [Variant(QString): "https://i.scdn.co/image/ab67616d0000b27332466645f8f89b23a59a6af3"],
+        //         *      "xesam:album" = [Variant(QString): "Ciclos"],
+        //         *      "xesam:albumArtist" = [Variant(QStringList): {"Antaares"}],
+        //         *      "xesam:artist" = [Variant(QStringList): {"Antaares"}],
+        //         *      "xesam:autoRating" = [Variant(double): 0.39],
+        //         *      "xesam:discNumber" = [Variant(int): 1],
+        //         *      "xesam:title" = [Variant(QString): "Ciclos"],
+        //         *      "xesam:trackNumber" = [Variant(int): 1],
+        //         *      "xesam:url" = [Variant(QString): "https://open.spotify.com/track/6G6SAy7BwNGKttAFGjADmQ"]
+        //         *  }
+        //         */
+        //        return {};
+        //    }
+        //};
+
+        return items;
+    }
+};
+
+struct Plugin::Private
+{
+    std::map<QString, Player> players;
+    QDBusServiceWatcher service_watcher;
+
+    void tryAddPlayer(const QString &service)
+    {
+        try {
+            players.emplace(service, service);
+            DEBG << "MPRIS player registered:" << service;
+        } catch (const runtime_error &e) {
+            WARN << "Error while creating player" << service << e.what();
         }
     }
-    return items;
+};
+
+Plugin::Plugin() : d(new Private)
+{
+    if (!QDBusConnection::sessionBus().isConnected())
+        throw runtime_error("Failed to connect to session bus.");
+
+    // Each media player must request a unique bus name which begins with org.mpris.MediaPlayer2
+    if (auto reply = QDBusConnection::sessionBus().interface()->registeredServiceNames(); !reply.isValid())
+        throw runtime_error(reply.error().message().toStdString());
+    else
+        for (const auto &service : reply.value())
+            if (service.startsWith(QStringLiteral("org.mpris.MediaPlayer2.")))
+                d->tryAddPlayer(service);
+
+    // Track new players
+    d->service_watcher.setConnection(QDBusConnection::sessionBus());
+    d->service_watcher.setWatchMode(QDBusServiceWatcher::WatchForOwnerChange);
+    d->service_watcher.addWatchedService(QStringLiteral("org.mpris.MediaPlayer2*"));
+    connect(&d->service_watcher, &QDBusServiceWatcher::serviceOwnerChanged, this,
+            [this](const QString &service, const QString&, const QString &newOwner){
+        if(d->players.erase(service))
+            DEBG << "MPRIS player unregistered:" << service;
+        if (!newOwner.isEmpty())
+            d->tryAddPlayer(service);
+    });
 }
 
-/**
- * Handler for the global query, without any prefix.
- * Called by the albert core.
- */
+Plugin::~Plugin() = default;
+
 vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
 {
-    vector<shared_ptr<Item>> items = itemsForQuery(query->string());
     vector<RankItem> results;
-    for (shared_ptr<Item> item : items)
-        results.emplace_back(item, 1.0f);
+    for (auto &[service, player] : d->players)
+        try {
+            for (const auto& item : player.createItems(query->string()))
+                results.emplace_back(item, (double)query->string().size()/item->text().size());
+        } catch (const runtime_error &e) {
+            WARN << e.what();
+        }
     return results;
-}
-
-/**
- * Handler for the queries that start with the `mpris` trigger.
- * Called by the albert core.
- */
-void Plugin::handleTriggerQuery(TriggerQuery *query) const
-{
-    vector<shared_ptr<Item>> items = itemsForQuery(query->string());
-    for (shared_ptr<Item> item : items)
-        query->add(item);
 }
