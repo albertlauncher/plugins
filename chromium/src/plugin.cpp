@@ -3,7 +3,6 @@
 #include "albert/albert.h"
 #include "albert/extension/queryhandler/item.h"
 #include "albert/logging.h"
-#include "albert/util/timeprinter.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
 #include <QDir>
@@ -21,7 +20,6 @@ static const char* CFG_BOOKMARKS_PATH = "bookmarks_path";
 static const char* CFG_INDEX_HOSTNAME = "indexHostname";
 static const bool  DEF_INDEX_HOSTNAME = false;
 
-static const QStringList icon_urls = {"xdg:www", "xdg:web-browser", "xdg:emblem-web", ":favicon"};
 static const char *app_dirs[] = {
     "BraveSoftware",
     "Google/Chrome",  // Google Chrome Macos
@@ -42,7 +40,10 @@ struct BookmarkItem : Item
     QString id() const override { return id_; }
     QString text() const override { return name_; }
     QString subtext() const override { return url_; }
-    QStringList iconUrls() const override { return icon_urls; }
+    QStringList iconUrls() const override {
+        static const QStringList icon_urls = {"xdg:www", "xdg:web-browser", "xdg:emblem-web", ":favicon"};
+        return icon_urls;
+    }
     vector<Action> actions() const override { return {
         {"open-url", "Open URL",              [this]() { openUrl(url_); }},
         {"copy-url", "Copy URL to clipboard", [this]() { setClipboardText(url_); }}
@@ -52,8 +53,6 @@ struct BookmarkItem : Item
 
 static std::vector<std::shared_ptr<BookmarkItem>> parseBookmarks(const QStringList& paths, const bool &abort)
 {
-    TimePrinter tp("Indexed bookmarks in %1 ms");
-
     function<void(const QJsonObject &json, std::vector<std::shared_ptr<BookmarkItem>> &items)> recursiveJsonTreeWalker =
             [&recursiveJsonTreeWalker](const QJsonObject &json, std::vector<std::shared_ptr<BookmarkItem>> &items){
                 QJsonValue type = json["type"];
@@ -105,14 +104,12 @@ Plugin::Plugin()
         indexer.run();
     });
 
-    indexer.parallel = [this](const bool &abort){
-        return parseBookmarks(paths_, abort);
-    };
+    indexer.parallel = [this](const bool &abort){ return parseBookmarks(paths_, abort); };
     indexer.finish = [this](vector<shared_ptr<BookmarkItem>> && res){
-        bookmarks_=::move(res);
-        auto msg = QString("%1 bookmarks indexed.").arg(bookmarks_.size());
-        INFO << msg;
-        emit statusChanged(msg);
+        INFO << QStringLiteral("Indexed %1 bookmarks [%2 ms]")
+                    .arg(res.size()).arg(indexer.runtime.count());
+        emit statusChanged(QString("%1 bookmarks indexed.").arg(bookmarks_.size()));
+        bookmarks_ = ::move(res);
         updateIndexItems();
     };
     indexer.run();  // < called on setindex
