@@ -1,3 +1,6 @@
 [submodule "python/plugins"]
 	path = python/plugins
 	url = https://github.com/albertlauncher/python.git
+[submodule "uuid"]
+	path = uuid
+	url = git@github.com:Ghoelian/albert-uuid.git
