@@ -183,6 +183,9 @@ Plugin::Plugin() : xdg_current_desktop(QString(getenv("XDG_CURRENT_DESKTOP")).sp
 
     indexer.parallel = [this](const bool &abort){ return indexApps(abort); };
     indexer.finish = [this](vector<IndexItem> &&result){
+        INFO << QStringLiteral("Indexed %1 apps [%2 ms]")
+                    .arg(result.size()).arg(indexer.runtime.count());
+
         apps = ::move(result);
         updateIndexItems();
 
@@ -204,7 +207,6 @@ Plugin::Plugin() : xdg_current_desktop(QString(getenv("XDG_CURRENT_DESKTOP")).sp
 
 std::pair<shared_ptr<StandardItem>, QStringList> Plugin::parseDesktopEntry(const QString &id, const QString &path) const
 {
-    DEBG << "Indexing desktop file at" << path;
     const map<QString,map<QString,QString>> desktopEntry = readDesktopEntry(path);
 
     try {
