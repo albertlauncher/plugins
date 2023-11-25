@@ -4,3 +4,6 @@
 [submodule "uuid"]
 	path = uuid
 	url = https://github.com/Ghoelian/albert-uuid.git
+[submodule "convert"]
+	path = convert
+	url = git@github.com:Ghoelian/albert-convert.git
