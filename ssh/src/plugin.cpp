@@ -140,6 +140,8 @@ Plugin::Plugin()
         return hosts;
     };
     indexer.finish = [this](vector<shared_ptr<SshItem>> && items){
+        INFO << QStringLiteral("Indexed %1 ssh connections [%2 ms]")
+                    .arg(items.size()).arg(indexer.runtime.count());
         hosts_ = ::move(items);
         updateIndexItems();
     };
