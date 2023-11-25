@@ -12,14 +12,12 @@ ALBERT_LOGGING_CATEGORY("terminal")
 using namespace albert;
 using namespace std;
 
-static QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":terminal"};
-
-::Plugin::Plugin()
+Plugin::Plugin()
 {
     indexer.parallel = [](const bool &abort){
-        INFO << "Indexing $PATH.";
         set<QString> result;
         QStringList paths = QString(::getenv("PATH")).split(':', Qt::SkipEmptyParts);
+        DEBG << "Indexing" << paths.join(", ");
         for (const QString &path : paths) {
             QDirIterator dirIt(path, QDir::NoDotAndDotDot|QDir::Files|QDir::Executable, QDirIterator::Subdirectories);
             while (dirIt.hasNext()) {
@@ -28,13 +26,13 @@ static QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":termina
                 result.insert(dirIt.fileName());
             }
         }
-        DEBG << "Finished indexing $PATH.";
         return result;
     };
     indexer.finish = [this](set<QString> && res){
+        INFO << QStringLiteral("Indexed %1 executables [%2 ms]")
+                    .arg(res.size()).arg(indexer.runtime.count());
         index = ::move(res);
     };
-    
     
     watcher.addPaths(QString(::getenv("PATH")).split(':', Qt::SkipEmptyParts));
     connect(&watcher, &QFileSystemWatcher::directoryChanged, this, [this](){ indexer.run(); });
@@ -42,7 +40,7 @@ static QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":termina
     indexer.run();
 }
 
-void ::Plugin::handleTriggerQuery(TriggerQuery *query) const
+void Plugin::handleTriggerQuery(TriggerQuery *query) const
 {
     if (query->string().trimmed().isEmpty())
         return;
@@ -52,6 +50,7 @@ void ::Plugin::handleTriggerQuery(TriggerQuery *query) const
     // Extract data from input string: [0] program. The rest: args
     QString potentialProgram = query->string().section(' ', 0, 0, QString::SectionSkipEmpty);
     QString remainder = query->string().section(' ', 1, -1, QString::SectionSkipEmpty);
+    static QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":terminal"};
 
     QString commonPrefix;
     if (auto it = lower_bound(index.begin(), index.end(), potentialProgram); it != index.end()){
@@ -60,9 +59,9 @@ void ::Plugin::handleTriggerQuery(TriggerQuery *query) const
         while (it != index.end() && it->startsWith(potentialProgram)) {
 
             // Update common prefix
-            auto mismatchindexes = std::mismatch(it->begin() + potentialProgram.size() - 1, it->end(),
-                                                 commonPrefix.begin() + potentialProgram.size() - 1);
-            commonPrefix.resize(std::distance(it->begin(), mismatchindexes.first));
+            auto mismatchindexes = mismatch(it->begin() + potentialProgram.size() - 1, it->end(),
+                                            commonPrefix.begin() + potentialProgram.size() - 1);
+            commonPrefix.resize(distance(it->begin(), mismatchindexes.first));
 
             auto commandline = QString("%1 %2").arg(*it, remainder);
 
@@ -85,7 +84,7 @@ void ::Plugin::handleTriggerQuery(TriggerQuery *query) const
         // Apply completion string to items
         QString completion = QString("%1%2 %3").arg(query->trigger(), commonPrefix, remainder);
         for (auto &item: results)
-            std::static_pointer_cast<StandardItem>(item)->setInputActionText(completion);
+            static_pointer_cast<StandardItem>(item)->setInputActionText(completion);
     }
 
     // Build generic item
