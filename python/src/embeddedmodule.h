@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2023 Manuel Schneider
+// Copyright (c) 2017-2024 Manuel Schneider
 
 #pragma once
 #include "cast_specialization.h" // Has to be imported first
@@ -14,6 +14,9 @@
 #include <QDir>
 using namespace albert;
 using namespace std;
+
+static const int MAJOR_INTERFACE_VERSION = 2;
+static const int MINOR_INTERFACE_VERSION = 2;
 
 PYBIND11_EMBEDDED_MODULE(albert, m)
 {
@@ -91,22 +94,33 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
 
     // ------------------------------------------------------------------------
 
-    py::class_<PluginInstance, PyPluginInstanceTrampoline<>, shared_ptr<PluginInstance>>(m, "PluginInstance", py::multiple_inheritance())
+    // Lifetime management of PluginInstances is done by the PyPluginLoader
+    struct PluginInstanceDeleter {
+        void operator()(PluginInstance* ptr) const {
+            auto *pyPtr = dynamic_cast<PyPluginInstanceTrampoline*>(ptr);
+            if(pyPtr)
+                delete pyPtr;
+            else
+                CRIT << "Failed casting PluginInstance to PyPluginInstanceTrampoline in custom deleter. Memory leaked.";
+        }
+    };
+
+    py::class_<PluginInstance, PyPluginInstanceTrampoline, unique_ptr<PluginInstance, PluginInstanceDeleter/*py::nodelete*/>>(m, "PluginInstance", py::multiple_inheritance())
         .def(py::init_alias<vector<Extension*>>(),
              py::arg("extensions") = vector<Extension*>{})
         .def_property_readonly("id", &PluginInstance::id)
         .def_property_readonly("name", &PluginInstance::name)
         .def_property_readonly("description", &PluginInstance::description)
-        .def_property_readonly("cacheLocation", [](PyPluginInstanceTrampoline<> *self){ return self->pathlibCachePath(); }, py::return_value_policy::reference)
-        .def_property_readonly("configLocation", [](PyPluginInstanceTrampoline<> *self){ return self->pathlibConfigPath(); }, py::return_value_policy::reference)
-        .def_property_readonly("dataLocation", [](PyPluginInstanceTrampoline<> *self){ return self->pathlibDataPath(); }, py::return_value_policy::reference)
-        .def("readConfig", [](PyPluginInstanceTrampoline<> *self, QString key, py::object type){ return self->readConfig(key, type); })
-        .def("writeConfig", [](PyPluginInstanceTrampoline<> *self, QString key, py::object value){ self->writeConfig(key, value); })
+        .def_property_readonly("cacheLocation", [](PyPluginInstanceTrampoline *self){ return self->pathlibCachePath(); }, py::return_value_policy::reference)
+        .def_property_readonly("configLocation", [](PyPluginInstanceTrampoline *self){ return self->pathlibConfigPath(); }, py::return_value_policy::reference)
+        .def_property_readonly("dataLocation", [](PyPluginInstanceTrampoline *self){ return self->pathlibDataPath(); }, py::return_value_policy::reference)
+        .def("readConfig", [](PyPluginInstanceTrampoline *self, QString key, py::object type){ return self->readConfig(key, type); })
+        .def("writeConfig", [](PyPluginInstanceTrampoline *self, QString key, py::object value){ self->writeConfig(key, value); })
         ;
 
     // ------------------------------------------------------------------------
 
-    py::class_<Extension, PyExtensionTrampoline<>, shared_ptr<Extension>>(m, "Extension")
+    py::class_<Extension, PyExtensionTrampoline<>, unique_ptr<Extension, py::nodelete>>(m, "Extension", py::multiple_inheritance())
         .def_property_readonly("id", &Extension::id)
         .def_property_readonly("name", &Extension::name)
         .def_property_readonly("description", &Extension::description)
@@ -114,7 +128,7 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
 
     // ------------------------------------------------------------------------
 
-    py::class_<FallbackHandler, Extension, PyFallbackHandlerTrampoline<>, shared_ptr<FallbackHandler>>(m, "FallbackHandler")
+    py::class_<FallbackHandler, Extension, PyFallbackHandlerTrampoline<>>(m, "FallbackHandler", py::multiple_inheritance())
         .def(py::init<const QString&, const QString&, const QString&>(),
              py::arg("id"),
              py::arg("name"),
@@ -132,7 +146,7 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
         .def("add", py::overload_cast<const vector<shared_ptr<Item>> &>(&TriggerQuery::add))
         ;
 
-    py::class_<TriggerQueryHandler, Extension, PyTriggerQueryHandlerTrampoline<>, shared_ptr<TriggerQueryHandler>>(m, "TriggerQueryHandler")
+    py::class_<TriggerQueryHandler, Extension, PyTriggerQueryHandlerTrampoline<>>(m, "TriggerQueryHandler", py::multiple_inheritance())
         .def(py::init<const QString&, const QString&, const QString&, const QString&, const QString&, bool, bool>(),
              py::arg("id"),
              py::arg("name"),
@@ -162,7 +176,7 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
         .def_readwrite("score", &RankItem::score)
         ;
 
-    py::class_<GlobalQueryHandler, TriggerQueryHandler, PyGlobalQueryHandlerTrampoline<>, shared_ptr<GlobalQueryHandler>>(m, "GlobalQueryHandler")
+    py::class_<GlobalQueryHandler, TriggerQueryHandler, PyGlobalQueryHandlerTrampoline<>>(m, "GlobalQueryHandler", py::multiple_inheritance())
         .def(py::init<const QString&, const QString&, const QString&, const QString&, const QString&, bool, bool>(),
              py::arg("id"),
              py::arg("name"),
@@ -182,7 +196,7 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
         .def_readwrite("string", &IndexItem::string)
         ;
 
-    py::class_<IndexQueryHandler, GlobalQueryHandler, PyIndexQueryHandlerTrampoline<>, shared_ptr<IndexQueryHandler>>(m, "IndexQueryHandler")
+    py::class_<IndexQueryHandler, GlobalQueryHandler, PyIndexQueryHandlerTrampoline<>>(m, "IndexQueryHandler", py::multiple_inheritance())
         .def(py::init<const QString&, const QString&, const QString&, const QString&, const QString&, bool>(),
              py::arg("id"),
              py::arg("name"),
@@ -198,14 +212,24 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
 
     // Convenience classes
 
-//    py::class_<TQHPI, TQHPIT, PluginInstance, TriggerQueryHandler, shared_ptr<TQHPI>>(m, "TriggerQueryHandlerPlugin", py::multiple_inheritance())
-//        .def(py::init<const QString&, const QString&, bool, bool>(),
-//             py::arg("synopsis") = QString(),
-//             py::arg("defaultTrigger") = QString(),
-//             py::arg("allowTriggerRemap") = true,
-//             py::arg("supportsFuzzyMatching") = false)
-//////        .def("handleTriggerQuery", &PyTriggerQueryHandlerPlugin<>::handleTriggerQuery)
-//        ;
+    // py::class_<TriggerQueryHandlerPlugin,
+    //            TriggerQueryHandlerPluginTrampoline<>,
+    //            shared_ptr<TriggerQueryHandlerPlugin>
+    //            >(m, "TriggerQueryHandlerPlugin", py::multiple_inheritance())
+    //     // .def(py::init<const QString&, const QString&, bool, bool, const vector<Extension*>&>(),
+    //     //      py::arg("synopsis") = QString(),
+    //     //      py::arg("defaultTrigger") = QString(),
+    //     //      py::arg("allowTriggerRemap") = true,
+    //     //      py::arg("supportsFuzzyMatching") = false,
+    //     //      py::arg("additionalExtensions") = vector<Extension*>())
+    //     ;
+
+
+
+
+
+
+
 
 //    py::class_<PyGlobalQueryHandlerPlugin, PluginInstance, GlobalQueryHandler, shared_ptr<PyGlobalQueryHandlerPlugin>>(m, "GlobalQueryHandlerPlugin")
 //        .def(py::init<const QString&, const QString&, bool, bool>(),

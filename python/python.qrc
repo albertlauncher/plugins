@@ -4,6 +4,6 @@
 
 <RCC>
     <qresource prefix="/">
-        <file alias="python">python.svg</file>
+        <file alias="python">resources/python.svg</file>
     </qresource>
 </RCC>

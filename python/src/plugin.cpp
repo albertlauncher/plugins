@@ -1,6 +1,7 @@
-// Copyright (c) 2022-2023 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
 #include <pybind11/embed.h> // Has to be first import
+#include "albert/extensionregistry.h"
 #include "cast_specialization.h"
 #include "albert/albert.h"
 #include "albert/logging.h"
@@ -19,11 +20,14 @@ namespace py = pybind11;
 
 static const constexpr char *PLUGIN_DIR = "plugins";
 static const constexpr char *SITE_PACKAGES= "site-packages";
-static const char *CFG_WATCH_SOURCES = "watchSources";
-static const bool DEF_WATCH_SOURCES = false;
+// static const char *CFG_WATCH_SOURCES = "watchSources";
+// static const bool DEF_WATCH_SOURCES = false;
 
 
-Plugin::Plugin()
+Plugin::Plugin() = default;
+Plugin::~Plugin() = default;
+
+void Plugin::initialize(albert::ExtensionRegistry &registry, map<QString,PluginInstance*> dependencies)
 {
     /*
      * The python interpreter is never unloaded once it has been loaded. This
@@ -34,77 +38,61 @@ Plugin::Plugin()
         py::initialize_interpreter(false);
     release_.reset(new py::gil_scoped_release);
 
-    py::gil_scoped_acquire acquire;
+    {
+        py::gil_scoped_acquire acquire;
 
-    py::module sys = py::module::import("sys");
-    DEBG << "Python version:" << sys.attr("version").cast<QString>();
+        py::module sys = py::module::import("sys");
+        DEBG << "Python version:" << sys.attr("version").cast<QString>();
+        DEBG << "Python path:" << sys.attr("path").cast<QStringList>();
 
-    auto data_dir = dataDir();
+        auto data_dir = dataDir();
 
-    // Create and add site-packages dir
-    if (!data_dir->exists(SITE_PACKAGES))
-        if(!data_dir->mkdir(SITE_PACKAGES))
-            throw QString("Failed creating site dir %1").arg(data_dir->filePath(SITE_PACKAGES));
-    py::module::import("site").attr("addsitedir")(data_dir->filePath(SITE_PACKAGES));
+        // Create and add site-packages dir
+        if (!data_dir.exists(SITE_PACKAGES))
+            if(!data_dir.mkdir(SITE_PACKAGES))
+                throw tr("Failed creating site-packages dir %1").arg(data_dir.filePath(SITE_PACKAGES));
+        py::module::import("site").attr("addsitedir")(data_dir.filePath(SITE_PACKAGES));
 
-    // Create module dirs
-    if (!data_dir->exists(PLUGIN_DIR))
-        data_dir->mkdir(PLUGIN_DIR);
+        // Create module dirs
+        if (!data_dir.exists(PLUGIN_DIR))
+            data_dir.mkdir(PLUGIN_DIR);
 
-    auto start = system_clock::now();
-    using QSP = QStandardPaths;
-    auto plugin_dirs = QSP::locateAll(QSP::AppDataLocation, id(), QSP::LocateDirectory);
-    for (const QString &plugin_dir : plugin_dirs) {
-        if (QDir dir{plugin_dir}; dir.cd(PLUGIN_DIR)) {
-            DEBG << "Searching Python plugins in" << dir.absolutePath();
-            for (const QFileInfo &file_info : dir.entryInfoList(QDir::Files|QDir::Dirs|QDir::NoDotAndDotDot)) {
-                try {
-                    auto &loader = plugins_.emplace_back(make_unique<PyPluginLoader>(*this, file_info));
-                    DEBG << "Found valid Python plugin" << loader->path;
-                } catch (const NoPluginException &) {
-                    continue;
-                } catch (const exception &e) {
-                    WARN << e.what() << file_info.filePath();
+        auto start = system_clock::now();
+        using QSP = QStandardPaths;
+        auto plugin_dirs = QSP::locateAll(QSP::AppDataLocation, id(), QSP::LocateDirectory);
+        for (const QString &plugin_dir : plugin_dirs) {
+            if (QDir dir{plugin_dir}; dir.cd(PLUGIN_DIR)) {
+                DEBG << "Searching Python plugins in" << dir.absolutePath();
+                for (const QFileInfo &file_info : dir.entryInfoList(QDir::Files|QDir::Dirs|QDir::NoDotAndDotDot)) {
+                    try {
+                        auto &loader = plugins_.emplace_back(make_unique<PyPluginLoader>(*this, file_info.absoluteFilePath()));
+                        DEBG << "Found valid Python plugin" << loader->path();
+                    }
+                    catch (const NoPluginException &e) {
+                        DEBG << QString("Invalid plugin (%1): %2").arg(e.what(), file_info.filePath());
+                    }
+                    catch (const exception &e) {
+                        WARN << e.what() << file_info.filePath();
+                    }
                 }
             }
         }
+        INFO << QStringLiteral("[%1 ms] Python plugin scan")
+                    .arg(duration_cast<milliseconds>(system_clock::now()-start).count());
     }
-    INFO << QStringLiteral("[%1 ms] Python plugin scan")
-                .arg(duration_cast<milliseconds>(system_clock::now()-start).count());
 
-    setWatchSources(settings()->value(CFG_WATCH_SOURCES, DEF_WATCH_SOURCES).toBool());
+    ExtensionPlugin::initialize(registry, dependencies);
 }
 
-Plugin::~Plugin()
+void Plugin::finalize(albert::ExtensionRegistry &registry)
 {
+    // ExtensionPlugin::finalize(r);
+    registry.deregisterExtension(this);
     release_.reset();
     plugins_.clear();
-    py::finalize_interpreter();
-}
 
-bool Plugin::watchSources() const { return sources_watcher_.get(); }
-
-void Plugin::setWatchSources(bool val)
-{
-    if (watchSources() && !val){
-        sources_watcher_.reset();
-    } else if (!watchSources() && val){
-        sources_watcher_ = make_unique<QFileSystemWatcher>();
-        connect(sources_watcher_.get(), &QFileSystemWatcher::fileChanged, this,  [this](const QString path){
-            for (auto &loader : plugins_)
-                if (path == loader->source_path())
-                if (loader->state() == PluginState::Loaded ||
-                    (loader->state() == PluginState::Unloaded && !loader->stateInfo().isEmpty())){
-                    loader->unload();
-                    loader->load();
-                }
-        });
-//        if (!sources_watcher_->files().isEmpty())
-//            sources_watcher_->removePaths(sources_watcher_->files());
-        for (const auto &loader : plugins_)
-            sources_watcher_->addPath(loader->source_path());
-    }
-    settings()->setValue(CFG_WATCH_SOURCES, val);
+    // Causes hard to debug crashes, mem leaked, but nobody will toggle it a lot
+    // py::finalize_interpreter();
 }
 
 vector<PluginLoader*> Plugin::plugins()
@@ -121,12 +109,8 @@ QWidget *Plugin::buildConfigWidget()
     Ui::ConfigWidget ui;
     ui.setupUi(w);
 
-    ui.checkBox_watchSources->setChecked(watchSources());
-    connect(ui.checkBox_watchSources, &QCheckBox::toggled,
-            this, &Plugin::setWatchSources);
-
     connect(ui.pushButton_packages, &QPushButton::clicked, this, [this](){
-        openUrl("file://" + dataDir()->filePath("site-packages"));
+        openUrl("file://" + dataDir().filePath("site-packages"));
     });
 
     return w;

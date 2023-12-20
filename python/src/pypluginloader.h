@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2023 Manuel Schneider
+// Copyright (c) 2017-2024 Manuel Schneider
 
 #pragma once
 #include "pybind11/pybind11.h"
@@ -8,39 +8,49 @@
 #include <QLoggingCategory>
 namespace albert {
 class PluginProvider;
-class PluginInstance;
 }
 class QFileInfo;
 class Plugin;
+class PyPluginInstanceTrampoline;
 
-class NoPluginException: public std::exception {};
+class NoPluginException: public std::exception
+{
+public:
+    NoPluginException(const std::string &what): what_(what) {}
+    const char *what() const noexcept override { return what_.c_str(); }
+private:
+    std::string what_;
+};
 
 class PyPluginLoader : public albert::PluginLoader
 {
 public:
-    PyPluginLoader(Plugin &provider, const QFileInfo &file_info);
+
+    PyPluginLoader(Plugin &provider, const QString &module_path);
     ~PyPluginLoader();
 
-    const albert::PluginProvider &provider() const override;
+    QString path() const override;
     const albert::PluginMetaData &metaData() const override;
-    albert::PluginInstance *instance() const override;
-
-    QString load() override;
-    QString unload() override;
-
-    const QString &source_path() const;
+    void load() override;
+    void unload() override;
+    albert::PluginInstance *createInstance() override;
 
 private:
-    QString load_();
 
+    void load_();
+
+    const Plugin &provider_;
+
+    const QString module_path_;
     QString source_path_;
-    pybind11::module module_;
-    Plugin &provider_;
-    pybind11::object py_plugin_instance_;
-    albert::PluginInstance *cpp_plugin_instance_;
+
     albert::PluginMetaData metadata_;
     std::string logging_category_name;
     std::unique_ptr<QLoggingCategory> logging_category;
+
+    pybind11::module module_;
+    pybind11::object instance_;
+
 };
 
 

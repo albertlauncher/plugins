@@ -1,27 +1,20 @@
-project(python VERSION 2.1.2)
-albert_plugin(
-    NAME "Python"
-    DESCRIPTION "Load Python plugins"
-    LONG_DESCRIPTION "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
-    LICENSE ALL
-    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-    MAINTAINERS @manuelschneid3r
-    QT_DEPENDENCIES Widgets
-    CREDITS "pybind11 BSD-3-Clause"
-    NOUNLOAD
-)
+project(python VERSION 4.1)
 
-find_package(Python3 COMPONENTS Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 
-configure_file(
-    "${PROJECT_SOURCE_DIR}/src/config.h.in"
-    "${PROJECT_BINARY_DIR}/src/config.h"
-    @ONLY
+albert_plugin(
+    SOURCE_FILES
+        ${PROJECT_NAME}.qrc
+        src/*.cpp
+        src/*.h
+        src/*.ui
+    PRIVATE_LINK_LIBRARIES
+        Qt6::Concurrent
+        pybind11::embed
+    TS_FILES
+        i18n/${PROJECT_NAME}_de.ts
 )
-target_sources(${PROJECT_NAME} PRIVATE "${PROJECT_BINARY_DIR}/src/config.h")
-target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_BINARY_DIR}/src")
-target_link_libraries(${PROJECT_NAME} PRIVATE pybind11::embed)
 
 install(
     DIRECTORY "plugins/"
@@ -29,6 +22,17 @@ install(
     REGEX "/\\..*" EXCLUDE  # exclude hidden files
     PATTERN "__pycache__" EXCLUDE
 )
+
+
+
+## – –
+
+#find_program(
+#    Python3_EXECUTABLE python3
+#    HINTS /opt/homebrew/bin
+#)
+
+#message(STATUS ${Python3_EXECUTABLE})
 
 #option(BUILD_PY_TESTS "Build ${PROJECT_NAME} tests (Reqiures doctest)" OFF)
 #if (BUILD_PY_TESTS)
