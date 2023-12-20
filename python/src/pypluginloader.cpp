@@ -270,15 +270,14 @@ QString PyPluginLoader::load()
                     QProcess proc;
                     proc.start(
                         "python3",
-                        {
-                            "-m",
-                            "pip",
-                            "install",
-                            "--disable-pip-version-check",
-                            "--target",
-                            provider_.dataDir()->filePath("site-packages"),
-                            metadata_.runtime_dependencies.join(" ")
-                        }
+                        QStringList()
+                            << "-m"
+                            << "pip"
+                            << "install"
+                            << "--disable-pip-version-check"
+                            << "--target"
+                            << provider_.dataDir()->filePath("site-packages")
+                            << metadata_.runtime_dependencies
                     );
 
                     auto *te = new QTextEdit;

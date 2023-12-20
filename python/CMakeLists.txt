@@ -1,4 +1,4 @@
-project(python VERSION 2.1.2)
+project(python VERSION 2.1.3)
 albert_plugin(
     NAME "Python"
     DESCRIPTION "Load Python plugins"
@@ -11,7 +11,7 @@ albert_plugin(
     NOUNLOAD
 )
 
-find_package(Python3 COMPONENTS Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 
 configure_file(
