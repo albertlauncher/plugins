@@ -5,7 +5,8 @@
 #include "albert/plugin.h"
 #include <memory>
 
-class Plugin : public albert::plugin::ExtensionPlugin<albert::IndexQueryHandler>
+class Plugin : public albert::plugin::ExtensionPlugin,
+               public albert::IndexQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
