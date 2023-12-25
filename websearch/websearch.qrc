@@ -11,5 +11,6 @@
         <file alias="youtube">resources/youtube.svg</file>
         <file alias="scholar">resources/scholar.svg</file>
         <file alias="engines.json">resources/engines.json</file>
+        <file alias="google_translate">resources/google_translate.svg</file>
     </qresource>
 </RCC>

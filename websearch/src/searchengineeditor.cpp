@@ -65,7 +65,8 @@ SearchEngineEditor::SearchEngineEditor(const QString &icon_url,
         if (ui.lineEdit_name->text().isEmpty()
             || ui.lineEdit_trigger->text().isEmpty()
             || ui.lineEdit_url->text().isEmpty())
-            QMessageBox::warning(this, "Invalid", "None of the fields must be empty.");
+            QMessageBox::warning(this, qApp->applicationDisplayName(),
+                                 "None of the fields must be empty.");
         else
             accept();
     });

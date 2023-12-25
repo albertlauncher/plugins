@@ -65,8 +65,8 @@ static vector<SearchEngine> deserializeEngines(const QByteArray &json)
 
 Plugin::Plugin()
 {
-    if (QFile file(configDir()->filePath(ENGINES_FILE_NAME));
-        file.open(QIODevice::ReadOnly))
+    QFile file(configDir().filePath(ENGINES_FILE_NAME));
+    if (file.open(QIODevice::ReadOnly))
         setEngines(deserializeEngines(file.readAll()));
     else
         restoreDefaultEngines();
@@ -81,11 +81,11 @@ void Plugin::setEngines(vector<SearchEngine> engines)
 
     searchEngines_ = ::move(engines);
 
-    if (QFile file(configDir()->filePath(ENGINES_FILE_NAME));
+    if (QFile file(configDir().filePath(ENGINES_FILE_NAME));
         file.open(QIODevice::WriteOnly))
         file.write(serializeEngines(searchEngines_));
     else
-        CRIT << qPrintable(QString("Could not write to file: '%1'.").arg(file.fileName()));
+        CRIT << QString("Could not write to file: '%1'.").arg(file.fileName());
 
     emit enginesChanged(searchEngines_);
 }
@@ -117,10 +117,10 @@ static shared_ptr<StandardItem> buildItem(const SearchEngine &se, const QString 
     return StandardItem::make(
         se.id,
         se.name,
-        QString("Search %1 for '%2'").arg(se.name, search_term),
+        Plugin::tr("Search %1 for '%2'").arg(se.name, search_term),
         QString("%1 %2").arg(se.name, search_term),
         {se.iconUrl},
-        {{"run", "Run websearch", [url](){ openUrl(url); }}}
+        {{"run", Plugin::tr("Run websearch"), [url](){ openUrl(url); }}}
     );
 }
 

@@ -64,7 +64,8 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;Click to select file or&lt;br&gt;drop any image.&lt;/body&gt;&lt;/html&gt;</string>
+        <string>Click to select file
+or drop an image.</string>
        </property>
       </widget>
      </item>
@@ -101,24 +102,24 @@
         <string>Name of the search engine.</string>
        </property>
        <property name="placeholderText">
-        <string>Name of the search engine</string>
+        <string>Name of the search engine.</string>
        </property>
       </widget>
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="triggerLabel">
        <property name="text">
-        <string>Trigger:</string>
+        <string>Short:</string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
       <widget class="QLineEdit" name="lineEdit_trigger">
        <property name="toolTip">
-        <string>The query prefix that triggers this engine. Note that it may make sense to append a space to the trigger prefix.</string>
+        <string>Short name you can utilize for quick access.</string>
        </property>
        <property name="placeholderText">
-        <string>The query prefix that triggers this engine</string>
+        <string>Short name you can utilize for quick access.</string>
        </property>
       </widget>
      </item>
@@ -135,7 +136,7 @@
         <string>The URL containing a %s that will be replaced by the query.</string>
        </property>
        <property name="placeholderText">
-        <string>The URL containing a %s that will be replaced by the query</string>
+        <string>The URL containing a %s that will be replaced by the query.</string>
        </property>
       </widget>
      </item>

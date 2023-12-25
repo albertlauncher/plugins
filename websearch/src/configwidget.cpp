@@ -53,20 +53,20 @@ public:
             switch (static_cast<Section>(section)) {
             case Section::Name:
                 switch (role) {
-                case Qt::DisplayRole: return "Name";
-                case Qt::ToolTipRole: return "The name of the search engine.";
+                case Qt::DisplayRole: return ConfigWidget::tr("Name");
+                case Qt::ToolTipRole: return ConfigWidget::tr("Name of the search engine.");
                 default: return {};
                 }
             case Section::Trigger:
                 switch (role) {
-                case Qt::DisplayRole: return "Short";
-                case Qt::ToolTipRole: return "The short name for this search engine.";
+                case Qt::DisplayRole: return ConfigWidget::tr("Short");
+                case Qt::ToolTipRole: return ConfigWidget::tr("Short name you can utilize for quick access.");
                 default: return {};
                 }
             case Section::URL:
                 switch (role) {
-                case Qt::DisplayRole: return "URL";
-                case Qt::ToolTipRole: return "The URL of this search engine. %s will be replaced by your search term.";
+                case Qt::DisplayRole: return ConfigWidget::tr("URL");
+                case Qt::ToolTipRole: return ConfigWidget::tr("The URL of this search engine. %s will be replaced by your search term.");
                 default: return {};
                 }
             }
@@ -112,7 +112,7 @@ public:
             break;
         }
         case Qt::ToolTipRole:
-            return "Double click to edit.";
+            return ConfigWidget::tr("Double click to edit.");
         }
         return {};
     }
@@ -153,9 +153,11 @@ static void handleAcceptedEditor(const SearchEngineEditor &editor, SearchEngine 
 
         auto image = editor.icon_image->scaled(256, 256, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-        auto dst = plugin.dataDir()->filePath(QString("%1.png").arg(engine.id));
+        auto dst = plugin.dataDir().filePath(QString("%1.png").arg(engine.id));
         if (!image.save(dst)){
-            GWARN(QString("Could not save image to '%1'.").arg(dst));
+            auto msg = ConfigWidget::tr("Could not save image to '%1'.").arg(dst);
+            WARN << msg;
+            QMessageBox::warning(nullptr, qApp->applicationDisplayName(), msg);
             return;
         }
 
@@ -205,8 +207,9 @@ void ConfigWidget::onButton_remove()
         return;
 
     auto reply = QMessageBox::question(
-        this, "Sure?", QString("Do you really want to remove '%1' from the search engines?")
-                           .arg(plugin_->engines()[index.row()].name),
+        this, qApp->applicationDisplayName(),
+        tr("Do you really want to remove '%1' from the search engines?")
+            .arg(plugin_->engines()[index.row()].name),
         QMessageBox::Yes|QMessageBox::No);
     if (reply == QMessageBox::Yes){
         auto engines = plugin_->engines();
@@ -222,10 +225,10 @@ void ConfigWidget::onButton_remove()
 
 void ConfigWidget::onButton_restoreDefaults()
 {
-    QMessageBox::StandardButton reply =
-            QMessageBox::question(this, "Sure?",
-                                  QString("Do you really want to restore the default search engines?"),
-                                  QMessageBox::Yes|QMessageBox::No);
+    auto reply = QMessageBox::question(
+        this, qApp->applicationDisplayName(),
+        tr("Do you really want to restore the default search engines?"),
+        QMessageBox::Yes|QMessageBox::No);
     if (reply == QMessageBox::Yes)
         plugin_->restoreDefaultEngines();
 }
