@@ -49,7 +49,7 @@
     },
     {
         "iconPath": ":youtube",
-        "name": "Youtube",
+        "name": "YouTube",
         "trigger": "yt",
         "url": "https://www.youtube.com/results?search_query=%s"
     }
