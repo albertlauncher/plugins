@@ -50,7 +50,9 @@ signals:
 
 
 
-class Plugin : public albert::plugin::ExtensionPlugin<albert::Frontend, QQuickWindow>
+class Plugin : public QQuickWindow,
+               public albert::PluginInstance,
+               public albert::Frontend
 {
     Q_OBJECT
     ALBERT_PLUGIN
@@ -66,7 +68,7 @@ public:
     Plugin();
     ~Plugin();
 
-    void initialize(albert::ExtensionRegistry*) override;
+    void initialize(albert::ExtensionRegistry &registry, std::map<QString,PluginInstance*>) override;
 
     void loadRootComponent(const QString &path);
 

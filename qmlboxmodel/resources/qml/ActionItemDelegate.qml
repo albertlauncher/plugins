@@ -4,7 +4,6 @@ Item{
     property color  color
     property color  color_current
     property alias  font_size: text.font.pixelSize
-    property string font_family: text.font.family
     property alias  padding: text.padding
 
     width: parent.width

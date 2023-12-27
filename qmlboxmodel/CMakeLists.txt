@@ -1,12 +1,19 @@
-project(qmlboxmodel VERSION 2.1)
+project(qmlboxmodel VERSION 3.0)
+
+find_package(Qt6 REQUIRED COMPONENTS Qml Quick)
+
 albert_plugin(
-    NAME "QML Box Model"
-    DESCRIPTION "The QML frontend"
-    LICENSE ALL
-    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-    MAINTAINERS @manuelschneid3r
-    QT_DEPENDENCIES Widgets Qml Quick
-    FRONTEND
+    SOURCE_FILES
+        ${PROJECT_NAME}.qrc
+        resources/qml/*
+        src/*.cpp
+        src/*.h
+        src/configwidget.ui
+    PRIVATE_LINK_LIBRARIES
+        Qt6::Qml
+        Qt6::Quick
+    TS_FILES
+        i18n/${PROJECT_NAME}_de.ts
 )
 
 #install(DIRECTORY "styles/" DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/${PROJECT_NAME}/styles")

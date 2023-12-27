@@ -77,8 +77,10 @@ Plugin::Plugin():
 
 Plugin::~Plugin() { settings()->setValue(CFG_WND_POS, position()); }
 
-void Plugin::initialize(albert::ExtensionRegistry*)
+void Plugin::initialize(ExtensionRegistry &registry, map<QString,PluginInstance*> dependencies)
 {
+    PluginInstance::initialize(registry, dependencies);
+
     // Load in init because components may call query(), while QueryEngine is not set in ctor
     loadRootComponent(DEFAULT_STYLE_FILE_PATH);
 }
@@ -120,9 +122,9 @@ void Plugin::loadRootComponent(const QString &path)
     //    pe->setWindowModality(Qt::WindowModality::WindowModal);
     //    pe->show();
 
-    connect(this, &QQuickWindow::activeFocusItemChanged, [this](){
-        DEBG << "activeFocusItemChanged" << activeFocusItem();
-    });
+//    connect(this, &QQuickWindow::activeFocusItemChanged, [this](){
+//        DEBG << "activeFocusItemChanged" << activeFocusItem();
+//    });
 }
 
 
@@ -194,7 +196,7 @@ bool Plugin::event(QEvent *event)
             auto geo = screen->geometry();
             auto win_width = width();
             auto newX = geo.center().x() - win_width / 2;
-            auto newY = geo.top() + geo.height() / 5;
+            auto newY = geo.top() + geo.height() / 8;
             DEBG << screen->name() << screen->manufacturer() << screen->model() << screen->devicePixelRatio() << geo;
             DEBG << "win_width" << win_width  << "newX" << newX << "newY" << newY;
             setPosition(newX, newY);
@@ -323,13 +325,13 @@ QFileInfoList Plugin::availableThemes() const
     QFileInfoList theme_files;
     theme_files << QFileInfo(":SystemPaletteTheme.js");
     theme_files << QFileInfo(":SystemPaletteTheme2.js");
-    theme_files << dataDir()->entryInfoList({"*.theme"}, QDir::Files);
+    theme_files << dataDir().entryInfoList({"*.theme"}, QDir::Files);
     return theme_files;
 }
 
 void Plugin::saveThemeAsFile(const QString &theme_name)
 {
-    QSettings theme_file(configDir()->filePath(theme_name+".theme"), QSettings::IniFormat);
+    QSettings theme_file(configDir().filePath(theme_name+".theme"), QSettings::IniFormat);
     auto *theme_properties_object = getThemePropertiesObject();
     for (const QString &prop : settableThemeProperties())
         theme_file.setValue(prop, theme_properties_object->property(prop.toLatin1().data()));
@@ -523,54 +525,54 @@ QWidget* Plugin::createFrontendConfigWidget()
 
     // Themes
 
-    auto fillThemesCheckBox = [this, cb=ui.comboBox_themes](){
-        QSignalBlocker b(cb);
-        cb->clear();
-        QStandardItemModel *model = qobject_cast<QStandardItemModel*>(cb->model());  // safe, see docs
+    // auto fillThemesCheckBox = [this, cb=ui.comboBox_themes](){
+    //     QSignalBlocker b(cb);
+    //     cb->clear();
+    //     QStandardItemModel *model = qobject_cast<QStandardItemModel*>(cb->model());  // safe, see docs
 
-        // Add disabled placeholder item
-        auto *item = new QStandardItem;
-        item->setText("Choose theme...");
-        item->setEnabled(false);
-        model->appendRow(item);
+    //     // Add disabled placeholder item
+    //     auto *item = new QStandardItem;
+    //     item->setText("Choose theme...");
+    //     item->setEnabled(false);
+    //     model->appendRow(item);
 
-        cb->insertSeparator(1);
+    //     cb->insertSeparator(1);
 
-        // Add themes
-        for (const QFileInfo &fi : availableThemes()){
-            item = new QStandardItem;
-            item->setText(fi.baseName());
-            item->setToolTip(fi.absoluteFilePath());
-            model->appendRow(item);
-        }
-    };
+    //     // Add themes
+    //     for (const QFileInfo &fi : availableThemes()){
+    //         item = new QStandardItem;
+    //         item->setText(fi.baseName());
+    //         item->setToolTip(fi.absoluteFilePath());
+    //         model->appendRow(item);
+    //     }
+    // };
 
-    fillThemesCheckBox();
+    // fillThemesCheckBox();
 
-    connect(ui.comboBox_themes, &QComboBox::currentIndexChanged,
-            this, [this, cb=ui.comboBox_themes](int i){
-                auto theme_file_name = cb->model()->index(i,0).data(Qt::ToolTipRole).toString();
-                applyTheme(theme_file_name);
-            });
+    // connect(ui.comboBox_themes, &QComboBox::currentIndexChanged,
+    //         this, [this, cb=ui.comboBox_themes](int i){
+    //             auto theme_file_name = cb->model()->index(i,0).data(Qt::ToolTipRole).toString();
+    //             applyTheme(theme_file_name);
+    //         });
 
-    connect(ui.toolButton_propertyEditor, &QToolButton::clicked, this, [this, w](){
-        PropertyEditor *pe = new PropertyEditor(this, w);
-        pe->setWindowModality(Qt::WindowModality::WindowModal);
-        pe->show();
-    });
+    // connect(ui.toolButton_propertyEditor, &QToolButton::clicked, this, [this, w](){
+    //     PropertyEditor *pe = new PropertyEditor(this, w);
+    //     pe->setWindowModality(Qt::WindowModality::WindowModal);
+    //     pe->show();
+    // });
 
-    connect(ui.toolButton_save, &QToolButton::clicked, this, [this, w, fillThemesCheckBox](){
-        if (auto text = QInputDialog::getText(w, qApp->applicationDisplayName(), "Theme name:"); !text.isNull()){
-            if (text.isEmpty())
-                QMessageBox::warning(w, qApp->applicationDisplayName(), "Theme name must not be empty.");
-            else if (auto dir = configDir(); dir->exists(text+".theme"))
-                QMessageBox::warning(w, qApp->applicationDisplayName(), "Theme already exists.");
-            else{
-                saveThemeAsFile(dir->filePath(text));
-                fillThemesCheckBox();
-            }
-        }
-    });
+    // connect(ui.toolButton_save, &QToolButton::clicked, this, [this, w, fillThemesCheckBox](){
+    //     if (auto text = QInputDialog::getText(w, qApp->applicationDisplayName(), "Theme name:"); !text.isNull()){
+    //         if (text.isEmpty())
+    //             QMessageBox::warning(w, qApp->applicationDisplayName(), "Theme name must not be empty.");
+    //         else if (auto dir = configDir(); dir.exists(text+".theme"))
+    //             QMessageBox::warning(w, qApp->applicationDisplayName(), "Theme already exists.");
+    //         else{
+    //             saveThemeAsFile(dir.filePath(text));
+    //             fillThemesCheckBox();
+    //         }
+    //     }
+    // });
 
 
     return w;
