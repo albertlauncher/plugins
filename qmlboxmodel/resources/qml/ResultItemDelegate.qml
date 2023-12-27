@@ -4,7 +4,6 @@ import QtQuick.Window 2.2  // Screen.devicePixelRatio
 Item {
     property int icon_size
     property int animation_duration
-    property string font_family
     property color text_color
     property color text_color_current
     property int text_font_size
@@ -53,7 +52,6 @@ Item {
             Text { DebugRect{ name: "listItemText" }
                 width: listItemTextColumn.width
                 text: itemText
-                font.family: font_family
                 font.pixelSize: text_font_size
                 elide: Text.ElideRight
                 color: ListView.isCurrentItem ? text_color_current : text_color
@@ -63,7 +61,6 @@ Item {
             Text { DebugRect{ name: "listItemSubText" }
                 width: listItemTextColumn.width
                 text: itemSubText
-                font.family: font_family
                 font.pixelSize: subtext_font_size
                 elide: Text.ElideRight
                 color: ListView.isCurrentItem ? subtext_color_current : subtext_color

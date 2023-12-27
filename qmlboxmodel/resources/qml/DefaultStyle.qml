@@ -63,7 +63,6 @@ Item { DebugRect{ name: "root" }
                     anchors.verticalCenter: parent.verticalCenter
                     width: Math.min(implicitWidth, parent.width - 2*style.input_padding)
 
-                    font.family: style.font_family
                     font.pixelSize: style.input_text_font_size
                     color: style.input_text_color
                     selectedTextColor: style.input_text_selection_color
@@ -72,7 +71,6 @@ Item { DebugRect{ name: "root" }
                     Text { DebugRect{ name: "Trigger" }
                         id: trigger
                         visible: hint.width !== 0
-                        font.family: style.font_family
                         font.pixelSize: style.input_text_font_size
                         color: style.input_text_trigger_color
                     }
@@ -88,7 +86,6 @@ Item { DebugRect{ name: "root" }
                     anchors.verticalCenter: input.verticalCenter
                     anchors.rightMargin: style.input_padding
 
-                    font.family: style.font_family
                     font.pixelSize: style.input_text_font_size
                     color: style.input_hint_color
                     elide: Text.ElideRight
@@ -111,7 +108,6 @@ Item { DebugRect{ name: "root" }
                 delegate: ResultItemDelegate { DebugRect{ name: "resultItem" }
                     icon_size: style.result_item_icon_size
                     animation_duration: style.animation_duration
-                    font_family: style.font_family
                     text_color: style.result_item_text_color
                     text_color_current: style.result_item_text_color_current
                     text_font_size: style.result_item_text_font_size
@@ -153,7 +149,6 @@ Item { DebugRect{ name: "root" }
                 delegate: ActionItemDelegate { DebugRect{ name: "actionItem" }
                     color: style.action_item_text_color
                     color_current: style.action_item_text_color_current
-                    font_family: style.font_family.family
                     font_size: style.action_item_text_font_size
                     padding: style.action_item_padding
                     onClicked: (action_index) => { actionsList.itemActivated(action_index) }
@@ -190,7 +185,7 @@ Item { DebugRect{ name: "root" }
 
         // General
         property int  animation_duration: 100
-        property font font_family // intentionally not set to use system font
+        // property font font_family: Qt.application.font  // custom fonts led to weird padding on some systems
 
         // Shadow
         property bool   shadow_enabled: true
