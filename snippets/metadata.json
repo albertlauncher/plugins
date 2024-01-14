@@ -1,0 +1,7 @@
+{
+    "description": "Copy snippets to the clipboard",
+    "license": "BSD-2",
+    "maintainers": "@manuelschneid3r",
+    "name": "Snippets",
+    "url": "https://github.com/albertlauncher/plugins/tree/master/snippets",
+}

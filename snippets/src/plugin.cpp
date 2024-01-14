@@ -55,7 +55,7 @@ struct SnippetItem : Item
 };
 
 
-Plugin::Plugin(): snippets_path(configDir()->path())
+Plugin::Plugin(): snippets_path(configDir().path())
 {
     // Todo remove in future
     QDir snippets_dir(snippets_path);
@@ -68,7 +68,7 @@ Plugin::Plugin(): snippets_path(configDir()->path())
 
     indexer.parallel = [this](const bool &abort){
         vector<IndexItem> r;
-        for (const auto &f : configDir()->entryInfoList({"*.txt"}, QDir::Files)){
+        for (const auto &f : configDir().entryInfoList({"*.txt"}, QDir::Files)){
             if (abort) return r;
             r.emplace_back(make_shared<SnippetItem>(f, this), f.fileName());
         }

@@ -1,9 +1,9 @@
-project(snippets VERSION 1.4)
+project(snippets VERSION 5.0)
+
 albert_plugin(
-    NAME Snippets
-    DESCRIPTION "Copy snippets to the clipboard"
-    LICENSE BSD-2
-    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-    MAINTAINERS @manuelschneid3r
-    QT_DEPENDENCIES Widgets
+    SOURCE_FILES
+        ${PROJECT_NAME}.qrc
+        src/configwidget.ui
+        src/plugin.cpp
+        src/plugin.h
 )
