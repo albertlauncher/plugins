@@ -15,10 +15,6 @@ Plugin::~Plugin() { DEBG << "'Debug' destroyed."; }
 
 QString Plugin::synopsis() const { return "debug-debug-debug-debug"; }
 
-QString Plugin::name() const { return "Debug"; }
-
-QString Plugin::description() const { return tr("Check the API functionality."); }
-
 bool Plugin::allowTriggerRemap() const { return false; }
 
 void Plugin::handleTriggerQuery(TriggerQuery *query) const
@@ -34,7 +30,7 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
             QString("Item #%1").arg(i),
             QString("Wow, Item #%1").arg(i),
             QString("%1Item #%2").arg(query->trigger()).arg(i),
-            {":debug"},
+            {"qsp:SP_MessageBoxWarning"},
             {
                     {"Debug","Open website", [](){ albert::openWebsite(); }},
                     {"Debug","Open settings", [](){ albert::showSettings(); }}
