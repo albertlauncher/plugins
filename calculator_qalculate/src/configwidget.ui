@@ -2,7 +2,15 @@
 <ui version="4.0">
  <class>ConfigWidget</class>
  <widget class="QWidget" name="ConfigWidget">
-  <layout class="QVBoxLayout" name="verticalLayout_2">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>296</width>
+    <height>201</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
    <property name="leftMargin">
     <number>0</number>
    </property>
@@ -16,12 +24,27 @@
     <number>0</number>
    </property>
    <item>
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Math expression evaluator based on the powerful qalculate library. See the [Qalculate! docs](https://qalculate.github.io/manual/index.html). 
+
+The global handler evaluates basic math expressions. Use the trigger handler to enable the full feature set.</string>
+     </property>
+     <property name="textFormat">
+      <enum>Qt::MarkdownText</enum>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="openExternalLinks">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QFormLayout" name="formLayout">
      <item row="0" column="0">
       <widget class="QLabel" name="angleUnitLabel">
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The angle unit for trigonometric functions.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
        <property name="text">
         <string>Angle unit:</string>
        </property>
@@ -32,6 +55,9 @@
      </item>
      <item row="0" column="1">
       <widget class="QComboBox" name="angleUnitComboBox">
+       <property name="toolTip">
+        <string>The angle unit for trigonometric functions.</string>
+       </property>
        <item>
         <property name="text">
          <string>None</string>
@@ -54,34 +80,8 @@
        </item>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="precisionLabel">
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Precision for approximate calculations.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-       <property name="text">
-        <string>Precision:</string>
-       </property>
-       <property name="buddy">
-        <cstring>precisionSpinBox</cstring>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QSpinBox" name="precisionSpinBox">
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>128</number>
-       </property>
-      </widget>
-     </item>
      <item row="1" column="0">
       <widget class="QLabel" name="parsingModeLabel">
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The default adaptive mode works as the &amp;quot;parse implicit multiplication first&amp;quot; mode, unless spaces are found (1/5x = 1/(5*x), but 1/5 x = (1/5)*x). In the adaptive mode unit expressions are parsed separately (5 m/5 m/s = (5*m)/(5*(m/s)) = 1 s).&lt;/p&gt;&lt;p&gt;In the &amp;quot;parse implicit multiplication first&amp;quot; mode, implicit multiplication is parsed before explicit multiplication (12/2(1+2) = 12/(2*3) = 2, 5x/5y = (5*x)/(5*y) = x/y). &lt;/p&gt;&lt;p&gt;In the conventional mode implicit multiplication does not differ from explicit multiplication (12/2(1+2) = 12/2*3 = 18, 5x/5y = 5*x/5*y = xy).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
        <property name="text">
         <string>Parsing mode:</string>
        </property>
@@ -92,6 +92,11 @@
      </item>
      <item row="1" column="1">
       <widget class="QComboBox" name="parsingModeComboBox">
+       <property name="toolTip">
+        <string>&lt;p&gt;In the &lt;/b&gt;implicit multiplication first&lt;/b&gt; parse mode, implicit multiplication is parsed before explicit multiplication, i.e. 12/2(1+2) = 12/(2*3) = 2. &lt;/p&gt;
+&lt;p&gt;In the &lt;/b&gt;conventional&lt;/b&gt; parse mode implicit multiplication does not differ from explicit multiplication, i.e. 12/2(1+2) = 12/2*3 = 18.&lt;/p&gt;
+&lt;p&gt;The &lt;/b&gt;adaptive&lt;/b&gt; parse mode works as the implicit multiplication first mode, unless spaces are found. I.e. 1/5x = 1/(5*x), but 1/5 x = (1/5)*x. In the adaptive mode unit expressions are parsed separately 5 m/5 m/s = (5*m)/(5*(m/s)) = 1 s.&lt;/p&gt;</string>
+       </property>
        <item>
         <property name="text">
          <string>Adaptive</string>
@@ -109,7 +114,43 @@
        </item>
       </widget>
      </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="precisionLabel">
+       <property name="text">
+        <string>Precision:</string>
+       </property>
+       <property name="buddy">
+        <cstring>precisionSpinBox</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QSpinBox" name="precisionSpinBox">
+       <property name="toolTip">
+        <string>Precision for approximate calculations.</string>
+       </property>
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>128</number>
+       </property>
+      </widget>
+     </item>
     </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>

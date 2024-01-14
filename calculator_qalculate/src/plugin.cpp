@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Manuel Schneider
+// Copyright (c) 2023-2024 Manuel Schneider
 
 #include "albert/albert.h"
 #include "albert/extension/queryhandler/standarditem.h"
@@ -19,9 +19,9 @@ const char* CFG_PARSINGMODE = "parsing_mode";
 const uint  DEF_PARSINGMODE = (int)PARSING_MODE_CONVENTIONAL;
 const char* CFG_PRECISION = "precision";
 const uint  DEF_PRECISION = 16;
-const QStringList icon_urls = {"xdg:calc", ":qalculate"};
-std::mutex qalculate_mutex;
 }
+
+const QStringList Plugin::icon_urls = {"xdg:calc", ":qalculate"};
 
 Plugin::Plugin()
 {
@@ -56,6 +56,15 @@ Plugin::Plugin()
     //po.abbreviate_names = true;
 }
 
+QString Plugin::defaultTrigger() const
+{ return "="; }
+
+QString Plugin::synopsis() const
+{
+    static const auto tr_me = tr("<math expression>");
+    return tr_me;
+}
+
 QWidget *Plugin::buildConfigWidget()
 {
     auto *widget = new QWidget;
@@ -68,7 +77,7 @@ QWidget *Plugin::buildConfigWidget()
             static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, [this](int index){
         settings()->setValue(CFG_ANGLEUNIT, index);
-        std::lock_guard locker(qalculate_mutex);
+        lock_guard locker(qalculate_mutex);
         eo.parse_options.angle_unit = static_cast<AngleUnit>(index);
     });
 
@@ -78,7 +87,7 @@ QWidget *Plugin::buildConfigWidget()
             static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, [this](int index){
         settings()->setValue(CFG_PARSINGMODE, index);
-        std::lock_guard locker(qalculate_mutex);
+        lock_guard locker(qalculate_mutex);
         eo.parse_options.parsing_mode = static_cast<ParsingMode>(index);
     });
 
@@ -88,11 +97,32 @@ QWidget *Plugin::buildConfigWidget()
             static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             this, [this](int value){
         settings()->setValue(CFG_PRECISION, value);
-        std::lock_guard locker(qalculate_mutex);
+        lock_guard locker(qalculate_mutex);
         qalc->setPrecision(value);
     });
 
     return widget;
+}
+
+shared_ptr<Item> Plugin::buildItem(const QString &query, const MathStructure &mstruct) const
+{
+    static const auto tr_tr = tr("Copy result to clipboard");
+    static const auto tr_te = tr("Copy equation to clipboard");
+    static const auto tr_e = tr("Result of %1");
+    static const auto tr_a = tr("Approximate result of %1");
+    auto result = QString::fromStdString(mstruct.print(po));
+
+    return StandardItem::make(
+        "qalc-res",
+        result,
+        mstruct.isApproximate() ? tr_a.arg(query) : tr_e.arg(query),
+        QString("%1%2").arg(trigger(), result),
+        icon_urls,
+        {
+            {"cpr", tr_tr, [=](){ setClipboardText(result); }},
+            {"cpe", tr_te, [=](){ setClipboardText(QString("%1 = %2").arg(query, result)); }}
+        }
+    );
 }
 
 vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
@@ -103,7 +133,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
     if (trimmed.isEmpty())
         return results;
 
-    std::lock_guard locker(qalculate_mutex);
+    lock_guard locker(qalculate_mutex);
 
     auto expression = qalc->unlocalizeExpression(query->string().toStdString(), eo.parse_options);
 
@@ -125,27 +155,9 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
     }
 
     mstruct.format(po);
-    auto result = QString::fromStdString(mstruct.print(po));
 
-    results.emplace_back(
-        StandardItem::make(
-            "qalc-res",
-            result,
-            QString("%1esult of %2").arg(mstruct.isApproximate()?"Approximate r":"R", trimmed),
-            result,   // TODO if handler finally knows its trigger change this to fire a triggered query
-            icon_urls,
-            {
-                {
-                    "cpr", "Copy result to clipboard",
-                    [=](){ setClipboardText(result); }
-                }, {
-                    "cpe", "Copy equation to clipboard",
-                    [=](){ setClipboardText(QString("%1 = %2").arg(trimmed, result)); }
-                }
-            }
-        ),
-        1.0f
-    );
+    results.emplace_back(buildItem(trimmed, mstruct), 1.0f);
+
     return results;
 }
 
@@ -155,7 +167,7 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
     if (trimmed.isEmpty())
         return;
 
-    std::lock_guard locker(qalculate_mutex);
+    lock_guard locker(qalculate_mutex);
 
     auto eo_ = eo;
     eo_.parse_options.functions_enabled = true;
@@ -179,36 +191,23 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
     for (auto msg = qalc->message(); msg; msg = qalc->nextMessage())
         errors << QString::fromUtf8(qalc->message()->c_message());
 
-    if (errors.empty()){
+    if (errors.empty())
+    {
         mstruct.format(po);
-        auto result = QString::fromStdString(mstruct.print(po));
-        query->add(
-            StandardItem::make(
-                "qalc-res",
-                result,
-                QString("%1esult of %2").arg(mstruct.isApproximate()?"Approximate r":"R", trimmed),
-                QString("%1%2").arg(query->trigger(), result),
-                icon_urls,
-                {
-                    {
-                        "cpr", "Copy result to clipboard",
-                        [=](){ setClipboardText(result); }
-                    }, {
-                        "cpe", "Copy equation to clipboard",
-                        [=](){ setClipboardText(QString("%1 = %2").arg(trimmed, result)); }
-                    }
-                }
-            )
-        );
+        query->add(buildItem(trimmed, mstruct));
     }
     else
+    {
+        static const auto tr_e = tr("Evaluation error.");
+        static const auto tr_d = tr("Visit documentation");
         query->add(
             StandardItem::make(
                 "qalc-err",
-                "Evaluation error.",
+                tr_e,
                 errors.join(" "),
                 icon_urls,
-                {{"manual", "Visit documentation", [=](){ openUrl(URL_MANUAL); }}}
+                {{"manual", tr_d, [=](){ openUrl(URL_MANUAL); }}}
             )
         );
+    }
 }

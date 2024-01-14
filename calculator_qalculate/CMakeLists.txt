@@ -1,18 +1,22 @@
-project(calculator_qalculate VERSION 1.4)
-albert_plugin(
-    NAME Calculator
-    DESCRIPTION "Evaluate math expressions using Qalculate"
-    LONG_DESCRIPTION "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
-    LICENSE BSD-2
-    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-    MAINTAINERS @manuelschneid3r
-    QT_DEPENDENCIES Widgets
-    LIB_DEPENDENCIES libqalculate
-    CREDITS "qalculate GPL-2"
-)
+project(calculator_qalculate VERSION 5.0)
+
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 find_package(PkgConfig)
 pkg_check_modules(LIBQALCULATE REQUIRED libqalculate)
-target_include_directories(${PROJECT_NAME} PRIVATE ${LIBQALCULATE_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBQALCULATE_LIBRARIES})
+
+albert_plugin(
+    SOURCE_FILES
+        ${PROJECT_NAME}.qrc
+        src/configwidget.ui
+        src/plugin.cpp
+        src/plugin.h
+    PRIVATE_INCLUDE_DIRECTORIES
+        ${LIBQALCULATE_INCLUDE_DIRS}
+    PRIVATE_LINK_LIBRARIES
+        ${LIBQALCULATE_LIBRARIES}
+    TS_FILES
+        i18n/${PROJECT_NAME}_de.ts
+)
+
 target_link_directories(${PROJECT_NAME} PRIVATE ${LIBQALCULATE_LIBRARY_DIRS})
