@@ -20,13 +20,9 @@
      <item>
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;
-&lt;head&gt;
-&lt;/head&gt;
-&lt;body&gt;
-&lt;p&gt;Applications are looked up in the &amp;quot;&lt;span style=&quot; font-style:italic;&quot;&gt;applications/&amp;quot;&lt;/span&gt; directories in the $XDG_DATA_HOME and $XDG_DATA_DIRS, which are set in the environment variables. Your current environment configuration results in the following applications directories: &lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;__XDG_DATA_DIRS__&lt;/span&gt;. &lt;/p&gt;
-&lt;p&gt;Every application is represented by a desktop file which has an ID. The desktop file ID is built using the path of the desktop file relative to the applications directory and turning '/' into '-'. If multiple files have the same desktop file ID, the first one in the precedence order given above is used. For more details check the &lt;a href=&quot;https://specifications.freedesktop.org/desktop-entry-spec/latest/&quot;&gt;desktop entry specification&lt;/a&gt;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>Run desktop applications as described in the [freedesktop.org Desktop Entry Specification](https://specifications.freedesktop.org/desktop-entry-spec/latest/).
+
+Your current environment configuration results in the following applications directories: *__XDG_DATA_DIRS__*.</string>
        </property>
        <property name="wordWrap">
         <bool>true</bool>
@@ -45,35 +41,35 @@
        <item>
         <widget class="QCheckBox" name="checkBox_ignoreShowInKeys">
          <property name="text">
-          <string>Ignore OnlyShowIn/NotShowIn keys</string>
+          <string>Ignore 'OnlyShowIn'/'NotShowIn'</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QCheckBox" name="checkBox_useExec">
          <property name="text">
-          <string>Use 'Exec' value for lookup</string>
+          <string>Use 'Exec' for lookup</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QCheckBox" name="checkBox_useKeywords">
          <property name="text">
-          <string>Use keywords for lookup</string>
+          <string>Use 'Keywords' for lookup</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QCheckBox" name="checkBox_useGenericName">
          <property name="text">
-          <string>Use generic name for lookup</string>
+          <string>Use 'GenericName' for lookup</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QCheckBox" name="checkBox_useNonLocalizedName">
          <property name="text">
-          <string>Use non-localized name for lookup</string>
+          <string>Use non-localized 'Name' for lookup</string>
          </property>
         </widget>
        </item>

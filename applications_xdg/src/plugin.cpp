@@ -318,16 +318,17 @@ std::pair<shared_ptr<StandardItem>, QStringList> Plugin::parseDesktopEntry(const
 
         vector<Action> actionList;
 
+        std::function<void()> fun;
         if (term)
-            actionList.emplace_back("run", "Run", [=](){ albert::runTerminal(exec, working_dir, true); });
+            fun = [=]() -> void { albert::runTerminal(exec, working_dir, true); };
         else
-            actionList.emplace_back("run", "Run", [=](){
-                albert::runDetachedProcess(QStringList() << "sh" << "-c" << exec, working_dir);
-            });
+            fun = [=]() -> void { albert::runDetachedProcess(QStringList() << "sh" << "-c" << exec, working_dir); };
+        actionList.emplace_back("launch", tr("Launch app"), fun );
 
-        for (const QString &action_identifier : actions){
-
-            try {
+        for (const QString &action_identifier : actions)
+        {
+            try
+            {
                 auto action_section = desktopEntry.at(QString("Desktop Action %1").arg(action_identifier));
 
                 // Name - localestring, REQUIRED
@@ -353,16 +354,15 @@ std::pair<shared_ptr<StandardItem>, QStringList> Plugin::parseDesktopEntry(const
                     throw runtime_error("Desktop action does not contain 'Exec' key.");
                 }
 
+                std::function<void()> action_fun;
                 if (term)
-                    actionList.emplace_back(action_name, action_name, [=](){
-                        albert::runTerminal(action_exec, working_dir, true);
-                    });
+                    action_fun = [=](){ albert::runTerminal(action_exec, working_dir, true); };
                 else
-                    actionList.emplace_back(action_name, action_name, [=](){
-                        albert::runDetachedProcess(QStringList() << "sh" << "-c" << action_exec, working_dir);
-                    });
-
-            } catch (const out_of_range &) {
+                    action_fun =  [=](){ albert::runDetachedProcess(QStringList() << "sh" << "-c" << action_exec, working_dir); };
+                actionList.emplace_back(action_name, action_name, action_fun);
+            }
+            catch (const out_of_range &)
+            {
                 WARN << "Desktop action" << action_identifier << "missing:" << path;
             }
         }
@@ -406,10 +406,7 @@ std::pair<shared_ptr<StandardItem>, QStringList> Plugin::parseDesktopEntry(const
         else
             subtext = comment;
 
-        QStringList icon_urls = {"xdg:" + icon,
-                                 QStringLiteral("xdg:application-x-executable"),
-                                 QStringLiteral("xdg:exec"),
-                                 QStringLiteral(":application-x-executable")};
+        QStringList icon_urls = {"xdg:" + icon, QStringLiteral(":unkown")};
 
         return {StandardItem::make(id, name, subtext, name, icon_urls, actionList), index_strings};
 
@@ -422,13 +419,13 @@ vector<IndexItem> Plugin::indexApps(const bool &abort) const
 {
     // Get a map of unique desktop entries according to the spec
     map<QString /*desktop file id*/, QString /*path*/> desktopFiles;
-    for (const QString &dir : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation)) {
-
+    for (const QString &dir : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation))
+    {
         QDirIterator fIt(dir, QStringList("*.desktop"), QDir::Files,
                          QDirIterator::Subdirectories|QDirIterator::FollowSymlinks);
 
-        while (!fIt.next().isEmpty()) {
-
+        while (!fIt.next().isEmpty())
+        {
             // To determine the ID of a desktop file, make its full path relative to
             // the $XDG_DATA_DIRS component in which the desktop file is installed,
             // remove the "applications/" prefix, and turn '/' into '-'.
@@ -442,7 +439,8 @@ vector<IndexItem> Plugin::indexApps(const bool &abort) const
 
     // Index the unique desktop files
     vector<IndexItem> results;
-    for (const auto &[id, path] : desktopFiles) {
+    for (const auto &[id, path] : desktopFiles)
+    {
         if (abort)
             return results;
 
@@ -458,7 +456,8 @@ vector<IndexItem> Plugin::indexApps(const bool &abort) const
     return results;
 }
 
-QString Plugin::defaultTrigger() const { return QStringLiteral("apps "); }
+QString Plugin::defaultTrigger() const
+{ return QStringLiteral("apps "); }
 
 void Plugin::updateIndexItems()
 {
