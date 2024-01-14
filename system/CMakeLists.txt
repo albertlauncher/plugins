@@ -1,9 +1,10 @@
-project(system VERSION 1.8)
+project(system VERSION 9.0)
+
 albert_plugin(
-    NAME System
-    DESCRIPTION "Control your machine state"
-    LICENSE BSD-2-Clause
-    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-    MAINTAINERS @manuelschneid3r
-    QT_DEPENDENCIES Widgets
+    SOURCE_FILES
+        ${PROJECT_NAME}.qrc
+        src/plugin.cpp
+        src/plugin.h
+    TS_FILES
+        i18n/${PROJECT_NAME}_de.ts
 )

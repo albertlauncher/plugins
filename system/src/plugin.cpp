@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2023 Manuel Schneider
+// Copyright (c) 2017-2024 Manuel Schneider
 
 #include "albert/albert.h"
 #include "albert/extension/queryhandler/standarditem.h"
@@ -47,24 +47,6 @@ static const constexpr char *config_keys_command[] = {
     "command_hibernate",
     "command_reboot",
     "command_poweroff"
-};
-
-static const constexpr char *default_title[] = {
-    "Lock",
-    "Logout",
-    "Suspend",
-    "Hibernate",
-    "Reboot",
-    "Poweroff"
-};
-
-static const constexpr char *descriptions[] = {
-    "Lock the session",
-    "Quit the session",
-    "Suspend to memory",
-    "Suspend to disk",
-    "Restart the machine",
-    "Shut down the machine"
 };
 
 static const QStringList icon_urls[] = {
@@ -162,6 +144,27 @@ static QString defaultCommand(SupportedCommands command)
     return {};
 }
 
+Plugin::Plugin()
+{
+    default_title = {
+        tr("Lock"),
+        tr("Logout"),
+        tr("Suspend"),
+        tr("Hibernate"),
+        tr("Reboot"),
+        tr("Poweroff")
+    };
+
+    descriptions = {
+        tr("Lock the session"),
+        tr("Quit the session"),
+        tr("Suspend to memory"),
+        tr("Suspend to disk"),
+        tr("Restart the machine"),
+        tr("Shut down the machine")
+    };
+}
+
 QWidget* Plugin::buildConfigWidget()
 {
     auto s = settings();
@@ -169,11 +172,9 @@ QWidget* Plugin::buildConfigWidget()
     auto *l = new QGridLayout(w);
     w->setLayout(l);
 
-
-
-    auto *infoLabel = new QLabel("Disabling restores default values. If your are "
-                                 "missing sensible default values for your system "
-                                 "leave a note on the GitHub issue tracker.");
+    auto *infoLabel = new QLabel(
+        tr("If you are missing sensible default values for your system, "
+           "please leave a note on the GitHub issue tracker."));
     infoLabel->setWordWrap(true);
     int row = 0;
     l->addWidget(infoLabel, row++, 0, 1, 3);
