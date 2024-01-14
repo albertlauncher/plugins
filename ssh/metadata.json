@@ -1,0 +1,8 @@
+{
+    "description": "Run secure shell sessions",
+    "exec_dependencies": "ssh",
+    "license": "ALL",
+    "maintainers": "@manuelschneid3r",
+    "name": "SecureShell",
+    "url": "https://github.com/albertlauncher/plugins/tree/master/ssh",
+}
