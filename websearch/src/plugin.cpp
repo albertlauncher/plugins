@@ -65,8 +65,8 @@ static vector<SearchEngine> deserializeEngines(const QByteArray &json)
 
 Plugin::Plugin()
 {
-    if (QFile file(configDir()->filePath(ENGINES_FILE_NAME));
-        file.open(QIODevice::ReadOnly))
+    QFile file(configDir().filePath(ENGINES_FILE_NAME));
+    if (file.open(QIODevice::ReadOnly))
         setEngines(deserializeEngines(file.readAll()));
     else
         restoreDefaultEngines();
@@ -81,7 +81,7 @@ void Plugin::setEngines(vector<SearchEngine> engines)
 
     searchEngines_ = ::move(engines);
 
-    if (QFile file(configDir()->filePath(ENGINES_FILE_NAME));
+    if (QFile file(configDir().filePath(ENGINES_FILE_NAME));
         file.open(QIODevice::WriteOnly))
         file.write(serializeEngines(searchEngines_));
     else

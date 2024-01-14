@@ -24,6 +24,13 @@
     <number>0</number>
    </property>
    <item>
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Define websearches to use in global, trigger and fallback queries.</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QTableView" name="tableView_searches">
      <property name="verticalScrollBarPolicy">
       <enum>Qt::ScrollBarAsNeeded</enum>

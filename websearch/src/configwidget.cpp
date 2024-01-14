@@ -153,9 +153,11 @@ static void handleAcceptedEditor(const SearchEngineEditor &editor, SearchEngine 
 
         auto image = editor.icon_image->scaled(256, 256, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-        auto dst = plugin.dataDir()->filePath(QString("%1.png").arg(engine.id));
+        auto dst = plugin.dataDir().filePath(QString("%1.png").arg(engine.id));
         if (!image.save(dst)){
-            GWARN(QString("Could not save image to '%1'.").arg(dst));
+            auto msg = ConfigWidget::tr("Could not save image to '%1'.").arg(dst);
+            WARN << msg;
+            QMessageBox::warning(nullptr, qApp->applicationDisplayName(), msg);
             return;
         }
 

@@ -15,8 +15,8 @@ struct SearchEngine
     QString url;
 };
 
-class Plugin final : public albert::plugin::ExtensionPlugin<albert::GlobalQueryHandler>,
-                     public albert::FallbackHandler
+class Plugin : public albert::plugin::ExtensionPlugin<albert::GlobalQueryHandler, albert::FallbackHandler>
+
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
