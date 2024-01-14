@@ -4,6 +4,6 @@
 
 <RCC>
     <qresource prefix="/">
-        <file alias="snippet">snippet.svg</file>
+        <file alias="snippet">resources/snippet.svg</file>
     </qresource>
 </RCC>

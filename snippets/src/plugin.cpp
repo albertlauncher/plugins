@@ -16,15 +16,35 @@ using namespace std;
 
 struct SnippetItem : Item
 {
-    SnippetItem(const QFileInfo& fi, Plugin *p) : file_base_name_(fi.completeBaseName()), plugin_(p) {}
-    QString id() const override { return file_base_name_; }
-    QString text() const override { return file_base_name_; }
-    QString subtext() const override { return QString("Text snippet '%1'").arg(file_base_name_); }
-    QStringList iconUrls() const override { return {":snippet"}; }
-    vector<Action> actions() const override {
+    SnippetItem(const QFileInfo& fi, Plugin *p)
+        : file_base_name_(fi.completeBaseName()), plugin_(p)
+    {}
+
+    QString id() const override
+    { return file_base_name_; }
+
+    QString text() const override
+    { return file_base_name_; }
+
+    QString subtext() const override
+    {
+        static const auto tr = QCoreApplication::translate("SnippetItem", "Text snippet");
+        return tr;
+    }
+
+    QStringList iconUrls() const override
+    { return {":snippet"}; }
+
+    vector<Action> actions() const override
+    {
+        static const auto tr_cp = QCoreApplication::translate("SnippetItem", "Copy and paste");
+        static const auto tr_c = QCoreApplication::translate("SnippetItem", "Copy");
+        static const auto tr_e = QCoreApplication::translate("SnippetItem", "Edit");
+        static const auto tr_r = QCoreApplication::translate("SnippetItem", "Remove");
+
         return {
             {
-                "copy", "Copy and paste snippet",
+                "cp", tr_cp,
                 [this](){
                     QFile f(QDir(plugin_->snippets_path).filePath(file_base_name_+".txt"));
                     f.open(QIODevice::ReadOnly);
@@ -32,7 +52,7 @@ struct SnippetItem : Item
                 }
             },
             {
-                "copy", "Copy snippet",
+                "c", tr_c,
                 [this](){
                     QFile f(QDir(plugin_->snippets_path).filePath(file_base_name_+".txt"));
                     f.open(QIODevice::ReadOnly);
@@ -40,11 +60,11 @@ struct SnippetItem : Item
                 }
             },
             {
-                "open", "Open snippet file",
+                "o", tr_e,
                 [this]() { openUrl(QUrl::fromLocalFile(QDir(plugin_->snippets_path).filePath(file_base_name_+".txt"))); }
             },
             {
-                "remove", "Remove snippet file",
+                "r", tr_r,
                 [this]() { plugin_->removeSnippet(file_base_name_+".txt"); }
             }
         };
@@ -55,7 +75,7 @@ struct SnippetItem : Item
 };
 
 
-Plugin::Plugin(): snippets_path(configDir()->path())
+Plugin::Plugin(): snippets_path(configDir().path())
 {
     // Todo remove in future
     QDir snippets_dir(snippets_path);
@@ -68,7 +88,7 @@ Plugin::Plugin(): snippets_path(configDir()->path())
 
     indexer.parallel = [this](const bool &abort){
         vector<IndexItem> r;
-        for (const auto &f : configDir()->entryInfoList({"*.txt"}, QDir::Files)){
+        for (const auto &f : configDir().entryInfoList({"*.txt"}, QDir::Files)){
             if (abort) return r;
             r.emplace_back(make_shared<SnippetItem>(f, this), f.fileName());
         }
@@ -79,23 +99,29 @@ Plugin::Plugin(): snippets_path(configDir()->path())
     };
 }
 
-QString Plugin::defaultTrigger() const { return "snip "; }
+QString Plugin::defaultTrigger() const
+{ return "snip "; }
 
-QString Plugin::synopsis() const { return "<filter>|[add]"; }
+QString Plugin::synopsis() const
+{
+    static const auto tr_s = tr("<filter>|+");
+    return tr_s;
+}
 
-void Plugin::updateIndexItems() { indexer.run(); }
+void Plugin::updateIndexItems()
+{ indexer.run(); }
 
 void Plugin::handleTriggerQuery(TriggerQuery *query) const
 {
-    if (query->string() == "add")
+    if (query->string() == QStringLiteral("+"))
         query->add(
             StandardItem::make(
-                "snip-add",
-                "Add new snippet",
-                "Create snippet file and open it in default editor.",
+                "+",
+                tr("Create new snippet"),
+                tr("Create snippet file and open it in default editor."),
                 {":snippet"},
                 {
-                    {"add", "Add snippet", [this](){ newSnippet(nullptr); }}
+                    {"add", tr("Create"), [this](){ addSnippet(); }}
                 }
             )
         );
@@ -103,18 +129,48 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
         IndexQueryHandler::handleTriggerQuery(query);
 }
 
-void Plugin::newSnippet(QWidget *parent) const
+void Plugin::addSnippet(const QString &text, QWidget *parent) const
 {
-    QString text = QInputDialog::getText(parent, qApp->applicationName(),
-                                         "Enter the snippet name");
-    if (!text.isNull()){
-        if (!text.isEmpty()){
-            QFile file(QDir(snippets_path).filePath(text) + ".txt");
-            file.open(QIODevice::WriteOnly);
-            openUrl(QUrl::fromLocalFile(file.fileName()));
-        } else
-            QMessageBox::information(parent, qApp->applicationName(),
-                                     "The snippet name must not be empty.");
+    QString name;
+    while (true)
+    {
+        bool ok;
+        name = QInputDialog::getText(parent, qApp->applicationDisplayName(),
+                                     tr("Snippet name:"),
+                                     QLineEdit::Normal, {}, &ok);
+
+        if (!ok)
+            break;
+
+        if (name.isEmpty())
+        {
+            QMessageBox::warning(parent, qApp->applicationDisplayName(),
+                                 tr("The snippet name must not be empty."));
+            continue;
+        }
+
+        QFile file(QDir(snippets_path).filePath(name) + ".txt");
+        if (file.exists())
+        {
+            QMessageBox::warning(parent, qApp->applicationDisplayName(),
+                                 tr("There is already a snippet called '%1'.").arg(name));
+            continue;
+        }
+
+        if(file.open(QIODevice::WriteOnly))
+        {
+            if (text.isEmpty())
+                openUrl(QUrl::fromLocalFile(file.fileName()));
+            else
+                QTextStream(&file) << text;
+            file.close();
+        }
+        else
+            QMessageBox::critical(parent, qApp->applicationDisplayName(),
+                                  tr("Failed creating the snippet file '%1'.")
+                                      .arg(file.fileName()));
+
+        break;
     }
 }
 
@@ -124,10 +180,10 @@ void Plugin::removeSnippet(const QString &file_name) const
     if (!QFile::exists(path))
         WARN << "Path to remove does not exist:" << path;
     else if (QMessageBox::question(nullptr, qApp->applicationName(),
-                                   QString("Move snippet '%1' to trash?").arg(file_name)) == QMessageBox::Yes)
+                                   tr("Move snippet '%1' to trash?").arg(file_name)) == QMessageBox::Yes)
         if (!QFile::moveToTrash(path))
             QMessageBox::warning(nullptr, qApp->applicationName(),
-                                 "Failed to move snippet file to trash.");
+                                 tr("Failed to move snippet file to trash."));
 }
 
 class RedIfNotTxtFileSystemModel : public QFileSystemModel
@@ -164,7 +220,7 @@ QWidget *Plugin::buildConfigWidget()
             [this](){ openUrl(QUrl::fromLocalFile(snippets_path)); });
 
     connect(ui.pushButton_add, &QPushButton::clicked,
-             this, [this, w=w](){ newSnippet(w); });
+            this, [this, w=w](){ addSnippet({}, w); });
 
     connect(ui.pushButton_remove, &QPushButton::clicked, this,
             [this, model, lw=ui.listView](){

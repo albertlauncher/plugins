@@ -1,21 +1,23 @@
-// Copyright (c) 2023 Manuel Schneider
+// Copyright (c) 2023-2024 Manuel Schneider
 
 #pragma once
 #include "albert/extension/queryhandler/indexqueryhandler.h"
 #include "albert/plugin.h"
 #include "albert/util/backgroundexecutor.h"
+#include "snippets.h"
 #include <QFileSystemWatcher>
 #include <QObject>
-#include <memory>
 class QWidget;
 
-class Plugin : public albert::plugin::ExtensionPlugin<albert::IndexQueryHandler>
+class Plugin : public albert::plugin::ExtensionPlugin,
+               public albert::IndexQueryHandler,
+               public Snippets
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
     Plugin();
 
-    void newSnippet(QWidget *parent) const;
+    void addSnippet(const QString &text = {}, QWidget *modal_parent = nullptr) const override;
     void removeSnippet(const QString &file_name) const;
 
     const QString snippets_path;
