@@ -1,13 +1,15 @@
-// Copyright (c) 2023 Manuel Schneider
+// Copyright (c) 2017-2024 Manuel Schneider
 
 #include "albert/albert.h"
 #include "albert/extension/queryhandler/standarditem.h"
 #include "albert/logging.h"
 #include "plugin.h"
+#include "ui_configwidget.h"
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
 #include <QDBusInterface>
 #include <QDBusServiceWatcher>
+#include <QWidget>
 #include <QXmlStreamReader>
 ALBERT_LOGGING_CATEGORY("mpris")
 using namespace albert;
@@ -104,10 +106,11 @@ public:
 
     shared_ptr<Item> buildControlItem(const QString &command, const QStringList &icon_urls)
     {
+        static const auto tr = QCoreApplication::translate("Player", "%1 media player control");
         return StandardItem::make(
             identity + command,
             command,
-            QStringLiteral("%1 media player control").arg(identity),
+            tr.arg(identity),
             icon_urls,
             {{ command, command, [this, command]() { control.call<void>(command); } }}
         );
@@ -126,25 +129,26 @@ public:
 
         if (playing)
         {
-            if (static const QString cmd("Stop"); cmd.startsWith(query, Qt::CaseInsensitive))
+            if (static const auto cmd = QCoreApplication::translate("Player", "Stop");
+                cmd.startsWith(query, Qt::CaseInsensitive))
                 items.push_back(buildControlItem(cmd, {"xdg:media-playback-stop", "qsp:SP_MediaStop"}));
 
 
-            if (static const QString cmd("Pause"); cmd.startsWith(query, Qt::CaseInsensitive)
-                                                   && control.getProperty<bool>("CanPause"))
+            if (static const auto cmd = QCoreApplication::translate("Player", "Pause");
+                cmd.startsWith(query, Qt::CaseInsensitive) && control.getProperty<bool>("CanPause"))
                 items.push_back(buildControlItem(cmd, {"xdg:media-playback-pause", "qsp:SP_MediaPause"}));
         }
 
-        else if (static const QString cmd("Play"); cmd.startsWith(query, Qt::CaseInsensitive)
-                                                   && control.getProperty<bool>("CanPlay"))
+        else if (static const auto cmd = QCoreApplication::translate("Player", "Play");
+                 cmd.startsWith(query, Qt::CaseInsensitive) && control.getProperty<bool>("CanPlay"))
                 items.push_back(buildControlItem(cmd, {"xdg:media-playback-start", "qsp:SP_MediaPlay"}));
 
-        if (static const QString cmd("Next"); cmd.startsWith(query, Qt::CaseInsensitive)
-                                              && control.getProperty<bool>("CanGoNext"))
+        if (static const auto cmd = QCoreApplication::translate("Player", "Next");
+            cmd.startsWith(query, Qt::CaseInsensitive) && control.getProperty<bool>("CanGoNext"))
             items.push_back(buildControlItem(cmd, {"xdg:media-skip-forward", "qsp:SP_MediaSkipForward"}));
 
-        if (static const QString cmd("Previous"); cmd.startsWith(query, Qt::CaseInsensitive)
-                                                  && control.getProperty<bool>("CanGoPrevious"))
+        if (static const auto cmd = QCoreApplication::translate("Player", "Previous");
+            cmd.startsWith(query, Qt::CaseInsensitive) && control.getProperty<bool>("CanGoPrevious"))
             items.push_back(buildControlItem(cmd, {"xdg:media-skip-backward", "qsp:SP_MediaSkipBackward"}));
 
 
@@ -235,4 +239,13 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
             WARN << e.what();
         }
     return results;
+}
+
+
+QWidget *Plugin::buildConfigWidget()
+{
+    auto *w = new QWidget();
+    Ui::ConfigWidget ui;
+    ui.setupUi(w);
+    return w;
 }

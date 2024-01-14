@@ -1,10 +1,11 @@
-// Copyright (c) 2023 Manuel Schneider
+// Copyright (c) 2017-2024 Manuel Schneider
 
 #pragma once
 #include "albert/extension/queryhandler/globalqueryhandler.h"
 #include "albert/plugin.h"
 
-class Plugin : public albert::plugin::ExtensionPlugin<albert::GlobalQueryHandler>
+class Plugin : public albert::plugin::ExtensionPlugin,
+               public albert::GlobalQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
@@ -12,6 +13,7 @@ public:
     ~Plugin();
 
     std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery *) const override;
+    QWidget *buildConfigWidget() override;
 
 private:
     struct Private;
