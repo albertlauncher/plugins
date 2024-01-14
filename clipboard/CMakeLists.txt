@@ -1,10 +1,10 @@
-project(clipboard VERSION 1.2)
+project(clipboard VERSION 3.0)
+
 albert_plugin(
-    NAME Clipboard
-    DESCRIPTION "Browsable clipboard history"
-    LICENSE BSD-2
-    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-    QT_DEPENDENCIES Widgets
+    SOURCE_FILES
+        ${PROJECT_NAME}.qrc
+        src/plugin.cpp
+        src/plugin.h
 )
 
 

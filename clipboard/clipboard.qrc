@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file alias="clipboard">clipboard.svg</file>
+        <file alias="clipboard">resources/clipboard.svg</file>
     </qresource>
 </RCC>

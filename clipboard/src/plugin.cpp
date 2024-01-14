@@ -137,7 +137,7 @@ QWidget *Plugin::buildConfigWidget()
 
 void Plugin::writeHistory() const
 {
-    QFile file(dataDir()->filePath(HISTORY_FILE_NAME));
+    QFile file(dataDir().filePath(HISTORY_FILE_NAME));
 
     DEBG << "Wrinting clipboard history to" << file.fileName();
 
@@ -162,7 +162,7 @@ void Plugin::writeHistory() const
 
 void Plugin::readHistory()
 {
-    QFile file(dataDir()->filePath(HISTORY_FILE_NAME));
+    QFile file(dataDir().filePath(HISTORY_FILE_NAME));
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)){
         WARN << "Failed reading from clipboard history.";
         QMessageBox::warning(nullptr, qApp->applicationName(),
