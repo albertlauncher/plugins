@@ -1,9 +1,0 @@
-<!--
-  ~ Copyright (c) 2022 Manuel Schneider
-  -->
-
-<RCC>
-    <qresource prefix="/">
-        <file alias="debug">debug.png</file>
-    </qresource>
-</RCC>

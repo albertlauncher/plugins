@@ -34,7 +34,7 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
             QString("Item #%1").arg(i),
             QString("Wow, Item #%1").arg(i),
             QString("%1Item #%2").arg(query->trigger()).arg(i),
-            {":debug"},
+            {"qsp:SP_MessageBoxWarning"},
             {
                     {"Debug","Open website", [](){ albert::openWebsite(); }},
                     {"Debug","Open settings", [](){ albert::showSettings(); }}
