@@ -4,6 +4,6 @@
 
 <RCC>
     <qresource prefix="/">
-        <file alias="hash">hash.svg</file>
+        <file alias="hash">resources/hash.svg</file>
     </qresource>
 </RCC>
