@@ -406,10 +406,7 @@ std::pair<shared_ptr<StandardItem>, QStringList> Plugin::parseDesktopEntry(const
         else
             subtext = comment;
 
-        QStringList icon_urls = {"xdg:" + icon,
-                                 QStringLiteral("xdg:application-x-executable"),
-                                 QStringLiteral("xdg:exec"),
-                                 QStringLiteral(":application-x-executable")};
+        QStringList icon_urls = {"xdg:" + icon, QStringLiteral(":unkown")};
 
         return {StandardItem::make(id, name, subtext, name, icon_urls, actionList), index_strings};
 
