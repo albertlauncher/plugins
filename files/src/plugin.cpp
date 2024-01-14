@@ -43,7 +43,7 @@ Plugin::Plugin():
     connect(&fs_index_, &FsIndex::updatedFinished, this, [this](){ updateIndexItems(); });
 
     QJsonObject object;
-    if (QFile file(cacheDir()->filePath(INDEX_FILE_NAME)); file.open(QIODevice::ReadOnly))
+    if (QFile file(cacheDir().filePath(INDEX_FILE_NAME)); file.open(QIODevice::ReadOnly))
         object = QJsonDocument(QJsonDocument::fromJson(file.readAll())).object();
 
     auto s = settings();
@@ -98,7 +98,7 @@ Plugin::~Plugin()
     }
     s->setValue(CFG_PATHS, paths);
 
-    if (QFile file(cacheDir()->filePath(INDEX_FILE_NAME)); file.open(QIODevice::WriteOnly)) {
+    if (QFile file(cacheDir().filePath(INDEX_FILE_NAME)); file.open(QIODevice::WriteOnly)) {
         DEBG << "Storing file index to" << file.fileName();
         file.write(QJsonDocument(object).toJson(QJsonDocument::Compact));
         file.close();
