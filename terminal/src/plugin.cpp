@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2023 Manuel Schneider
+// Copyright (c) 2017-2024 Manuel Schneider
 
 #include "albert/albert.h"
 #include "albert/extension/queryhandler/standarditem.h"
@@ -6,7 +6,6 @@
 #include <QDirIterator>
 #include <QFileSystemWatcher>
 #include <QStringList>
-#include <QtConcurrent>
 #include <functional>
 ALBERT_LOGGING_CATEGORY("terminal")
 using namespace albert;
@@ -40,6 +39,28 @@ Plugin::Plugin()
     indexer.run();
 }
 
+static vector<Action> buildActions(const QString &commandline)
+{
+    static const auto tr_r = Plugin::tr("Run");
+    static const auto tr_rc = Plugin::tr("Run and close on exit");
+    static const auto tr_rb = Plugin::tr("Run in background (without terminal)");
+    return {
+        {
+            "r", tr_r,
+            [=]() { runTerminal(commandline); }
+        },
+        {
+            "rc", tr_rc,
+            [=]() { runTerminal(commandline, {}, true); }
+        },
+        {
+            "rb",
+            tr_rb,
+            [=]() { runDetachedProcess({"sh", "-c", commandline}); }
+        }
+    };
+}
+
 void Plugin::handleTriggerQuery(TriggerQuery *query) const
 {
     if (query->string().trimmed().isEmpty())
@@ -50,7 +71,9 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
     // Extract data from input string: [0] program. The rest: args
     QString potentialProgram = query->string().section(' ', 0, 0, QString::SectionSkipEmpty);
     QString remainder = query->string().section(' ', 1, -1, QString::SectionSkipEmpty);
-    static QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":terminal"};
+
+    static const auto tr_rcmd = tr("Run '%2'");
+    static const QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":terminal"};
 
     QString commonPrefix;
     if (auto it = lower_bound(index.begin(), index.end(), potentialProgram); it != index.end()){
@@ -65,19 +88,16 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
 
             auto commandline = QString("%1 %2").arg(*it, remainder);
 
-            results.emplace_back(StandardItem::make(
+            results.emplace_back(
+                StandardItem::make(
                     {},
                     commandline,
-                    QString("Run '%1'").arg(commandline),
+                    tr_rcmd.arg(commandline),
                     commonPrefix,
                     icon_urls,
-                    {{"", "Run",
-                      [=]() { runTerminal(commandline); }},
-                     {"", "Run and close on exit",
-                      [=]() { runTerminal(commandline, {}, true); }},
-                     {"", "Run in background (without terminal)",
-                      [=]() { runDetachedProcess({"sh", "-c", commandline}); }}}
-            ));
+                    buildActions(commandline)
+                )
+            );
             ++it;
         }
 
@@ -88,18 +108,18 @@ void Plugin::handleTriggerQuery(TriggerQuery *query) const
     }
 
     // Build generic item
-    results.emplace_back(StandardItem::make(
+
+    static const auto tr_title = tr("I'm Feeling Lucky");
+    static const auto tr_description = tr("Try running '%1'");
+    results.emplace_back(
+        StandardItem::make(
             {},
-            "I'm Feeling Lucky",
-            QString("Try running '%1'").arg(query->string()),
+            tr_title,
+            tr_description.arg(query->string()),
             icon_urls,
-            {{"", "Run",
-              [cmdln=query->string()](){ runTerminal(cmdln); }},
-             {"", "Run and close on exit",
-              [cmdln=query->string()](){ runTerminal(cmdln, {}, true); }},
-             {"", "Run in background (without terminal)",
-              [cmdln=query->string()](){ runDetachedProcess({"sh", "-c", cmdln}); }}}
-    ));
+            buildActions(query->string())
+        )
+    );
 
     query->add(results);
 }

@@ -1,9 +1,12 @@
-project(terminal VERSION 1.4)
+project(terminal VERSION 5.0)
+
 albert_plugin(
-    NAME Terminal
-    DESCRIPTION "Run executables from PATH"
-    LICENSE BSD-2
-    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-    MAINTAINERS @manuelschneid3r
-    QT_DEPENDENCIES Widgets Concurrent
+    SOURCE_FILES
+        ${PROJECT_NAME}.qrc
+        src/plugin.cpp
+        src/plugin.h
+    PRIVATE_LINK_LIBRARIES
+        Qt6::Concurrent
+    TS_FILES
+        i18n/${PROJECT_NAME}_de.ts
 )
