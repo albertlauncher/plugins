@@ -54,13 +54,13 @@ void FsIndexPath::update(const bool &abort, std::function<void(const QString &)>
 
     root_->update(root_, abort, status, s, indexed_dirs, 1);
 
-    status(QString("Indexed %1 directories in %2.").arg(indexed_dirs.size()).arg(path()));
+    status(tr("Indexed %n directories in %1.", nullptr, indexed_dirs.size()).arg(path()));
 
     if (s.forced && !abort) // In case of successful forced run clear force flag
         force_update = false;
 }
 
-void FsIndexPath::items(vector<shared_ptr<AbstractFileItem>> &items) const
+void FsIndexPath::items(vector<shared_ptr<FileItem>> &items) const
 {
     items.emplace_back(self);
     root_->items(items);

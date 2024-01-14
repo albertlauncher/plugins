@@ -197,7 +197,7 @@ QString DirNode::filePath() const { return parent_->filePath().append("/").appen
 
 QString DirNode::relativeFilePath() const { return parent_->relativeFilePath().append("/").append(name_); }
 
-void DirNode::items(std::vector<std::shared_ptr<AbstractFileItem>> &result) const
+void DirNode::items(std::vector<std::shared_ptr<FileItem>> &result) const
 {
     for (const auto &item : items_)
         result.emplace_back(item);

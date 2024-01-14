@@ -7,7 +7,7 @@
 #include <functional>
 #include <memory>
 #include <vector>
-class AbstractFileItem;
+class FileItem;
 class QJsonObject;
 class RootNode;
 
@@ -24,7 +24,7 @@ public:
 
     QString path() const;
     void update(const bool &abort, std::function<void(const QString&)> status);
-    void items(std::vector<std::shared_ptr<AbstractFileItem>>&) const;
+    void items(std::vector<std::shared_ptr<FileItem>>&) const;
 
     const QStringList &nameFilters() const;
     const QStringList &mimeFilters() const;
@@ -56,7 +56,7 @@ private:
 
     QFileSystemWatcher fs_watcher_;
     std::shared_ptr<RootNode> root_;
-    std::shared_ptr<AbstractFileItem> self;
+    std::shared_ptr<FileItem> self;
 
 signals:
     void updateRequired(FsIndexPath*);

@@ -8,7 +8,7 @@
 #include <set>
 
 class IndexFileItem;
-class AbstractFileItem;
+class FileItem;
 class QMimeType;
 
 
@@ -60,8 +60,8 @@ public:
     virtual QString path() const;
     virtual QString filePath() const;
     virtual QString relativeFilePath() const; // relative to root dir. note: '/' prepended.
-
-    void items(std::vector<std::shared_ptr<AbstractFileItem>>&) const;
+    
+    void items(std::vector<std::shared_ptr<FileItem>>&) const;
     void nodes(std::vector<std::shared_ptr<DirNode>>&) const;
     std::shared_ptr<DirNode> node(const QString &relative_path) const;
 

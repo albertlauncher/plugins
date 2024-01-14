@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MIME filters</string>
+   <string>Ignore patterns</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <property name="leftMargin">
@@ -29,7 +29,7 @@
    <item>
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#808080;&quot;&gt;Ignore patterns are Perl compatible regular expressions which can be used to exclude files from indexing by file path. Note that the filepath matched is relative to the root directory. Patterns are excluding by default. Prepending an '!' makes the patthern including. Filenames are matched in the order given by filter list below.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Ignore patterns are Perl-compatible regular expressions that can be utilized to exclude files from indexing. The filepath matched is relative to the root directory. Prepending '!' makes the pattern including. Filenames are matched in the order given by the filter list below.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>

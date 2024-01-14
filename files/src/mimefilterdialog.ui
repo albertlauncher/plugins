@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>400</height>
+    <width>636</width>
+    <height>378</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,7 +29,7 @@
    <item>
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#808080;&quot;&gt;Choose the MIME types you want to be indexed by the files extension. Use the left list to find your desired MIME types. The right box contains the list of patterns that is used to filter the indexed files by matching their MIME type. The patterns support wildcard matching. &lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>MIME filters are used while indexing to filter files by their MIME type. Files whose MIME type is not matched by any of the MIME filter patterns below are not indexed. The filter patterns support wildcard characters (*). Utilize the MIME types list on the left to find supported MIME types.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -44,7 +44,7 @@
      <item>
       <widget class="QGroupBox" name="groupBox">
        <property name="title">
-        <string>MIME Types</string>
+        <string>Available MIME types</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
         <property name="leftMargin">
@@ -75,7 +75,7 @@
         <item>
          <widget class="QLineEdit" name="lineEdit">
           <property name="placeholderText">
-           <string>Filter for the mimetypes…</string>
+           <string>Filter the available MIME types</string>
           </property>
          </widget>
         </item>
@@ -85,7 +85,7 @@
      <item>
       <widget class="QGroupBox" name="groupBox_2">
        <property name="title">
-        <string>Filter patterns</string>
+        <string>MIME filter patterns</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <property name="leftMargin">

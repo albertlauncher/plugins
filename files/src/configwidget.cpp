@@ -22,7 +22,7 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
 {
     ui.setupUi(this);
 
-    ALBERT_PLUGIN_PROPERTY_CONNECT(plugin, fsBrowsersCaseSensitive, ui.checkBox_fsBrowsersCaseSensitive, setChecked, toggled)
+    ALBERT_PLUGIN_PROPERTY_CONNECT(plugin, fs_browsers_case_sensitive, ui.checkBox_fsBrowsersCaseSensitive, setChecked, toggled)
 
     auto &index_paths = plu->fsIndex().indexPaths();
     paths_model.setStringList(getPaths(index_paths));
@@ -128,13 +128,12 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
     connect(ui.checkBox_fswatch, &QCheckBox::clicked, this,
             [this](bool value){
                 if (value)
-                    QMessageBox::warning(this, "Warning",
-                                         "Enabling file system watches comes with caveats. "
-                                         "You should only activate this option if you know "
-                                         "what you are doing. A lot of file system changes "
-                                         "(compilation, installing, etc) while having "
-                                         "watches enabled can put your system under high "
-                                         "load. You have been warned.");
+                    QMessageBox::warning(
+                        this, "Warning",
+                        tr("Enabling file system watches comes with caveats. You should only "
+                           "activate this option if you know what you are doing. A lot of file "
+                           "system changes (compilation, installing, etc) while having watches "
+                           "enabled can put your system under high load."));
 
                 plugin->fsIndex().indexPaths().at(current_path)->setWatchFilesystem(value);
             });

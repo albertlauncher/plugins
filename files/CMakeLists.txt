@@ -1,14 +1,17 @@
-project(files VERSION 1.7)
-albert_plugin(
-    NAME Files
-    DESCRIPTION "Open and browse files"
-    LONG_DESCRIPTION "The files plugins provides three extensions to access files. The main extension indexes the file system as specified in the settings and provides a lookup by filename. The other two file browsing extensions are triggered by `/` and `~` and provide a way to browse through the file system using paths. This is handy to access files that are _not_ indexed. In combination with the tab completion this is a nice way to browse the file system."
-    LICENSE ALL
-    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-    MAINTAINERS @manuelschneid3r
-    QT_DEPENDENCIES Widgets Concurrent
-)
+project(files VERSION 8.0)
 
+find_package(Qt6 REQUIRED COMPONENTS Concurrent)
+
+albert_plugin(
+    SOURCE_FILES
+        src/*.cpp
+        src/*.h
+        src/*.ui
+    PRIVATE_LINK_LIBRARIES
+        Qt6::Concurrent
+    TS_FILES
+        i18n/${PROJECT_NAME}_de.ts
+)
 
 if (BUILD_TESTS)
     find_package(doctest)

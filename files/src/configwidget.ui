@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>ConfigWidget</class>
  <widget class="QWidget" name="ConfigWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>637</width>
+    <height>606</height>
+   </rect>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <property name="leftMargin">
     <number>0</number>
@@ -15,6 +23,16 @@
    <property name="bottomMargin">
     <number>0</number>
    </property>
+   <item>
+    <widget class="QLabel" name="label_6">
+     <property name="text">
+      <string>The files plugin provides three extensions to access files. The main extension indexes the file system as specified in the settings and provides a lookup by filename. The other two file browsing extensions are triggered by `/` and `~` and provide a way to browse through the file system using paths. This is handy to access files that are _not_ indexed. In combination with the tab completion this is a nice way to browse the file system.</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
    <item>
     <widget class="QListView" name="listView_paths">
      <property name="sizePolicy">
@@ -39,14 +57,14 @@
      <item>
       <widget class="QToolButton" name="toolButton_add">
        <property name="text">
-        <string>＋</string>
+        <string notr="true">＋</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QToolButton" name="toolButton_rem">
        <property name="text">
-        <string>－</string>
+        <string notr="true">－</string>
        </property>
       </widget>
      </item>
@@ -111,14 +129,14 @@
            <item row="1" column="0">
             <widget class="QLabel" name="label_symlink">
              <property name="text">
-              <string>Follow symlinks</string>
+              <string>Follow links</string>
              </property>
             </widget>
            </item>
            <item row="1" column="1">
             <widget class="QCheckBox" name="checkBox_followSymlinks">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This option should by used with care and only if necessary. It may cause indexing of way more files you wanted when the indexed file tree contains links to directories outside the specified file tree.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>This option should by used with care and only if necessary. It may cause indexing of way more files you wanted when the indexed file tree contains links to directories outside the specified file tree.</string>
              </property>
              <property name="text">
               <string/>
@@ -148,7 +166,7 @@
            <item row="3" column="0">
             <widget class="QLabel" name="label_interval">
              <property name="text">
-              <string>Scan interval</string>
+              <string extracomment="Abbr. minutes">Scan interval</string>
              </property>
             </widget>
            </item>
@@ -161,7 +179,7 @@
               </sizepolicy>
              </property>
              <property name="suffix">
-              <string> min</string>
+              <string extracomment="Abbr. minutes"> min</string>
              </property>
              <property name="minimum">
               <number>0</number>

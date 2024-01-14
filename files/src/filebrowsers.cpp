@@ -2,19 +2,19 @@
 
 #include "filebrowsers.h"
 #include "fileitems.h"
+#include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
 #include <QMimeDatabase>
 using namespace std;
 
+FilePathBrowser::FilePathBrowser(bool &cs) : caseSensitive(cs)
+{}
 
-AbstractBrowser::AbstractBrowser(bool &cs) : caseSensitive(cs){}
+bool FilePathBrowser::allowTriggerRemap() const
+{ return false; }
 
-QString AbstractBrowser::description() const { return "Browse files by path"; }
-
-bool AbstractBrowser::allowTriggerRemap() const { return false; }
-
-vector<shared_ptr<albert::Item>> AbstractBrowser::buildItems(const QString &input) const
+vector<shared_ptr<albert::Item>> FilePathBrowser::buildItems(const QString &input) const
 {
     vector<shared_ptr<albert::Item>> results;
 
@@ -51,31 +51,53 @@ vector<shared_ptr<albert::Item>> AbstractBrowser::buildItems(const QString &inpu
 }
 
 
-RootBrowser::RootBrowser(bool &cs) : AbstractBrowser(cs){}
+RootBrowser::RootBrowser(bool &cs) : FilePathBrowser(cs)
+{}
 
-QString RootBrowser::id() const { return "rootbrowser"; }
+QString RootBrowser::id() const
+{ return "rootbrowser"; }
 
-QString RootBrowser::name() const { return "Root browser"; }
+QString RootBrowser::name() const
+{
+    static const auto tr = QCoreApplication::translate("FilePathBrowser", "Root browser");
+    return tr;
+}
 
-QString RootBrowser::defaultTrigger() const { return "/"; }
+QString RootBrowser::description() const
+{
+    static const auto tr = QCoreApplication::translate("FilePathBrowser", "Browse root directory by path");
+    return tr;
+}
+
+QString RootBrowser::defaultTrigger() const
+{ return "/"; }
 
 void RootBrowser::handleTriggerQuery(TriggerQuery *query) const
+{ query->add(buildItems(QString("/%1").arg(query->string()))); }
+
+
+HomeBrowser::HomeBrowser(bool &cs) : FilePathBrowser(cs)
+{}
+
+QString HomeBrowser::id() const
+{ return "homebrowser"; }
+
+QString HomeBrowser::name() const
 {
-    query->add(buildItems(QString("/%1").arg(query->string())));
+    static const auto tr = QCoreApplication::translate("FilePathBrowser", "Home browser");
+    return tr;
 }
 
+QString HomeBrowser::description() const
+{
+    static const auto tr = QCoreApplication::translate("FilePathBrowser", "Browse home directory by path");
+    return tr;
+}
 
-HomeBrowser::HomeBrowser(bool &cs) : AbstractBrowser(cs){}
-
-QString HomeBrowser::id() const { return "homebrowser"; }
-
-QString HomeBrowser::name() const { return "Home browser"; }
-
-QString HomeBrowser::defaultTrigger() const { return "~"; }
+QString HomeBrowser::defaultTrigger() const
+{ return "~"; }
 
 void HomeBrowser::handleTriggerQuery(TriggerQuery *query) const
-{
-    query->add(buildItems(QString("%1%2").arg(QDir::homePath(), query->string())));
-}
+{ query->add(buildItems(QString("%1%2").arg(QDir::homePath(), query->string()))); }
 
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
 #include "albert/albert.h"
 #include "fileitems.h"
@@ -12,13 +12,13 @@
 using namespace albert;
 using namespace std;
 
-QString AbstractFileItem::id() const { return filePath(); }
+QString FileItem::id() const { return filePath(); }
 
-QString AbstractFileItem::text() const { return name(); }
+QString FileItem::text() const { return name(); }
 
-QString AbstractFileItem::subtext() const { return filePath(); }
+QString FileItem::subtext() const { return filePath(); }
 
-QString AbstractFileItem::inputActionText() const
+QString FileItem::inputActionText() const
 {
     const QString &path = filePath();
     QString result = (QFileInfo(path).isDir()) ? QString("%1/").arg(path) : path;
@@ -29,7 +29,7 @@ QString AbstractFileItem::inputActionText() const
     return result;
 }
 
-QStringList AbstractFileItem::iconUrls() const
+QStringList FileItem::iconUrls() const
 {
     QStringList urls;
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
@@ -40,58 +40,82 @@ QStringList AbstractFileItem::iconUrls() const
     return urls;
 }
 
-vector<Action> AbstractFileItem::actions() const
+vector<Action> FileItem::actions() const
 {
     vector<Action> actions;
 
-    actions.emplace_back("f-open", "Open with default application", [this](){
-        openUrl(QUrl::fromLocalFile(filePath()).toString());
-    });
-
-    if (QFileInfo fi(filePath()); fi.isFile() && fi.isExecutable())
-        actions.emplace_back("f-exec", "Execute", [this](){
-            runDetachedProcess({filePath()});
+    static const auto tr_o = QCoreApplication::translate("FileItem", "Open with default application");
+    actions.emplace_back(
+        "f-open", tr_o,
+        [this]()
+        {
+            openUrl(QUrl::fromLocalFile(filePath()).toString());
         });
 
-    actions.emplace_back("f-reveal", "Reveal in file browser", [this](){
-        QFileInfo fi(filePath());
-        openUrl(QUrl::fromLocalFile(fi.path()).toString());
-    });
+    if (QFileInfo fi(filePath()); fi.isFile() && fi.isExecutable())
+    {
+        static const auto tr_e = QCoreApplication::translate("FileItem", "Execute");
+        actions.emplace_back(
+            "f-exec", tr_e,
+            [this]()
+            {
+                runDetachedProcess({filePath()});
+            });
+    }
 
-    actions.emplace_back("f-term", "Open terminal here", [this](){
-        QFileInfo fi(filePath());
-        runTerminal({}, fi.isDir() ? fi.filePath() : fi.path());
-    });
+    static const auto tr_r = QCoreApplication::translate("FileItem", "Reveal in file browser");
+    actions.emplace_back(
+        "f-reveal", tr_r,
+        [this]()
+        {
+            openUrl(QUrl::fromLocalFile(QFileInfo(filePath()).path()).toString());
+        });
 
-    actions.emplace_back("f-copy", "Copy file to clipboard", [this](){
-        //  Get clipboard
-        QClipboard *cb = QApplication::clipboard();
+    static const auto tr_t = QCoreApplication::translate("FileItem", "Open terminal here");
+    actions.emplace_back(
+        "f-term", tr_t,
+        [this]()
+        {
+            QFileInfo fi(filePath());
+            runTerminal({}, fi.isDir() ? fi.filePath() : fi.path());
+        });
 
-        // Ownership of the new data is transferred to the clipboard.
-        auto *newMimeData = new QMimeData();
 
-        // Copy old mimedata
-        const QMimeData* oldMimeData = cb->mimeData();
-        for (const QString &f : oldMimeData->formats())
-            newMimeData->setData(f, oldMimeData->data(f));
+    static const auto tr_c = QCoreApplication::translate("FileItem", "Copy file to clipboard");
+    actions.emplace_back(
+        "f-copy", tr_c, [this]()
+        {
+            //  Get clipboard
+            QClipboard *cb = QApplication::clipboard();
 
-        // Copy path of file
-        newMimeData->setText(filePath());
+            // Ownership of the new data is transferred to the clipboard.
+            auto *newMimeData = new QMimeData();
 
-        // Copy file
-        newMimeData->setUrls({QUrl::fromLocalFile(filePath())});
+            // Copy old mimedata
+            const QMimeData* oldMimeData = cb->mimeData();
+            for (const QString &f : oldMimeData->formats())
+                newMimeData->setData(f, oldMimeData->data(f));
 
-        // Copy file (f*** you gnome)
-        QByteArray gnomeFormat = QByteArray("copy\n").append(QUrl::fromLocalFile(filePath()).toEncoded());
-        newMimeData->setData("x-special/gnome-copied-files", gnomeFormat);
+            // Copy path of file
+            newMimeData->setText(filePath());
 
-        // Set the mimedata
-        cb->setMimeData(newMimeData);
-    });
+            // Copy file
+            newMimeData->setUrls({QUrl::fromLocalFile(filePath())});
 
-    actions.emplace_back("f-clippath", "Copy path to clipboard", [this](){
-        setClipboardText(filePath());
-    });
+            // Copy file (f*** you gnome)
+            QByteArray gnomeFormat = QByteArray("copy\n").append(QUrl::fromLocalFile(filePath()).toEncoded());
+            newMimeData->setData("x-special/gnome-copied-files", gnomeFormat);
+
+            // Set the mimedata
+            cb->setMimeData(newMimeData);
+        });
+
+    static const auto tr_cp = QCoreApplication::translate("FileItem", "Copy path to clipboard");
+    actions.emplace_back(
+        "f-copypath", tr_cp,
+        [this](){
+            setClipboardText(filePath());
+        });
 
     return actions;
 }
@@ -100,13 +124,17 @@ vector<Action> AbstractFileItem::actions() const
 IndexFileItem::IndexFileItem(const QString &name, const QMimeType &mime, const std::shared_ptr<DirNode> &parent):
         name_(name), mimetype_(mime), parent_(parent) {}
 
-QString IndexFileItem::name() const { return name_; }
+QString IndexFileItem::name() const
+{ return name_; }
 
-QString IndexFileItem::path() const { return parent_->filePath(); }
+QString IndexFileItem::path() const
+{ return parent_->filePath(); }
 
-QString IndexFileItem::filePath() const { return QString("%1/%2").arg(parent_->filePath(), name_); }
+QString IndexFileItem::filePath() const
+{ return QString("%1/%2").arg(parent_->filePath(), name_); }
 
-const QMimeType &IndexFileItem::mimeType() const { return mimetype_; }
+const QMimeType &IndexFileItem::mimeType() const
+{ return mimetype_; }
 
 
 StandardFile::StandardFile(QString path, QMimeType mimetype, QString completion)
@@ -117,15 +145,17 @@ StandardFile::StandardFile(QString path, QMimeType mimetype, QString completion)
     path_ = fileInfo.canonicalPath();
 }
 
-QString StandardFile::name() const { return name_; }
+QString StandardFile::name() const
+{ return name_; }
 
-QString StandardFile::path() const { return path_; }
+QString StandardFile::path() const
+{ return path_; }
 
-QString StandardFile::filePath() const { return QDir(path_).filePath(name_); }
+QString StandardFile::filePath() const
+{ return QDir(path_).filePath(name_); }
 
-const QMimeType &StandardFile::mimeType() const { return mimetype_; }
+const QMimeType &StandardFile::mimeType() const
+{ return mimetype_; }
 
 QString StandardFile::inputActionText() const
-{
-    return completion_.isEmpty() ? AbstractFileItem::inputActionText() : completion_;
-}
+{ return completion_.isEmpty() ? FileItem::inputActionText() : completion_; }

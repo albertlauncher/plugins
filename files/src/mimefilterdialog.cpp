@@ -1,13 +1,11 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
 #include <QKeyEvent>
 #include <QMimeDatabase>
 #include <QSortFilterProxyModel>
 #include <QStandardItemModel>
 #include <QString>
-#include <QtConcurrent>
 #include <QPushButton>
-#include <map>
 #include "mimefilterdialog.h"
 using namespace std;
 
@@ -51,7 +49,7 @@ MimeFilterDialog::MimeFilterDialog(const QStringList &filters, QWidget *parent):
             proxy_model, &QSortFilterProxyModel::setFilterFixedString);
 
     // On mimetype list activation add the mimetype to the filter list
-    connect(ui.listView_mimeTypes, &QListView::activated, [this](const QModelIndex &index){
+    connect(ui.listView_mimeTypes, &QListView::activated, this, [this](const QModelIndex &index){
         ui.plainTextEdit->appendPlainText(index.data(Qt::UserRole).toString());
     });
 
@@ -132,4 +130,3 @@ void MimeFilterDialog::keyPressEvent(QKeyEvent *evt)
     }
     QDialog::keyPressEvent(evt);
 }
-

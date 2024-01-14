@@ -6,7 +6,7 @@
 class DirNode;
 
 
-class AbstractFileItem : public albert::Item
+class FileItem : public albert::Item
 {
 public:
     virtual QString name() const = 0;
@@ -22,7 +22,7 @@ public:
 };
 
 
-class IndexFileItem : public AbstractFileItem
+class IndexFileItem : public FileItem
 {
 public:
     explicit IndexFileItem(const QString &name, const QMimeType &mime, const std::shared_ptr<DirNode> &parent);
@@ -37,7 +37,7 @@ private:
 };
 
 
-class StandardFile : public AbstractFileItem
+class StandardFile : public FileItem
 {
 public:
     StandardFile(QString filePath, QMimeType mimetype, QString completion = {});
@@ -53,4 +53,3 @@ protected:
     QMimeType mimetype_;
 
 };
-

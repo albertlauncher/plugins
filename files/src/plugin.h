@@ -7,18 +7,21 @@
 #include "fsindex.h"
 #include <QSettings>
 
-class Plugin : public albert::plugin::ExtensionPlugin<albert::IndexQueryHandler>
+class Plugin : public albert::plugin::ExtensionPlugin,
+               public albert::IndexQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
-    ALBERT_PLUGIN_PROPERTY(bool, fsBrowsersCaseSensitive, false)
+    ALBERT_PLUGIN_PROPERTY(bool, fs_browsers_case_sensitive, false)
 
 public:
     Plugin();
     ~Plugin();
 
-    std::vector<albert::Extension*> extensions() override;
-    void updateIndexItems() override;
+    void initialize(albert::ExtensionRegistry&, std::map<QString,PluginInstance*>) override;
+    void finalize(albert::ExtensionRegistry&) override;
     QWidget *buildConfigWidget() override;
+
+    void updateIndexItems() override;
 
     const FsIndex &fsIndex();
     void addPath(const QString&);

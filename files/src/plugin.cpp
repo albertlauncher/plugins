@@ -2,6 +2,7 @@
 
 #include "albert/albert.h"
 #include "albert/extension/queryhandler/standarditem.h"
+#include "albert/extensionregistry.h"
 #include "albert/logging.h"
 #include "configwidget.h"
 #include "fileitems.h"
@@ -36,14 +37,14 @@ const uint DEF_SCAN_INTERVAL = 5;
 const char* INDEX_FILE_NAME = "file_index.json";
 
 Plugin::Plugin():
-    homebrowser(fsBrowsersCaseSensitive_),
-    rootbrowser(fsBrowsersCaseSensitive_)
+    homebrowser(fs_browsers_case_sensitive_),
+    rootbrowser(fs_browsers_case_sensitive_)
 {
     connect(&fs_index_, &FsIndex::status, this, &Plugin::statusInfo);
     connect(&fs_index_, &FsIndex::updatedFinished, this, [this](){ updateIndexItems(); });
 
     QJsonObject object;
-    if (QFile file(cacheDir()->filePath(INDEX_FILE_NAME)); file.open(QIODevice::ReadOnly))
+    if (QFile file(cacheDir().filePath(INDEX_FILE_NAME)); file.open(QIODevice::ReadOnly))
         object = QJsonDocument(QJsonDocument::fromJson(file.readAll())).object();
 
     auto s = settings();
@@ -69,10 +70,10 @@ Plugin::Plugin():
 
     update_item = StandardItem::make(
         "scan_files",
-        "Update index",
-        "Update the file index",
+        tr("Update index"),
+        tr("Update the file index"),
         {":app_icon"},
-        {{"scan_files", "Index", [this](){ fs_index_.update(); }}}
+        {{"scan_files", tr("Scan"), [this](){ fs_index_.update(); }}}
     );
 }
 
@@ -98,7 +99,7 @@ Plugin::~Plugin()
     }
     s->setValue(CFG_PATHS, paths);
 
-    if (QFile file(cacheDir()->filePath(INDEX_FILE_NAME)); file.open(QIODevice::WriteOnly)) {
+    if (QFile file(cacheDir().filePath(INDEX_FILE_NAME)); file.open(QIODevice::WriteOnly)) {
         DEBG << "Storing file index to" << file.fileName();
         file.write(QJsonDocument(object).toJson(QJsonDocument::Compact));
         file.close();
@@ -106,12 +107,25 @@ Plugin::~Plugin()
         WARN << "Couldn't write to file:" << file.fileName();
 }
 
-std::vector<Extension *> Plugin::extensions() { return {this, &homebrowser, &rootbrowser}; }
+
+void Plugin::initialize(albert::ExtensionRegistry &registry, map<QString,PluginInstance*>)
+{
+    registry.registerExtension(this);
+    registry.registerExtension(&homebrowser);
+    registry.registerExtension(&rootbrowser);
+}
+
+void Plugin::finalize(albert::ExtensionRegistry &registry)
+{
+    registry.deregisterExtension(this);
+    registry.deregisterExtension(&homebrowser);
+    registry.deregisterExtension(&rootbrowser);
+}
 
 void Plugin::updateIndexItems()
 {
     // Get file items
-    vector<shared_ptr<AbstractFileItem>> items;
+    vector<shared_ptr<FileItem>> items;
     for (auto &[path, fsp] : fs_index_.indexPaths())
         fsp->items(items);
 
@@ -124,30 +138,30 @@ void Plugin::updateIndexItems()
     ii.emplace_back(update_item, update_item->text());
 
     // Add trash item
-    ii.emplace_back(StandardItem::make(
-            "trash",
-            "Trash",
-            "Your trash folder",
-            {"xdg:user-trash-full", "qsp:SP_TrashIcon"},
+    auto item = StandardItem::make(
+        "trash",
+        tr("Trash"),
+        tr("Your trash folder"),
+        {"xdg:user-trash-full", "qsp:SP_TrashIcon"},
+        {
             {
-                {
-                    "open", "Open trash",
+                "open", tr("Open trash"),
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
-                    [=](){ openUrl(QStringLiteral("trash:///")); }
+                [=](){ openUrl(QStringLiteral("trash:///")); }
 #elif defined(Q_OS_MAC)
-                    [=](){ openUrl(QString("file://%1/.Trash").arg(QDir::homePath())); }
-#endif
-                }
-#if defined(Q_OS_MAC)
-                ,
-                {
-                    "empty", "Empty trash",
-                    [=](){ runDetachedProcess({"osascript", "-e", "tell application \"Finder\" to empty trash"}); }
-                }
+                [=](){ openUrl(QString("file://%1/.Trash").arg(QDir::homePath())); }
 #endif
             }
-        ), "trash"
+#if defined(Q_OS_MAC)
+            ,
+            {
+                "empty", tr("Empty trash"),
+                [=](){ runDetachedProcess({"osascript", "-e", "tell application \"Finder\" to empty trash"}); }
+            }
+#endif
+        }
     );
+    ii.emplace_back(item, item->text());
 
     setIndexItems(::move(ii));
 }
