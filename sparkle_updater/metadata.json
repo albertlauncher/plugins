@@ -1,0 +1,7 @@
+{
+    "description": "Keep the app updated",
+    "license": "ALL",
+    "maintainers": "@manuelschneid3r",
+    "name": "Updater",
+    "url": "https://github.com/albertlauncher/plugins/tree/master/sparkle_updater",
+}

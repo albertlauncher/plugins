@@ -4,7 +4,7 @@
 #include "albert/plugin.h"
 #include <memory>
 
-class Plugin : public albert::plugin::Plugin<>
+class Plugin : public albert::plugin::Plugin
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
