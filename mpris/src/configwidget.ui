@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ConfigWidget</class>
+ <widget class="QWidget" name="ConfigWidget">
+  <layout class="QVBoxLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>&lt;html&gt;
+&lt;head/&gt;
+&lt;body&gt;
+&lt;p&gt;This extension lets you control running &lt;a href=&quot;https://specifications.freedesktop.org/mpris-spec/2.2/&quot;&gt;MPRIS&lt;/a&gt;-capable media players.&lt;/p&gt;
+&lt;p&gt;Currently this extension supports the following commands:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Play&lt;/li&gt;
+&lt;li&gt;Pause&lt;/li&gt;
+&lt;li&gt;Next&lt;/li&gt;
+&lt;li&gt;Previous&lt;/li&gt;
+&lt;li&gt;Stop&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/body&gt;
+&lt;/html&gt;</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

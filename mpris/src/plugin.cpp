@@ -4,10 +4,12 @@
 #include "albert/extension/queryhandler/standarditem.h"
 #include "albert/logging.h"
 #include "plugin.h"
+#include "ui_configwidget.h"
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
 #include <QDBusInterface>
 #include <QDBusServiceWatcher>
+#include <QWidget>
 #include <QXmlStreamReader>
 ALBERT_LOGGING_CATEGORY("mpris")
 using namespace albert;
@@ -235,4 +237,13 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
             WARN << e.what();
         }
     return results;
+}
+
+
+QWidget *Plugin::buildConfigWidget()
+{
+    auto *w = new QWidget();
+    Ui::ConfigWidget ui;
+    ui.setupUi(w);
+    return w;
 }

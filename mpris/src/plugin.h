@@ -12,6 +12,7 @@ public:
     ~Plugin();
 
     std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery *) const override;
+    QWidget *buildConfigWidget() override;
 
 private:
     struct Private;
