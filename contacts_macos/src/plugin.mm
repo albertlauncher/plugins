@@ -5,6 +5,7 @@
 #include "albert/logging.h"
 #include "plugin.h"
 #include <Contacts/Contacts.h>
+#include <QLabel>
 #include <QRegularExpression>
 ALBERT_LOGGING_CATEGORY("contacts")
 using namespace albert;
@@ -73,12 +74,12 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
             results.emplace_back(StandardItem::make(
                 identifier + "phone" + label,
                 number,
-                QString("Phone number '%1' of %2").arg(label, fullname),
+                tr("Phone number '%1' of %2").arg(label, fullname),
                 {"qfip:/System/Applications/Contacts.app"},
                 {
-                  {"copy", "Copy", [number](){setClipboardText(number);}},
-                  {"call", "Call", [number](){openUrl("tel:"+number);}},
-                  {"call", "iMessage", [number](){openUrl("sms:"+number);}}
+                    {"copy", tr("Copy"), [number](){setClipboardText(number);}},
+                    {"call", tr("Call"), [number](){openUrl("tel:"+number);}},
+                    {"call", "iMessage", [number](){openUrl("sms:"+number);}}
                 }
               ),
               (float)query->string().length()/fullname.size()
@@ -93,11 +94,11 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
             results.emplace_back(StandardItem::make(
                 identifier + "mail" + label,
                 mail,
-                QString("Mail address '%1' of %2").arg(label, fullname),
+                tr("Mail address '%1' of %2").arg(label, fullname),
                 {"qfip:/System/Applications/Contacts.app"},
                 {
-                  {"copy", "Copy", [mail](){setClipboardText(mail);}},
-                  {"mail", "Send mail", [mail](){openUrl("mailto:"+mail);}},
+                    {"copy", tr("Copy"), [mail](){setClipboardText(mail);}},
+                    {"mail", tr("Send mail"), [mail](){openUrl("mailto:"+mail);}},
                 }
               ),
               (float)query->string().length()/fullname.size()
@@ -112,3 +113,13 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
     }
   }
 }
+
+
+QWidget *Plugin::buildConfigWidget()
+{
+    auto l = new QLabel(tr("Apple contacts prototype. For now only phone and mail."));
+    l->setWordWrap(true);
+    l->setAlignment(Qt::AlignTop);
+    return l;
+}
+

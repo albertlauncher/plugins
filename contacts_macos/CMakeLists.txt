@@ -1,15 +1,17 @@
 if(APPLE)
-project(contacts_macos VERSION 1.3)
+
+project(contacts_macos VERSION 4.0)
+
 find_library(CONTACTS_FRAMEWORK Contacts)
+
 albert_plugin(
-    NAME Contacts
-    DESCRIPTION "Access your contacts"
-    LONG_DESCRIPTION "Apple contacts prototype. For now only phone and mail."
-    LICENSE BSD-2
-    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-    MAINTAINERS @manuelschneid3r
-    QT_DEPENDENCIES Widgets
-    LIB_DEPENDENCIES [Contacts]
+    SOURCE_FILES
+        src/plugin.h
+        src/plugin.mm
+    PRIVATE_LINK_LIBRARIES
+        ${CONTACTS_FRAMEWORK}
+    TS_FILES
+        i18n/${PROJECT_NAME}_de.ts
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE ${CONTACTS_FRAMEWORK})
+
 endif()
