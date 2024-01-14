@@ -3,17 +3,17 @@
 #include "albert/albert.h"
 #include "albert/extension/queryhandler/standarditem.h"
 #include "plugin.h"
+#include "ui_configwidget.h"
 #include <QDateTime>
 #include <QLocale>
 #include <QTimeZone>
+#include <QWidget>
 using namespace albert;
 using namespace std;
 
 
 vector<Extension*> Plugin::extensions()
-{
-    return {this, &tzh};
-}
+{ return { this, &tzh }; }
 
 vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
 {
@@ -132,4 +132,13 @@ void TimeZoneHandler::handleTriggerQuery(TriggerQuery *query) const
             ));
         }
     }
+}
+
+
+QWidget *Plugin::buildConfigWidget()
+{
+    auto *w = new QWidget();
+    Ui::ConfigWidget ui;
+    ui.setupUi(w);
+    return w;
 }

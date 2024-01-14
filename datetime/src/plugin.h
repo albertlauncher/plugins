@@ -21,6 +21,7 @@ class Plugin : public albert::plugin::ExtensionPlugin<albert::GlobalQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
+    QWidget *buildConfigWidget() override;
     std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery*) const override;
     std::vector<albert::Extension*> extensions() override;
 
