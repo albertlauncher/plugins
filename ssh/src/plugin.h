@@ -1,34 +1,29 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2017-2024 Manuel Schneider
 
 #pragma once
-#include "albert/extension/queryhandler/indexqueryhandler.h"
+#include "albert/extension/queryhandler/globalqueryhandler.h"
 #include "albert/plugin.h"
-#include "albert/util/backgroundexecutor.h"
-#include <QFileSystemWatcher>
-#include <QObject>
+#include <QString>
+#include <QSet>
 #include <memory>
-#include <vector>
+#include <QRegularExpression>
+namespace albert {
+class StandardItem;
+}
 
-struct SshItem;
-
-class Plugin : public albert::plugin::ExtensionPlugin<albert::IndexQueryHandler>
+class Plugin : public albert::plugin::ExtensionPlugin,
+               public albert::GlobalQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
     Plugin();
+
     QString synopsis() const override;
-    void handleTriggerQuery(TriggerQuery*) const override;
-    void updateIndexItems() override;
+    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery *) const override;
     QWidget* buildConfigWidget() override;
 
 private:
-    bool useKnownHosts() const;
-    void setUseKnownHosts(bool b = true);
-
-    albert::BackgroundExecutor<std::vector<std::shared_ptr<SshItem>>> indexer;
-    QFileSystemWatcher fs_watcher_;
-    std::vector<std::shared_ptr<SshItem>> hosts_;
-    bool useKnownHosts_;
-
-    //using IndexQueryHandler::handleQuery;  // hide -Woverloaded-virtual
+    QSet<QString> hosts_;
+    static const QRegularExpression re_input;
+    static const QStringList icon_urls;
 };

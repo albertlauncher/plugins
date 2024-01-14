@@ -4,6 +4,6 @@
 
 <RCC>
     <qresource prefix="/">
-        <file alias="ssh">ssh.svg</file>
+        <file alias="ssh">resources/ssh.svg</file>
     </qresource>
 </RCC>
