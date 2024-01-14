@@ -1,5 +1,4 @@
-
-// Copyright (c) 2022-2023 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
 #include "albert/albert.h"
 #include "albert/extension/queryhandler/standarditem.h"
@@ -7,20 +6,11 @@
 #include "plugin.h"
 #include <Cocoa/Cocoa.h>
 #include <CoreServices/CoreServices.h>
-ALBERT_LOGGING_CATEGORY("macos")
+ALBERT_LOGGING_CATEGORY("dictionary")
 using namespace std;
 using namespace albert;
 
-
-std::vector<Extension*> Plugin::extensions()
-{
-  return { &dict_handler };
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
 // google DCSGetActiveDictionaries
-
 extern "C" {
   NSArray *DCSGetActiveDictionaries();
   NSArray *DCSCopyAvailableDictionaries();
@@ -28,17 +18,11 @@ extern "C" {
   NSString *DCSDictionaryGetShortName(DCSDictionaryRef dictID);
 }
 
-QString DictHandler::id() const { return QStringLiteral("dict"); }
+QString Plugin::synopsis() const { return tr("<word>"); }
 
-QString DictHandler::name() const { return QStringLiteral("Dictionary"); }
+QString Plugin::defaultTrigger() const { return QStringLiteral("def "); }
 
-QString DictHandler::description() const { return QStringLiteral("Search in dictionary"); }
-
-QString DictHandler::synopsis() const { return QStringLiteral("<word>"); }
-
-QString DictHandler::defaultTrigger() const { return QStringLiteral("def "); }
-
-void DictHandler::handleTriggerQuery(TriggerQuery *query) const
+void Plugin::handleTriggerQuery(TriggerQuery *query) const
 {
     @autoreleasepool {
         DCSDictionaryRef dic = NULL;
@@ -56,21 +40,21 @@ void DictHandler::handleTriggerQuery(TriggerQuery *query) const
             );
             if (result){
                 auto text = QString::fromNSString(result);
-                query->add(StandardItem::make(
-                    id(),
-                    QString::fromNSString(long_name),
-                    text,
-                    {":dict"},
-                    {
+                query->add(
+                    StandardItem::make(
+                        id(),
+                        QString::fromNSString(long_name),
+                        text,
+                        {":dict"},
                         {
-                            "open", "Open in Apple dictionary",
-                            [s=query->string()](){ openUrl("dict://"+s); }
+                            {
+                                "open", tr("Open in dictionary"),
+                                [s=query->string()](){ openUrl("dict://"+s); }
+                            }
                         }
-                    }
-                ));
+                    )
+                );
             }
         }
     }
 }
-
-
