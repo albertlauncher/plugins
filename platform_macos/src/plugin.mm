@@ -5,6 +5,7 @@
 #include "albert/extension/queryhandler/standarditem.h"
 #include "albert/logging.h"
 #include "plugin.h"
+#include "ui_configwidget.h"
 #include <Cocoa/Cocoa.h>
 #include <CoreServices/CoreServices.h>
 ALBERT_LOGGING_CATEGORY("macos")
@@ -13,9 +14,16 @@ using namespace albert;
 
 
 std::vector<Extension*> Plugin::extensions()
+{ return { &dict_handler }; }
+
+QWidget *Plugin::buildConfigWidget()
 {
-  return { &dict_handler };
+    auto *w = new QWidget();
+    Ui::ConfigWidget ui;
+    ui.setupUi(w);
+    return w;
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -72,5 +80,3 @@ void DictHandler::handleTriggerQuery(TriggerQuery *query) const
         }
     }
 }
-
-

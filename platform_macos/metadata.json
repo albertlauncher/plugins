@@ -1,0 +1,7 @@
+{
+    "description": "Access platform services",
+    "license": "MIT",
+    "maintainers": "@manuelschneid3r",
+    "name": "PlatformServices",
+    "url": "https://github.com/albertlauncher/plugins/tree/master/platform_macos",
+}

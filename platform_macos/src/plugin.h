@@ -17,10 +17,11 @@ public:
 };
 
 
-class Plugin : public albert::plugin::Plugin<>
+class Plugin : public albert::plugin::Plugin
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
+    QWidget *buildConfigWidget() override;
     std::vector<albert::Extension*> extensions() override;
 
 protected:
