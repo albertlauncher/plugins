@@ -4,6 +4,6 @@
 
 <RCC>
     <qresource>
-        <file alias="favicon">favicon.png</file>
+        <file alias="favicon">resources/favicon.png</file>
     </qresource>
 </RCC>
