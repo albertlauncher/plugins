@@ -1,0 +1,7 @@
+{
+    "description": "Run executables from PATH",
+    "license": "BSD-2",
+    "maintainers": "@manuelschneid3r",
+    "name": "Terminal",
+    "url": "https://github.com/albertlauncher/plugins/tree/master/terminal",
+}

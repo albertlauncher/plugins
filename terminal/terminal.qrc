@@ -4,6 +4,6 @@
 
 <RCC>
     <qresource prefix="/">
-        <file alias="terminal">terminal.svg</file>
+        <file alias="terminal">resources/terminal.svg</file>
     </qresource>
 </RCC>

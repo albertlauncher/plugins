@@ -6,7 +6,6 @@
 #include <QDirIterator>
 #include <QFileSystemWatcher>
 #include <QStringList>
-#include <QtConcurrent>
 #include <functional>
 ALBERT_LOGGING_CATEGORY("terminal")
 using namespace albert;
