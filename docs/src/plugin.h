@@ -20,7 +20,8 @@ struct Docset
 };
 
 
-class Plugin : public albert::plugin::ExtensionPlugin<albert::IndexQueryHandler>
+class Plugin : public albert::plugin::ExtensionPlugin,
+               public albert::IndexQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
 public:
@@ -39,17 +40,16 @@ public:
     void removeDocset(const QString &name);
 
 private:
-    bool extract(const QString &src, const QString &dst) const;
-    void debug(const QString &) const;
-    void error(const QString &, QWidget *modal_parent = nullptr) const;
+    void debug(const QString &);
+    void error(const QString &, QWidget *modal_parent = nullptr);
 
     std::map<QString, Docset> docsets_;
     QNetworkReply *download_ = nullptr;
 
 signals:
-    void docsetsChanged() const;
-    void downloadStateChanged() const;
-    void statusInfo(const QString&) const;
+    void docsetsChanged();
+    void downloadStateChanged();
+    void statusInfo(const QString&);
 };
 
 class ConfigWidget final : public QWidget

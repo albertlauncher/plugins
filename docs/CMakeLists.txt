@@ -1,16 +1,21 @@
-if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-project(docs VERSION 1.5)
+#if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+
+project(docs VERSION 6.0)
+
+find_package(Qt6 REQUIRED COMPONENTS Sql Network)
+find_package(LibArchive REQUIRED)
+
 albert_plugin(
-    NAME Docs
-    DESCRIPTION "Documentation quick access"
-    LICENSE BSD-2
-    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-    MAINTAINERS @manuelschneid3r
-    QT_DEPENDENCIES Widgets Sql Network
-    LIB_DEPENDENCIES libarchive
-    CREDITS "libarchive BSD-3-clause, Zeal/Dash for docfiles and endpoints"
+    SOURCE_FILES
+        src/configwidget.ui
+        src/plugin.cpp
+        src/plugin.h
+    PRIVATE_LINK_LIBRARIES
+        Qt6::Sql
+        Qt6::Network
+        LibArchive::LibArchive
+    TS_FILES
+        i18n/${PROJECT_NAME}_de.ts
 )
 
-find_package(LibArchive REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE LibArchive::LibArchive)
-endif()
+#endif()
