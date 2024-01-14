@@ -11,8 +11,7 @@
 #include <map>
 #include <memory>
 
-class Plugin : public albert::plugin::ExtensionPlugin<albert::Frontend>,
-               public albert::TriggerQueryHandler
+class Plugin : public albert::plugin::ExtensionPlugin<albert::Frontend, albert::TriggerQueryHandler>
 {
     Q_OBJECT ALBERT_PLUGIN
 public:

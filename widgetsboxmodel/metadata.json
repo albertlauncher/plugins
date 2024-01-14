@@ -1,0 +1,8 @@
+{
+    "description": "The native frontend",
+    "license": "ALL",
+    "loadtype": "frontend",
+    "maintainers": "@manuelschneid3r",
+    "name": "Widgets BoxModel",
+    "url": "https://github.com/albertlauncher/plugins/tree/master/widgetsboxmodel",
+}
