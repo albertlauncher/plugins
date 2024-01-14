@@ -1,0 +1,7 @@
+{
+    "name": "System",
+    "description": "Control your machine state",
+    "license": "BSD-2-Clause",
+    "url": "https://github.com/albertlauncher/plugins/tree/master/system",
+    "maintainers": "@manuelschneid3r",
+}
