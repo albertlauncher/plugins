@@ -1,0 +1,7 @@
+{
+    "description": "Control VPN connections",
+    "license": "MIT",
+    "maintainers": "@manuelschneid3r",
+    "name": "VPN",
+    "url": "https://github.com/albertlauncher/plugins/tree/master/vpn",
+}
