@@ -1,0 +1,8 @@
+{
+    "description": "The QML frontend",
+    "license": "ALL",
+    "loadtype": "frontend",
+    "maintainers": ["@manuelschneid3r"],
+    "name": "QML Box Model",
+    "url": "https://github.com/albertlauncher/plugins",
+}

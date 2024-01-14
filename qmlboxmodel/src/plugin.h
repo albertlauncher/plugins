@@ -50,7 +50,9 @@ signals:
 
 
 
-class Plugin : public albert::plugin::ExtensionPlugin<albert::Frontend, QQuickWindow>
+class Plugin : public QQuickWindow,
+               public albert::PluginInstance,
+               public albert::Frontend
 {
     Q_OBJECT
     ALBERT_PLUGIN
