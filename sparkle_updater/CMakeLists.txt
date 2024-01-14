@@ -1,19 +1,22 @@
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
-    project(sparkle_updater VERSION 1.0)
-    albert_plugin(
-        NAME Updater
-        DESCRIPTION "Keep the app updated"
-        LICENSE ALL
-        URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-        MAINTAINERS @manuelschneid3r
-        QT_DEPENDENCIES Widgets
-        NOUNLOAD
-    )
+    project(sparkle_updater VERSION 2.0)
 
     list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
     find_package(Sparkle REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${SPARKLE_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${SPARKLE_LIBRARIES})
+
+    albert_plugin(
+        SOURCE_FILES
+            src/configwidget.ui
+            src/plugin.mm
+            src/plugin.h
+            cmake/FindSparkle.cmake
+        PRIVATE_INCLUDE_DIRECTORIES
+            ${SPARKLE_INCLUDE_DIRS}
+        PRIVATE_LINK_LIBRARIES
+            ${SPARKLE_LIBRARIES}
+        TS_FILES
+            i18n/${PROJECT_NAME}_de.ts
+    )
 
 endif()
