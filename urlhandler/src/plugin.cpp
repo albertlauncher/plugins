@@ -13,7 +13,7 @@ Plugin::Plugin()
 {
     QFile file(":tlds");
     if (!file.open(QIODevice::ReadOnly))
-        throw runtime_error(QString("Unable to read tld resource").toStdString());
+        throw runtime_error("Unable to read tld resource");
     valid_tlds << QTextStream(&file).readAll().split("\n");
     std::sort(valid_tlds.begin(), valid_tlds.end());
 }
@@ -43,11 +43,14 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
         results.emplace_back(
             StandardItem::make(
                 "url_hanlder",
-                "Open URL in browser",
-                QString("Visit %1").arg(url.authority()),
+                tr("Open URL in browser"),
+                tr("Open %1").arg(url.authority()),
                 {"xdg:www", "xdg:web-browser", "xdg:emblem-web", ":default"},
                 {
-                    {"open_url", "Open URL", [url](){ QDesktopServices::openUrl(url); }}
+                    {
+                        "open_url", tr("Open URL"),
+                        [url](){ QDesktopServices::openUrl(url); }
+                    }
                 }
             ),
             1.0f
