@@ -8,88 +8,87 @@
 
 * {
   border: none;
-  font-family:"DejaVu Sans";
   font-weight: 200;
-	color : #ffffff;
-	background-color: #f4000000;
+  color : #ffffff;
+  background-color: #f4000000;
 }
 
 #frame {
-	padding: 12px;
-	border-radius: 5px;
-	background-color: #f4000000;
-	border: 1px solid #20808080;
+  padding: 12px;
+  border-radius: 5px;
+  background-color: #f4000000;
+  border: 1px solid #20808080;
 
   /* Workaround for Qt to get fixed size button*/
-	min-width:640px;
-	max-width:640px;
+  min-width:640px;
+  max-width:640px;
 }
 
 #inputLine {
-	font-size: 36px;
-	selection-color: #f4000000;
-	selection-background-color: #ffffff;
-	background-color: transparent;
+  font-size: 36px;
+  selection-color: #f4000000;
+  selection-background-color: #ffffff;
+  background-color: transparent;
 }
 
 #settingsButton {
-	color: #484848;
-	background-color: transparent;
+  color: #484848;
+  background-color: transparent;
   padding: 8px;
 
   /* Workaround for Qt to get fixed size button*/
-	min-width:14px;
-	min-height:14px;
-	max-width:14px;
-	max-height:14px;
+  min-width:14px;
+  min-height:14px;
+  max-width:14px;
+  max-height:14px;
 }
 
 /********** ListViews ************/
 
 QListView {
-	selection-color: #ffffff;
+  selection-color: #ffffff;
 }
 
 QListView::item:selected {
-	background: #262626;
+  background: #262626;
 }
 
 QListView QScrollBar:vertical  {
-	width: 2px;
-	background: transparent;
+  width: 2px;
+  background: transparent;
 }
 
 QListView QScrollBar::handle:vertical  {
-	background: #484848;
-	min-height: 24px;
+  background: #484848;
+  min-height: 24px;
 }
 
 QListView QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
 QListView QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical,
 QListView QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-	border: 0px;
-	width: 0px;
-	height: 0px;
-	background: transparent;
+  border: 0px;
+  width: 0px;
+  height: 0px;
+  background: transparent;
 }
 
 /********** actionList **********/
 
 QListView#actionList {
-	font-size: 20px;
+  font-size: 20px;
 }
 
 QListView#actionList::item{
-	height:28px;
+  height:28px;
 }
 
 /********** resultsList **********/
 
 QListView#resultsList {
-	icon-size: 40px;
-	font-size: 22px;
+  icon-size: 40px;
+  font-size: 22px;
 }
 
 QListView#resultsList::item{
-	height:48px;
+  height:48px;
 }

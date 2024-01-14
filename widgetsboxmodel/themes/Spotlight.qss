@@ -1,10 +1,4 @@
-/*
- * author: Manuel Schneider <https://github.com/ManuelSchneid3r>
- *
- * Check http://doc.qt.io/qt-5/stylesheet-syntax.html especially the subtopics:
- * The Style Sheet Syntax (http://doc.qt.io/qt-5/stylesheet-syntax.html)
- * Qt Style Sheets Reference (http://doc.qt.io/qt-5/stylesheet-reference.html)
- */
+/* Copyright Manuel Schneider */
 
 * {
     border: none;
@@ -13,7 +7,7 @@
 }
 
 #frame {
-    padding: 6px 0px;
+    padding: 8px 0px;
     border-radius: 8px;
     background-color: #fcfcfc;
     min-width:640px;
@@ -22,7 +16,7 @@
 
 #inputLine {
     padding: 0px 8px;
-    font-size: 36px;
+    font-size: 28px;
     selection-color: #fcfcfc;
     selection-background-color: #808080;
     background-color: transparent;
@@ -74,12 +68,12 @@ QListView QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 
 QListView#resultsList {
     icon-size: 40px;
-    font-size: 24px;
+    font-size: 20px;
 }
 
-QListView#resultsList::item{
+QListView#resultsList::item {
     padding: 8px 0px 0px 0px;
-    height:48px;
+    height: 48px;
 }
 
 /********** actionList **********/

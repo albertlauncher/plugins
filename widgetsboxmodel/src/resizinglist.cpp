@@ -1,7 +1,6 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
 #include "resizinglist.h"
-#include "albert/logging.h"
 #include <QKeyEvent>
 
 ResizingList::ResizingList(QWidget *parent) : QListView(parent), maxItems_(5)
@@ -11,12 +10,10 @@ ResizingList::ResizingList(QWidget *parent) : QListView(parent), maxItems_(5)
 //    setLayoutMode(LayoutMode::Batched);
     setUniformItemSizes(true);
     connect(this, &ResizingList::clicked, this, &ResizingList::activated, Qt::QueuedConnection);
- }
-
-uint ResizingList::maxItems() const
-{
-    return maxItems_;
+    hide();
 }
+
+uint ResizingList::maxItems() const { return maxItems_; }
 
 void ResizingList::setMaxItems(uint maxItems)
 {
@@ -31,26 +28,21 @@ QSize ResizingList::sizeHint() const
     return {width(), contentsMargins().bottom() + contentsMargins().top() + sizeHintForRow(0) * std::min(static_cast<int>(maxItems_), model()->rowCount(rootIndex()))};
 }
 
-QSize ResizingList::minimumSizeHint() const
-{
-    return {0,0}; // Fix for small lists
-}
+QSize ResizingList::minimumSizeHint() const { return {0,0}; }
 
-void ResizingList::setModel(QAbstractItemModel * m)
+void ResizingList::setModel(QAbstractItemModel *m)
 {
-    if (model()!=nullptr) {
-        disconnect(this->model(), &QAbstractItemModel::rowsInserted, this, &QAbstractItemView::updateGeometry);
-        disconnect(this->model(), &QAbstractItemModel::modelReset, this, &QAbstractItemView::updateGeometry);
+    if (model() != nullptr)
+        disconnect(model(), nullptr, this, nullptr);
+
+    if (m != nullptr)
+    {
+        connect(m, &QAbstractItemModel::rowsInserted, this, &ResizingList::updateGeometry);
+        connect(m, &QAbstractItemModel::modelReset, this, &ResizingList::updateGeometry);
     }
 
     QAbstractItemView::setModel(m);
     updateGeometry();
-
-    // If not empty show and select first, update geom. If not null connect.
-    if (model()!=nullptr) {
-        connect(this->model(), &QAbstractItemModel::rowsInserted, this, &QAbstractItemView::updateGeometry);
-        connect(this->model(), &QAbstractItemModel::modelReset, this, &QAbstractItemView::updateGeometry);
-    }
 }
 
 bool ResizingList::eventFilter(QObject*, QEvent *event)
@@ -83,3 +75,12 @@ bool ResizingList::eventFilter(QObject*, QEvent *event)
     }
     return false;
 }
+
+// bool ResizingList::event(QEvent *event)
+// {
+//     if (event->type() == QEvent::Show)
+//         CRIT << "Show";
+//     if (event->type() == QEvent::Hide)
+//         CRIT << "Hide";
+//     return QListView::event(event);
+// }

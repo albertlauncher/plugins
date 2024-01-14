@@ -2,31 +2,19 @@
 <ui version="4.0">
  <class>ConfigWidget</class>
  <widget class="QWidget" name="ConfigWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>425</width>
+    <height>434</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>Frontend settings</string>
   </property>
   <layout class="QFormLayout" name="formLayout">
    <item row="0" column="0">
-    <widget class="QLabel" name="label_show_fallbacks">
-     <property name="text">
-      <string>Show fallbacks on empty results</string>
-     </property>
-     <property name="buddy">
-      <cstring>checkBox_show_fallbacks</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QCheckBox" name="checkBox_show_fallbacks">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically enter the fallbacks mode if a query has no matches.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
     <widget class="QLabel" name="label_history_search">
      <property name="text">
       <string>Enable history search</string>
@@ -36,17 +24,17 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="1">
+   <item row="0" column="1">
     <widget class="QCheckBox" name="checkBox_history_search">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use the current input text to filter the input history.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Use the current input text to filter the input history.</string>
      </property>
      <property name="text">
       <string/>
      </property>
     </widget>
    </item>
-   <item row="2" column="0">
+   <item row="1" column="0">
     <widget class="QLabel" name="label_clearOnHide">
      <property name="text">
       <string>Clear input line on hide</string>
@@ -56,17 +44,17 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="1">
+   <item row="1" column="1">
     <widget class="QCheckBox" name="checkBox_clearOnHide">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Clear the input line when the window is hidden.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Clear the input line when the window is hidden.</string>
      </property>
      <property name="text">
       <string/>
      </property>
     </widget>
    </item>
-   <item row="3" column="0">
+   <item row="2" column="0">
     <widget class="QLabel" name="label_onTop">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -82,14 +70,14 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="1">
+   <item row="2" column="1">
     <widget class="QCheckBox" name="checkBox_onTop">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Let Albert stay on top of all top level windows.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Let Albert stay on top of all top level windows.</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="0">
+   <item row="3" column="0">
     <widget class="QLabel" name="label_quit_on_close">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -105,14 +93,14 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
+   <item row="3" column="1">
     <widget class="QCheckBox" name="checkBox_quit_on_close">
      <property name="toolTip">
-      <string notr="true">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Quit the application when closing Albert. Default behavior is to hide the window.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string notr="true">Quit the application when closing Albert. Default behavior is to hide the window.</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="0">
+   <item row="4" column="0">
     <widget class="QLabel" name="label_hideOnFocusOut">
      <property name="text">
       <string>Hide on focus out</string>
@@ -122,14 +110,14 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="1">
+   <item row="4" column="1">
     <widget class="QCheckBox" name="checkBox_hideOnFocusOut">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hide Albert if the window lost focus.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Hide Albert if the window lost focus.</string>
      </property>
     </widget>
    </item>
-   <item row="6" column="0">
+   <item row="5" column="0">
     <widget class="QLabel" name="label_center">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -145,32 +133,32 @@
      </property>
     </widget>
    </item>
-   <item row="6" column="1">
+   <item row="5" column="1">
     <widget class="QCheckBox" name="checkBox_center">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Position the window centered on the screen. See also &amp;quot;Center on active screen&amp;quot;.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Position the window centered on the screen. See also &quot;Center on active screen&quot;.</string>
      </property>
     </widget>
    </item>
-   <item row="7" column="0">
+   <item row="6" column="0">
     <widget class="QLabel" name="label_followCursor">
      <property name="text">
       <string>Center on active screen</string>
      </property>
     </widget>
    </item>
-   <item row="7" column="1">
+   <item row="6" column="1">
     <widget class="QCheckBox" name="checkBox_followCursor">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the window on the active screen (the one containing the mouse cursor) rather than the primary one. This option applies when &amp;quot;Show centered&amp;quot; is activated, but also if the window has to be centered on another screen (e.g. because a display has been disconnected).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Show the window on the active screen (the one containing the mouse cursor) rather than the primary one. This option applies when &quot;Show centered&quot; is activated, but also if the window has to be centered on another screen (e.g. because a display has been disconnected).</string>
      </property>
      <property name="text">
       <string/>
      </property>
     </widget>
    </item>
-   <item row="8" column="0">
-    <widget class="QLabel" name="label_style">
+   <item row="7" column="0">
+    <widget class="QLabel" name="label_theme_light">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
        <horstretch>0</horstretch>
@@ -178,15 +166,15 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>Theme</string>
+      <string>Light theme</string>
      </property>
      <property name="buddy">
-      <cstring>comboBox_themes</cstring>
+      <cstring>comboBox_theme_light</cstring>
      </property>
     </widget>
    </item>
-   <item row="8" column="1">
-    <widget class="QComboBox" name="comboBox_themes">
+   <item row="7" column="1">
+    <widget class="QComboBox" name="comboBox_theme_light">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -194,7 +182,27 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the color theme of the window.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Set the color theme used in light mode.</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0">
+    <widget class="QLabel" name="label_theme_dark">
+     <property name="text">
+      <string>Dark theme</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="1">
+    <widget class="QComboBox" name="comboBox_theme_dark">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Set the color theme used in dark mode.</string>
      </property>
     </widget>
    </item>
@@ -213,7 +221,7 @@
       </size>
      </property>
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt;See the &lt;/span&gt;&lt;a href=&quot;https://github.com/albertlauncher/plugins/blob/master/widgetsboxmodel/README.md&quot;&gt;&lt;span style=&quot; font-size:9pt; text-decoration: underline; color:#094fd1;&quot;&gt;readme&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt; for instructions on how to create your own theme. If you created a nice theme please &lt;/span&gt;&lt;a href=&quot;https://github.com/orgs/albertlauncher/discussions/1147&quot;&gt;&lt;span style=&quot; font-size:9pt; text-decoration: underline; color:#094fd1;&quot;&gt;share it&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt;See the &lt;a href=&quot;https://github.com/albertlauncher/plugins/blob/master/widgetsboxmodel/README.md&quot;&gt;readme&lt;/a&gt; for instructions on how to create your own theme. If you created a nice theme please &lt;a href=&quot;https://github.com/orgs/albertlauncher/discussions/1147&quot;&gt;share it&lt;/a&gt;.&lt;/span&gt;</string>
      </property>
      <property name="textFormat">
       <enum>Qt::AutoText</enum>
@@ -274,7 +282,7 @@
    <item row="11" column="1">
     <widget class="QCheckBox" name="checkBox_system_shadow">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Tell the system to draw a shadow around the window. Note that on some systems this may look pretty ugly. Use the client shadow in this case.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Tell the system to draw a shadow around the window. Note that on some systems this may look pretty ugly. Use the client shadow in this case.</string>
      </property>
      <property name="text">
       <string/>
@@ -294,7 +302,7 @@
    <item row="12" column="1">
     <widget class="QCheckBox" name="checkBox_client_shadow">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Draw a shadow on the client side.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Draw a shadow on the client side.</string>
      </property>
     </widget>
    </item>
@@ -317,21 +325,20 @@
    <item row="13" column="1">
     <widget class="QCheckBox" name="checkBox_scrollbar">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Displays a scrollbar in the results list.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Displays a scrollbar in the results list.</string>
      </property>
     </widget>
    </item>
   </layout>
  </widget>
  <tabstops>
-  <tabstop>checkBox_show_fallbacks</tabstop>
   <tabstop>checkBox_history_search</tabstop>
   <tabstop>checkBox_clearOnHide</tabstop>
   <tabstop>checkBox_onTop</tabstop>
   <tabstop>checkBox_quit_on_close</tabstop>
   <tabstop>checkBox_hideOnFocusOut</tabstop>
   <tabstop>checkBox_center</tabstop>
-  <tabstop>comboBox_themes</tabstop>
+  <tabstop>comboBox_theme_light</tabstop>
   <tabstop>spinBox_results</tabstop>
   <tabstop>checkBox_system_shadow</tabstop>
   <tabstop>checkBox_client_shadow</tabstop>

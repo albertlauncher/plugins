@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2023 Manuel Schneider
+// Copyright (c) 2014-2024 Manuel Schneider
 
 #include "albert/extension/frontend/itemroles.h"
 #include "itemdelegate.h"
@@ -7,6 +7,8 @@ using namespace albert;
 
 
 ItemDelegate::ItemDelegate(QObject *parent) : QStyledItemDelegate(parent) {}
+
+void ItemDelegate::clearIconCache() { icon_provider.clearCache(); }
 
 void ItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options, const QModelIndex &index) const
 {

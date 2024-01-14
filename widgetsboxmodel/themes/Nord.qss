@@ -7,6 +7,7 @@
  */
 
 * {
+    border: none;
     color: #81A1C1;
     background-color: #2E3440;
 }
@@ -32,12 +33,14 @@
 
 
 #settingsButton {
-    background-color: transparent;
+    background-color: none;
     color: #4C566A;
-    max-height:13px;
-    max-width:13px;
-    min-height:13px;
-    min-width:13px;
+
+    max-height: 13px;
+    max-width: 13px;
+    min-height: 13px;
+    min-width: 13px;
+
     padding: 16px;
 }
 
@@ -92,13 +95,13 @@ QListView QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
     width: 0px;
 }
 
-QListView QScrollBar:vertical  {
+QListView QScrollBar:vertical {
     background: transparent;
     margin: 8px 0px 8px 0px;
     width: 2px;
 }
 
-QListView QScrollBar::handle:vertical  {
+QListView QScrollBar::handle:vertical {
     background: #4C566A;
     min-height: 24px;
 }

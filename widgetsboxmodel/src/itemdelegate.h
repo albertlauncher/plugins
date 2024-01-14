@@ -9,6 +9,8 @@ class ItemDelegate : public QStyledItemDelegate
 public:
     ItemDelegate(QObject *parent = nullptr);
 
+    void clearIconCache();
+
 private:
     void paint(QPainter *painter, const QStyleOptionViewItem &options, const QModelIndex &index) const override;
     albert::IconProvider icon_provider;

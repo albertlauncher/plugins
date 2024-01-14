@@ -1,4 +1,4 @@
-/* Copyright Manuel Schneider */
+/* Copyright: Manuel Schneider, License: MIT */
 
 * {
     border: none;
@@ -8,7 +8,7 @@
 
 #frame {
     padding: 8px 0px;
-    border-radius: 8px;
+    border-radius: 10px;
     background-color: #323232;
     min-width:640px;
     max-width:640px;
@@ -17,8 +17,8 @@
 #inputLine {
     padding: 0px 8px;
     font-size: 28px;
-    selection-color: #323232;
-    selection-background-color: #808080;
+    selection-color: #a0a0a0;
+    selection-background-color: #505050;
     background-color: transparent;
 }
 
@@ -41,7 +41,7 @@ QListView {
 }
 
 QListView::item:selected {
-    background: #202020;
+    background: #505050;
 }
 
 QListView QScrollBar:vertical  {
@@ -50,7 +50,7 @@ QListView QScrollBar:vertical  {
 }
 
 QListView QScrollBar::handle:vertical  {
-    background: #404040;
+    background: #808080;
     border-radius: 1px;
     min-height: 24px;
 }
@@ -79,5 +79,9 @@ QListView#resultsList::item {
 /********** actionList **********/
 
 QListView#actionList {
-    font-size: 20px;
+    font-size: 14px;
+}
+
+QListView#actionList::item {
+    padding: 4px;
 }

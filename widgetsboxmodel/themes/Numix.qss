@@ -19,15 +19,15 @@
   /*border: 1px solid #555;*/
 
   /* Workaround for Qt to get fixed size button*/
-	min-width:640px;
-	max-width:640px;
+  min-width:640px;
+  max-width:640px;
 }
 
 #inputLine {
-	padding: 2px;
+  padding: 2px;
   font: 36px "Source Sans Pro Bold";
-	selection-color: #fdf6e3;
-	selection-background-color: #586e75;
+  selection-color: #fdf6e3;
+  selection-background-color: #586e75;
   border: none;
   background-color: #2d2d2d;
 }
@@ -100,8 +100,7 @@ QListView#actionList::item{
 
 QListView#resultsList {
   icon-size: 36px;
-  font-size: 26px;
-  font: 20px "Source Sans Pro Bold";
+  font-size: 20px;
   background-color: transparent;
   border: none;
 }

@@ -1,13 +1,18 @@
-project(widgetsboxmodel VERSION 1.6)
+project(widgetsboxmodel VERSION 7.0)
+
+find_package(Qt6 REQUIRED COMPONENTS Svg StateMachine)
+
 albert_plugin(
-    NAME "Widgets BoxModel"
-    DESCRIPTION "The native frontend"
-    LONG_DESCRIPTION "See the [online documentation](https://github.com/albertlauncher/plugins/blob/master/widgetsboxmodel/README.md)."
-    LICENSE ALL
-    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-    MAINTAINERS @manuelschneid3r
-    QT_DEPENDENCIES Svg Widgets StateMachine
-    FRONTEND
+    SOURCE_FILES
+        ${PROJECT_NAME}.qrc
+        src/*.cpp
+        src/*.h
+        src/*.ui
+    PRIVATE_LINK_LIBRARIES
+        Qt6::StateMachine
+        Qt6::Svg
+    TS_FILES
+        i18n/${PROJECT_NAME}_de.ts
 )
 
 install(DIRECTORY "themes/" DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/${PROJECT_NAME}/themes")
