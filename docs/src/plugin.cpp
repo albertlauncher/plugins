@@ -94,10 +94,10 @@ Plugin::Plugin()
     if(!QSqlDatabase::isDriverAvailable("QSQLITE"))
         throw "QSQLITE driver unavailable";
 
-    if (!dataDir()->mkpath(docsets_dir))
+    if (!dataDir().mkpath(docsets_dir))
         throw "Unable to create docsets dir";
 
-    if (!cacheDir()->mkpath("icons"))
+    if (!cacheDir().mkpath("icons"))
         throw "Unable to create icons dir";
 
     connect(this, &Plugin::docsetsChanged, this, &Plugin::updateIndexItems);
@@ -141,7 +141,7 @@ void Plugin::updateDocsetList()
         reply->deleteLater();
 
         QByteArray replyData;
-        QFile cachedDocsetListFile(cacheDir()->filePath("zeal_docset_list.json"));
+        QFile cachedDocsetListFile(cacheDir().filePath("zeal_docset_list.json"));
 
         if (reply->error() != QNetworkReply::NoError) {
             if (cachedDocsetListFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -165,7 +165,7 @@ void Plugin::updateDocsetList()
                 auto source = jsonObject[QStringLiteral("sourceId")].toString();
                 auto identifier = jsonObject[QStringLiteral("name")].toString();
                 auto title = jsonObject[QStringLiteral("title")].toString();
-                auto icon_path = cache_dir->filePath(QString("icons/%1.png").arg(identifier));
+                auto icon_path = cache_dir.filePath(QString("icons/%1.png").arg(identifier));
 //                auto path = data_dir->filePath(QString("%1/%2").arg(docsets_dir, identifier));
 
                 auto rawBase64 = jsonObject[QStringLiteral("icon2x")].toString().toLocal8Bit();
@@ -173,7 +173,7 @@ void Plugin::updateDocsetList()
 
                 auto [it, success] = docsets_.emplace(identifier, Docset{source, identifier, title, icon_path});
 
-                QDir dir(QString("%1/%2.docset").arg(data_dir->filePath(docsets_dir), identifier));
+                QDir dir(QString("%1/%2.docset").arg(data_dir.filePath(docsets_dir), identifier));
                 if (dir.exists())
                     it->second.path = dir.path();
             }
@@ -212,6 +212,9 @@ void Plugin::downloadDocset(const QString &name)
     });
 
     connect(download_, &QNetworkReply::finished, this, [this, docset](){
+
+        auto cache_dir = cacheDir();
+
         if (download_){  // else aborted
 
             auto tmp_dir = QTemporaryDir();
@@ -224,13 +227,13 @@ void Plugin::downloadDocset(const QString &name)
                     file.close();
 
                     debug(QString("Extracting file '%1'").arg(file.fileName()));
-                    if (extract(file.fileName(), cacheDir()->path())){
+                    if (extract(file.fileName(), cache_dir.path())){
 
-                        debug(QString("Searching docset in '%1'").arg(cacheDir()->path()));
-                        if (QDirIterator it(cacheDir()->path(), {"*.docset"}, QDir::Dirs, QDirIterator::Subdirectories); it.hasNext()){
+                        debug(QString("Searching docset in '%1'").arg(cache_dir.path()));
+                        if (QDirIterator it(cache_dir.path(), {"*.docset"}, QDir::Dirs, QDirIterator::Subdirectories); it.hasNext()){
 
                             auto src = it.next();
-                            auto dst = QString("%1/%2.docset").arg(dataDir()->filePath(docsets_dir), docset->identifier);
+                            auto dst = QString("%1/%2.docset").arg(dataDir().filePath(docsets_dir), docset->identifier);
                             debug(QString("Renaming '%1' to '%2'").arg(src, dst));
                             if (QFile::rename(src, dst)){
 
@@ -242,7 +245,7 @@ void Plugin::downloadDocset(const QString &name)
                             } else
                                 error(QString("Failed renaming dir '%1' to '%2'.").arg(src, dst));
                         } else
-                            error(QString("Failed finding extracted docset in %1").arg(cacheDir()->path()));
+                            error(QString("Failed finding extracted docset in %1").arg(cache_dir.path()));
                     } else
                         error(QString("Extracting docset failed: '%1'").arg(file.fileName()));
 
