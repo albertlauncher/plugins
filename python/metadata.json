@@ -1,0 +1,8 @@
+{
+    "credits": "pybind11 BSD-3-Clause",
+    "description": "Load Python plugins",
+    "license": "ALL",
+    "maintainers": "@manuelschneid3r",
+    "name": "Python",
+    "url": "https://github.com/albertlauncher/plugins",
+}

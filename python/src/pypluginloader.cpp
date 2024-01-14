@@ -2,7 +2,6 @@
 
 #include "embeddedmodule.h"  // Has to be first include
 #include "plugin.h"
-#include "config.h"
 #include "pypluginloader.h"
 #include <QDir>
 #include <QEventLoop>
@@ -19,13 +18,13 @@ namespace py = pybind11;
 
 static const char *ATTR_PLUGIN_CLASS   = "Plugin";
 static const char *ATTR_MD_IID         = "md_iid";
-static const char *ATTR_MD_VERSION     = "md_version";
 static const char *ATTR_MD_ID          = "md_id";
+static const char *ATTR_MD_LICENSE     = "md_license";
+static const char *ATTR_MD_VERSION     = "md_version";
 static const char *ATTR_MD_NAME        = "md_name";
 static const char *ATTR_MD_DESCRIPTION = "md_description";
-static const char *ATTR_MD_LICENSE     = "md_license";
+static const char *ATTR_MD_AUTHORS     = "md_authors";
 static const char *ATTR_MD_URL         = "md_url";
-static const char *ATTR_MD_MAINTAINERS = "md_maintainers";
 static const char *ATTR_MD_BIN_DEPS    = "md_bin_dependencies";
 static const char *ATTR_MD_LIB_DEPS    = "md_lib_dependencies";
 static const char *ATTR_MD_CREDITS     = "md_credits";
@@ -42,12 +41,12 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
         if (path.endsWith(".py"))
             source_path_ = path;
         else
-            throw NoPluginException();  // Path is not a python file
+            throw NoPluginException("Path is not a python file");
     }
     else if (QFileInfo fi(QDir(path).filePath("__init__.py")); fi.exists() && fi.isFile())
         source_path_ = fi.absoluteFilePath();
     else
-        throw NoPluginException();  // Python package init file does not exist
+        throw NoPluginException("Python package init file does not exist");
 
     // Extract metadata
 
@@ -98,8 +97,8 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
                         else if (target_name == ATTR_MD_URL)
                             metadata_.url = value;
 
-                        else if (target_name == ATTR_MD_MAINTAINERS)
-                            metadata_.maintainers = {value};
+                        else if (target_name == ATTR_MD_AUTHORS)
+                            metadata_.authors = {value};
 
                         else if (target_name == ATTR_MD_LIB_DEPS)
                             metadata_.runtime_dependencies = {value};
@@ -117,8 +116,8 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
                             if (py::isinstance(item, ast.attr("Str")))
                                 list << item.attr("s").cast<py::str>().cast<QString>();
 
-                        if (target_name == ATTR_MD_MAINTAINERS)
-                            metadata_.maintainers = list;
+                        if (target_name == ATTR_MD_AUTHORS)
+                            metadata_.authors = list;
 
                         else if (target_name == ATTR_MD_LIB_DEPS)
                             metadata_.runtime_dependencies = list;
@@ -137,15 +136,12 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
         }
     }
 
-    if (py::object obj = ast.attr("get_docstring")(ast_root); py::isinstance<py::str>(obj))
-        metadata_.long_description = obj.cast<py::str>().cast<QString>();
-
     metadata_.load_type = LoadType::User;
 
     // Validate metadata
 
     if (metadata_.iid.isEmpty())
-        throw NoPluginException();
+        throw NoPluginException("No interface id found");
 
 
     QStringList errors;
@@ -173,6 +169,9 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QFileInfo &file_info)
 
     if (metadata_.description.isEmpty())
         errors << "'description' must not be empty.";
+
+    if (metadata_.license.isEmpty())
+        errors << "'license' must not be empty.";
 
     if (!metadata_.platforms.isEmpty())
 #if defined Q_OS_MACOS
@@ -276,7 +275,7 @@ QString PyPluginLoader::load()
                             << "install"
                             << "--disable-pip-version-check"
                             << "--target"
-                            << provider_.dataDir()->filePath("site-packages")
+                            << provider_.dataDir().filePath("site-packages")
                             << metadata_.runtime_dependencies
                     );
 

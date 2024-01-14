@@ -13,7 +13,14 @@ class PluginInstance;
 class QFileInfo;
 class Plugin;
 
-class NoPluginException: public std::exception {};
+class NoPluginException: public std::exception
+{
+public:
+    NoPluginException(const std::string &what): what_(what) {}
+    const char *what() const noexcept override { return what_.c_str(); }
+private:
+    std::string what_;
+};
 
 class PyPluginLoader : public albert::PluginLoader
 {

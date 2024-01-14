@@ -15,16 +15,16 @@ public:
     Plugin();
     ~Plugin() override;
 
-    bool watchSources() const;
-    void setWatchSources(bool);
+    // bool watchSources() const;
+    // void setWatchSources(bool);
 
 protected:
     QWidget* buildConfigWidget() override;
     std::vector<albert::PluginLoader*> plugins() override;
 
 private:
-    void reloadModules();
-    void updateSourceWatches();
+    // void reloadModules();
+    // void updateSourceWatches();
 
     std::vector<std::unique_ptr<PyPluginLoader>> plugins_;
     std::unique_ptr<pybind11::gil_scoped_release> release_;

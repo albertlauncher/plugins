@@ -19,8 +19,8 @@ namespace py = pybind11;
 
 static const constexpr char *PLUGIN_DIR = "plugins";
 static const constexpr char *SITE_PACKAGES= "site-packages";
-static const char *CFG_WATCH_SOURCES = "watchSources";
-static const bool DEF_WATCH_SOURCES = false;
+// static const char *CFG_WATCH_SOURCES = "watchSources";
+// static const bool DEF_WATCH_SOURCES = false;
 
 
 Plugin::Plugin()
@@ -38,18 +38,19 @@ Plugin::Plugin()
 
     py::module sys = py::module::import("sys");
     DEBG << "Python version:" << sys.attr("version").cast<QString>();
+    DEBG << "Python path:" << sys.attr("path").cast<QStringList>();
 
     auto data_dir = dataDir();
 
     // Create and add site-packages dir
-    if (!data_dir->exists(SITE_PACKAGES))
-        if(!data_dir->mkdir(SITE_PACKAGES))
-            throw QString("Failed creating site dir %1").arg(data_dir->filePath(SITE_PACKAGES));
-    py::module::import("site").attr("addsitedir")(data_dir->filePath(SITE_PACKAGES));
+    if (!data_dir.exists(SITE_PACKAGES))
+        if(!data_dir.mkdir(SITE_PACKAGES))
+            throw QString("Failed creating site dir %1").arg(data_dir.filePath(SITE_PACKAGES));
+    py::module::import("site").attr("addsitedir")(data_dir.filePath(SITE_PACKAGES));
 
     // Create module dirs
-    if (!data_dir->exists(PLUGIN_DIR))
-        data_dir->mkdir(PLUGIN_DIR);
+    if (!data_dir.exists(PLUGIN_DIR))
+        data_dir.mkdir(PLUGIN_DIR);
 
     auto start = system_clock::now();
     using QSP = QStandardPaths;
@@ -61,8 +62,8 @@ Plugin::Plugin()
                 try {
                     auto &loader = plugins_.emplace_back(make_unique<PyPluginLoader>(*this, file_info));
                     DEBG << "Found valid Python plugin" << loader->path;
-                } catch (const NoPluginException &) {
-                    continue;
+                } catch (const NoPluginException &e) {
+                    DEBG << QString("Invalid plugin (%1): %2").arg(e.what(), file_info.filePath());
                 } catch (const exception &e) {
                     WARN << e.what() << file_info.filePath();
                 }
@@ -72,7 +73,7 @@ Plugin::Plugin()
     INFO << QStringLiteral("[%1 ms] Python plugin scan")
                 .arg(duration_cast<milliseconds>(system_clock::now()-start).count());
 
-    setWatchSources(settings()->value(CFG_WATCH_SOURCES, DEF_WATCH_SOURCES).toBool());
+    // setWatchSources(settings()->value(CFG_WATCH_SOURCES, DEF_WATCH_SOURCES).toBool());
 }
 
 Plugin::~Plugin()
@@ -82,30 +83,30 @@ Plugin::~Plugin()
     py::finalize_interpreter();
 }
 
-bool Plugin::watchSources() const { return sources_watcher_.get(); }
+// bool Plugin::watchSources() const { return sources_watcher_.get(); }
 
-void Plugin::setWatchSources(bool val)
-{
-    if (watchSources() && !val){
-        sources_watcher_.reset();
-    } else if (!watchSources() && val){
-        sources_watcher_ = make_unique<QFileSystemWatcher>();
-        connect(sources_watcher_.get(), &QFileSystemWatcher::fileChanged, this,  [this](const QString path){
-            for (auto &loader : plugins_)
-                if (path == loader->source_path())
-                if (loader->state() == PluginState::Loaded ||
-                    (loader->state() == PluginState::Unloaded && !loader->stateInfo().isEmpty())){
-                    loader->unload();
-                    loader->load();
-                }
-        });
-//        if (!sources_watcher_->files().isEmpty())
-//            sources_watcher_->removePaths(sources_watcher_->files());
-        for (const auto &loader : plugins_)
-            sources_watcher_->addPath(loader->source_path());
-    }
-    settings()->setValue(CFG_WATCH_SOURCES, val);
-}
+// void Plugin::setWatchSources(bool val)
+// {
+//     if (watchSources() && !val){
+//         sources_watcher_.reset();
+//     } else if (!watchSources() && val){
+//         sources_watcher_ = make_unique<QFileSystemWatcher>();
+//         connect(sources_watcher_.get(), &QFileSystemWatcher::fileChanged, this,  [this](const QString path){
+//             for (auto &loader : plugins_)
+//                 if (path == loader->source_path())
+//                     if (loader->state() == PluginState::Loaded ||
+//                         (loader->state() == PluginState::Unloaded && !loader->stateInfo().isEmpty())){
+//                         loader->unload();
+//                         loader->load();
+//                     }
+//         });
+// //        if (!sources_watcher_->files().isEmpty())
+// //            sources_watcher_->removePaths(sources_watcher_->files());
+//         for (const auto &loader : plugins_)
+//             sources_watcher_->addPath(loader->source_path());
+//     }
+//     settings()->setValue(CFG_WATCH_SOURCES, val);
+// }
 
 vector<PluginLoader*> Plugin::plugins()
 {
@@ -121,12 +122,13 @@ QWidget *Plugin::buildConfigWidget()
     Ui::ConfigWidget ui;
     ui.setupUi(w);
 
-    ui.checkBox_watchSources->setChecked(watchSources());
-    connect(ui.checkBox_watchSources, &QCheckBox::toggled,
-            this, &Plugin::setWatchSources);
+    ui.checkBox_watchSources->hide();
+    // ui.checkBox_watchSources->setChecked(watchSources());
+    // connect(ui.checkBox_watchSources, &QCheckBox::toggled,
+    //         this, &Plugin::setWatchSources);
 
     connect(ui.pushButton_packages, &QPushButton::clicked, this, [this](){
-        openUrl("file://" + dataDir()->filePath("site-packages"));
+        openUrl("file://" + dataDir().filePath("site-packages"));
     });
 
     return w;
