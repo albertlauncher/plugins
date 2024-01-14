@@ -5,6 +5,7 @@
 #include "albert/logging.h"
 #include "plugin.h"
 #include <Contacts/Contacts.h>
+#include <QLabel>
 #include <QRegularExpression>
 ALBERT_LOGGING_CATEGORY("contacts")
 using namespace albert;
@@ -112,3 +113,12 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
     }
   }
 }
+
+
+QWidget *Plugin::buildConfigWidget()
+{
+    auto l = new QLabel(tr("Apple contacts prototype. For now only phone and mail."));
+    l->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
+    return l;
+}
+

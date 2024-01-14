@@ -7,7 +7,11 @@
 class Plugin : public albert::plugin::ExtensionPlugin<albert::GlobalQueryHandler>
 {
     Q_OBJECT ALBERT_PLUGIN
+
 public:
+
+    QWidget *buildConfigWidget() override;
     QString defaultTrigger() const override { return QStringLiteral("cn "); }
     std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery*) const override;
+
 };
