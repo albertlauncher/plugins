@@ -37,17 +37,30 @@ struct BookmarkItem : Item
     QString name_;
     QString url_;
 
-    QString id() const override { return id_; }
-    QString text() const override { return name_; }
-    QString subtext() const override { return url_; }
-    QStringList iconUrls() const override {
+    QString id() const override
+    { return id_; }
+
+    QString text() const override
+    { return name_; }
+
+    QString subtext() const override
+    { return url_; }
+
+    QStringList iconUrls() const override
+    {
         static const QStringList icon_urls = {"xdg:www", "xdg:web-browser", "xdg:emblem-web", ":favicon"};
         return icon_urls;
     }
-    vector<Action> actions() const override { return {
-        {"open-url", "Open URL",              [this]() { openUrl(url_); }},
-        {"copy-url", "Copy URL to clipboard", [this]() { setClipboardText(url_); }}
-    }; }
+
+    vector<Action> actions() const override
+    {
+        static const auto tr_open = QCoreApplication::translate("BookmarkItem", "Open URL");
+        static const auto tr_copy = QCoreApplication::translate("BookmarkItem", "Copy URL to clipboard");
+        return {
+            {"open-url", tr_open, [this]() { openUrl(url_); }},
+            {"copy-url", tr_copy, [this]() { setClipboardText(url_); }}
+        };
+    }
 };
 
 
@@ -56,8 +69,8 @@ static std::vector<std::shared_ptr<BookmarkItem>> parseBookmarks(const QStringLi
     function<void(const QJsonObject &json, std::vector<std::shared_ptr<BookmarkItem>> &items)> recursiveJsonTreeWalker =
             [&recursiveJsonTreeWalker](const QJsonObject &json, std::vector<std::shared_ptr<BookmarkItem>> &items){
                 QJsonValue type = json["type"];
-                if (type != QJsonValue::Undefined) {
-
+                if (type != QJsonValue::Undefined)
+                {
                     if (type.toString() == "folder")
                         for (const QJsonValueRef child: json["children"].toArray())
                             recursiveJsonTreeWalker(child.toObject(), items);
@@ -71,8 +84,10 @@ static std::vector<std::shared_ptr<BookmarkItem>> parseBookmarks(const QStringLi
 
     std::vector<std::shared_ptr<BookmarkItem>> results;
     for (auto &path : paths) {
-        if (abort) return {};
-        if (QFile f(path); f.open(QIODevice::ReadOnly)) {
+        if (abort)
+            return {};
+        if (QFile f(path); f.open(QIODevice::ReadOnly))
+        {
             for (const auto &root: QJsonDocument::fromJson(f.readAll()).object().value("roots").toObject())
                 if (root.isObject())
                     recursiveJsonTreeWalker(root.toObject(), results);
@@ -105,11 +120,15 @@ Plugin::Plugin()
     });
 
     indexer.parallel = [this](const bool &abort){ return parseBookmarks(paths_, abort); };
-    indexer.finish = [this](vector<shared_ptr<BookmarkItem>> && res){
+    indexer.finish = [this](vector<shared_ptr<BookmarkItem>> && res)
+    {
         INFO << QStringLiteral("Indexed %1 bookmarks [%2 ms]")
                     .arg(res.size()).arg(indexer.runtime.count());
-        emit statusChanged(QString("%1 bookmarks indexed.").arg(bookmarks_.size()));
+
+        emit statusChanged(tr("%n bookmarks indexed.", nullptr, bookmarks_.size()));
+
         bookmarks_ = ::move(res);
+
         updateIndexItems();
     };
     indexer.run();  // < called on setindex
@@ -154,49 +173,54 @@ QWidget *Plugin::buildConfigWidget()
     auto *w = new QWidget();
     Ui::ConfigWidget ui;
     ui.setupUi(w);
-    auto *string_list_model = new QStringListModel();
-    connect(w, &QWidget::destroyed, string_list_model, &QObject::deleteLater);
-    string_list_model->setStringList(paths_);
 
+    auto *string_list_model = new QStringListModel(paths_);
+    connect(w, &QWidget::destroyed, string_list_model, &QObject::deleteLater);
     ui.listView_paths->setModel(string_list_model);
 
-    ui.label_status->setText(QString("%1 bookmarks indexed.").arg(bookmarks_.size()));
-
-    // Checkbox index hostnames
     ui.checkBox_index_hostname->setChecked(index_hostname_);
-    connect(ui.checkBox_index_hostname, &QCheckBox::toggled, this, [this](bool checked){
-        settings()->setValue(CFG_INDEX_HOSTNAME, checked);
-        index_hostname_ = checked;
-        indexer.run();
-    });
+    connect(ui.checkBox_index_hostname, &QCheckBox::toggled,
+            this, [this](bool checked)
+            {
+                settings()->setValue(CFG_INDEX_HOSTNAME, checked);
+                index_hostname_ = checked;
+                indexer.run();
+            });
 
-    connect(this, &Plugin::statusChanged, ui.label_status, &QLabel::setText);
+    ui.label_status->setText(tr("%n bookmarks indexed.", nullptr, bookmarks_.size()));
+    connect(this, &Plugin::statusChanged,
+            ui.label_status, &QLabel::setText);
 
-    connect(ui.pushButton_add, &QPushButton::clicked, this,
-            [this,w,m=string_list_model]() {
-        auto path = QFileDialog::getOpenFileName(w, tr("Select Bookmarks file"),
-                                                 QDir::homePath(), "Bookmarks (Bookmarks)");
-        if (!path.isNull() && !paths_.contains(path)) {
-            paths_ << path;
-            setPaths(paths_);
-            m->setStringList(paths_);
-        }
-    });
+    connect(ui.pushButton_add, &QPushButton::clicked,
+            this, [this, w, m = string_list_model]()
+            {
+                auto path = QFileDialog::getOpenFileName(
+                    w, tr("Select bookmarks file"), QDir::homePath(),
+                    QString("%1 (Bookmarks)").arg(tr("Bookmarks")));
 
-    connect(ui.pushButton_rem, &QPushButton::clicked, this,
-            [this,v=ui.listView_paths,m=string_list_model]() {
-        if (!v->currentIndex().isValid())
-            return;
-        paths_.removeAt(v->currentIndex().row());
-        setPaths(paths_);
-        m->setStringList(paths_);
-    });
+                if (!path.isNull() && !paths_.contains(path)) {
+                    paths_ << path;
+                    setPaths(paths_);
+                    m->setStringList(paths_);
+                }
+            });
+
+    connect(ui.pushButton_rem, &QPushButton::clicked,
+            this, [this,v=ui.listView_paths,m=string_list_model]()
+            {
+                if (!v->currentIndex().isValid())
+                    return;
+                paths_.removeAt(v->currentIndex().row());
+                setPaths(paths_);
+                m->setStringList(paths_);
+            });
 
     connect(ui.pushButton_reset, &QPushButton::clicked, this,
-            [this,m=string_list_model]() {
-        resetPaths();
-        m->setStringList(paths_);
-    });
+            [this,m=string_list_model]()
+            {
+                resetPaths();
+                m->setStringList(paths_);
+            });
 
     return w;
 }

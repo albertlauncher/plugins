@@ -1,9 +1,15 @@
-project(chromium VERSION 1.5)
+project(chromium VERSION 6.0)
+
+find_package(Qt6 REQUIRED COMPONENTS Concurrent)
+
 albert_plugin(
-    NAME Chromium
-    DESCRIPTION "Open Chromium based browser bookmarks"
-    LICENSE BSD-2
-    URL https://github.com/albertlauncher/plugins/tree/master/${PROJECT_NAME}
-    MAINTAINERS @manuelschneid3r
-    QT_DEPENDENCIES Widgets Concurrent
+    SOURCE_FILES
+        ${PROJECT_NAME}.qrc
+        src/configwidget.ui
+        src/plugin.cpp
+        src/plugin.h
+    PRIVATE_LINK_LIBRARIES
+        Qt6::Concurrent
+    TS_FILES
+        i18n/${PROJECT_NAME}_de.ts
 )
