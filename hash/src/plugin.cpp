@@ -1,15 +1,16 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
 #include "albert/albert.h"
 #include "albert/extension/queryhandler/standarditem.h"
 #include "plugin.h"
+#include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QMetaEnum>
 #include <memory>
 using namespace albert;
 using namespace std;
 
-static int algo_count = QMetaEnum::fromType<QCryptographicHash::Algorithm>().keyCount();
+static int algo_count = QMetaEnum::fromType<QCryptographicHash::Algorithm>().keyCount()-1;
 
 static shared_ptr<Item> buildItem(int algo_index, const QString& string_to_hash)
 {
@@ -20,15 +21,24 @@ static shared_ptr<Item> buildItem(int algo_index, const QString& string_to_hash)
     hash.addData(string_to_hash.toUtf8());
     QByteArray hashString = hash.result().toHex();
 
+    static const auto tr_c = QCoreApplication::translate("buildItem", "Copy");
+    static const auto tr_cs = QCoreApplication::translate("buildItem", "Copy short form (8 char)");
+
     return StandardItem::make(
-            algo_name,
-            hashString,
-            QString("%1 of '%2'").arg(algo_name, string_to_hash),
-            QStringList({":hash"}),
+        algo_name,
+        hashString,
+        algo_name,
+        QStringList({":hash"}),
+        {
             {
-                {"clip", "Copy", [hashString](){ albert::setClipboardText(QString(hashString)); }},
-                {"clip-short", "Copy short form (8 char)", [hashString](){ albert::setClipboardText(QString(hashString.left(8))); }}
+                "c", tr_c,
+                [hashString](){ albert::setClipboardText(QString(hashString)); }
+            },
+            {
+                "cs", tr_cs,
+                [hashString](){ albert::setClipboardText(QString(hashString.left(8))); }
             }
+        }
     );
 };
 
