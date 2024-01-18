@@ -1,0 +1,87 @@
+
+* {
+  border: none;
+  color : #a3c4bc;
+  background-color: #173753;
+}
+
+#frame {
+  padding: 6px;
+  border-radius: 12px;
+  background-color: #173753;
+  border: 3px solid #de3c4b;
+  min-width: 640px;
+  max-width: 640px;
+}
+
+#inputLine {
+  padding: 2px;
+  border-radius: 2px;
+  font-size: 34px;
+  selection-color: #2892d7;
+  selection-background-color: #282b28;
+  background-color: #1b4353;
+  color: #2892d7
+}
+
+#settingsButton {
+  color: #6daedb;
+  background-color: #173753;
+  padding: 4px;
+  margin: 6px 6px 0px 0px;
+  border-top-right-radius: 6px;
+  border-bottom-left-radius: 10px;
+  min-width:13px;
+  min-height:13px;
+  max-width:13px;
+  max-height:13px;
+}
+
+/********** ListViews **********/
+QListView QScrollBar:vertical  {
+  width: 2px;
+  background: transparent;
+}
+
+QListView QScrollBar::handle:vertical  {
+  background: #a24936;
+  min-height: 24px;
+}
+
+QListView QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+QListView QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical,
+QListView QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+  border: 0px;
+  width: 0px;
+  height: 0px;
+  background: transparent;
+}
+
+/********** actionList **********/
+QListView#actionList {
+  font-size: 23px;
+}
+
+QListView#actionList::item{
+  height: 28px;
+}
+
+QListView#actionList::item::selected{
+  background: qlineargradient(x1:0, x2:1, stop:0.0 #4000bfb2, stop:0.5 #2000bfb2, stop:1.0 #4000bfb2 );
+}
+
+/********** resultsList **********/
+QListView#resultsList {
+  icon-size: 45px;
+  font-size: 23px;
+  color: #a3c4bc;
+}
+
+QListView#resultsList::item{
+  height: 45px;
+}
+
+QListView#resultsList::item::selected{
+  background: qlineargradient(x1:0, x2:1, stop:0.0 #407f7eff, stop:0.5 #207f7eff, stop:1.0 #407f7eff );
+}
+      
