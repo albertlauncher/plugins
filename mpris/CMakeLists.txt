@@ -11,8 +11,6 @@ albert_plugin(
         src/plugin.h
     PRIVATE_LINK_LIBRARIES
         Qt6::DBus
-    TS_FILES
-        i18n/${PROJECT_NAME}_de.ts
 )
 
 #endif()

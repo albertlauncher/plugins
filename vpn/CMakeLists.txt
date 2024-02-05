@@ -8,8 +8,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             src/plugin.h
         PRIVATE_LINK_LIBRARIES
             "-framework SystemConfiguration"
-        TS_FILES
-            i18n/${PROJECT_NAME}_de.ts
     )
 
 endif()

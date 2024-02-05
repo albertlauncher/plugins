@@ -15,8 +15,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             ${SPARKLE_INCLUDE_DIRS}
         PRIVATE_LINK_LIBRARIES
             ${SPARKLE_LIBRARIES}
-        TS_FILES
-            i18n/${PROJECT_NAME}_de.ts
     )
 
 endif()

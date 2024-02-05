@@ -12,8 +12,6 @@ albert_plugin(
     PRIVATE_LINK_LIBRARIES
         Qt6::Concurrent
         pybind11::embed
-    TS_FILES
-        i18n/${PROJECT_NAME}_de.ts
 )
 
 install(

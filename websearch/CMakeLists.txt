@@ -6,6 +6,4 @@ albert_plugin(
         src/*.cpp
         src/*.h
         src/*.ui
-    TS_FILES
-        i18n/${PROJECT_NAME}_de.ts
 )

@@ -15,8 +15,6 @@ albert_plugin(
         ${LIBQALCULATE_INCLUDE_DIRS}
     PRIVATE_LINK_LIBRARIES
         ${LIBQALCULATE_LIBRARIES}
-    TS_FILES
-        i18n/${PROJECT_NAME}_de.ts
 )
 
 target_link_directories(${PROJECT_NAME} PRIVATE ${LIBQALCULATE_LIBRARY_DIRS})

@@ -9,8 +9,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         PRIVATE_LINK_LIBRARIES
             objc
             "-framework Cocoa"
-        TS_FILES
-            i18n/${PROJECT_NAME}_de.ts
     )
 
 endif()

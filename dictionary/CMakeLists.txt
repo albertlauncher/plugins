@@ -13,8 +13,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             "-framework Cocoa"
             "-framework CoreFoundation"
             ${CORE_FOUNDATION_LIBRARY}
-        TS_FILES
-            i18n/${PROJECT_NAME}_de.ts
     )
 
 endif()

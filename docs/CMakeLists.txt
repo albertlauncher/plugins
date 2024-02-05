@@ -14,8 +14,6 @@ albert_plugin(
         Qt6::Sql
         Qt6::Network
         LibArchive::LibArchive
-    TS_FILES
-        i18n/${PROJECT_NAME}_de.ts
 )
 
 #endif()

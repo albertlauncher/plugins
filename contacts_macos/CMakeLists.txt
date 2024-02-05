@@ -10,8 +10,6 @@ albert_plugin(
         src/plugin.mm
     PRIVATE_LINK_LIBRARIES
         ${CONTACTS_FRAMEWORK}
-    TS_FILES
-        i18n/${PROJECT_NAME}_de.ts
 )
 
 endif()

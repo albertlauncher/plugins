@@ -9,8 +9,6 @@ albert_plugin(
         src/*.ui
     PRIVATE_LINK_LIBRARIES
         Qt6::Concurrent
-    TS_FILES
-        i18n/${PROJECT_NAME}_de.ts
 )
 
 if (BUILD_TESTS)

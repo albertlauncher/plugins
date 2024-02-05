@@ -12,8 +12,6 @@ albert_plugin(
     PRIVATE_LINK_LIBRARIES
         Qt6::Qml
         Qt6::Quick
-    TS_FILES
-        i18n/${PROJECT_NAME}_de.ts
 )
 
 #install(DIRECTORY "styles/" DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/${PROJECT_NAME}/styles")

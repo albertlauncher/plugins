@@ -11,6 +11,4 @@ albert_plugin(
         include
     PRIVATE_LINK_LIBRARIES
         Qt6::Concurrent
-    TS_FILES
-        i18n/${PROJECT_NAME}_de.ts
 )
