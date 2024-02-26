@@ -7,6 +7,7 @@ import "albert.js" as Util
 ListView {
     id: resizingListView
     objectName: "resizingListView"
+    property int maxItems: 5
 
     signal itemActivated(int index)
 
@@ -15,7 +16,18 @@ ListView {
     highlightMoveDuration : 0
     highlightMoveVelocity : -1
     snapMode: ListView.SnapToItem
-    onModelChanged: if (model && model.rowCount() > 0) currentIndex = 0
+    onCountChanged: {
+        // count is not guaranteed to equal the contentItem.children.length
+        // Especially invisible do not necessarily have to exist
+        // never let the list have height 0
+        visible=(count !== 0)
+        if (count !== 0)
+        {
+            height = Math.min(maxItems, count) * (contentItem.children[0].height + spacing) - spacing
+            if (currentIndex < 0)
+                currentIndex = 0
+        }
+    }
 
     Keys.onPressed: (event)=>{
         //Util.printKeyPress("DefaultListView", event)

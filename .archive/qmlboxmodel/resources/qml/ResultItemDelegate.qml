@@ -91,4 +91,5 @@ Item {
     }
 
     function getInputAction(){ return itemInputAction }
+    function getActionsList(){ return itemActionsList }
 }

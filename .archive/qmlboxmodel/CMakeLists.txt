@@ -6,12 +6,19 @@ albert_plugin(
     SOURCE_FILES
         ${PROJECT_NAME}.qrc
         resources/qml/*
-        src/*.cpp
-        src/*.h
         src/configwidget.ui
+        src/imageprovider*
+        src/plugin*
+        src/qmlinterface*
+        src/window*
     PRIVATE_LINK_LIBRARIES
         Qt6::Qml
         Qt6::Quick
+)
+
+target_sources(qmlboxmodel
+  PRIVATE
+    resources/qml/StateChart.scxml
 )
 
 #install(DIRECTORY "styles/" DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/${PROJECT_NAME}/styles")

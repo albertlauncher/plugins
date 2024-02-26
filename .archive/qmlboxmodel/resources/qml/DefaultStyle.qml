@@ -1,7 +1,7 @@
-﻿import QtQuick
+﻿import Qt5Compat.GraphicalEffects
+import QtQml.StateMachine as DSM  // State name clashes.
+import QtQuick
 import QtQuick.Window
-import Qt5Compat.GraphicalEffects
-import QtQml.StateMachine // import last. State name clashes.
 import "albert.js" as Util
 
 Item { DebugRect{ name: "root" }
@@ -28,7 +28,9 @@ Item { DebugRect{ name: "root" }
     }
 
 
-    Rectangle{ DebugRect{ name: "frame" }
+    Rectangle
+    {
+        DebugRect{ name: "frame" }
         id: frame
         x: style.shadow_enabled ? style.shadow_size : 0
         y: style.shadow_enabled ? style.shadow_size : 0
@@ -40,13 +42,16 @@ Item { DebugRect{ name: "root" }
         border.width: style.window_border_width
         radius: style.window_radius
 
-        Column {
+        Column
+        {
             id: contentColumn
             width: frame.width
             padding: style.window_content_padding
             spacing: style.window_content_spacing
 
-            Rectangle{ DebugRect{ name: "inputFrame" }
+            Rectangle
+            {
+                DebugRect{ name: "inputFrame" }
                 id: inputFrame
                 height: input.height + style.input_padding * 2
                 width: contentColumn.width - style.window_content_padding * 2
@@ -56,7 +61,9 @@ Item { DebugRect{ name: "root" }
                 border.width: style.input_border_width
                 radius: style.input_radius
 
-                HistoryTextInput { DebugRect{ name: "HistoryTextInput" }
+                HistoryTextInput
+                {
+                    DebugRect{ name: "HistoryTextInput" }
                     id: input
                     objectName: "input" // required by C++
                     x:style.input_padding;
@@ -68,18 +75,22 @@ Item { DebugRect{ name: "root" }
                     selectedTextColor: style.input_text_selection_color
                     selectionColor: style.input_text_selection_background_color
                     cursorColor: style.input_cursor_color
-                    Text { DebugRect{ name: "Trigger" }
+                    Text
+                    {
+                        DebugRect{ name: "Trigger" }
                         id: trigger
                         visible: hint.width !== 0
                         font.pixelSize: style.input_text_font_size
                         color: style.input_text_trigger_color
                     }
-                    onTextChanged: runQuery()
+                    onTextChanged: hint.text = ''
                     Keys.forwardTo: [resultsList]
                     //Keys.onPressed: (event)=>{ Util.printKeyPress("inputLine", event) }
                 }
 
-                Text { DebugRect{ name: "hint" }
+                Text
+                {
+                    DebugRect{ name: "hint" }
                     id: hint
                     anchors.left: input.right
                     anchors.right: inputFrame.right
@@ -98,12 +109,10 @@ Item { DebugRect{ name: "root" }
                 objectName: "resultsList"
                 width: contentColumn.width - contentColumn.padding*2 - style.result_list_padding*2
                 anchors.horizontalCenter: parent.horizontalCenter
-                onCountChanged: {
-                    height = (count === 0) ? 0 : Math.min(style.result_list_max_visible, count)
-                                             * (contentItem.children[0].height + spacing) - spacing
-                }
+                maxItems: style.result_list_max_visible
 
-                visible: count !== 0
+
+                // visible: count !== 0
                 spacing: style.result_list_spacing
                 delegate: ResultItemDelegate { DebugRect{ name: "resultItem" }
                     icon_size: style.result_item_icon_size
@@ -126,10 +135,7 @@ Item { DebugRect{ name: "root" }
                     radius: style.result_list_highlight_radius
                 }
                 onItemActivated: (result_index) => { activate(result_index) }
-                onCurrentIndexChanged: {
-                    if (currentIndex >= 0)
-                        setInputActionHint(currentItem.getInputAction())
-                }
+                onCurrentIndexChanged: if (currentIndex >= 0) setInputActionHint(currentItem.getInputAction())
                 Keys.forwardTo: [root]
                 //Keys.onPressed: (event)=>{ Util.printKeyPress("resultsList", event) }
             }
@@ -174,7 +180,13 @@ Item { DebugRect{ name: "root" }
             width: style.settings_button_size
             height: style.settings_button_size
             iconColor: style.settings_button_color
-            onClicked: (mouse)=> { albert.showSettings() }
+            acceptedButtons: Qt.LeftButton|Qt.RightButton
+            onClicked: (mouse) => {
+                if (mouse.button === Qt.RightButton)
+                    style.debug = !style.debug
+                else if (mouse.button === Qt.LeftButton)
+                    albert.showSettings()
+            }
         }
     }
 
@@ -256,93 +268,104 @@ Item { DebugRect{ name: "root" }
         property int   settings_button_size: 14
     }
 
-    StateMachine {
+    DSM.StateMachine {
         id: statemachine
         running: true
-        initialState: sNoQuery
+        initialState: sRoot
 
-        component StateDebug: State{
+        component StateDebug: DSM.State {
             property string name
-//            onEntered: console.log("ENTER " + name)
-//            onExited: console.log("EXIT " + name)
+            onEntered: albert.debug("ENTER " + name)
+            onExited: albert.debug("EXIT " + name)
         }
 
-        StateDebug { name: "sNoQuery"
-            id: sNoQuery
-            SignalTransition { targetState: sAwaitMatches; signal: albert.currentQueryChanged }
-        }
-        StateDebug { name: "sQuery"
-            id: sQuery
-            childMode: QState.ParallelStates
-            SignalTransition { targetState: sNoQuery; signal: Window.visibilityChanged }
-            onExited: albert.clearQueries()
+        DSM.State {
+            id: sRoot
+            childMode: DSM.QState.ParallelStates
 
-            StateDebug { name: "sResults"
-                id: sResults
-                initialState: sAwaitMatches
-
-                StateDebug { name: "sMatches"
-                    id: sMatches
-                    initialState: sDisplayMatches
-                    StateDebug { name: "sAwaitMatches"
-                        id: sAwaitMatches
-                        onEntered: resultsList.enabled = false
-                        onExited: resultsList.enabled = true
-                        SignalTransition { targetState: sFallbacks; signal: albert.currentQueryReady; guard: albert.currentQuery().matches().rowCount() === 0 && !albert.currentQuery().isTriggered()}
-                        SignalTransition { targetState: sDisplayMatches; signal: albert.currentQueryReady; guard: albert.currentQuery().matches().rowCount() > 0 || albert.currentQuery().isTriggered()}
-                    }
-                    StateDebug { name: "sDisplayMatches"
-                        id: sDisplayMatches
-                        onEntered: resultsList.model = albert.currentQuery().matches()
-                        SignalTransition { targetState: sAwaitMatches; signal: albert.currentQueryChanged }
-                    }
-                    SignalTransition { targetState: sFallbacks; signal: showFallbacks }
+            DSM.State {
+                initialState: sIdle
+                StateDebug { id: sIdle; name: "sIdle"
+                    DSM.SignalTransition { targetState: sBusy; signal: input.textChanged }
                 }
-                StateDebug { name: "sFallbacks"
-                    id: sFallbacks
-                    onEntered: resultsList.model = albert.currentQuery().fallbacks()
-                    SignalTransition { targetState: sAwaitMatches; signal: albert.currentQueryChanged }
-                    SignalTransition { targetState: sDisplayMatches; signal: showMatches; guard: !albert.currentQuery().isFinished() || albert.currentQuery().matches().rowCount() > 0 }
+                StateDebug { id: sBusy; name: "sBusy"
+                    initialState: sBusyAwaitQuery
+                    onEntered: settingsButton.busy = true;
+                    onExited: settingsButton.busy = false
+                    DSM.SignalTransition { targetState: sIdle; signal: albert.currentQueryChanged; guard: albert.currentQuery() === null }
+                    DSM.SignalTransition { targetState: sIdle; signal: albert.currentQueryFinished }
+
+                    StateDebug { id: sBusyAwaitQuery; name: "sBusyAwaitQuery"
+                        onEntered: { resultsList.enabled = false; actionsList.enabled = false; }
+                        onExited: { resultsList.enabled = true; actionsList.enabled = true; }
+                        DSM.SignalTransition { targetState: sBusyDisplayQuery; signal: albert.currentQueryChanged; guard: albert.currentQuery() !== null }
+                    }
+
+                    StateDebug { id: sBusyDisplayQuery; name: "sBusyDisplayQuery"
+                        DSM.SignalTransition { targetState: sBusyAwaitQuery; signal: input.textChanged }
+                    }
                 }
             }
-            StateDebug { name: "sActions"
-                id: sActions
-                initialState: sActionsHidden
-                StateDebug { name: "sActionsHidden"
-                    id: sActionsHidden
-                    SignalTransition { targetState: sActionsVisble; signal: showActions; guard: resultsList.currentIndex >= 0 }
+
+            DSM.State {  // Model state
+                initialState: sQueryUnset
+
+                StateDebug { id: sQueryUnset; name: "sQueryUnset"
+                    onEntered: resultsList.model = null
+                    DSM.SignalTransition { targetState: sQuerySet; signal: albert.currentQueryChanged; guard: albert.currentQuery() !== null }
                 }
-                StateDebug { name: "sActionsVisble"
-                    id: sActionsVisble
-                    SignalTransition { targetState: sActionsHidden; signal: hideActions }
-                    SignalTransition { targetState: sActionsHidden; signal: sMatches.entered }
-                    SignalTransition { targetState: sActionsHidden; signal: sMatches.exited }
-                    SignalTransition { targetState: sActionsHidden; signal: albert.currentQueryChanged }
-                    onEntered: {
-                        if (sMatches.active)
-                            actionsList.model = albert.currentQuery().matchActions(resultsList.currentIndex)
-                        else
-                            actionsList.model = albert.currentQuery().fallbackActions(resultsList.currentIndex)
-                        input.Keys.forwardTo = [actionsList]
+
+                StateDebug { id: sQuerySet; name: "sQuerySet"
+                    childMode: DSM.QState.ParallelStates
+                    DSM.SignalTransition { targetState: sQueryUnset; signal: albert.currentQueryChanged; guard: albert.currentQuery() === null }
+                    DSM.SignalTransition { targetState: sMatches; signal: albert.currentQueryChanged; guard: albert.currentQuery() !== null }
+
+                    DSM.State {
+                        initialState: sMatches
+                        onExited: resultsList.model = null
+
+                        StateDebug { id: sMatches; name: "sMatches"
+                            onEntered: {
+                                albert.critical(albert.currentQuery().string() + albert.currentQuery())
+                                albert.critical(albert.currentQuery().matches().rowCount())
+                                resultsList.model = albert.currentQuery().matches()
+
+                            }
+                            DSM.SignalTransition { targetState: sFallbacks; signal: showFallbacks }
+                        }
+                        StateDebug { id: sFallbacks; name: "sFallbacks"
+                            onEntered: resultsList.model = albert.currentQuery().fallbacks()
+                            DSM.SignalTransition { targetState: sMatches; signal: showMatches;
+                                guard: !albert.currentQuery().isFinished() || albert.currentQuery().matches().rowCount() > 0
+                            }
+                        }
                     }
-                    onExited: {
-                        actionsList.model = null
-                        input.Keys.forwardTo = [resultsList]
+
+                    // SignalTransition { targetState: sFallbacks;      signal: albert.currentQueryReady; guard: albert.currentQuery().matches().rowCount() === 0 && !albert.currentQuery().isTriggered()}
+                    // SignalTransition { targetState: sDisplayMatches; signal: albert.currentQueryReady; guard: albert.currentQuery().matches().rowCount() > 0 || albert.currentQuery().isTriggered()}
+
+                    DSM.State {
+                        initialState: sItems
+                        StateDebug { id: sItems; name: "sItems"
+                            DSM.SignalTransition { targetState: sActions; signal: showActions; guard: resultsList.currentIndex >= 0 }
+                        }
+                        StateDebug { id: sActions; name: "sActions"
+                            onEntered: {
+                                actionsList.model = albert.createStringListModel(resultsList.currentItem.getActionsList())
+                                input.Keys.forwardTo = [actionsList]
+                            }
+                            onExited: {
+                                actionsList.model = null
+                                input.Keys.forwardTo = [resultsList]
+                            }
+                            DSM.SignalTransition { targetState: sItems; signal: hideActions }
+                            DSM.SignalTransition { targetState: sItems; signal: sMatches.entered }
+                            DSM.SignalTransition { targetState: sItems; signal: sFallbacks.entered }
+                            DSM.SignalTransition { targetState: sItems; signal: albert.currentQueryChanged }
+                        }
                     }
                 }
-            }/*
-            StateDebug { name: "sBusyState"
-                id: sBusyState
-                initialState: sIdle
-                StateDebug { name: "sIdle"
-                    id: sIdle
-                    SignalTransition { targetState: sBusy; signal: albert.currentQueryChanged }
-                }
-                StateDebug { name: "sIdle"
-                    id: sBusy
-                    SignalTransition { targetState: sIdle; signal: albert.currentQuery().finished }
-                }
-            }*/
+            }
         }
     }
 
@@ -361,17 +384,17 @@ Item { DebugRect{ name: "root" }
             showActions()
 
         else if (Util.testAnyKeyCombination(event, Qt.ControlModifier, [Qt.Key_Enter, Qt.Key_Return]))
-            if (sActionsHidden.active)
+            if (sItems.active)
                 showActions()
             else
                 hideActions()
 
-        else if (sActionsHidden.active
+        else if (sItems.active
                  && (resultsList.currentIndex < 1 && !event.isAutoRepeat && Util.testKey(event, Qt.Key_Up) // First
                      || Util.testKeyCombination(event, Qt.ShiftModifier, Qt.Key_Up)))
             input.historyNext()
 
-        else if (sActionsHidden.active && Util.testKeyCombination(event, Qt.ShiftModifier, Qt.Key_Down))
+        else if (sItems.active && Util.testKeyCombination(event, Qt.ShiftModifier, Qt.Key_Down))
             input.historyPrev()
 
         else if (Util.testKeyCombination(event, Qt.ControlModifier, Qt.Key_Comma))
@@ -388,9 +411,9 @@ Item { DebugRect{ name: "root" }
             hideActions()
     }
 
-    Window.onVisibilityChanged: {
-        Window.visibility === Window.Hidden ? albert.clearQueries() : runQuery()
-    }
+    // Window.onVisibilityChanged: {
+    //     Window.visibility === Window.Hidden ? albert.clearQueries() : runQuery()
+    // }
 
     function activate(itemIndex, actionIndex) {
         console.info("activate " + itemIndex + " " + actionIndex)
@@ -404,17 +427,36 @@ Item { DebugRect{ name: "root" }
         mainWindow.hide()
     }
 
-    function runQuery() {
-        let query = albert.query(input.text)
-        trigger.text = query.trigger()
-        hint.text = (query.string().length === 0) ? query.synopsis() : ""
-        query.run()
-        settingsButton.busy = true
-    }
+    // function runQuery() {
+    //     let query = albert.query(input.text)
+    //     trigger.text = query.trigger()
+    //     hint.text = (query.string().length === 0) ? query.synopsis() : ""
+    //     query.run()
+    //     settingsButton.busy = true
+    // }
+
 
     Connections{
         target: albert
-        function onCurrentQueryFinished() { settingsButton.busy = false }
+        function onCurrentQueryChanged()
+        {
+            let q = albert.currentQuery()
+            if (q !== null)
+            {
+                albert.critical("query.string() "+q.string())
+                albert.critical("query.trigger() "+q.trigger())
+                trigger.text = q.trigger()
+                hint.text = (q.string().length === 0) ? q.synopsis() : ""
+            }
+            // settingsButton.busy = false
+        }
+    }
+    Connections{
+        target: albert
+        function onCurrentQueryFinished()
+        {
+            // settingsButton.busy = false
+        }
     }
 
     function applyInputAction(inputActionText) {
@@ -426,7 +468,7 @@ Item { DebugRect{ name: "root" }
 
     function setInputActionHint(inputActionText) {
         let query = albert.currentQuery()
-        if (query.string().length !== 0 || query.string().length !== 0){
+        if (query.string().length !== 0){
 
             // Todo this feature breaaks a lot of handlers, cool thoguh, do it
             // let replacement = albert.currentQuery().trigger() + inputActionText
