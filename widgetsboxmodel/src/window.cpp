@@ -425,7 +425,7 @@ void Window::init_statemachine()
 
     QObject::connect(s_settings_button_shown, &QState::entered, this, [opacity_animation](){
         opacity_animation->stop();
-        opacity_animation->setEndValue(1.0);
+        opacity_animation->setEndValue(0.999);  // Rounding issues on linux
         opacity_animation->start();
     });
 

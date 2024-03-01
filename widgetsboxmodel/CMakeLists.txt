@@ -1,4 +1,4 @@
-project(widgetsboxmodel VERSION 7.0)
+project(widgetsboxmodel VERSION 7.1)
 
 find_package(Qt6 REQUIRED COMPONENTS Svg StateMachine)
 
