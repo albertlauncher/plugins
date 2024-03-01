@@ -205,8 +205,9 @@ public:
                     {
                         auto *lbl = new QLabel(w);
                         lbl->setText(row_spec[key_text].cast<QString>());
-                        applyWidgetPropertiesIfAny(lbl, row_spec);
                         lbl->setWordWrap(true);
+                        lbl->setOpenExternalLinks(true);
+                        applyWidgetPropertiesIfAny(lbl, row_spec);
                         l->addRow(lbl);
                     }
                     else

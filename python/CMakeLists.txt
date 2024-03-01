@@ -1,4 +1,4 @@
-project(python VERSION 4.1)
+project(python VERSION 4.2)
 
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
