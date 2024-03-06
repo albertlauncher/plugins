@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file alias="dict">resources/dict.png</file>
-    </qresource>
-</RCC>

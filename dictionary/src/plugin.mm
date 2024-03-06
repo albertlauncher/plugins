@@ -1,14 +1,14 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
-#include "albert/logging.h"
 #include "plugin.h"
-#include <Cocoa/Cocoa.h>
 #include <CoreServices/CoreServices.h>
+#include <Foundation/Foundation.h>
+#include <albert/logging.h>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("dictionary")
-using namespace std;
 using namespace albert;
+using namespace std;
 
 // google DCSGetActiveDictionaries
 extern "C" {
@@ -18,43 +18,32 @@ extern "C" {
   NSString *DCSDictionaryGetShortName(DCSDictionaryRef dictID);
 }
 
-QString Plugin::synopsis() const { return tr("<word>"); }
-
 QString Plugin::defaultTrigger() const { return QStringLiteral("def "); }
 
-void Plugin::handleTriggerQuery(TriggerQuery *query) const
+void Plugin::handleTriggerQuery(Query *query)
 {
-    @autoreleasepool {
-        DCSDictionaryRef dic = NULL;
-        NSArray *dicts = DCSGetActiveDictionaries();
-        for (NSObject *aDict in dicts) {
-            dic = static_cast<DCSDictionaryRef>(aDict);
+    CFStringRef word = (__bridge CFStringRef)query->string().toNSString();
 
-            NSString *word = query->string().toNSString();
-            NSString *long_name = DCSDictionaryGetName((DCSDictionaryRef)aDict);
-//            NSString *short_name = DCSDictionaryGetShortName((DCSDictionaryRef)aDict);
-            NSString *result = (NSString*)DCSCopyTextDefinition(
-                dic,
-                (CFStringRef)word,
-                DCSGetTermRangeInString(nil, (CFStringRef)word, 0)
-            );
-            if (result){
-                auto text = QString::fromNSString(result);
-                query->add(
-                    StandardItem::make(
-                        id(),
-                        QString::fromNSString(long_name),
-                        text,
-                        {":dict"},
-                        {
-                            {
-                                "open", tr("Open in dictionary"),
-                                [s=query->string()](){ openUrl("dict://"+s); }
-                            }
-                        }
-                    )
-                );
-            }
+    for (NSObject *ns_object in DCSGetActiveDictionaries())
+        @autoreleasepool {
+        DCSDictionaryRef dict = (__bridge DCSDictionaryRef)ns_object;
+
+        auto long_name = QString::fromNSString(DCSDictionaryGetName(dict));
+
+        NSString *result = (__bridge NSString *)DCSCopyTextDefinition(
+            dict, word, DCSGetTermRangeInString(nil, word, 0));
+
+        if (result) {
+            auto text = QString::fromNSString(result);
+            query->add(StandardItem::make(
+                id(), long_name, text, icon_urls,
+                {
+                    {
+                        "open", tr("Open in dictionary"),
+                        [s = query->string()]() { openUrl("dict://" + s); }
+                    }
+                }
+            ));
         }
     }
 }

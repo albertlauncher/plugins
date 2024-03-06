@@ -1,18 +1,17 @@
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if(APPLE)
 
-    project(dictionary VERSION 3.0)
+    cmake_minimum_required(VERSION 3.16)
+    find_package(Albert REQUIRED)
+
+    project(dictionary VERSION 3.1)
+
+    find_library(CORESERVICES_LIBRARY CoreServices)
 
     albert_plugin(
-        SOURCE_FILES
-            ${PROJECT_NAME}.qrc
-            src/configwidget.ui
-            src/plugin.h
-            src/plugin.mm
-        PRIVATE_LINK_LIBRARIES
-            objc
-            "-framework Cocoa"
-            "-framework CoreFoundation"
-            ${CORE_FOUNDATION_LIBRARY}
+        LINK PRIVATE ${CORESERVICES_LIBRARY}
+        QT Core
     )
+
+    target_compile_options(${PROJECT_NAME} PRIVATE "-fobjc-arc")
 
 endif()
