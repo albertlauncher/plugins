@@ -1,12 +1,6 @@
-project(urlhandler VERSION 5.0)
+cmake_minimum_required(VERSION 3.16)
+find_package(Albert REQUIRED)
 
-find_package(Qt6 REQUIRED COMPONENTS Gui)
+project(urlhandler VERSION 5.1)
 
-albert_plugin(
-    SOURCE_FILES
-        ${PROJECT_NAME}.qrc
-        src/plugin.cpp
-        src/plugin.h
-    PRIVATE_LINK_LIBRARIES
-        Qt6::Gui  # For DesktopServices
-)
+albert_plugin(QT Gui)

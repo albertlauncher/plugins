@@ -1,6 +1,6 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
-#include "albert/extension/queryhandler/standarditem.h"
+#include <albert/standarditem.h>
 #include "plugin.h"
 #include <QDesktopServices>
 #include <QFile>
@@ -18,7 +18,7 @@ Plugin::Plugin()
     std::sort(valid_tlds.begin(), valid_tlds.end());
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
 {
     vector<RankItem> results;
     auto trimmed = query->string().trimmed();
