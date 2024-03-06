@@ -1,7 +1,6 @@
+cmake_minimum_required(VERSION 3.16)
+find_package(Albert REQUIRED)
+
 project(debug VERSION 0.0)
 
-albert_plugin(
-    SOURCE_FILES
-        src/plugin.cpp
-        src/plugin.h
-)
+albert_plugin(QT Core)
