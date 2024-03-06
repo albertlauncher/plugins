@@ -1,8 +1,8 @@
-// Copyright (c) 2023 Manuel Schneider
+// Copyright (c) 2023-2024 Manuel Schneider
 
 #include "albert/albert.h"
-#include "albert/extension/queryhandler/item.h"
-#include "albert/extension/queryhandler/standarditem.h"
+#include "albert/query/item.h"
+#include "albert/util/standarditem.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
 #include <QFileSystemModel>
@@ -41,33 +41,41 @@ struct SnippetItem : Item
         static const auto tr_c = QCoreApplication::translate("SnippetItem", "Copy");
         static const auto tr_e = QCoreApplication::translate("SnippetItem", "Edit");
         static const auto tr_r = QCoreApplication::translate("SnippetItem", "Remove");
+        vector<Action> actions;
 
-        return {
-            {
+        if (havePasteSupport())
+            actions.emplace_back(
                 "cp", tr_cp,
-                [this](){
+                [this]{
                     QFile f(QDir(plugin_->snippets_path).filePath(file_base_name_+".txt"));
                     f.open(QIODevice::ReadOnly);
                     setClipboardTextAndPaste(QTextStream(&f).readAll());
                 }
-            },
-            {
-                "c", tr_c,
-                [this](){
-                    QFile f(QDir(plugin_->snippets_path).filePath(file_base_name_+".txt"));
-                    f.open(QIODevice::ReadOnly);
-                    setClipboardText(QTextStream(&f).readAll());
-                }
-            },
-            {
-                "o", tr_e,
-                [this]() { openUrl(QUrl::fromLocalFile(QDir(plugin_->snippets_path).filePath(file_base_name_+".txt"))); }
-            },
-            {
-                "r", tr_r,
-                [this]() { plugin_->removeSnippet(file_base_name_+".txt"); }
+            );
+
+        actions.emplace_back(
+            "c", tr_c,
+            [this]{
+                QFile f(QDir(plugin_->snippets_path).filePath(file_base_name_+".txt"));
+                f.open(QIODevice::ReadOnly);
+                setClipboardText(QTextStream(&f).readAll());
             }
-        };
+        );
+
+        actions.emplace_back(
+            "o", tr_e,
+            [this]{
+                auto path = QDir(plugin_->snippets_path).filePath(file_base_name_+".txt");
+                openUrl(QUrl::fromLocalFile(path));
+            }
+        );
+
+        actions.emplace_back(
+            "r", tr_r,
+            [this]() { plugin_->removeSnippet(file_base_name_+".txt"); }
+        );
+
+        return actions;
     }
 
     const QString file_base_name_;
@@ -111,7 +119,7 @@ QString Plugin::synopsis() const
 void Plugin::updateIndexItems()
 { indexer.run(); }
 
-void Plugin::handleTriggerQuery(TriggerQuery *query) const
+void Plugin::handleTriggerQuery(Query *query)
 {
     if (query->string() == QStringLiteral("+"))
         query->add(

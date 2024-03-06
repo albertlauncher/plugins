@@ -1,4 +1,4 @@
-project(snippets VERSION 5.1)
+project(snippets VERSION 5.2)
 
 albert_plugin(
     SOURCE_FILES

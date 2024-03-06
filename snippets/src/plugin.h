@@ -1,15 +1,14 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
 #pragma once
-#include "albert/extension/queryhandler/indexqueryhandler.h"
-#include "albert/plugin.h"
+#include "albert/query/indexqueryhandler.h"
 #include "albert/util/backgroundexecutor.h"
+#include "albert/util/extensionplugin.h"
 #include "snippets.h"
 #include <QFileSystemWatcher>
-#include <QObject>
 class QWidget;
 
-class Plugin : public albert::plugin::ExtensionPlugin,
+class Plugin : public albert::ExtensionPlugin,
                public albert::IndexQueryHandler,
                public Snippets
 {
@@ -27,7 +26,7 @@ private:
     QWidget* buildConfigWidget() override;
     void updateIndexItems() override;
     QString synopsis() const override;
-    void handleTriggerQuery(TriggerQuery*) const override;
+    void handleTriggerQuery(albert::Query*) override;
 
     QFileSystemWatcher fs_watcher;
     albert::BackgroundExecutor<std::vector<albert::IndexItem>> indexer;
