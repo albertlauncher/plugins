@@ -1,4 +1,4 @@
-project(terminal VERSION 5.0)
+project(terminal VERSION 5.1)
 
 albert_plugin(
     SOURCE_FILES

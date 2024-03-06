@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
 #include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
+#include "albert/util/standarditem.h"
 #include "plugin.h"
 #include <QDirIterator>
 #include <QFileSystemWatcher>
@@ -61,7 +61,7 @@ static vector<Action> buildActions(const QString &commandline)
     };
 }
 
-void Plugin::handleTriggerQuery(TriggerQuery *query) const
+void Plugin::handleTriggerQuery(Query *query)
 {
     if (query->string().trimmed().isEmpty())
         return;
