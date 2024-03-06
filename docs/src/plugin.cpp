@@ -1,8 +1,8 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
 #include "albert/albert.h"
-#include "albert/extension/queryhandler/item.h"
 #include "albert/logging.h"
+#include "albert/query/item.h"
 #include "plugin.h"
 #include <QDir>
 #include <QDirIterator>

@@ -1,10 +1,10 @@
-// Copyright (c) 2023 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
-#include "albert/extension/queryhandler/indexqueryhandler.h"
-#include "albert/plugin.h"
+#include "albert/query/indexqueryhandler.h"
+#include "albert/util/extensionplugin.h"
 #include "ui_configwidget.h"
-#include <QNetworkReply>
+class QNetworkReply;
 
 struct Docset
 {
@@ -20,7 +20,7 @@ struct Docset
 };
 
 
-class Plugin : public albert::plugin::ExtensionPlugin,
+class Plugin : public albert::ExtensionPlugin,
                public albert::IndexQueryHandler
 {
     Q_OBJECT ALBERT_PLUGIN
