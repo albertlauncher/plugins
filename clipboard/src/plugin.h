@@ -1,13 +1,15 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
-#include "albert/extension/queryhandler/triggerqueryhandler.h"
-#include "albert/plugin.h"
+#include <albert/triggerqueryhandler.h>
+#include <albert/extensionplugin.h>
+#include <albert/plugindependency.h>
 #include <QClipboard>
 #include <QDateTime>
 #include <QTimer>
 #include <shared_mutex>
 class Snippets;
+
 
 struct ClipboardEntry
 {
@@ -20,19 +22,18 @@ struct ClipboardEntry
 };
 
 
-
-class Plugin : public albert::plugin::ExtensionPlugin,
+class Plugin : public albert::ExtensionPlugin,
                public albert::TriggerQueryHandler
 {
-    Q_OBJECT ALBERT_PLUGIN
+    ALBERT_PLUGIN
+
 public:
+
     Plugin();
     ~Plugin();
 
-    void initialize(albert::ExtensionRegistry&, std::map<QString,PluginInstance*>) override;
-
     QString defaultTrigger() const override;
-    void handleTriggerQuery(TriggerQuery*) const override;
+    void handleTriggerQuery(albert::Query*) override;
     QWidget *buildConfigWidget() override;
 
 private:
@@ -47,7 +48,7 @@ private:
     // explicit current, such that users can delete recent ones
     QString clipboard_text;
     
-    Snippets *snippets;
+    albert::WeakDependency<Snippets> snippets;
 };
 
 

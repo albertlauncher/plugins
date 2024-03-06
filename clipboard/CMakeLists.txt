@@ -1,12 +1,9 @@
-project(clipboard VERSION 3.0)
+cmake_minimum_required(VERSION 3.16)
+find_package(Albert REQUIRED)
+
+project(clipboard VERSION 3.1)
 
 albert_plugin(
-    SOURCE_FILES
-        ${PROJECT_NAME}.qrc
-        src/plugin.cpp
-        src/plugin.h
-    PRIVATE_INCLUDE_DIRECTORIES
-        $<TARGET_PROPERTY:albert::snippets,INTERFACE_INCLUDE_DIRECTORIES>
+    INCLUDE PRIVATE $<TARGET_PROPERTY:albert::snippets,INTERFACE_INCLUDE_DIRECTORIES>
+    QT Widgets
 )
-
-

@@ -1,10 +1,5 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
-#include "albert/extensionregistry.h"
-#include "albert/logging.h"
-#include "snippets.h"
 #include "plugin.h"
 #include <QCheckBox>
 #include <QDir>
@@ -18,6 +13,12 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QSpinBox>
+#include <albert/extensionregistry.h>
+#include <albert/logging.h>
+#include <albert/matcher.h>
+#include <albert/snippets/snippets.h>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 #include <shared_mutex>
 ALBERT_LOGGING_CATEGORY("clipboard")
 using namespace albert;
@@ -32,20 +33,27 @@ static const uint DEF_HISTORY_LENGTH = 100;
 }
 
 
-Plugin::Plugin() : clipboard(QGuiApplication::clipboard())
+Plugin::Plugin():
+    clipboard(QGuiApplication::clipboard()),
+    snippets(registry(), "snippets")
 {
+    // Load settings
+
     auto s = settings();
     persistent = s->value(CFG_PERSISTENCE, DEF_PERSISTENCE).toBool();
     length = s->value(CFG_HISTORY_LENGTH, DEF_HISTORY_LENGTH).toUInt();
 
+
+    // Load history, if configured
+
     if (persistent)
     {
-        QFile file(dataDir().filePath(HISTORY_FILE_NAME));
-        DEBG << "Reading clipboard history from" << file.fileName();
-
-        if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+        if (QFile file(QDir(dataLocation()).filePath(HISTORY_FILE_NAME));
+            file.open(QIODevice::ReadOnly | QIODevice::Text))
         {
-            for (const auto &value : QJsonDocument::fromJson(file.readAll()).array())
+            DEBG << "Reading clipboard history from" << file.fileName();
+            const auto arr = QJsonDocument::fromJson(file.readAll()).array();
+            for (const auto &value : arr)
             {
                 const auto object = value.toObject();
                 history.emplace_back(object["text"].toString(),
@@ -54,8 +62,11 @@ Plugin::Plugin() : clipboard(QGuiApplication::clipboard())
             file.close();
         }
         else
-            WARN << "Failed reading from clipboard history.";
+            DEBG << "Failed reading from clipboard history.";
     }
+
+
+    // Init clipboard pull timer
 
     timer.start(500);
     connect(&timer, &QTimer::timeout, this, &Plugin::checkClipboard);
@@ -74,85 +85,64 @@ Plugin::~Plugin()
             array.append(object);
         }
 
-        QFile file(dataDir().filePath(HISTORY_FILE_NAME));
-        if (file.open(QIODevice::WriteOnly))
+        QDir data_dir = dataLocation();
+        if (data_dir.exists() || data_dir.mkpath("."))
         {
-            DEBG << "Wrinting clipboard history to" << file.fileName();
-            file.write(QJsonDocument(array).toJson());
-            file.close();
+            if (QFile file(data_dir.filePath(HISTORY_FILE_NAME));
+                file.open(QIODevice::WriteOnly))
+            {
+                DEBG << "Wrinting clipboard history to" << file.fileName();
+                file.write(QJsonDocument(array).toJson());
+                file.close();
+            }
+            else
+                WARN << "Failed creating history file:" << data_dir.path();
         }
         else
-            WARN << "Failed writing to clipboard history.";
+            WARN << "Failed creating data dir" << data_dir.path();
     }
 }
 
-void Plugin::initialize(ExtensionRegistry &registry, map<QString,PluginInstance*> dependencies)
+QString Plugin::defaultTrigger() const { return " "; }
+
+void Plugin::handleTriggerQuery(Query *query)
 {
-    ExtensionPlugin::initialize(registry, dependencies);
-
-    if (auto s = registry.extension<Snippets>("snippets"))
-        snippets = s;
-
-    connect(&registry, &ExtensionRegistry::added, this, [this](Extension *extension) {
-        if (extension->id() == QStringLiteral("snippets")){
-            if (auto *s = dynamic_cast<Snippets*>(extension); s){
-                lock_guard lock(mutex);
-                snippets = s;
-            }
-            else
-                WARN << "Failed to cast extension to Snippets";
-        }
-    });
-
-    connect(&registry, &ExtensionRegistry::removed, this, [this](Extension *extension) {
-        if (extension->id() == QStringLiteral("snippets")){
-            if (auto *s = dynamic_cast<Snippets*>(extension); s){
-                lock_guard lock(mutex);
-                snippets = nullptr;
-            }
-            else
-                WARN << "Failed to cast extension to Snippets";
-        }
-    });
-}
-
-
-QString Plugin::defaultTrigger() const
-{ return "cb "; }
-
-void Plugin::handleTriggerQuery(TriggerQuery *query) const
-{
-    auto trimmed = query->string().trimmed();
     QLocale loc;
     int rank = 0;
+    Matcher matcher(query->string());
 
     shared_lock l(mutex);
 
     for (const auto &entry : history)
     {
         ++rank;
-        if (entry.text.contains(trimmed, Qt::CaseInsensitive))
+        if (matcher.match(entry.text))
         {
             static const auto tr_cp = tr("Copy and paste");
             static const auto tr_c = tr("Copy");
             static const auto tr_r = tr("Remove");
 
-            vector<Action> actions = {
-                {
+            vector<Action> actions;
+
+            if(havePasteSupport())
+                actions.emplace_back(
                     "c", tr_cp,
                     [t=entry.text](){ setClipboardTextAndPaste(t); }
-                }, {
-                    "cp", tr_c,
-                    [t=entry.text](){ setClipboardText(t); }
-                }, {
-                    "r", tr_r,
-                    [this, t=entry.text]()
-                    {
-                        lock_guard lock(mutex);
-                        this->history.remove_if([t](const auto& ce){ return ce.text == t; });
-                    }
+                );
+
+            actions.emplace_back(
+                "cp", tr_c,
+                [t=entry.text](){ setClipboardText(t); }
+            );
+
+            actions.emplace_back(
+                "r", tr_r,
+                [this, t=entry.text]()
+                {
+                    lock_guard lock(mutex);
+                    this->history.remove_if([t](const auto& ce){ return ce.text == t; });
                 }
-            };
+            );
 
             if (snippets)
                 actions.emplace_back(
