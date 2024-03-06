@@ -1,6 +1,6 @@
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
-    project(sparkle_updater VERSION 2.0)
+    project(sparkle_updater VERSION 2.1)
 
     list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
     find_package(Sparkle REQUIRED)

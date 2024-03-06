@@ -1,12 +1,14 @@
-// Copyright (c) 2023 Manuel Schneider
+// Copyright (c) 2023-2024 Manuel Schneider
 
 #pragma once
-#include "albert/plugin.h"
+#include "albert/plugin/plugininstance.h"
+#include <QObject>
 #include <memory>
 
-class Plugin : public albert::plugin::Plugin
+class Plugin : public QObject, public albert::PluginInstance
 {
     Q_OBJECT ALBERT_PLUGIN
+
 public:
     Plugin();
     ~Plugin();
