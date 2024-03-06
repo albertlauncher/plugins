@@ -26,7 +26,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Math expression evaluator based on the powerful qalculate library. See the [Qalculate! docs](https://qalculate.github.io/manual/index.html). 
+      <string>Math expression evaluator based on the powerful qalculate library. See the [Qalculate! docs](https://qalculate.github.io/manual/index.html).
 
 The global handler evaluates basic math expressions. Use the trigger handler to enable the full feature set.</string>
      </property>

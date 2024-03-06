@@ -1,20 +1,17 @@
-project(calculator_qalculate VERSION 5.0)
+cmake_minimum_required(VERSION 3.16)
+find_package(Albert REQUIRED)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+project(calculator_qalculate VERSION 5.1)
 
-find_package(PkgConfig)
+find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBQALCULATE REQUIRED libqalculate)
 
 albert_plugin(
-    SOURCE_FILES
-        ${PROJECT_NAME}.qrc
-        src/configwidget.ui
-        src/plugin.cpp
-        src/plugin.h
-    PRIVATE_INCLUDE_DIRECTORIES
+    INCLUDE SYSTEM PRIVATE
         ${LIBQALCULATE_INCLUDE_DIRS}
-    PRIVATE_LINK_LIBRARIES
+    LINK PRIVATE
         ${LIBQALCULATE_LIBRARIES}
+    QT Widgets
 )
 
 target_link_directories(${PROJECT_NAME} PRIVATE ${LIBQALCULATE_LIBRARY_DIRS})

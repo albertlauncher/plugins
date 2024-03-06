@@ -1,12 +1,12 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
-#include "albert/logging.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
 #include <QSettings>
 #include <QThread>
+#include <albert/logging.h>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("qalculate")
 using namespace albert;
 using namespace std;
@@ -116,7 +116,7 @@ shared_ptr<Item> Plugin::buildItem(const QString &query, const MathStructure &ms
         "qalc-res",
         result,
         mstruct.isApproximate() ? tr_a.arg(query) : tr_e.arg(query),
-        QString("%1%2").arg(trigger(), result),
+        result,
         icon_urls,
         {
             {"cpr", tr_tr, [=](){ setClipboardText(result); }},
@@ -125,7 +125,7 @@ shared_ptr<Item> Plugin::buildItem(const QString &query, const MathStructure &ms
     );
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
 {
     vector<RankItem> results;
 
@@ -161,7 +161,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
     return results;
 }
 
-void Plugin::handleTriggerQuery(TriggerQuery *query) const
+void Plugin::handleTriggerQuery(Query *query)
 {
     auto trimmed = query->string().trimmed();
     if (trimmed.isEmpty())
