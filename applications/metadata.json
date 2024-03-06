@@ -1,0 +1,9 @@
+{
+    "authors": ["@manuelschneid3r"],
+    "description": "Launch applications",
+    "description[de]": "Starte Anwendungen",
+    "license": "MIT",
+    "name": "Applications",
+    "name[de]": "Anwendungen",
+    "url": "https://github.com/albertlauncher/plugins/tree/main/applications",
+}

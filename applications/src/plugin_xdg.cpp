@@ -1,33 +1,26 @@
-// Copyright (c) 2022-2023 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
 /*
  *  https://specifications.freedesktop.org/desktop-entry-spec/1.5/
  *  https://wiki.ubuntu.com/UbuntuDevelopment/Internationalisation/Packaging#Desktop_Entries
  */
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
 #include "plugin.h"
-#include "ui_configwidget.h"
+#include "ui_configwidget_xdg.h"
+#include <QFileSystemWatcher>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QStringList>
+#include <QWidget>
+#include <albert/backgroundexecutor.h>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 #include <libintl.h>
 #include <locale.h>
-#include <ranges>
+#include <memory>
 ALBERT_LOGGING_CATEGORY("apps")
 using namespace std;
 using namespace albert;
-const char* CFG_IGNORESHOWINKEYS     = "ignore_show_in_keys";
-const bool  DEF_IGNORESHOWINKEYS     = false;
-const char* CFG_USEKEYWORDS          = "use_keywords";
-const bool  DEF_USEKEYWORDS          = false;
-const char* CFG_USEGENERICNAME       = "use_generic_name";
-const bool  DEF_USEGENERICNAME       = false;
-const char* CFG_USEEXEC              = "use_exec";
-const bool  DEF_USEEXEC              = false;
-const char* CFG_USENONLOCALIZEDNAME  = "use_non_localized_name";
-const bool  DEF_USENONLOCALIZEDNAME  = false;
-
 
 static QString fieldCodesExpanded(const QString & exec, const QString & name, const QString & icon, const QString & de_path)
 {
@@ -167,45 +160,7 @@ static map<QString, map<QString,QString>> readDesktopEntry(const QString &path)
     return result;
 }
 
-Plugin::Plugin() : xdg_current_desktop(QString(getenv("XDG_CURRENT_DESKTOP")).split(':', Qt::SkipEmptyParts))
-{
-    qunsetenv("DESKTOP_AUTOSTART_ID");
-
-    // Load settings
-    ignoreShowInKeys = settings()->value(CFG_IGNORESHOWINKEYS, DEF_IGNORESHOWINKEYS).toBool();
-    useGenericName = settings()->value(CFG_USEGENERICNAME, DEF_USEGENERICNAME).toBool();
-    useNonLocalizedName = settings()->value(CFG_USENONLOCALIZEDNAME, DEF_USENONLOCALIZEDNAME).toBool();
-    useKeywords = settings()->value(CFG_USEKEYWORDS, DEF_USEKEYWORDS).toBool();
-    useExec = settings()->value(CFG_USEEXEC, DEF_USEEXEC).toBool();
-
-    // Paths set on initial update finish
-    connect(&fs_watcher_, &QFileSystemWatcher::directoryChanged, this, [this](){ indexer.run(); });
-
-    indexer.parallel = [this](const bool &abort){ return indexApps(abort); };
-    indexer.finish = [this](vector<IndexItem> &&result){
-        INFO << QStringLiteral("Indexed %1 apps [%2 ms]")
-                    .arg(result.size()).arg(indexer.runtime.count());
-
-        apps = ::move(result);
-        updateIndexItems();
-
-        // Finally update the watches (maybe folders changed)
-        if (!fs_watcher_.directories().isEmpty())
-            fs_watcher_.removePaths(fs_watcher_.directories());
-
-        for (const QString &path : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation)) {
-            if (QFile::exists(path)) {
-                fs_watcher_.addPath(path);
-                QDirIterator dit(path, QDir::Dirs|QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
-                while (dit.hasNext())
-                    fs_watcher_.addPath(dit.next());
-            }
-        }
-    };
-    indexer.run();
-}
-
-std::pair<shared_ptr<StandardItem>, QStringList> Plugin::parseDesktopEntry(const QString &id, const QString &path) const
+static std::pair<shared_ptr<StandardItem>, QStringList> parseDesktopEntry(Plugin &p, const QString &id, const QString &path)
 {
     const map<QString,map<QString,QString>> desktopEntry = readDesktopEntry(path);
 
@@ -235,7 +190,8 @@ std::pair<shared_ptr<StandardItem>, QStringList> Plugin::parseDesktopEntry(const
         } catch (const out_of_range &) { }
 
         // OnlyShowIn, NotShowIn - string(s)
-        if (!ignoreShowInKeys) {
+        if (!p.ignore_show_in_keys()) {
+            const QStringList xdg_current_desktop(QString(getenv("XDG_CURRENT_DESKTOP")).split(':', Qt::SkipEmptyParts));
             try {
                 for (const auto &desktop_environment : stringAt(general, QStringLiteral("NotShowIn")).split(';', Qt::SkipEmptyParts))
                     if (xdg_current_desktop.contains(desktop_environment))
@@ -244,7 +200,7 @@ std::pair<shared_ptr<StandardItem>, QStringList> Plugin::parseDesktopEntry(const
 
             try {
                 if (!ranges::any_of(stringAt(general, QStringLiteral("OnlyShowIn")).split(';', Qt::SkipEmptyParts),
-                                    [this](const auto &desktop_env){ return xdg_current_desktop.contains(desktop_env); }))
+                                    [&](const auto &desktop_env){ return xdg_current_desktop.contains(desktop_env); }))
                     throw runtime_error("Desktop entry excluded by 'OnlyShowIn'.");
             } catch (const out_of_range &) { }
         }
@@ -323,7 +279,7 @@ std::pair<shared_ptr<StandardItem>, QStringList> Plugin::parseDesktopEntry(const
             fun = [=]() -> void { albert::runTerminal(exec, working_dir, true); };
         else
             fun = [=]() -> void { albert::runDetachedProcess(QStringList() << "sh" << "-c" << exec, working_dir); };
-        actionList.emplace_back("launch", tr("Launch app"), fun );
+        actionList.emplace_back("launch", Plugin::tr("Launch app"), fun );
 
         for (const QString &action_identifier : actions)
         {
@@ -377,13 +333,13 @@ std::pair<shared_ptr<StandardItem>, QStringList> Plugin::parseDesktopEntry(const
 
         QStringList index_strings;
         index_strings << name;
-        if (useKeywords)
+        if (p.use_keywords())
             index_strings << keywords;
-        if (useGenericName && !genericName.isEmpty())
+        if (p.use_generic_name() && !genericName.isEmpty())
             index_strings << genericName;
-        if (useNonLocalizedName && !nonLocalizedName.isEmpty())
+        if (p.use_non_localized_name() && !nonLocalizedName.isEmpty())
             index_strings << nonLocalizedName;
-        if (useExec){
+        if (p.use_exec()){
             static QStringList excludes = {
                 "/",
                 "bash ",
@@ -415,57 +371,111 @@ std::pair<shared_ptr<StandardItem>, QStringList> Plugin::parseDesktopEntry(const
     }
 }
 
-vector<IndexItem> Plugin::indexApps(const bool &abort) const
+
+class Plugin::Private
 {
-    // Get a map of unique desktop entries according to the spec
-    map<QString /*desktop file id*/, QString /*path*/> desktopFiles;
-    for (const QString &dir : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation))
-    {
-        QDirIterator fIt(dir, QStringList("*.desktop"), QDir::Files,
-                         QDirIterator::Subdirectories|QDirIterator::FollowSymlinks);
+public:
+    BackgroundExecutor<vector<IndexItem>> indexer;
+    QFileSystemWatcher fs_watcher;
+};
 
-        while (!fIt.next().isEmpty())
+
+Plugin::Plugin() : d(make_unique<Private>())
+{
+    qunsetenv("DESKTOP_AUTOSTART_ID");
+
+    // Load settings
+    auto s = settings();
+    restore_ignore_show_in_keys(s);
+    restore_use_exec(s);
+    restore_use_generic_name(s);
+    restore_use_keywords(s);
+    restore_use_non_localized_name(s);
+
+    for (auto f : {&Plugin::ignore_show_in_keys_changed,
+                   &Plugin::use_exec_changed,
+                   &Plugin::use_generic_name_changed,
+                   &Plugin::use_keywords_changed,
+                   &Plugin::use_non_localized_name_changed})
+        connect(this, f, this, &Plugin::updateIndexItems);
+
+    // Paths set on initial update finish
+    connect(&d->fs_watcher, &QFileSystemWatcher::directoryChanged,
+            this, [this](){ d->indexer.run(); });
+
+    d->indexer.parallel = [this](const bool &abort)
+    {
+        // Get a map of unique desktop entries according to the spec
+        map<QString /*desktop file id*/, QString /*path*/> desktopFiles;
+        for (const QString &dir : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation))
         {
-            // To determine the ID of a desktop file, make its full path relative to
-            // the $XDG_DATA_DIRS component in which the desktop file is installed,
-            // remove the "applications/" prefix, and turn '/' into '-'.
-            static QRegularExpression re("^.*applications/");
-            QString desktopFileId = fIt.filePath().remove(re).replace("/","-");
+            QDirIterator fIt(dir, QStringList("*.desktop"), QDir::Files,
+                             QDirIterator::Subdirectories|QDirIterator::FollowSymlinks);
 
-            if (const auto &[it, success] = desktopFiles.emplace(desktopFileId, fIt.filePath()); !success)
-                DEBG << QString("Desktop file '%1' will be skipped: Shadowed by '%2'").arg(fIt.filePath(), desktopFiles[desktopFileId]);
+            while (!fIt.next().isEmpty())
+            {
+                // To determine the ID of a desktop file, make its full path relative to
+                // the $XDG_DATA_DIRS component in which the desktop file is installed,
+                // remove the "applications/" prefix, and turn '/' into '-'.
+                static QRegularExpression re("^.*applications/");
+                QString desktopFileId = fIt.filePath().remove(re).replace("/","-");
+
+                if (const auto &[it, success] = desktopFiles.emplace(desktopFileId, fIt.filePath()); !success)
+                    DEBG << QString("Desktop file '%1' will be skipped: Shadowed by '%2'").arg(fIt.filePath(), desktopFiles[desktopFileId]);
+            }
         }
-    }
 
-    // Index the unique desktop files
-    vector<IndexItem> results;
-    for (const auto &[id, path] : desktopFiles)
+        // Index the unique desktop files
+        vector<IndexItem> results;
+        for (const auto &[id, path] : desktopFiles)
+        {
+            if (abort)
+                return results;
+
+            try {
+                const auto &[item, index_strings] = parseDesktopEntry(*this, id, path);
+                for (auto &index_string : index_strings)
+                    results.emplace_back(item, index_string);
+            } catch (const std::exception &e) {
+                DEBG << QString("Skipped desktop entry '%1': %2").arg(path, e.what());
+            }
+
+        }
+        return results;
+    };
+
+    d->indexer.finish = [this](vector<IndexItem> &&result)
     {
-        if (abort)
-            return results;
+        INFO << QStringLiteral("Indexed %1 apps [%2 ms]")
+                    .arg(result.size()).arg(d->indexer.runtime.count());
 
-        try {
-            const auto &[item, index_strings] = parseDesktopEntry(id, path);
-            for (auto &index_string : index_strings)
-                results.emplace_back(item, index_string);
-        } catch (const std::exception &e) {
-            DEBG << QString("Skipped desktop entry '%1': %2").arg(path, e.what());
+        vector<IndexItem> index_items;
+        for (const auto & ii : result)
+            index_items.emplace_back(ii.item, ii.string);
+        setIndexItems(::move(index_items));
+
+        // Finally update the watches (maybe folders changed)
+        if (!d->fs_watcher.directories().isEmpty())
+            d->fs_watcher.removePaths(d->fs_watcher.directories());
+
+        for (const QString &path : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation)) {
+            if (QFile::exists(path)) {
+                d->fs_watcher.addPath(path);
+                QDirIterator dit(path, QDir::Dirs|QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+                while (dit.hasNext())
+                    d->fs_watcher.addPath(dit.next());
+            }
         }
-
-    }
-    return results;
+    };
 }
+
+Plugin::~Plugin()= default;
 
 QString Plugin::defaultTrigger() const
 { return QStringLiteral("apps "); }
 
 void Plugin::updateIndexItems()
-{
-    vector<IndexItem> index_items;
-    for (const auto & ii : apps)
-        index_items.emplace_back(ii.item, ii.string);
-    setIndexItems(::move(index_items));
-}
+{ d->indexer.run(); }
 
 QWidget *Plugin::buildConfigWidget()
 {
@@ -477,50 +487,11 @@ QWidget *Plugin::buildConfigWidget()
     ui.label->setText(ui.label->text().replace("__XDG_DATA_DIRS__",
                                                QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation).join(", ")));
 
-    // Use keywords
-    ui.checkBox_useKeywords->setChecked(useKeywords);
-    connect(ui.checkBox_useKeywords, &QCheckBox::toggled,
-            this, [this](bool checked){
-                settings()->setValue(CFG_USEKEYWORDS, checked);
-                useKeywords = checked;
-                indexer.run();
-            });
-
-    // Use generic name
-    ui.checkBox_useGenericName->setChecked(useGenericName);
-    connect(ui.checkBox_useGenericName, &QCheckBox::toggled,
-            this, [this](bool checked){
-                settings()->setValue(CFG_USEGENERICNAME, checked);
-                useGenericName = checked;
-                indexer.run();
-            });
-
-    // Use non-localized name
-    ui.checkBox_useNonLocalizedName->setChecked(useNonLocalizedName);
-    connect(ui.checkBox_useNonLocalizedName, &QCheckBox::toggled,
-            this, [this](bool checked){
-                settings()->setValue(CFG_USENONLOCALIZEDNAME, checked);
-                useNonLocalizedName = checked;
-                indexer.run();
-            });
-
-    // Use exec
-    ui.checkBox_useExec->setChecked(useExec);
-    connect(ui.checkBox_useExec, &QCheckBox::toggled,
-            this, [this](bool checked){
-                settings()->setValue(CFG_USEEXEC, checked);
-                useExec = checked;
-                indexer.run();
-            });
-
-    // Ignore onlyshowin notshowin keys
-    ui.checkBox_ignoreShowInKeys->setChecked(ignoreShowInKeys);
-    connect(ui.checkBox_ignoreShowInKeys, &QCheckBox::toggled,
-            this, [this](bool checked){
-                settings()->setValue(CFG_IGNORESHOWINKEYS, checked);
-                ignoreShowInKeys = checked;
-                indexer.run();
-            });
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, ignore_show_in_keys, ui.checkBox_ignoreShowInKeys);
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_exec, ui.checkBox_useExec);
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_generic_name, ui.checkBox_useGenericName);
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_keywords, ui.checkBox_useKeywords);
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_non_localized_name, ui.checkBox_useNonLocalizedName);
 
     return widget;
 }

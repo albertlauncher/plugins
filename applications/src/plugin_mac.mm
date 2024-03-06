@@ -1,12 +1,12 @@
-// Copyright (c) 2022-2023 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
-#include "albert/logging.h"
 #include "plugin.h"
 #include <Cocoa/Cocoa.h>
 #include <QCoreApplication>
 #include <QDir>
+#include <albert/logging.h>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("apps")
 using namespace albert;
 using namespace std;
@@ -31,15 +31,19 @@ static IndexItem createAppIndexItem(const QString &bundle_path, const QString &d
         if (name.endsWith(".app"))
             name.chop(4);
 
+        // Remove soft hypens
+        name.remove(QChar(0x00AD));
+
         auto item = StandardItem::make(
             QString::fromNSString(bundle.bundleIdentifier),
             name,
             bundle_path,
+            name,
             {QString("qfip:%1").arg(bundle_path)},
             {
                 {
                     "launch",
-                    QCoreApplication::tr("Launch app"),
+                    Plugin::tr("Launch app"),
                     [bundle_path]() { runDetachedProcess({"open", bundle_path}); }
                 }
             }
@@ -80,7 +84,7 @@ static IndexItem createAppIndexItem(const QString &bundle_path, const QString &d
 - (void)dealloc
 {
     [self.query removeObserver:self forKeyPath:@"results"];
-    [super dealloc];
+
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath
@@ -121,7 +125,6 @@ Plugin::Plugin() : d(new Private)
 Plugin::~Plugin()
 {
     [d->query stopQuery];
-    [d->query release];
 }
 
 QString Plugin::defaultTrigger() const { return QStringLiteral("apps "); }
@@ -131,8 +134,8 @@ void Plugin::updateIndexItems()
     vector<IndexItem> items;
 
     [d->query disableUpdates];
-    @autoreleasepool {
-        for (NSMetadataItem *item in d->query.results) {
+    for (NSMetadataItem *item in d->query.results) {
+        @autoreleasepool {
             auto bundle_path = QString::fromNSString([item valueForAttribute:NSMetadataItemPathKey]);
             auto display_name = QString::fromNSString([item valueForAttribute:@"kMDItemDisplayName"]);
             items.emplace_back(createAppIndexItem(bundle_path, display_name));
@@ -153,6 +156,10 @@ void Plugin::updateIndexItems()
     setIndexItems(::move(items));
 }
 
+QWidget *Plugin::buildConfigWidget()
+{
+    return nullptr;
+}
 
 
 
