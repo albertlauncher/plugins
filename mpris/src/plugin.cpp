@@ -1,246 +1,223 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
-#include "albert/logging.h"
+#include "mpris.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
-#include <QDBusInterface>
+#include <QDBusMetaType>
 #include <QDBusServiceWatcher>
-#include <QWidget>
-#include <QXmlStreamReader>
+#include <albert/logging.h>
+#include <albert/matcher.h>
+#include <albert/standarditem.h>
+
 ALBERT_LOGGING_CATEGORY("mpris")
 using namespace albert;
 using namespace std;
+using MediaPlayer2Interface = OrgMprisMediaPlayer2Interface;
+using MediaPlayer2PlayerInterface = OrgMprisMediaPlayer2PlayerInterface;
 
 static const int dbus_timeout = 100;
-static const char * dbus_service_name = "org.mpris.MediaPlayer2";
 static const char * dbus_object_path = "/org/mpris/MediaPlayer2";
-static const char * dbus_iface_player = dbus_service_name;
-static const char * dbus_iface_control = "org.mpris.MediaPlayer2.Player";
-static const char * dbus_iface_introspecable = "org.freedesktop.DBus.Introspectable";
-static const char * dbus_iface_properties = "org.freedesktop.DBus.Properties";
 
-struct ThrowingQDBusInterface : private QDBusInterface
-{
-    ThrowingQDBusInterface(const QString &service, const QString &path, const QString &iface)
-        : QDBusInterface(service, path, iface)
-    {
-        if (!isValid())
-            throw runtime_error(lastError().message().toStdString());
-        setTimeout(dbus_timeout);
-    }
-
-    template<class TYPE>
-    TYPE getProperty(const char * property_name) const
-    {
-        if (auto var = property(property_name); lastError().isValid())
-            throw runtime_error(lastError().message().toStdString());
-        else
-            return var.value<TYPE>();
-    }
-
-    template<class TYPE>
-    TYPE call(const QString &method_name) {
-        QDBusReply<TYPE> reply = QDBusAbstractInterface::call(QDBus::Block, method_name);
-        if (reply.isValid())
-            return reply.value();
-        else
-            throw runtime_error(reply.error().message().toStdString());
-    }
-};
-
-// specialize void
-template <>
-void ThrowingQDBusInterface::call(const QString &method_name) {
-    QDBusReply<void> reply = QDBusAbstractInterface::call(QDBus::Block, method_name);
-    if (!reply.isValid())
-        throw runtime_error(reply.error().message().toStdString());
-}
-
-// https://specifications.freedesktop.org/mpris-spec/2.2/Media_Player.html
-// https://specifications.freedesktop.org/mpris-spec/2.2/Player_Interface.html
 class Player
 {
     const QString dbus_service_name;
-    ThrowingQDBusInterface player;
-    ThrowingQDBusInterface control;
-    QString identity;
+    OrgMprisMediaPlayer2Interface player;
+    MediaPlayer2PlayerInterface control;
+    QString id;
 
 public:
-    Player(const QString &service_name):
+
+    Player(const QString &service_name,const QDBusConnection &session_bus):
         dbus_service_name(service_name),
-        player(dbus_service_name, dbus_object_path, dbus_iface_player),
-        control(dbus_service_name, dbus_object_path, dbus_iface_control)
+        player(dbus_service_name, dbus_object_path, session_bus),
+        control(dbus_service_name, dbus_object_path, session_bus),
+        id(player.identity())
     {
-        bool have_player = false, have_control = false, have_properties = false;
-        ThrowingQDBusInterface introspectable(dbus_service_name, dbus_object_path, dbus_iface_introspecable);
-        QXmlStreamReader xml(introspectable.call<QString>("Introspect"));
+        player.setTimeout(dbus_timeout);
+        control.setTimeout(dbus_timeout);
 
-        while (!xml.atEnd() && !xml.hasError())
-            if (auto token = xml.readNext(); token == QXmlStreamReader::StartElement)
-                if (xml.name() == QStringLiteral("interface"))
-                    if(auto interface_name = xml.attributes().value(QStringLiteral("name")).toString();
-                        !interface_name.isEmpty()){
-                        if (interface_name == dbus_iface_player)
-                            have_player = true;
-                        else if (interface_name == dbus_iface_control)
-                            have_control = true;
-                        else if (interface_name == dbus_iface_properties)
-                            have_properties = true;
-                    }
-
-        if (xml.hasError())
-            throw runtime_error(xml.errorString().toStdString());
-
-        if (!(have_player && have_control && have_properties))
-            throw runtime_error("Service does not provide all required interfaces.");
-
-        if (!control.getProperty<bool>("CanControl"))
-            throw runtime_error("This player does not allow control.");
-
-        identity = player.getProperty<QString>("Identity");
+        // TODO: it makes no sense to proceed here without dynamic items
+        // notes: qdbusxml2cpp created files are still low level. calls are sync there are no
+        // signals emitted for changed properties. this has to be done manually. also since qobject
+        // does not support multiple inheritance the way to go is probably another level on top
+        // facading all the dbus interfaces below.
+        // Helpful: QDBUS_DEBUG=1
     }
 
-    shared_ptr<Item> buildControlItem(const QString &command, const QStringList &icon_urls)
+    inline shared_ptr<Item>
+    makeCtlItem(const QString &cmd, const QStringList &icon_urls, function<void()> &&action)
+    { return StandardItem::make(cmd, cmd, id, icon_urls, {{ cmd, cmd, ::move(action)}}); }
+
+    void addItems(vector<RankItem>& items, const QString &query)
     {
-        static const auto tr = QCoreApplication::translate("Player", "%1 media player control");
-        return StandardItem::make(
-            identity + command,
-            command,
-            tr.arg(identity),
-            icon_urls,
-            {{ command, command, [this, command]() { control.call<void>(command); } }}
-        );
-    }
+        if (!control.canControl())
+            return;
 
-    vector<shared_ptr<Item>> createItems(const QString &query)
-    {
-        vector<shared_ptr<Item>> items;
+        static const QString tr_raise = Plugin::tr("Raise");
+        static const QString tr_quit = Plugin::tr("Quit");
+        static const QString tr_play = Plugin::tr("Play");
+        static const QString tr_pause = Plugin::tr("Pause");
+        static const QString tr_stop = Plugin::tr("Stop");
+        static const QString tr_next = Plugin::tr("Next");
+        static const QString tr_prev = Plugin::tr("Previous");
 
-        // One of:
-        // Playing (Playing) - A track is currently playing.
-        // Paused (Paused) - A track is currently paused.
-        // Stopped (Stopped) - There is no track currently playing.
-        auto playbackStatus = control.getProperty<QString>("PlaybackStatus");
-        bool playing = (playbackStatus == QStringLiteral("Playing"));
+        static const QStringList iu_play = {"xdg:media-playback-start"};
+        static const QStringList iu_pause = {"xdg:media-playback-pause"};
+        static const QStringList iu_stop = {"xdg:media-playback-stop"};
+        static const QStringList iu_next = {"xdg:media-skip-forward"};
+        static const QStringList iu_prev = {"xdg:media-skip-backward"};
+        static const QStringList iu_player = {"xdg:multimedia-player"};
 
-        if (playing)
+        static const auto act_play = [this]{ control.Play(); };
+        static const auto act_pause = [this]{ control.Pause(); };
+        static const auto act_stop = [this]{ control.Stop(); };
+        static const auto act_next = [this]{ control.Next(); };
+        static const auto act_prev = [this]{ control.Previous(); };
+
+        enum PlaybackStatus { Playing, Paused, Stopped };
+        static const QString playback_status_strings[] = {
+            Plugin::tr("Playing"),
+            Plugin::tr("Paused"),
+            Plugin::tr("Stopped")
+        };
+
+        PlaybackStatus playback_status = Stopped;
+        if (control.playbackStatus() == QStringLiteral("Playing"))
+            playback_status = Playing;
+        else if (control.playbackStatus() == QStringLiteral("Paused"))
+            playback_status = Paused;
+        else if (control.playbackStatus() == QStringLiteral("Stopped"))
+            playback_status = Stopped;
+        else
+            WARN << "Invalid playback status received:" << control.playbackStatus();
+
+
+        Matcher matcher(query);
+        Match m;
+
+        // Player item
+
+        if (m = matcher.match(id); m)
         {
-            if (static const auto cmd = QCoreApplication::translate("Player", "Stop");
-                cmd.startsWith(query, Qt::CaseInsensitive))
-                items.push_back(buildControlItem(cmd, {"xdg:media-playback-stop", "qsp:SP_MediaStop"}));
+            vector<Action> actions;
 
+            if (player.canRaise())
+                actions.emplace_back(tr_raise, tr_raise, [this]{ player.Raise(); });
 
-            if (static const auto cmd = QCoreApplication::translate("Player", "Pause");
-                cmd.startsWith(query, Qt::CaseInsensitive) && control.getProperty<bool>("CanPause"))
-                items.push_back(buildControlItem(cmd, {"xdg:media-playback-pause", "qsp:SP_MediaPause"}));
+            if (playback_status == Playing)
+            {
+                if (control.canPause())
+                    actions.emplace_back(tr_pause, tr_pause, act_pause);
+
+                actions.emplace_back(tr_stop, tr_stop, act_stop);
+            }
+            else
+                if (control.canPlay())
+                    actions.emplace_back(tr_play, tr_play, act_play);
+
+            if (control.canGoNext())
+                actions.emplace_back(tr_next, tr_next, act_next);
+
+            if (control.canGoPrevious())
+                actions.emplace_back(tr_prev, tr_prev, act_prev);
+
+            if (player.canQuit())
+                actions.emplace_back(tr_quit, tr_quit, [this]{ player.Quit(); });
+
+            QStringList icon_urls;
+            if (auto de = player.desktopEntry(); !de.isEmpty())
+                icon_urls << QString("xdg:%1").arg(de);
+            icon_urls << iu_player;
+
+            // https://www.freedesktop.org/wiki/Specifications/mpris-spec/metadata/
+
+            auto md = control.metadata();
+            CRIT << md;
+            QStringList sl;
+
+            sl << playback_status_strings[playback_status];
+
+            // TODO: Dynamic items
+
+            if (auto it1 = md.find("xesam:title"), it2 = md.find("xesam:artist");
+                it1 != md.end() && it2 != md.end() && it1->canConvert<QString>() && it2->canConvert<QString>())
+            {
+                sl << it1->toString() << it2->toString();
+            }
+            else if (it1 = md.find("xesam:url"); it1 != md.end() && it1->canConvert<QString>())
+            {
+                QFileInfo fi(QUrl(it1->toString()).toLocalFile());
+                sl << fi.fileName() << fi.dir().dirName();
+            }
+
+            items.emplace_back(StandardItem::make(id, id, sl.join(" – "), icon_urls, actions), m);
         }
 
-        else if (static const auto cmd = QCoreApplication::translate("Player", "Play");
-                 cmd.startsWith(query, Qt::CaseInsensitive) && control.getProperty<bool>("CanPlay"))
-                items.push_back(buildControlItem(cmd, {"xdg:media-playback-start", "qsp:SP_MediaPlay"}));
 
-        if (static const auto cmd = QCoreApplication::translate("Player", "Next");
-            cmd.startsWith(query, Qt::CaseInsensitive) && control.getProperty<bool>("CanGoNext"))
-            items.push_back(buildControlItem(cmd, {"xdg:media-skip-forward", "qsp:SP_MediaSkipForward"}));
+        // Control items
 
-        if (static const auto cmd = QCoreApplication::translate("Player", "Previous");
-            cmd.startsWith(query, Qt::CaseInsensitive) && control.getProperty<bool>("CanGoPrevious"))
-            items.push_back(buildControlItem(cmd, {"xdg:media-skip-backward", "qsp:SP_MediaSkipBackward"}));
+        if (m = matcher.match(tr_next); m && control.canGoNext())
+            items.emplace_back(makeCtlItem(tr_next, iu_next, act_next), m);
 
+        if (m = matcher.match(tr_prev); m && control.canGoPrevious())
+            items.emplace_back(makeCtlItem(tr_prev, iu_prev, act_prev), m);
 
-        // TODO: add a player item
-        //    getProperty<bool>("CanRaise");
-        //    call<void>(QStringLiteral("Raise"));
-        //    getProperty<bool>("CanQuit");
-        //    call<void>(QStringLiteral("Quit"));
-        //    getProperty<QString>("LoopStatus");
-        //    QVariantMap metadata() {
-        ////        a{sv} (Metadata_Map)	Read only
-        //        /*
-        //         * Variant: [Argument: a{sv}
-        //         *  {
-        //         *      "mpris:trackid" = [Variant(QString): "/com/spotify/track/6G6SAy7BwNGKttAFGjADmQ"],
-        //         *      "mpris:length" = [Variant(qulonglong): 396960000],
-        //         *      "mpris:artUrl" = [Variant(QString): "https://i.scdn.co/image/ab67616d0000b27332466645f8f89b23a59a6af3"],
-        //         *      "xesam:album" = [Variant(QString): "Ciclos"],
-        //         *      "xesam:albumArtist" = [Variant(QStringList): {"Antaares"}],
-        //         *      "xesam:artist" = [Variant(QStringList): {"Antaares"}],
-        //         *      "xesam:autoRating" = [Variant(double): 0.39],
-        //         *      "xesam:discNumber" = [Variant(int): 1],
-        //         *      "xesam:title" = [Variant(QString): "Ciclos"],
-        //         *      "xesam:trackNumber" = [Variant(int): 1],
-        //         *      "xesam:url" = [Variant(QString): "https://open.spotify.com/track/6G6SAy7BwNGKttAFGjADmQ"]
-        //         *  }
-        //         */
-        //        return {};
-        //    }
-        //};
+        if (playback_status == Playing)
+        {
+            if (m = matcher.match(tr_stop); m)
+                items.emplace_back(makeCtlItem(tr_stop, iu_stop, act_stop), m);
 
-        return items;
+            if (m = matcher.match(tr_pause); m && control.canPause())
+                items.emplace_back(makeCtlItem(tr_pause, iu_pause, act_pause), m);
+        }
+        else
+        {
+            if (m = matcher.match(tr_play); m && control.canPlay())
+                items.emplace_back(makeCtlItem(tr_play, iu_play, act_stop), m);
+        }
+
     }
 };
+
 
 struct Plugin::Private
 {
-    std::map<QString, Player> players;
-    QDBusServiceWatcher service_watcher;
-
-    void tryAddPlayer(const QString &service)
-    {
-        try {
-            players.emplace(service, service);
-            DEBG << "MPRIS player registered:" << service;
-        } catch (const runtime_error &e) {
-            WARN << "Error while creating player" << service << e.what();
-        }
-    }
+    QDBusConnection bus = QDBusConnection::sessionBus();
+    QDBusServiceWatcher service_watcher{
+        "org.mpris.MediaPlayer2*", bus,
+        QDBusServiceWatcher::WatchForOwnerChange
+    };
+    map<QString, Player> players;
 };
 
-Plugin::Plugin() : d(new Private)
+Plugin::Plugin() : d(make_unique<Private>())
 {
-    if (!QDBusConnection::sessionBus().isConnected())
+    if (!d->bus.isConnected())
         throw runtime_error("Failed to connect to session bus.");
 
+    connect(&d->service_watcher, &QDBusServiceWatcher::serviceOwnerChanged,
+            this, &Plugin::serviceOwnerChanged);
+
     // Each media player must request a unique bus name which begins with org.mpris.MediaPlayer2
-    if (auto reply = QDBusConnection::sessionBus().interface()->registeredServiceNames(); !reply.isValid())
+    if (auto reply = d->bus.interface()->registeredServiceNames(); !reply.isValid())
         throw runtime_error(reply.error().message().toStdString());
     else
         for (const auto &service : reply.value())
             if (service.startsWith(QStringLiteral("org.mpris.MediaPlayer2.")))
-                d->tryAddPlayer(service);
-
-    // Track new players
-    d->service_watcher.setConnection(QDBusConnection::sessionBus());
-    d->service_watcher.setWatchMode(QDBusServiceWatcher::WatchForOwnerChange);
-    d->service_watcher.addWatchedService(QStringLiteral("org.mpris.MediaPlayer2*"));
-    connect(&d->service_watcher, &QDBusServiceWatcher::serviceOwnerChanged, this,
-            [this](const QString &service, const QString&, const QString &newOwner){
-        if(d->players.erase(service))
-            DEBG << "MPRIS player unregistered:" << service;
-        if (!newOwner.isEmpty())
-            d->tryAddPlayer(service);
-    });
+                d->players.emplace(piecewise_construct, forward_as_tuple(service), forward_as_tuple(service, d->bus));
 }
 
 Plugin::~Plugin() = default;
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
 {
     vector<RankItem> results;
     for (auto &[service, player] : d->players)
-        try {
-            for (const auto& item : player.createItems(query->string()))
-                results.emplace_back(item, (double)query->string().size()/item->text().size());
-        } catch (const runtime_error &e) {
-            WARN << e.what();
-        }
+        player.addItems(results, query->string());
     return results;
 }
-
 
 QWidget *Plugin::buildConfigWidget()
 {
@@ -248,4 +225,12 @@ QWidget *Plugin::buildConfigWidget()
     Ui::ConfigWidget ui;
     ui.setupUi(w);
     return w;
+}
+
+void Plugin::serviceOwnerChanged(const QString &service, const QString &, const QString &newOwner)
+{
+    if(d->players.erase(service))
+        DEBG << "MPRIS player unregistered:" << service;
+    if (!newOwner.isEmpty())
+        d->players.emplace(piecewise_construct, forward_as_tuple(service), forward_as_tuple(service, d->bus));
 }

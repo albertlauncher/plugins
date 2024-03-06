@@ -1,16 +1,20 @@
-#if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+if(UNIX AND NOT APPLE)
 
-project(mpris VERSION 3.0)
+    cmake_minimum_required(VERSION 3.16)
+    find_package(Albert REQUIRED)
 
-find_package(Qt6 REQUIRED COMPONENTS DBus)
+    project(mpris VERSION 4.0)
 
-albert_plugin(
-    SOURCE_FILES
-        src/configwidget.ui
-        src/plugin.cpp
-        src/plugin.h
-    PRIVATE_LINK_LIBRARIES
-        Qt6::DBus
-)
+    albert_plugin(QT DBus Widgets)
 
-#endif()
+    # no namespaces (class/namespace conflict)
+    set_source_files_properties(mpris.xml PROPERTIES NO_NAMESPACE ON)
+
+    # generate code into binary dir
+    qt_add_dbus_interface(DBUS_SRCS mpris.xml mpris)
+
+    target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR})
+
+    target_sources(${PROJECT_NAME} PRIVATE mpris.xml ${DBUS_SRCS})
+
+endif()

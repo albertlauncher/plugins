@@ -1,16 +1,14 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
 #pragma once
-#include <albert/extensionplugin.h>
-#include <albert/globalqueryhandler.h>
+#include "albert/query/globalqueryhandler.h"
+#include "albert/util/extensionplugin.h"
 
 class Plugin : public albert::ExtensionPlugin,
                public albert::GlobalQueryHandler
 {
-    ALBERT_PLUGIN
-
+    Q_OBJECT ALBERT_PLUGIN
 public:
-
     Plugin();
     ~Plugin();
 
@@ -18,10 +16,6 @@ public:
     QWidget *buildConfigWidget() override;
 
 private:
-
-    void serviceOwnerChanged(const QString&, const QString&, const QString&);
-
     struct Private;
     std::unique_ptr<Private> d;
-
 };
