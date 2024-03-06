@@ -1,18 +1,18 @@
 // Copyright (c) 2023 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
-#include "albert/logging.h"
 #include "plugin.h"
 #include <Contacts/Contacts.h>
 #include <QLabel>
 #include <QRegularExpression>
+#include <albert/logging.h>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("contacts")
 using namespace albert;
 using namespace std;
 
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
 {
   vector<RankItem> results;
   @autoreleasepool {
