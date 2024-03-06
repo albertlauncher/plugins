@@ -1,8 +1,6 @@
-// Copyright (c) 2022-2023 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/item.h"
-#include "albert/logging.h"
+#include "bookmarkitem.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
 #include <QDir>
@@ -11,6 +9,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QStandardPaths>
+#include <albert/logging.h>
+#include <albert/util.h>
 #include <utility>
 ALBERT_LOGGING_CATEGORY("chromium")
 using namespace albert;
@@ -29,60 +29,26 @@ static const char *app_dirs[] = {
     "vivaldi"
 };
 
-struct BookmarkItem : Item
+static vector<shared_ptr<BookmarkItem>> parseBookmarks(const QStringList& paths, const bool &abort)
 {
-    BookmarkItem(QString i, QString n, QString u) : id_(::move(i)), name_(::move(n)), url_(::move(u)) {}
+    function<void(const QString&, const QJsonObject&, vector<shared_ptr<BookmarkItem>>&)> recursiveJsonTreeWalker =
+        [&recursiveJsonTreeWalker](const QString &parent_name, const QJsonObject &json, vector<shared_ptr<BookmarkItem>> &items)
+        {
+            auto name = json["name"].toString();
+            auto type = json["type"].toString();
 
-    QString id_;
-    QString name_;
-    QString url_;
+            if (type == "folder")
+                for (const QJsonValueRef &child : json["children"].toArray())
+                    recursiveJsonTreeWalker(name, child.toObject(), items);
 
-    QString id() const override
-    { return id_; }
-
-    QString text() const override
-    { return name_; }
-
-    QString subtext() const override
-    { return url_; }
-
-    QStringList iconUrls() const override
-    {
-        static const QStringList icon_urls = {"xdg:www", "xdg:web-browser", "xdg:emblem-web", ":favicon"};
-        return icon_urls;
-    }
-
-    vector<Action> actions() const override
-    {
-        static const auto tr_open = QCoreApplication::translate("BookmarkItem", "Open URL");
-        static const auto tr_copy = QCoreApplication::translate("BookmarkItem", "Copy URL to clipboard");
-        return {
-            {"open-url", tr_open, [this]() { openUrl(url_); }},
-            {"copy-url", tr_copy, [this]() { setClipboardText(url_); }}
+            else if (type == "url")
+                items.emplace_back(make_shared<BookmarkItem>(json["guid"].toString(),
+                                                             name,
+                                                             parent_name,
+                                                             json["url"].toString()));
         };
-    }
-};
 
-
-static std::vector<std::shared_ptr<BookmarkItem>> parseBookmarks(const QStringList& paths, const bool &abort)
-{
-    function<void(const QJsonObject &json, std::vector<std::shared_ptr<BookmarkItem>> &items)> recursiveJsonTreeWalker =
-            [&recursiveJsonTreeWalker](const QJsonObject &json, std::vector<std::shared_ptr<BookmarkItem>> &items){
-                QJsonValue type = json["type"];
-                if (type != QJsonValue::Undefined)
-                {
-                    if (type.toString() == "folder")
-                        for (const QJsonValueRef child: json["children"].toArray())
-                            recursiveJsonTreeWalker(child.toObject(), items);
-
-                    else if (type.toString() == "url")
-                        items.emplace_back(make_shared<BookmarkItem>(json["guid"].toString(),
-                                                                     json["name"].toString(),
-                                                                     json["url"].toString()));
-                }
-            };
-
-    std::vector<std::shared_ptr<BookmarkItem>> results;
+    vector<shared_ptr<BookmarkItem>> results;
     for (auto &path : paths) {
         if (abort)
             return {};
@@ -90,7 +56,7 @@ static std::vector<std::shared_ptr<BookmarkItem>> parseBookmarks(const QStringLi
         {
             for (const auto &root: QJsonDocument::fromJson(f.readAll()).object().value("roots").toObject())
                 if (root.isObject())
-                    recursiveJsonTreeWalker(root.toObject(), results);
+                    recursiveJsonTreeWalker({}, root.toObject(), results);
             f.close();
         }
         else

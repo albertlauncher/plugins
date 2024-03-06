@@ -1,18 +1,18 @@
-// Copyright (c) 2022-2023 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
-#include "albert/extension/queryhandler/indexqueryhandler.h"
-#include "albert/plugin.h"
-#include "albert/util/backgroundexecutor.h"
+#include <albert/indexqueryhandler.h>
+#include <albert/backgroundexecutor.h>
+#include <albert/extensionplugin.h>
 #include <QFileSystemWatcher>
 #include <memory>
+class BookmarkItem;
 
-struct BookmarkItem;
 
-class Plugin : public albert::plugin::ExtensionPlugin,
+class Plugin : public albert::ExtensionPlugin,
                public albert::IndexQueryHandler
 {
-    Q_OBJECT ALBERT_PLUGIN
+    ALBERT_PLUGIN
 public:
     Plugin();
     void updateIndexItems() override;

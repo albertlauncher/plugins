@@ -1,13 +1,6 @@
-project(chromium VERSION 6.0)
+cmake_minimum_required(VERSION 3.16)
+find_package(Albert REQUIRED)
 
-find_package(Qt6 REQUIRED COMPONENTS Concurrent)
+project(chromium VERSION 7.0)
 
-albert_plugin(
-    SOURCE_FILES
-        ${PROJECT_NAME}.qrc
-        src/configwidget.ui
-        src/plugin.cpp
-        src/plugin.h
-    PRIVATE_LINK_LIBRARIES
-        Qt6::Concurrent
-)
+albert_plugin(QT Widgets Concurrent)
