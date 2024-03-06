@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
 #include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
+#include "albert/util/standarditem.h"
 #include "plugin.h"
 #include <QCheckBox>
 #include <QGridLayout>
