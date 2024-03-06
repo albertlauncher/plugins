@@ -1,8 +1,5 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
-#include "albert/logging.h"
 #include "plugin.h"
 #include <QDir>
 #include <QFile>
@@ -11,13 +8,16 @@
 #include <QString>
 #include <QTextStream>
 #include <QWidget>
+#include <albert/logging.h>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("ssh")
 using namespace albert;
 using namespace std;
 
 const QStringList Plugin::icon_urls = {"xdg:ssh", ":ssh"};
 
-const QRegularExpression Plugin::re_input = QRegularExpression(R"raw(^(?:(\w+)@)?\[?([\w\.-]*)\]?(?:\h+(.*))?$)raw");
+const QRegularExpression Plugin::regex_synopsis = QRegularExpression(R"raw(^(?:(\w+)@)?\[?([\w\.-]*)\]?(?:\h+(.*))?$)raw");
 
 static QSet<QString> parseConfigFile(const QString &path)
 {
@@ -45,61 +45,71 @@ static QSet<QString> parseConfigFile(const QString &path)
     return hosts;
 }
 
-Plugin::Plugin()
+Plugin::Plugin():
+    tr_desc(tr("Configured SSH host – %1")),
+    tr_conn(tr("Connect"))
 {
-    hosts_.unite(parseConfigFile(QStringLiteral("/etc/ssh/config")));
-    hosts_.unite(parseConfigFile(QDir::home().filePath(".ssh/config")));
-    INFO << QStringLiteral("Found %1 ssh hosts.").arg(hosts_.size());
+    hosts.unite(parseConfigFile(QStringLiteral("/etc/ssh/config")));
+    hosts.unite(parseConfigFile(QDir::home().filePath(".ssh/config")));
+    INFO << QStringLiteral("Found %1 ssh hosts.").arg(hosts.size());
 }
 
 QString Plugin::synopsis() const
-{ return "[user@]<host> [params…]"; }
+{ return tr("[user@]<host> [params…]"); }
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
+bool Plugin::allowTriggerRemap() const
+{ return false; }
+
+std::vector<RankItem> Plugin::getItems(const QString &query, bool allowParams) const
 {
-    const auto &trimmed = query->string().trimmed();
-    vector<RankItem> rank_items;
+    vector<RankItem> r;
 
-    auto match = re_input.match(query->string());
+    auto match = regex_synopsis.match(query);
     if (!match.hasMatch())
-        return rank_items;
+        return r;
 
     const auto q_user = match.captured(1);
     const auto q_host = match.captured(2);
     const auto q_params = match.captured(3);
-    static const auto tr_desc = tr("Configured SSH host – ssh %1");
-    static const auto tr_conn = tr("Connect");
 
-    for (const auto &host : hosts_)
+    if (!(allowParams || q_params.isEmpty()))
+        return r;
+
+    for (const auto &host : hosts)
     {
         if (host.startsWith(q_host, Qt::CaseInsensitive))
         {
-            auto args = QString("%1%2 %3")
-                            .arg(q_user.isEmpty()
-                                     ? QString()
-                                     : QStringLiteral("%1@").arg(q_user),
-                                 host, q_params);
+            QString cmd = "ssh ";
+            if (!q_user.isEmpty())
+                cmd += q_user + '@';
+            cmd += host;
+            if (!q_params.isEmpty())
+                cmd += ' ' + q_params;
 
-            rank_items.emplace_back(
+            r.emplace_back(
                 StandardItem::make(
-                    host,
-                    host,
-                    tr_desc.arg(args),
-                    args,
-                    icon_urls,
-                    {
-                        {
-                            "c", tr_conn,
-                            [args](){ runTerminal(QString("ssh %1 && exit").arg(args)); }
-                        }
-                    }
+                    host, host, tr_desc.arg(cmd), cmd, icon_urls,
+                    {{ "c", tr_conn, [=]{ runTerminal(QString("%1 && exit").arg(cmd)); } }}
                 ),
-                (float)q_host.size() / host.size()
+                (double)q_host.size() / host.size()
             );
         }
     }
+    return r;
+}
 
-    return rank_items;
+
+void Plugin::handleTriggerQuery(albert::Query *query)
+{
+    auto r = getItems(query->string(), true);
+    applyUsageScore(&r);
+    for (const auto &[i, s] : r)
+        query->add(i);
+}
+
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
+{
+    return getItems(query->string(), false);
 }
 
 QWidget *Plugin::buildConfigWidget()
