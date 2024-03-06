@@ -1,13 +1,13 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/item.h"
-#include "albert/logging.h"
 #include "plugin.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <SystemConfiguration/SystemConfiguration.h>
+#include <albert/logging.h>
+#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("vpn")
+using namespace albert::vpn;
 using namespace albert;
 using namespace std;
 
@@ -64,7 +64,7 @@ public:
             else
             {
                 auto msg = Plugin::tr("Failed connecting '%1': %2.")
-                               .arg(service_name, SCErrorString(SCError()));
+                        .arg(service_name, SCErrorString(SCError()));
                 WARN << msg;
                 QMessageBox::warning(nullptr, qApp->applicationDisplayName(), msg);
             }
@@ -76,20 +76,20 @@ public:
             else
             {
                 auto msg = Plugin::tr("Failed disconnecting '%1': %2.")
-                               .arg(service_name, SCErrorString(SCError()));
+                        .arg(service_name, SCErrorString(SCError()));
                 WARN << msg;
                 QMessageBox::warning(nullptr, qApp->applicationDisplayName(), msg);
             }
         }
     }
 
-    QString id() const { return service_id; }
+    QString id() const override { return service_id; }
 
-    QString text() const { return service_name; }
+    QString text() const override { return service_name; }
 
-    QString subtext() const { return statusString(); }
+    QString subtext() const override { return statusString(); }
 
-    QStringList iconUrls() const {
+    QStringList iconUrls() const override {
         switch (status()) {
         case kSCNetworkConnectionInvalid:
             return {QStringLiteral("gen:?&text=VPN&background=#D00000&foreground=#ffffff&fontscalar=0.4")};
@@ -105,10 +105,8 @@ public:
             return {":unknown"};
         }
     }
-
-    QString inputActionText() const { return service_name; }
-
-    vector<Action> actions() const
+    QString inputActionText() const override { return service_name; }
+    vector<Action> actions() const override
     {
         switch (status()) {
         case kSCNetworkConnectionConnected:
@@ -132,12 +130,6 @@ public:
         }
     }
 };
-
-QString Plugin::synopsis() const
-{
-    const static auto tr_s = tr("<VPN name>");
-    return tr_s;
-}
 
 void Plugin::updateIndexItems()
 {

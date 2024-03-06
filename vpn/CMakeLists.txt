@@ -1,13 +1,15 @@
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if(APPLE)
 
-    project(vpn VERSION 2.0)
+    cmake_minimum_required(VERSION 3.16)
+    find_package(Albert REQUIRED)
+
+    project(vpn VERSION 2.1)
 
     albert_plugin(
-        SOURCE_FILES
-            src/plugin.mm
-            src/plugin.h
-        PRIVATE_LINK_LIBRARIES
-            "-framework SystemConfiguration"
+        LINK PRIVATE "-framework SystemConfiguration"
+        QT Widgets
     )
+
+    target_compile_options(${PROJECT_NAME} PRIVATE "-fobjc-arc")
 
 endif()
