@@ -1,7 +1,7 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
+#include "albert/util/standarditem.h"
 #include "plugin.h"
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -21,8 +21,8 @@ static shared_ptr<Item> buildItem(int algo_index, const QString& string_to_hash)
     hash.addData(string_to_hash.toUtf8());
     QByteArray hashString = hash.result().toHex();
 
-    static const auto tr_c = QCoreApplication::translate("buildItem", "Copy");
-    static const auto tr_cs = QCoreApplication::translate("buildItem", "Copy short form (8 char)");
+    static const auto tr_c = Plugin::tr("Copy");
+    static const auto tr_cs = Plugin::tr("Copy short form (8 char)");
 
     return StandardItem::make(
         algo_name,
@@ -42,7 +42,7 @@ static shared_ptr<Item> buildItem(int algo_index, const QString& string_to_hash)
     );
 };
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
 {
     vector<RankItem> results;
     for (int i = 0; i < algo_count; ++i){
@@ -55,7 +55,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
     return results;
 }
 
-void Plugin::handleTriggerQuery(TriggerQuery *query) const
+void Plugin::handleTriggerQuery(Query *query)
 {
     for (int i = 0; i < algo_count; ++i)
         query->add(buildItem(i, query->string()));

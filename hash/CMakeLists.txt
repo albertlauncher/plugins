@@ -1,4 +1,4 @@
-project(hash VERSION 9.0)
+project(hash VERSION 9.1)
 
 albert_plugin(
     SOURCE_FILES
