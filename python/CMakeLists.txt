@@ -1,18 +1,17 @@
-project(python VERSION 4.2)
+cmake_minimum_required(VERSION 3.16)
+find_package(Albert REQUIRED)
+
+project(python VERSION 4.3)
 
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 
 albert_plugin(
-    SOURCE_FILES
-        ${PROJECT_NAME}.qrc
-        src/*.cpp
-        src/*.h
-        src/*.ui
-    PRIVATE_LINK_LIBRARIES
-        Qt6::Concurrent
-        pybind11::embed
+    LINK PRIVATE pybind11::embed
+    QT Concurrent Widgets
 )
+
+target_sources(${PROJECT_NAME} PRIVATE albert.pyi)
 
 install(
     DIRECTORY "plugins/"
@@ -20,8 +19,6 @@ install(
     REGEX "/\\..*" EXCLUDE  # exclude hidden files
     PATTERN "__pycache__" EXCLUDE
 )
-
-
 
 ## – –
 

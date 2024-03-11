@@ -1,16 +1,19 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
-#include <pybind11/embed.h> // Has to be first import
-#include "albert/extensionregistry.h"
+#include <pybind11/embed.h>
 #include "cast_specialization.h"
-#include "albert/albert.h"
-#include "albert/logging.h"
+#include "embeddedmodule.h"
+// import pybind first
+
 #include "plugin.h"
 #include "pypluginloader.h"
 #include "ui_configwidget.h"
 #include <QDir>
 #include <QSettings>
 #include <QStandardPaths>
+#include <albert/extensionregistry.h>
+#include <albert/logging.h>
+#include <albert/util.h>
 #include <chrono>
 ALBERT_LOGGING_CATEGORY("python")
 using namespace albert;
@@ -19,15 +22,8 @@ using namespace chrono;
 namespace py = pybind11;
 
 static const constexpr char *PLUGIN_DIR = "plugins";
-static const constexpr char *SITE_PACKAGES= "site-packages";
-// static const char *CFG_WATCH_SOURCES = "watchSources";
-// static const bool DEF_WATCH_SOURCES = false;
 
-
-Plugin::Plugin() = default;
-Plugin::~Plugin() = default;
-
-void Plugin::initialize(albert::ExtensionRegistry &registry, map<QString,PluginInstance*> dependencies)
+Plugin::Plugin()
 {
     /*
      * The python interpreter is never unloaded once it has been loaded. This
@@ -45,23 +41,41 @@ void Plugin::initialize(albert::ExtensionRegistry &registry, map<QString,PluginI
         DEBG << "Python version:" << sys.attr("version").cast<QString>();
         DEBG << "Python path:" << sys.attr("path").cast<QStringList>();
 
-        auto data_dir = dataDir();
+        auto data_dir = createOrThrow(dataLocation());
 
         // Create and add site-packages dir
-        if (!data_dir.exists(SITE_PACKAGES))
-            if(!data_dir.mkdir(SITE_PACKAGES))
-                throw tr("Failed creating site-packages dir %1").arg(data_dir.filePath(SITE_PACKAGES));
-        py::module::import("site").attr("addsitedir")(data_dir.filePath(SITE_PACKAGES));
+        if(QDir dir(sitePackagesLocation()); !dir.mkpath("."))
+            throw tr("Failed creating site-packages dir %1").arg(dir.path());
+        else
+            py::module::import("site").attr("addsitedir")(dir.path());
 
-        // Create module dirs
-        if (!data_dir.exists(PLUGIN_DIR))
-            data_dir.mkdir(PLUGIN_DIR);
+        // Create writeable plugin dir
+        if(QDir dir(userPluginsLocation()); !dir.mkpath("."))
+            throw tr("Failed creating writeable plugin dir %1").arg(data_dir.path());
+        else
+        {
+            QFile src(":albert.pyi");
+            QFile dst(dir.filePath("albert.pyi"));
+            const char * k_stub_ver = "stub_version";
+            auto v = QString("%1.%2").arg(MAJOR_INTERFACE_VERSION).arg(MINOR_INTERFACE_VERSION);
+
+            if (v != state()->value(k_stub_ver).toString() && dst.exists() && !dst.remove())
+                WARN << "Failed removing former interface spec" << dst.error();
+
+            if (!dst.exists())
+            {
+                if (src.copy(dst.fileName())){
+                    state()->setValue(k_stub_ver, v);
+                    INFO << "Copied interface spec to" << dst.fileName();
+                }
+                else
+                    WARN << "Failed copying interface spec to" << dst.fileName() << src.error();
+            }
+        }
 
         auto start = system_clock::now();
-        using QSP = QStandardPaths;
-        auto plugin_dirs = QSP::locateAll(QSP::AppDataLocation, id(), QSP::LocateDirectory);
-        for (const QString &plugin_dir : plugin_dirs) {
-            if (QDir dir{plugin_dir}; dir.cd(PLUGIN_DIR)) {
+        for (const QString &plugin_dir : pluginsLocations()) {
+            if (QDir dir{plugin_dir}; dir.exists()) {
                 DEBG << "Searching Python plugins in" << dir.absolutePath();
                 for (const QFileInfo &file_info : dir.entryInfoList(QDir::Files|QDir::Dirs|QDir::NoDotAndDotDot)) {
                     try {
@@ -80,14 +94,10 @@ void Plugin::initialize(albert::ExtensionRegistry &registry, map<QString,PluginI
         INFO << QStringLiteral("[%1 ms] Python plugin scan")
                     .arg(duration_cast<milliseconds>(system_clock::now()-start).count());
     }
-
-    ExtensionPlugin::initialize(registry, dependencies);
 }
 
-void Plugin::finalize(albert::ExtensionRegistry &registry)
+Plugin::~Plugin()
 {
-    // ExtensionPlugin::finalize(r);
-    registry.deregisterExtension(this);
     release_.reset();
     plugins_.clear();
 
@@ -103,15 +113,46 @@ vector<PluginLoader*> Plugin::plugins()
     return plugins;
 }
 
+QString Plugin::userPluginsLocation() const
+{
+    return QDir(dataLocation()).filePath(PLUGIN_DIR);
+}
+
+QStringList Plugin::pluginsLocations() const
+{
+    QStringList pl;
+    using SP = QStandardPaths;
+    auto data_dirs = SP::locateAll(SP::AppDataLocation, id(), SP::LocateDirectory);
+    for (const QString &data_dir : data_dirs)
+        if (QDir dir{data_dir}; dir.cd(PLUGIN_DIR))
+            pl << dir.path();
+    return pl;
+}
+
+QString Plugin::sitePackagesLocation() const
+{
+    return QDir(dataLocation()).filePath("site-packages");
+}
+
+QString Plugin::stubLocation() const
+{
+    return QDir(userPluginsLocation()).filePath("albert.pyi");
+}
+
 QWidget *Plugin::buildConfigWidget()
 {
     auto *w = new QWidget;
     Ui::ConfigWidget ui;
     ui.setupUi(w);
 
-    connect(ui.pushButton_packages, &QPushButton::clicked, this, [this](){
-        openUrl("file://" + dataDir().filePath("site-packages"));
-    });
+    connect(ui.pushButton_sitePackages, &QPushButton::clicked, this,
+            [this](){ openUrl(QUrl::fromLocalFile(sitePackagesLocation())); });
+
+    connect(ui.pushButton_stubFile, &QPushButton::clicked, this,
+            [this](){ openUrl(QUrl::fromLocalFile(stubLocation())); });
+
+    connect(ui.pushButton_userPluginDir, &QPushButton::clicked, this,
+            [this](){ openUrl(QUrl::fromLocalFile(userPluginsLocation())); });
 
     return w;
 }

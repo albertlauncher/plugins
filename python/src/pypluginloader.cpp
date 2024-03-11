@@ -1,6 +1,8 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
-#include "embeddedmodule.h"  // Has to be first include
+#include "embeddedmodule.h"
+#include "trampolineclasses.h"
+
 #include "plugin.h"
 #include "pypluginloader.h"
 #include <QCoreApplication>
@@ -11,14 +13,15 @@
 #include <QFutureWatcher>
 #include <QMessageBox>
 #include <QPointer>
-#include <QtConcurrent>
 #include <QProcess>
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QTextEdit>
+#include <QtConcurrent>
+#include <albert/logging.h>
+namespace py = pybind11;
 using namespace albert;
 using namespace std;
-namespace py = pybind11;
 
 static const char *ATTR_PLUGIN_CLASS   = "Plugin";
 static const char *ATTR_MD_IID         = "md_iid";
@@ -87,7 +90,14 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QString &module_path)
                             metadata_.iid = value;
 
                         else if (target_name == ATTR_MD_ID)
+                        {
+                            WARN << metadata_.id
+                                 << ": Using 'md_id' to overwrite the plugin id is deprecated and "
+                                    "will be dropped without replacement in interface v3.0. Plugin "
+                                    "ids will be 'python.<modulename>' to avoid conflicts with "
+                                    "native plugins.";
                             metadata_.id = value;
+                        }
 
                         else if (target_name == ATTR_MD_NAME)
                             metadata_.name = value;
@@ -150,6 +160,9 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QString &module_path)
     if (metadata_.iid.isEmpty())
         throw NoPluginException("No interface id found");
 
+    // Namespace id
+    metadata_.id = QString("python.%1").arg(metadata_.id);
+
     QStringList errors;
     static const QRegularExpression regex_version(R"R(^(\d+)\.(\d+)$)R");
 
@@ -164,11 +177,11 @@ PyPluginLoader::PyPluginLoader(Plugin &provider, const QString &module_path)
                       .arg(MINOR_INTERFACE_VERSION).arg(min);
 
     if (!metadata_.platforms.isEmpty())
-#if defined Q_OS_MACOS
+#if defined(Q_OS_MACOS)
         if (!metadata_.platforms.contains("Darwin"))
-#elif defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+#elif defined(Q_OS_UNIX)
         if (!metadata_.platforms.contains("Linux"))
-#elif defined Q_OS_WIN
+#elif defined(Q_OS_WIN)
         if (!metadata_.platforms.contains("Windows"))
 #endif
         errors << QString("Platform not supported. Supported: %1").arg(metadata_.platforms.join(", "));
@@ -228,10 +241,8 @@ void PyPluginLoader::load()
         mb.setText(
             QCoreApplication::translate(
                 "PyPluginLoader",
-                "Some modules in the plugin '%1' were not found. Probably "
-                "the plugin has dependencies which are not "
-                "installed on this system.\n\nInstall dependencies into "
-                "the Albert virtual environment?")
+                "Some modules in the plugin '%1' were not found.\n\n"
+                "Install dependencies into the virtual environment?")
                 .arg(metadata_.name));
         mb.setStandardButtons(QMessageBox::Yes|QMessageBox::No);
         mb.setDefaultButton(QMessageBox::Yes);
@@ -248,7 +259,7 @@ void PyPluginLoader::load()
                     << "install"
                     << "--disable-pip-version-check"
                     << "--target"
-                    << provider_.dataDir().filePath("site-packages")
+                    << QDir(provider_.dataLocation()).filePath("site-packages")
                     << metadata_.runtime_dependencies
                 );
 
@@ -293,8 +304,8 @@ void PyPluginLoader::load_()
                 QCoreApplication::translate("PyPluginLoader", "No '%1' in $PATH.")
                     .arg(exec).toStdString());
 
+    py::gil_scoped_acquire acquire;
     try {
-        py::gil_scoped_acquire acquire;
 
         // Import as __name__ = albert.package_name
         py::module importlib_util = py::module::import("importlib.util");
@@ -325,8 +336,34 @@ void PyPluginLoader::load_()
 void PyPluginLoader::unload()
 {
     py::gil_scoped_acquire acquire;
+
+    // >>>>>>>> TODO: Remove as of 3.0
+
+    instance_.cast<PyPI*>()->backwardCompatibileFini();
+
+    try {
+        if (py::hasattr(instance_, "finalize"))
+        {
+            WARN << metadata_.id << "Deprecated: PluginInstance.finalize(), use __del__.";
+            instance_.attr("finalize")();
+        }
+    } catch (const std::exception &e) {
+        CRIT << e.what();
+    }
+
+    // <<<<<<<<<<
+
+    if (py::isinstance<Extension>(instance_))
+    {
+        auto *root_extension = instance_.cast<Extension*>();
+        provider_.registry().deregisterExtension(root_extension);
+    }
+
     instance_ = py::object();
     module_ = py::object();
+
+    // Run garbage collection to make sure that __del__ will be called.
+    py::module::import("gc").attr("collect")();
 }
 
 PluginInstance *PyPluginLoader::createInstance()
@@ -334,7 +371,35 @@ PluginInstance *PyPluginLoader::createInstance()
     if (!instance_)
     {
         py::gil_scoped_acquire acquire;
-        instance_ = module_.attr(ATTR_PLUGIN_CLASS)();  // may throw
+        try {
+            instance_ = module_.attr(ATTR_PLUGIN_CLASS)();  // may throw
+
+            if (!py::isinstance<PyPI>(instance_))
+                throw runtime_error("Python Plugin class is not of type PluginInstance.");
+
+            // >>>>>>>> TODO: Remove as of 3.0
+
+            if (hasattr(instance_, "initialize"))
+            {
+                WARN << metadata_.id << "Deprecated: PluginInstance.initialize(), use __init__.";
+                instance_.attr("initialize")();
+            }
+
+            instance_.cast<PyPI*>()->backwardCompatibileInit();
+
+            // <<<<<<<<<<
+
+            if (py::isinstance<Extension>(instance_))
+            {
+                auto *root_extension = instance_.cast<Extension*>();
+                provider_.registry().registerExtension(root_extension);
+            }
+
+        } catch (const std::exception &e) {
+            instance_ = py::object();
+            module_ = py::object();
+            throw;
+        }
     }
-    return instance_.cast<PyPluginInstanceTrampoline*>();
+    return instance_.cast<PyPI*>();
 }

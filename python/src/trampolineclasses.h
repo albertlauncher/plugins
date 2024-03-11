@@ -1,93 +1,133 @@
 // Copyright (c) 2017-2023 Manuel Schneider
 
 #pragma once
-#include "albert/extensionregistry.h"
+
 #include "cast_specialization.h" // Has to be imported first
-#include "albert/extension/pluginprovider/plugininstance.h"
-#include "albert/extension/queryhandler/fallbackprovider.h"
-#include "albert/extension/queryhandler/globalqueryhandler.h"
-#include "albert/extension/queryhandler/indexqueryhandler.h"
-#include "albert/extension/queryhandler/item.h"
-#include "albert/extension/queryhandler/triggerqueryhandler.h"
-#include "albert/logging.h"
+
 #include <QCheckBox>
 #include <QComboBox>
-#include <QSettings>
 #include <QDir>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
-#include <QLineEdit>
-#include <QWidget>
 #include <QLabel>
+#include <QLineEdit>
+#include <QSettings>
+#include <QString>
+#include <QWidget>
+#include <albert/extensionregistry.h>
+#include <albert/fallbackhandler.h>
+#include <albert/indexqueryhandler.h>
+#include <albert/logging.h>
+#include <albert/plugininstance.h>
+#include <albert/pluginloader.h>
+#include <albert/pluginmetadata.h>
 using namespace albert;
 using namespace std;
 
+
 #define CATCH_PYBIND11_OVERRIDE_PURE(ret, base, func, ...) \
-    try { PYBIND11_OVERRIDE_PURE(ret, base, func, __VA_ARGS__ ); } \
-    catch (const std::exception &e) { CRIT << e.what(); }
+try { PYBIND11_OVERRIDE_PURE(ret, base, func, __VA_ARGS__ ); } \
+catch (const std::exception &e) { CRIT << typeid(base).name() << #func << e.what(); }
 
 #define CATCH_PYBIND11_OVERRIDE(ret, base, func, ...) \
-    try { PYBIND11_OVERRIDE(ret, base, func, __VA_ARGS__ ); } \
-    catch (const std::exception &e) { CRIT << e.what(); }
+try { PYBIND11_OVERRIDE(ret, base, func, __VA_ARGS__ ); } \
+catch (const std::exception &e) { CRIT << typeid(base).name() << #func << e.what(); }
 
-class PyItemTrampoline : Item
+
+class PyPI : public PluginInstance
 {
 public:
-    QString id() const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, id); return {}; }
 
-    QString text() const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, text); return {}; }
-
-    QString subtext() const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, subtext, ); return {}; }
-
-    QStringList iconUrls() const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(QStringList, Item, iconUrls, ); return {}; }
-
-    QString inputActionText() const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, inputActionText, ); return {}; }
-
-    vector<Action> actions() const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(vector<Action>, Item, actions, ); return {}; }
-};
-
-class PyPluginInstanceTrampoline : public PluginInstance
-{
-public:
-    PyPluginInstanceTrampoline(const vector<Extension*> &e = {})
-        : extensions_(e) {}
-
-    // Drop param
-    void initialize(ExtensionRegistry &registry, map<QString,PluginInstance*>) override
+    PyPI(const vector<Extension*> &e = {})
+        : additionalExtensions_(e.begin(), e.end())
     {
-        try {
-            py::gil_scoped_acquire a;
-            if (auto override = pybind11::get_override(static_cast<const PluginInstance*>(this), "initialize"))
-                override();
-        } catch (const std::exception &e) {
-            CRIT << e.what();
-        }
-
-        // TODO: adopt api
-        for (auto *e : extensions_)
-            registry.registerExtension(e);
+        if (!e.empty())
+            WARN << loader().metaData().id
+                 << "Using the 'extensions' argument in the constructor is deprecated and will be "
+                    "dropped in interface v3.0. Use the registerExtension and deregisterExtension "
+                    "methods instead.";
     }
 
-    // Drop param
-    void finalize(ExtensionRegistry &registry) override
+    /// Lock GIL before!
+    /// Remove in 3.0
+    void backwardCompatibileInit()
     {
-        // TODO: adopt api
-        for (auto *e : extensions_)
-            registry.deregisterExtension(e);
+        // To not break compat with 2.x. register ctor-passed extensions.
+        // Exclude the root extension which will be autoloaded by the plugin loader
 
-        try {
-            py::gil_scoped_acquire a;
-            if (auto override = pybind11::get_override(static_cast<const PluginInstance*>(this), "finalize"))
-                override();
-        } catch (const std::exception &e) {
-            CRIT << e.what();
+        if (auto self = py::cast(this); py::isinstance<Extension>(self))
+        {
+            auto *root_extension = self.cast<Extension*>();
+            additionalExtensions_.erase(root_extension);
         }
+
+        for (auto *e : additionalExtensions_)
+            registry().registerExtension(e);
+    }
+
+    /// Lock GIL before!
+    /// Remove in 3.0
+    void backwardCompatibileFini()
+    {
+        for (auto *e : additionalExtensions_)
+            registry().deregisterExtension(e);
+    }
+
+    void registerExtension(Extension *e) { registry().registerExtension(e); }
+
+    void deregisterExtension(Extension *e) { registry().deregisterExtension(e); }
+
+    py::object pathlibCachePath() const { return createPath(cacheLocation()); }
+
+    py::object pathlibConfigPath() const { return createPath(configLocation()); }
+
+    py::object pathlibDataPath() const { return createPath(dataLocation()); }
+
+    void writeConfig(QString key, const py::object &value) const
+    {
+        py::gil_scoped_acquire a;
+        auto s = this->settings();
+
+        if (py::isinstance<py::str>(value))
+            s->setValue(key, value.cast<QString>());
+
+        else if (py::isinstance<py::bool_>(value))
+            s->setValue(key, value.cast<bool>());
+
+        else if (py::isinstance<py::int_>(value))
+            s->setValue(key, value.cast<int>());
+
+        else if (py::isinstance<py::float_>(value))
+            s->setValue(key, value.cast<double>());
+
+        else
+            WARN << "Invalid data type to write to settings. Has to be one of bool|int|float|str.";
+    }
+
+    py::object readConfig(QString key, const py::object &type) const
+    {
+        py::gil_scoped_acquire a;
+        QVariant var = this->settings()->value(key);
+
+        if (var.isNull())
+            return py::none();
+
+        if (type.attr("__name__").cast<QString>() == QStringLiteral("str"))
+            return py::cast(var.toString());
+
+        else if (type.attr("__name__").cast<QString>() == QStringLiteral("bool"))
+            return py::cast(var.toBool());
+
+        else if (type.attr("__name__").cast<QString>() == QStringLiteral("int"))
+            return py::cast(var.toInt());
+
+        else if (type.attr("__name__").cast<QString>() == QStringLiteral("float"))
+            return py::cast(var.toDouble());
+
+        else
+            WARN << "Invalid data type to read from settings. Has to be one of bool|int|float|str.";
+
+        return py::none();
     }
 
     // Dynamically create widget
@@ -224,58 +264,24 @@ public:
         return nullptr;
     }
 
-    py::object pathlibCachePath() const { return createPath(cacheDir().path()); }
-
-    py::object pathlibConfigPath() const { return createPath(configDir().path()); }
-
-    py::object pathlibDataPath() const { return createPath(dataDir().path()); }
-
-    void writeConfig(QString key, const py::object &value) const {
-        py::gil_scoped_acquire a;
-        auto s = this->settings();
-
-        if (py::isinstance<py::str>(value))
-            s->setValue(key, value.cast<QString>());
-
-        else if (py::isinstance<py::bool_>(value))
-            s->setValue(key, value.cast<bool>());
-
-        else if (py::isinstance<py::int_>(value))
-            s->setValue(key, value.cast<int>());
-
-        else if (py::isinstance<py::float_>(value))
-            s->setValue(key, value.cast<double>());
-
-        else
-            WARN << "Invalid data type to write to settings. Has to be one of bool|int|float|str.";
-    }
-
-    py::object readConfig(QString key, const py::object &type) const {
-        py::gil_scoped_acquire a;
-        QVariant var = this->settings()->value(key);
-
-        if (var.isNull())
-            return py::none();
-
-        if (type.attr("__name__").cast<QString>() == QStringLiteral("str"))
-            return py::cast(var.toString());
-
-        else if (type.attr("__name__").cast<QString>() == QStringLiteral("bool"))
-            return py::cast(var.toBool());
-
-        else if (type.attr("__name__").cast<QString>() == QStringLiteral("int"))
-            return py::cast(var.toInt());
-
-        else if (type.attr("__name__").cast<QString>() == QStringLiteral("float"))
-            return py::cast(var.toDouble());
-
-        else
-            WARN << "Invalid data type to read from settings. Has to be one of bool|int|float|str.";
-
-        return py::none();
-    }
-
 private:
+
+    py::object createPath(const QString &path) const
+    {
+        py::gil_scoped_acquire a;
+
+        if (QDir dir(path); !dir.exists())
+        {
+            WARN << loader().metaData().id
+                 << ": Implicit directory creation is a deprecated feature and will be dropped in "
+                    "interace version 3.0!";
+
+            if (!dir.mkpath("."))
+                CRIT << "Failed to create path" << path;
+        }
+
+        return py::module_::import("pathlib").attr("Path")(path);  // should cache the module
+    }
 
     /// Get a property of this Python instance
     /// DOES NOT LOCK THE GIL!
@@ -288,12 +294,6 @@ private:
     template <class T>
     inline void setattr(QString property_name, T value)
     { return py::setattr(py::cast(this), py::cast(property_name), py::cast(value)); }
-
-    static py::object createPath(const QString &path)
-    {
-        py::gil_scoped_acquire a;
-        return py::module_::import("pathlib").attr("Path")(path); // should cache
-    }
 
     static void applyWidgetPropertiesIfAny(QWidget *widget, py::dict spec)
     {
@@ -324,63 +324,126 @@ private:
     }
 
 protected:
-    vector<Extension*> extensions_;
+
+    // Todo: Remove with 3.0
+    set<Extension*> additionalExtensions_;
+
 };
 
-template <class Base = Extension>
-class PyExtensionTrampoline : public Base
+
+class PyItemTrampoline : Item
 {
 public:
-    using Base::Base;  // Inherit the constructors, pybind requirement
 
-    PyExtensionTrampoline(const QString &id,
-                          const QString &name,
-                          const QString &description):
-        id_(id),
-        name_(name),
-        description_(description)
-    {}
+    QString id() const override
+    { CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, id); return {}; }
+
+    QString text() const override
+    { CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, text); return {}; }
+
+    QString subtext() const override
+    { CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, subtext, ); return {}; }
+
+    QStringList iconUrls() const override
+    { CATCH_PYBIND11_OVERRIDE_PURE(QStringList, Item, iconUrls, ); return {}; }
+
+    QString inputActionText() const override
+    { CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, inputActionText, ); return {}; }
+
+    vector<Action> actions() const override
+    { CATCH_PYBIND11_OVERRIDE_PURE(vector<Action>, Item, actions, ); return {}; }
+};
+
+
+template <class Base = Extension>
+class PyE : public Base
+{
+public:
+    // using Base::Base;  // Inherit the constructors, pybind requirement
+
+    PyE(const QString &id, const QString &name, const QString &description)
+        : id_(id), name_(name), description_(description)
+    {
+        // INFO << "PyE" << id_;
+        // No way to cast to PI here to get the metadata
+    }
+
+    // template <typename T = Base, typename = std::enable_if_t<std::is_base_of<PluginInstance, T>::value>>
+    // PyE():
+    //     id_(PluginInstance::loader().metaData().id),
+    //     name_(PluginInstance::loader().metaData().name),
+    //     description_(PluginInstance::loader().metaData().description)
+    // {
+    //     // INFO << "PyE" << id_;
+    // }
 
     QString id() const override { return id_; }
     QString name() const override { return name_; }
     QString description() const override { return description_; }
 
 protected:
+
     const QString id_;
     const QString name_;
     const QString description_;
+
 };
+
 
 template <class Base = FallbackHandler>
-class PyFallbackHandlerTrampoline : public PyExtensionTrampoline<Base>
+class PyFQH : public PyE<Base>
 {
 public:
-    using PyExtensionTrampoline<Base>::PyExtensionTrampoline; // Inherit constructors
+
+    using PyE<Base>::PyE; // Inherit constructors
+
+    PyFQH(const QString &id, const QString &name, const QString &description)
+        : PyE<Base>(id, name, description)
+    {
+        // INFO << "PyFQH" << id;
+    }
 
     vector<shared_ptr<Item>> fallbacks(const QString &query) const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(vector<shared_ptr<Item>>, Base, fallbacks, query); return {}; }
+    { CATCH_PYBIND11_OVERRIDE_PURE(vector<shared_ptr<Item>>, FallbackHandler, fallbacks, query); return {}; }
 
 };
 
+
 template <class Base = TriggerQueryHandler>
-class PyTriggerQueryHandlerTrampoline : public PyExtensionTrampoline<Base>
+class PyTQH : public PyE<Base>
 {
 public:
-    using PyExtensionTrampoline<Base>::PyExtensionTrampoline; // Inherit constructors
 
-    PyTriggerQueryHandlerTrampoline(const QString &id,
-                                    const QString &name,
-                                    const QString &description,
-                                    const QString &synopsis,
-                                    const QString &defaultTrigger,
-                                    bool allowTriggerRemap,
-                                    bool supportsFuzzyMatching):
-        PyExtensionTrampoline<Base>(id, name, description),
+    using PyE<Base>::PyE; // Inherit constructors
+
+    PyTQH(const QString &id,
+          const QString &name,
+          const QString &description,
+          const QString &synopsis,
+          const QString &defaultTrigger,
+          bool allowTriggerRemap,
+          bool supportsFuzzyMatching):
+        PyE<Base>(id, name, description),
         synopsis_(synopsis),
-        defaultTrigger_(defaultTrigger.isNull() ? QString("%1 ").arg(id) : defaultTrigger),
+        defaultTrigger_(defaultTrigger.isEmpty() ? QString("%1 ").arg(id) : defaultTrigger),
         allowTriggerRemap_(allowTriggerRemap),
         supportsFuzzyMatching_(supportsFuzzyMatching)
-    {}
+    {
+        // INFO << "PyTQH" << id;
+    }
+
+    PyTQH(const QString &synopsis,
+          const QString &defaultTrigger,
+          bool allowTriggerRemap,
+          bool supportsFuzzyMatching):
+        PyE<Base>(),
+        synopsis_(synopsis),
+        defaultTrigger_(defaultTrigger.isEmpty() ? QString("%1 ").arg(PyE<Base>::id_) : defaultTrigger),
+        allowTriggerRemap_(allowTriggerRemap),
+        supportsFuzzyMatching_(supportsFuzzyMatching)
+    {
+        // INFO << "PyTQH" << PyE<Base>::id_;
+    }
 
     QString synopsis() const override
     { return synopsis_; }
@@ -394,198 +457,89 @@ public:
     bool supportsFuzzyMatching() const override
     { return supportsFuzzyMatching_; }
 
-    bool fuzzyMatching() const override
-    {
-        CATCH_PYBIND11_OVERRIDE(bool, Base, fuzzyMatching);
-        return Base::fuzzyMatching();
-    }
-
     void setFuzzyMatching(bool enabled) override
     { CATCH_PYBIND11_OVERRIDE(void, Base, setFuzzyMatching, enabled); }
 
-    void handleTriggerQuery(TriggerQueryHandler::TriggerQuery *query) const override
+    void handleTriggerQuery(albert::Query *query) override
     { CATCH_PYBIND11_OVERRIDE_PURE(void, Base, handleTriggerQuery, query); }
 
 protected:
+
     const QString synopsis_;
     const QString defaultTrigger_;
     const bool allowTriggerRemap_;
     const bool supportsFuzzyMatching_;
+
 };
+
 
 template <class Base = GlobalQueryHandler>
-class PyGlobalQueryHandlerTrampoline : public PyTriggerQueryHandlerTrampoline<Base>
+class PyGQH : public PyTQH<Base>
 {
 public:
-    using PyTriggerQueryHandlerTrampoline<Base>::PyTriggerQueryHandlerTrampoline; // Inherit constructors
 
-    void handleTriggerQuery(TriggerQueryHandler::TriggerQuery *query) const override
+    using PyTQH<Base>::PyTQH; // Inherit constructors
+
+    PyGQH(const QString &id,
+          const QString &name,
+          const QString &description,
+          const QString &synopsis,
+          const QString &defaultTrigger,
+          bool allowTriggerRemap,
+          bool supportsFuzzyMatching):
+        PyTQH<Base>(id, name, description, synopsis, defaultTrigger,
+                    allowTriggerRemap, supportsFuzzyMatching)
+    {
+        // INFO << "PyGQH" << id;
+    }
+
+    // This is required due to the "final" quirks of the pybind trampoline chain
+    // E < TQH < GQH < PyE < PyTQH < PyGQH
+    //           ^(1)        ^(2)    ^(3)
+    // (1) overrides handleTriggerQuery "final"
+    // (2) overrides "pure" on python side
+    // (3) has to override none pure otherwise calls will throw "call to pure" error
+    void handleTriggerQuery(albert::Query *query) override
     { CATCH_PYBIND11_OVERRIDE(void, Base, handleTriggerQuery, query); }
 
-    vector<RankItem> handleGlobalQuery(const GlobalQueryHandler::GlobalQuery *query) const override
+    vector<RankItem> handleGlobalQuery(const albert::Query *query) const override
     { CATCH_PYBIND11_OVERRIDE_PURE(vector<RankItem>, Base, handleGlobalQuery, query); return {}; }
+
 };
 
+
 template <class Base = IndexQueryHandler>
-class PyIndexQueryHandlerTrampoline : public PyGlobalQueryHandlerTrampoline<Base>
+class PyIQH : public PyGQH<Base>
 {
 public:
 
-    using PyGlobalQueryHandlerTrampoline<Base>::PyGlobalQueryHandlerTrampoline; // Inherit constructors
+    using PyGQH<Base>::PyGQH; // Inherit constructors
 
-    PyIndexQueryHandlerTrampoline(const QString &id,
-                                  const QString &name,
-                                  const QString &description,
-                                  const QString &synopsis,
-                                  const QString &defaultTrigger,
-                                  bool allowTriggerRemap):
-        PyGlobalQueryHandlerTrampoline<Base>(id,
-                                             name,
-                                             description,
-                                             synopsis,
-                                             defaultTrigger,
-                                             allowTriggerRemap,
-                                             true)
-    {}
+    PyIQH(const QString &id, const QString &name, const QString &description,
+          const QString &synopsis, const QString &defaultTrigger,
+          bool allowTriggerRemap)
+        : PyGQH<Base>(id, name, description, synopsis, defaultTrigger,
+                      allowTriggerRemap, true)
+    {
+        // INFO << "PyIQH" << id;
+    }
 
-    vector<RankItem> handleGlobalQuery(const GlobalQueryHandler::GlobalQuery *query) const override
+    PyIQH(const QString &synopsis, const QString &defaultTrigger, bool allowTriggerRemap)
+        : PyGQH<Base>(synopsis, defaultTrigger, allowTriggerRemap, true)
+    {
+        // INFO << "PyIQH" << PyE<Base>::id_;
+    }
+
+    // This is required due to the "final" quirks of the pybind trampoline chain
+    // E < TQH < GQH < IQH < PyE < PyTQH < PyGQH < PyIQH
+    //                 ^(1)                ^(2)    ^(3)
+    // (1) overrides handleGlobalQuery "final"
+    // (2) overrides "pure" on python side
+    // (3) has to override non-pure otherwise calls will throw "call to pure" error
+    vector<RankItem> handleGlobalQuery(const Query *query) const override
     { CATCH_PYBIND11_OVERRIDE(vector<RankItem>, Base, handleGlobalQuery, query); return {}; }
 
     void updateIndexItems() override
     { CATCH_PYBIND11_OVERRIDE_PURE(void, Base, updateIndexItems, ); }
 
-    bool fuzzyMatching() const override
-    { return IndexQueryHandler::fuzzyMatching(); }
-
-    void setFuzzyMatching(bool enabled) override
-    { IndexQueryHandler::setFuzzyMatching(enabled); }
-
 };
-
-
-
-
-
-// class TriggerQueryHandlerPlugin : public PluginInstance, public TriggerQueryHandler
-// {
-// public:
-//     QString id() const override { return PluginInstance::id(); }
-//     QString name() const override { return PluginInstance::name(); }
-//     QString description() const override { return PluginInstance::description(); }
-// };
-
-
-
-// template <class Base = TriggerQueryHandler>
-// class TriggerQueryHandlerPluginTrampoline : public PyPluginInstanceTrampoline, public PyTriggerQueryHandlerTrampoline<Base>
-// {
-// public:
-
-//     TriggerQueryHandlerPluginTrampoline(const QString &synopsis,
-//                                         const QString &defaultTrigger,
-//                                         bool allowTriggerRemap,
-//                                         bool supportsFuzzyMatching,
-//                                         const vector<Extension*> &additionalExtensions):
-//         PyPluginInstanceTrampoline(additionalExtensions),
-//         PyTriggerQueryHandlerTrampoline<>(PluginInstance::id(),
-//                                           PluginInstance::name(),
-//                                           PluginInstance::description(),
-//                                           synopsis,
-//                                           defaultTrigger,
-//                                           allowTriggerRemap,
-//                                           supportsFuzzyMatching)
-//     { extensions_.push_back(this); }
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// class GlobalQueryHandlerPluginTrampoline : public PyPluginInstanceTrampoline, public PyGlobalQueryHandlerTrampoline<>
-// {
-// public:
-//     GlobalQueryHandlerPluginTrampoline(const QString &synopsis,
-//                                        const QString &defaultTrigger,
-//                                        bool allowTriggerRemap,
-//                                        bool supportsFuzzyMatching,
-//                                        const vector<Extension*> &additionalExtensions):
-//         PyPluginInstanceTrampoline(additionalExtensions),
-//         PyGlobalQueryHandlerTrampoline<>(PluginInstance::id(),
-//                                          PluginInstance::name(),
-//                                          PluginInstance::description(),
-//                                          synopsis,
-//                                          defaultTrigger,
-//                                          allowTriggerRemap,
-//                                          supportsFuzzyMatching)
-//     { extensions_.push_back(this); }
-// };
-
-
-
-
-// class IndexQueryHandlerPluginTrampoline : public PyPluginInstanceTrampoline, public PyIndexQueryHandlerTrampoline<>
-// {
-// public:
-//     IndexQueryHandlerPluginTrampoline(const QString &synopsis,
-//                                       const QString &defaultTrigger,
-//                                       bool allowTriggerRemap,
-//                                       const vector<Extension*> &additionalExtensions):
-//         PyPluginInstanceTrampoline(additionalExtensions),
-//         PyIndexQueryHandlerTrampoline<>(PluginInstance::id(),
-//                                         PluginInstance::name(),
-//                                         PluginInstance::description(),
-//                                         synopsis,
-//                                         defaultTrigger,
-//                                         allowTriggerRemap)
-//     { extensions_.push_back(this); }
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//QWidget *PyPluginInstance::buildConfigWidget()
-//{
-//    py::gil_scoped_acquire acquire;
-//    static const char * ATTR_BUILD_CONFIG_WIDGET = "buildConfigWidget";
-//    if (py::hasattr(*pyinst_, ATTR_BUILD_CONFIG_WIDGET))
-//        if (auto func = pyinst_->attr(ATTR_BUILD_CONFIG_WIDGET); py::isinstance<py::function>(func)){
-//            py::object pyWidgetObj = pyinst_->attr(ATTR_BUILD_CONFIG_WIDGET)();
-//            py::object cppWidgetObj = py::reinterpret_borrow<py::object>(pyWidgetObj);
-//            auto *w = py::cast<QWidget*>(cppWidgetObj);
-//            return w;
-//        }
-//    return nullptr;
-//}
-
-//py::dict pyDict = py::getattr(py::cast(this), "__dict__");
-//for (const auto& item : pyDict)
-//    std::cout << py::str(item.first) << ": " << py::str(item.second) << std::endl;

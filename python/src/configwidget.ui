@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>354</width>
-    <height>130</height>
+    <width>691</width>
+    <height>441</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -26,7 +26,7 @@
    <item>
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>The Python plugin makes the app extendable by Python modules. The built-in albert module exposes several functions and classes for use with Albert. See the &lt;a href=&quot;https://github.com/albertlauncher/python/blob/master/albert.pyi&quot;&gt;Python stub file&lt;/a&gt; for a detailed interface specification. The Python plugins are loaded from `&amp;lt;APPDATADIR&amp;gt;/python/plugins`.</string>
+      <string>The Python plugin makes the app extendable by Python modules. The built-in albert module exposes several functions and classes for use with Albert. The Python plugins are loaded from `&amp;lt;APPDATADIR&amp;gt;/python/plugins`.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -39,7 +39,28 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QPushButton" name="pushButton_packages">
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_userPluginDir">
+       <property name="text">
+        <string>Open user plugin dir</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_stubFile">
+       <property name="text">
+        <string>Open stub file</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_sitePackages">
        <property name="text">
         <string>Open site-packages</string>
        </property>
@@ -49,12 +70,6 @@
       <spacer name="horizontalSpacer">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>0</width>
-         <height>0</height>
-        </size>
        </property>
       </spacer>
      </item>
@@ -67,8 +82,8 @@
      </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>0</width>
-       <height>0</height>
+       <width>20</width>
+       <height>40</height>
       </size>
      </property>
     </spacer>

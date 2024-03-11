@@ -1,17 +1,15 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
 #pragma once
+
 #include "pybind11/pybind11.h"
-#include "albert/extension/pluginprovider/pluginmetadata.h"
-#include "albert/extension/pluginprovider/pluginloader.h"
-#include <memory>
 #include <QLoggingCategory>
-namespace albert {
-class PluginProvider;
-}
-class QFileInfo;
+#include <albert/pluginloader.h>
+#include <albert/pluginmetadata.h>
+#include <memory>
 class Plugin;
-class PyPluginInstanceTrampoline;
+class QFileInfo;
+namespace albert { class PluginProvider; }
 
 class NoPluginException: public std::exception
 {
@@ -39,7 +37,7 @@ private:
 
     void load_();
 
-    const Plugin &provider_;
+    Plugin &provider_;
 
     const QString module_path_;
     QString source_path_;

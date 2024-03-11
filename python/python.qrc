@@ -1,9 +1,6 @@
-<!--
-  ~ Copyright (c) 2022 Manuel Schneider
-  -->
-
 <RCC>
     <qresource prefix="/">
         <file alias="python">resources/python.svg</file>
+        <file alias="albert.pyi">albert.pyi</file>
     </qresource>
 </RCC>
