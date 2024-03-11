@@ -1,9 +1,9 @@
-// Copyright (c) 2023 Manuel Schneider
+// Copyright (c) 2023-2024 Manuel Schneider
 
 #include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
-#include "plugin.h"
 #include "albert/extensionregistry.h"
+#include "albert/util/standarditem.h"
+#include "plugin.h"
 #include "ui_configwidget.h"
 #include <QDateTime>
 #include <QLocale>
@@ -13,6 +13,18 @@ using namespace albert;
 using namespace std;
 
 const QStringList Plugin::icon_urls{":datetime"};
+
+Plugin::Plugin():
+    tr_copy(tr("Copy")),
+    tr_copy_short(tr("Copy short form")),
+    tr_copy_long(tr("Copy long form")),
+    tr_date(tr("Date")),
+    tr_time(tr("Time")),
+    tr_d_unix(tr("Seconds since epoch (unixtime)")),
+    tr_d_utc(tr("UTC date and time"))
+{
+
+}
 
 void Plugin::initialize(ExtensionRegistry &registry, map<QString,PluginInstance*>)
 {
@@ -31,67 +43,83 @@ QWidget *Plugin::buildConfigWidget()
     auto *w = new QWidget();
     Ui::ConfigWidget ui;
     ui.setupUi(w);
+
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, show_date_on_empty_query, ui.checkBox_emptyQuery)
+
     return w;
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
+QString Plugin::synopsis() const
+{ return QStringLiteral("%1 | %2 | unix | utc | <number>").arg(tr_date.toLower(), tr_time.toLower()); }
+
+std::vector<std::shared_ptr<Item> > Plugin::handleEmptyQuery(const Query *) const
+{
+    if (show_date_on_empty_query_)
+    {
+        QLocale loc;
+        QDateTime dt = QDateTime::currentDateTime();
+        return {
+            StandardItem::make(
+                QStringLiteral("empty"),
+                loc.toString(dt.time(), QLocale::ShortFormat),
+                loc.toString(dt.date(), QLocale::LongFormat),
+                icon_urls
+            )
+        };
+    }
+    return {};
+}
+
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
 {
     vector<RankItem> r;
     const auto &s = query->string();
     QDateTime dt = QDateTime::currentDateTime();
     QLocale loc;
 
-    static const auto tr_c = tr("Copy");
-    static const auto tr_cs = tr("Copy short form");
-    static const auto tr_cl = tr("Copy long form");
-
-    if (static const auto tr_d = tr("Date"); tr_d.startsWith(query->string(), Qt::CaseInsensitive))
-    {
-        auto ls = loc.toString(dt.date(), QLocale::LongFormat);
-        auto ss = loc.toString(dt.date(), QLocale::ShortFormat);
-
-        r.emplace_back(
-            StandardItem::make(
-                QStringLiteral("d"), ls, tr_d, icon_urls,
-                {
-                    {QStringLiteral("lcp"), tr_c, [=](){setClipboardText(ls);} },
-                    {QStringLiteral("scp"), tr_cs, [=](){setClipboardText(ss);} }
-                }
-            ),
-            (float)s.size()/tr_d.size()
-        );
-    }
-
-
-    if (static const auto tr_t = tr("Time"); tr_t.startsWith(query->string(), Qt::CaseInsensitive))
+    if (tr_time.startsWith(query->string(), Qt::CaseInsensitive))
     {
         auto ls = loc.toString(dt.time(), QLocale::LongFormat);
         auto ss = loc.toString(dt.time(), QLocale::ShortFormat);
 
         r.emplace_back(
             StandardItem::make(
-                QStringLiteral("t"), ss, tr_t, icon_urls,
+                QStringLiteral("t"), ss, tr_time, tr_time, icon_urls,
                 {
-                    {QStringLiteral("scp"), tr_c, [=](){ setClipboardText(ss); }},
-                    {QStringLiteral("lcp"), tr_cl, [=](){ setClipboardText(ls); }}
+                    { QStringLiteral("scp"), tr_copy, [=](){ setClipboardText(ss); }},
+                    { QStringLiteral("lcp"), tr_copy_long, [=](){ setClipboardText(ls); }}
                 }
             ),
-            (float)s.size()/tr_t.size()
+            (float)s.size()/tr_time.size()
         );
     }
 
+    if (tr_date.startsWith(query->string(), Qt::CaseInsensitive))
+    {
+        auto ls = loc.toString(dt.date(), QLocale::LongFormat);
+        auto ss = loc.toString(dt.date(), QLocale::ShortFormat);
+
+        r.emplace_back(
+            StandardItem::make(
+                QStringLiteral("d"), ls, tr_date, tr_date, icon_urls,
+                {
+                    {QStringLiteral("lcp"), tr_copy, [=](){setClipboardText(ls);} },
+                    {QStringLiteral("scp"), tr_copy_short, [=](){setClipboardText(ss);} }
+                }
+            ),
+            (float)s.size()/tr_date.size()
+        );
+    }
 
     if (static const QString u("unix"); u.startsWith(query->string(), Qt::CaseInsensitive))
     {
-        static const auto tr_d = tr("Seconds since epoch (unixtime)");
-
         auto unixtime = QString::number(QDateTime::currentSecsSinceEpoch());
 
         r.emplace_back(
             StandardItem::make(
-                u, unixtime, tr_d, icon_urls,
+                u, unixtime, tr_d_unix, u, icon_urls,
                 {
-                    {QStringLiteral("c"), tr_c, [=](){ setClipboardText(unixtime); }}
+                    {QStringLiteral("c"), tr_copy, [=](){ setClipboardText(unixtime); }}
                 }
             ),
             (float)s.size()/u.size()
@@ -100,17 +128,15 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
 
     if (static const QString u("utc"); u.startsWith(query->string(), Qt::CaseInsensitive))
     {
-        static const auto tr_d = tr("UTC date and time");
-
         auto ls = loc.toString(dt.toUTC(), QLocale::LongFormat);
         auto ss = loc.toString(dt.toUTC(), QLocale::ShortFormat);
 
         r.emplace_back(
             StandardItem::make(
-                u, ss, tr_d, icon_urls,
+                u, ss, tr_d_utc, u, icon_urls,
                 {
-                    {QStringLiteral("scp"), tr_c, [=](){ setClipboardText(ss); }},
-                    {QStringLiteral("lcp"), tr_cl, [=](){ setClipboardText(ls); }}
+                    {QStringLiteral("scp"), tr_copy, [=](){ setClipboardText(ss); }},
+                    {QStringLiteral("lcp"), tr_copy_long, [=](){ setClipboardText(ls); }}
                 }
             ),
             (float)s.size()/u.size()
@@ -129,7 +155,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
             StandardItem::make(
                 QStringLiteral("fromunix"), ls, tr_d, icon_urls,
                 {
-                    {QStringLiteral("c"), tr_c, [=](){ setClipboardText(ls); }}
+                    {QStringLiteral("c"), tr_copy, [=](){ setClipboardText(ls); }}
                 }
             ),
             0
@@ -160,7 +186,7 @@ QString TimeZoneHandler::synopsis() const
 QString TimeZoneHandler::defaultTrigger() const
 { return QStringLiteral("tz "); }
 
-void TimeZoneHandler::handleTriggerQuery(TriggerQuery *query) const
+void TimeZoneHandler::handleTriggerQuery(Query *query)
 {
     QLocale loc;
     auto utc = QDateTime::currentDateTimeUtc();
@@ -184,6 +210,7 @@ void TimeZoneHandler::handleTriggerQuery(TriggerQuery *query) const
                     tz_id,
                     loc.toString(dt, QLocale::ShortFormat),
                     tz_info,
+                    tz_id,
                     Plugin::icon_urls,
                     {
                         {

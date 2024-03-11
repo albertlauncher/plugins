@@ -1,4 +1,4 @@
-project(datetime VERSION 4.0)
+project(datetime VERSION 5.0)
 
 albert_plugin(
     SOURCE_FILES
