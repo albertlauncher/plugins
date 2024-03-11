@@ -27,13 +27,21 @@
         "iconPath": ":google",
         "name": "Google",
         "trigger": "gg",
-        "url": "https://www.google.com/search?q=%s"
+        "url": "https://www.google.com/search?q=%s",
+        "fallback": true
     },
     {
         "iconPath": ":google_translate",
         "name": "Google Translate",
         "trigger": "gt",
         "url": "https://translate.google.com/?text=%s"
+    },
+    {
+        "iconPath": ":gpt",
+        "name": "Chat GPT",
+        "trigger": "gpt",
+        "url": "https://chat.openai.com/?q=%s",
+        "fallback": true
     },
     {
         "iconPath": ":maps",
@@ -57,6 +65,7 @@
         "iconPath": ":youtube",
         "name": "YouTube",
         "trigger": "yt",
-        "url": "https://www.youtube.com/results?search_query=%s"
+        "url": "https://www.youtube.com/results?search_query=%s",
+        "fallback": true
     }
 ]

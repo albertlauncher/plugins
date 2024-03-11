@@ -17,6 +17,7 @@ SearchEngineEditor::SearchEngineEditor(const QString &icon_url,
                                        const QString &name,
                                        const QString &trigger,
                                        const QString &url,
+                                       bool fallback,
                                        QWidget *parent) : QDialog(parent)
 {
     ui.setupUi(this);
@@ -32,6 +33,7 @@ SearchEngineEditor::SearchEngineEditor(const QString &icon_url,
     ui.lineEdit_name->setText(name);
     ui.lineEdit_trigger->setText(trigger);
     ui.lineEdit_url->setText(url);
+    ui.checkBox_fallback->setChecked(fallback);
 
     connect(ui.toolButton_icon, &QToolButton::clicked, this, [this](){
 
@@ -74,11 +76,17 @@ SearchEngineEditor::SearchEngineEditor(const QString &icon_url,
     ui.toolButton_icon->installEventFilter(this);
 }
 
-QString SearchEngineEditor::name() const { return ui.lineEdit_name->text(); }
+QString SearchEngineEditor::name() const
+{ return ui.lineEdit_name->text(); }
 
-QString SearchEngineEditor::trigger() const { return ui.lineEdit_trigger->text(); }
+QString SearchEngineEditor::trigger() const
+{ return ui.lineEdit_trigger->text(); }
 
-QString SearchEngineEditor::url() const { return ui.lineEdit_url->text(); }
+QString SearchEngineEditor::url() const
+{ return ui.lineEdit_url->text(); }
+
+bool SearchEngineEditor::fallback() const
+{ return ui.checkBox_fallback->isChecked(); }
 
 bool SearchEngineEditor::eventFilter(QObject *watched, QEvent *event)
 {

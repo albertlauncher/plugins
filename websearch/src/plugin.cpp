@@ -1,9 +1,6 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
-#include "albert/logging.h"
 #include "configwidget.h"
 #include "plugin.h"
 #include <QDesktopServices>
@@ -13,66 +10,90 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QUrl>
+#include <albert/logging.h>
+#include <albert/matcher.h>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 #include <array>
 #include <vector>
 ALBERT_LOGGING_CATEGORY("websearch")
 using namespace albert;
 using namespace std;
 
-const char * ENGINES_FILE_NAME = "engines.json";
+namespace {
+static const char * ENGINES_FILE_NAME  = "engines.json";
+static const char * CK_ENGINE_ID       = "id";
+static const char * CK_ENGINE_GUID     = "guid";  // To be removed in future releases
+static const char * CK_ENGINE_NAME     = "name";
+static const char * CK_ENGINE_URL      = "url";
+static const char * CK_ENGINE_TRIGGER  = "trigger";
+static const char * CK_ENGINE_ICON     = "iconPath";
+static const char * CK_ENGINE_FALLBACK = "fallback";
+}
 
 static QByteArray serializeEngines(const vector<SearchEngine> &engines)
 {
-    QJsonArray array;
-    for (const SearchEngine& engine : engines) {
-        QJsonObject object;
-        object["id"] = engine.id;
-        object["name"] = engine.name;
-        object["url"] = engine.url;
-        object["trigger"] = engine.trigger;
-        object["iconPath"] = engine.iconUrl;
-        array.append(object);
+    QJsonArray a;
+    for (const SearchEngine& e : engines)
+    {
+        QJsonObject o;
+        o[CK_ENGINE_ID] = e.id;
+        o[CK_ENGINE_NAME] = e.name;
+        o[CK_ENGINE_URL] = e.url;
+        o[CK_ENGINE_TRIGGER] = e.trigger;
+        o[CK_ENGINE_ICON] = e.iconUrl;
+        o[CK_ENGINE_FALLBACK] = e.fallback;
+        a.append(o);
     }
-    return QJsonDocument(array).toJson();
+    return QJsonDocument(a).toJson();
 }
 
 static vector<SearchEngine> deserializeEngines(const QByteArray &json)
 {
     vector<SearchEngine> searchEngines;
-    auto array = QJsonDocument::fromJson(json).array();
-    for (const auto &value : array) {
-        QJsonObject object = value.toObject();
-        SearchEngine searchEngine;
+    const auto a = QJsonDocument::fromJson(json).array();
+    for (const auto &v : a)
+    {
+        QJsonObject o = v.toObject();
+        SearchEngine e;
 
         // Todo remove this in future releasea
-        if (object.contains("id")){
-            searchEngine.id = object["id"].toString();
-        } else if (object.contains("guid")){
-            searchEngine.id = object["guid"].toString();
-        }
+        if (o.contains(CK_ENGINE_ID))
+            e.id = o[CK_ENGINE_ID].toString();
+        else if (o.contains(CK_ENGINE_GUID))
+            e.id = o[CK_ENGINE_GUID].toString();
 
-        if (searchEngine.id.isEmpty())
-            searchEngine.id = QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
+        if (e.id.isEmpty())
+            e.id = QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
 
-        searchEngine.name = object["name"].toString();
-        searchEngine.trigger = object["trigger"].toString().trimmed();
-        searchEngine.iconUrl = object["iconPath"].toString();
-        searchEngine.url = object["url"].toString();
-        searchEngines.push_back(searchEngine);
+        e.name = o[CK_ENGINE_NAME].toString();
+        e.trigger = o[CK_ENGINE_TRIGGER].toString().trimmed();
+        e.iconUrl = o[CK_ENGINE_ICON].toString();
+        e.url = o[CK_ENGINE_URL].toString();
+        // change this to false in future releases
+        // For now while users configs do not have the fallback key,
+        // we assume that all engines are fallbacks
+        e.fallback = o[CK_ENGINE_FALLBACK].toBool(true);
+        searchEngines.push_back(e);
     }
     return searchEngines;
 }
 
 Plugin::Plugin()
 {
-    QFile file(configDir().filePath(ENGINES_FILE_NAME));
-    if (file.open(QIODevice::ReadOnly))
-        setEngines(deserializeEngines(file.readAll()));
+    auto config_dir = QDir(configLocation());
+    if (!config_dir.exists() && !config_dir.mkpath("."))
+        throw runtime_error("Could not create config directory");
+
+    QFile f(config_dir.filePath(ENGINES_FILE_NAME));
+    if (f.open(QIODevice::ReadOnly))
+        setEngines(deserializeEngines(f.readAll()));
     else
         restoreDefaultEngines();
 }
 
-const vector<SearchEngine> &Plugin::engines() const { return searchEngines_; }
+const vector<SearchEngine> &Plugin::engines() const
+{ return searchEngines_; }
 
 void Plugin::setEngines(vector<SearchEngine> engines)
 {
@@ -81,11 +102,11 @@ void Plugin::setEngines(vector<SearchEngine> engines)
 
     searchEngines_ = ::move(engines);
 
-    if (QFile file(configDir().filePath(ENGINES_FILE_NAME));
-        file.open(QIODevice::WriteOnly))
-        file.write(serializeEngines(searchEngines_));
+    QFile f(QDir(configLocation()).filePath(ENGINES_FILE_NAME));
+    if (f.open(QIODevice::WriteOnly))
+        f.write(serializeEngines(searchEngines_));
     else
-        CRIT << QString("Could not write to file: '%1'.").arg(file.fileName());
+        CRIT << QString("Could not write to file: '%1' %2.").arg(f.fileName(), f.errorString());
 
     emit enginesChanged(searchEngines_);
 }
@@ -93,20 +114,24 @@ void Plugin::setEngines(vector<SearchEngine> engines)
 void Plugin::restoreDefaultEngines()
 {
     vector<SearchEngine> searchEngines;
-    QFile file(QString(":%1").arg(ENGINES_FILE_NAME));
-    if (file.open(QIODevice::ReadOnly)){
-        auto array = QJsonDocument::fromJson(file.readAll()).array();
-        for (const auto &value : array) {
-            QJsonObject object = value.toObject();
-            SearchEngine searchEngine;
-            searchEngine.id = QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
-            searchEngine.name = object["name"].toString();
-            searchEngine.trigger = object["trigger"].toString();
-            searchEngine.iconUrl = object["iconPath"].toString();
-            searchEngine.url = object["url"].toString();
-            searchEngines.push_back(searchEngine);
+    QFile f(QString(":%1").arg(ENGINES_FILE_NAME));
+    if (f.open(QIODevice::ReadOnly))
+    {
+        const auto a = QJsonDocument::fromJson(f.readAll()).array();
+        for (const auto &v : a)
+        {
+            QJsonObject o = v.toObject();
+            SearchEngine e;
+            e.id = QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
+            e.name = o[CK_ENGINE_NAME].toString();
+            e.trigger = o[CK_ENGINE_TRIGGER].toString();
+            e.iconUrl = o[CK_ENGINE_ICON].toString();
+            e.url = o[CK_ENGINE_URL].toString();
+            e.fallback = o[CK_ENGINE_FALLBACK].toBool(false);
+            searchEngines.push_back(e);
         }
-    } else
+    }
+    else
         CRIT << "Failed reading default engines.";
     setEngines(searchEngines);
 }
@@ -118,25 +143,39 @@ static shared_ptr<StandardItem> buildItem(const SearchEngine &se, const QString 
         se.id,
         se.name,
         Plugin::tr("Search %1 for '%2'").arg(se.name, search_term),
-        QString("%1 %2").arg(se.name, search_term),
+        QString("%1 %2").arg(se.trigger, search_term),
         {se.iconUrl},
         {{"run", Plugin::tr("Run websearch"), [url](){ openUrl(url); }}}
     );
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const GlobalQuery *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
 {
     vector<RankItem> results;
-    if (!query->string().isEmpty())
-        for (const SearchEngine &se: searchEngines_)
-            for (const auto &keyword : {QStringLiteral("%1 ").arg(se.trigger.toLower()),
-                                        QStringLiteral("%1 ").arg(se.name.toLower())})
-                if (auto prefix = query->string().toLower().left(keyword.size()); keyword.startsWith(prefix)){
-                    results.emplace_back(buildItem(se, query->string().mid(prefix.size())),
-                                         (float)prefix.length()/keyword.size());
-                    break;  // max one of these icons, assumption: tigger is shorter and yields higer scores
 
-                }
+    for (const SearchEngine &e: searchEngines_)
+    {
+        vector<QString> S{ e.trigger, e.name };
+
+        // sort shortest first (yield higher scores) (*)
+        sort(S.begin(), S.end(), [](auto &a, auto &b){ return a.length() < b.length(); });
+
+        for (const auto &s : S)
+        {
+            auto keyword = QStringLiteral("%1 ").arg(s.toLower());
+            auto prefix = query->string().toLower().left(keyword.size());
+            Matcher matcher(prefix, {});
+            Match m = matcher.match(keyword);
+            if (m)
+            {
+                results.emplace_back(buildItem(e, query->string().mid(prefix.size())), m);
+                // max one of these icons, assumption: following cant yield higher scores (*)
+                break;
+            }
+        }
+    }
+
+
     return results;
 }
 
@@ -144,9 +183,11 @@ vector<shared_ptr<Item>> Plugin::fallbacks(const QString &query) const
 {
     vector<shared_ptr<Item>> results;
     if (!query.isEmpty())
-        for (const SearchEngine &se: searchEngines_)
-            results.emplace_back(buildItem(se, query.isEmpty()?"…":query));
+        for (const SearchEngine &e: searchEngines_)
+            if (e.fallback)
+                results.emplace_back(buildItem(e, query.isEmpty()?"…":query));
     return results;
 }
 
-QWidget *Plugin::buildConfigWidget() { return new ConfigWidget(const_cast<Plugin*>(this)); }
+QWidget *Plugin::buildConfigWidget()
+{ return new ConfigWidget(this); }

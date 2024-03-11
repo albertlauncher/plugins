@@ -1,9 +1,6 @@
-project(websearch VERSION 8.1)
+cmake_minimum_required(VERSION 3.16)
+find_package(Albert REQUIRED)
 
-albert_plugin(
-    SOURCE_FILES
-        ${PROJECT_NAME}.qrc
-        src/*.cpp
-        src/*.h
-        src/*.ui
-)
+project(websearch VERSION 9.0)
+
+albert_plugin(QT Widgets)

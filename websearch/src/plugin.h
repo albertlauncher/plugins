@@ -1,10 +1,10 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
-#include "albert/extension/queryhandler/fallbackprovider.h"
-#include "albert/extension/queryhandler/globalqueryhandler.h"
-#include "albert/plugin.h"
 #include <QString>
+#include <albert/extensionplugin.h>
+#include <albert/fallbackhandler.h>
+#include <albert/globalqueryhandler.h>
 
 struct SearchEngine
 {
@@ -13,14 +13,16 @@ struct SearchEngine
     QString trigger;
     QString iconUrl;
     QString url;
+    bool fallback;
 };
 
-class Plugin : public albert::plugin::ExtensionPlugin,
+class Plugin : public albert::ExtensionPlugin,
                public albert::GlobalQueryHandler,
                public albert::FallbackHandler
 
 {
-    Q_OBJECT ALBERT_PLUGIN
+    ALBERT_PLUGIN
+
 public:
     Plugin();
     const std::vector<SearchEngine>& engines() const;
@@ -28,7 +30,7 @@ public:
     void restoreDefaultEngines();
 
 private:
-    std::vector<albert::RankItem> handleGlobalQuery(const GlobalQuery*) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) const override;
     std::vector<std::shared_ptr<albert::Item>> fallbacks(const QString &) const override;
     QWidget *buildConfigWidget() override;
 

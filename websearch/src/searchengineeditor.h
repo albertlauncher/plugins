@@ -13,12 +13,14 @@ public:
                                 const QString &name,
                                 const QString &trigger,
                                 const QString &url,
+                                bool fallback,
                                 QWidget *parent);
 
     std::unique_ptr<QImage> icon_image;
     QString name() const;
     QString trigger() const;
     QString url() const;
+    bool fallback() const;
 
 private:
     Ui::SearchEngineEditor ui;

@@ -140,6 +140,23 @@ or drop an image.</string>
        </property>
       </widget>
      </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_fallback">
+       <property name="text">
+        <string>Fallback:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QCheckBox" name="checkBox_fallback">
+       <property name="toolTip">
+        <string>Enable this search engine as fallback item.</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>

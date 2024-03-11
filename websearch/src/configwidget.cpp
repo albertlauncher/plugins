@@ -1,6 +1,5 @@
 // Copyright (c) 2023 Manuel Schneider
 
-#include "albert/logging.h"
 #include "configwidget.h"
 #include "plugin.h"
 #include "searchengineeditor.h"
@@ -14,9 +13,10 @@
 #include <QMimeData>
 #include <QSortFilterProxyModel>
 #include <QUuid>
+#include <albert/logging.h>
+enum class Section{ Name, Trigger, Fallback, URL} ;
+static const int sectionCount = 4;
 using namespace std;
-enum class Section{ Name, Trigger, URL} ;
-static const int sectionCount = 3;
 
 class EnginesModel final : public QAbstractTableModel
 {
@@ -24,15 +24,15 @@ class EnginesModel final : public QAbstractTableModel
     mutable std::map<QString,QIcon> iconCache;
 
 public:
-    EnginesModel(Plugin *plugin, QObject *parent)
-        : QAbstractTableModel(parent), plugin_(plugin) {
-
+    EnginesModel(Plugin *plugin, QObject *parent):
+        QAbstractTableModel(parent),
+        plugin_(plugin)
+    {
         connect(plugin, &Plugin::enginesChanged, this, [this](){
             beginResetModel();
             iconCache.clear();
             endResetModel();
         });
-
     }
 
     int rowCount(const QModelIndex&) const override
@@ -42,7 +42,14 @@ public:
     { return sectionCount; }
 
     Qt::ItemFlags flags(const QModelIndex & index) const override
-    { return QAbstractTableModel::flags(index) | Qt::ItemIsSelectable | Qt::ItemIsEnabled; }
+    {
+        auto f =  Qt::ItemIsSelectable | Qt::ItemIsEnabled;
+        switch ((Section)index.column()) {
+        case Section::Fallback: return f | Qt::ItemIsUserCheckable;
+        case Section::Trigger: return f | Qt::ItemIsEditable;
+        default: return f;
+        }
+    }
 
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override
     {
@@ -50,7 +57,7 @@ public:
             return {};
 
         if (orientation == Qt::Horizontal)
-            switch (static_cast<Section>(section)) {
+            switch ((Section)section) {
             case Section::Name:
                 switch (role) {
                 case Qt::DisplayRole: return ConfigWidget::tr("Name");
@@ -69,6 +76,12 @@ public:
                 case Qt::ToolTipRole: return ConfigWidget::tr("The URL of this search engine. %s will be replaced by your search term.");
                 default: return {};
                 }
+            case Section::Fallback:
+                switch (role) {
+                case Qt::DisplayRole: return ConfigWidget::tr("F", "Short for Fallback");
+                case Qt::ToolTipRole: return ConfigWidget::tr("Enable as fallback.");
+                default: return {};
+                }
             }
         return {};
     }
@@ -77,29 +90,34 @@ public:
     {
         if ( !index.isValid() ||
             index.row() >= static_cast<int>(plugin_->engines().size()) ||
-             index.column() >= sectionCount )
+            index.column() >= sectionCount )
             return QVariant();
+
+        const auto &se = plugin_->engines()[static_cast<ulong>(index.row())];
 
         switch (role) {
         case Qt::DisplayRole:
-        case Qt::EditRole: {
-            switch (static_cast<Section>(index.column())) {
+        case Qt::EditRole:
+        {
+            switch ((Section)index.column()) {
             case Section::Name:
-                return plugin_->engines()[static_cast<ulong>(index.row())].name;
+                return se.name;
             case Section::Trigger:{
-                auto trigger = plugin_->engines()[static_cast<ulong>(index.row())].trigger;
+                auto trigger = se.trigger;
                 return trigger.replace(" ", "•");
             }
             case Section::URL:
-                return plugin_->engines()[static_cast<ulong>(index.row())].url;
+                return se.url;
+            default: break;
             }
             break;
         }
-        case Qt::DecorationRole: {
-            if (static_cast<Section>(index.column()) == Section::Name) {
+        case Qt::DecorationRole:
+        {
+            if ((Section)index.column() == Section::Name) {
                 // Resizing request thounsands of repaints. Creating an icon for
                 // ever paint event is to expensive. Therefor maintain an icon cache
-                auto icon_url = plugin_->engines()[index.row()].iconUrl;
+                auto icon_url = se.iconUrl;
                 try {
                     return iconCache.at(icon_url);
                 } catch (const out_of_range &) {
@@ -113,8 +131,51 @@ public:
         }
         case Qt::ToolTipRole:
             return ConfigWidget::tr("Double click to edit.");
+        case Qt::CheckStateRole:
+            if ((Section)index.column() == Section::Fallback)
+                return se.fallback ? Qt::Checked : Qt::Unchecked;
         }
         return {};
+    }
+
+    bool setData(const QModelIndex &index, const QVariant &value, int role) override
+    {
+        if (!index.isValid())
+            return false;
+
+        switch ((Section)index.column())
+        {
+        case Section::Trigger:
+            if (role == Qt::EditRole)
+            {
+                try {
+                    auto engines = plugin_->engines();
+                    auto &engine = engines[index.row()];
+                    engine.trigger = value.toString();
+                    plugin_->setEngines(engines);
+                    return true;
+                }
+                catch (std::out_of_range &e){}
+            }
+            break;
+
+        case Section::Fallback:
+            if (role == Qt::CheckStateRole)
+            {
+                try {
+                    auto engines = plugin_->engines();
+                    auto &engine = engines[index.row()];
+                    engine.fallback = value == Qt::Checked;
+                    plugin_->setEngines(engines);
+                    return true;
+                }
+                catch (std::out_of_range &e){}
+            }
+            break;
+
+        default: return false;
+        }
+        return false;
     }
 };
 
@@ -153,7 +214,7 @@ static void handleAcceptedEditor(const SearchEngineEditor &editor, SearchEngine 
 
         auto image = editor.icon_image->scaled(256, 256, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-        auto dst = plugin.dataDir().filePath(QString("%1.png").arg(engine.id));
+        auto dst = QDir(plugin.dataLocation()).filePath(QString("%1.png").arg(engine.id));
         if (!image.save(dst)){
             auto msg = ConfigWidget::tr("Could not save image to '%1'.").arg(dst);
             WARN << msg;
@@ -168,10 +229,17 @@ static void handleAcceptedEditor(const SearchEngineEditor &editor, SearchEngine 
     engine.name = editor.name();
     engine.trigger = editor.trigger();
     engine.url = editor.url();
+    engine.fallback = editor.fallback();
 }
 
 void ConfigWidget::onActivated(QModelIndex index)
 {
+    if ((Section)index.column() == Section::Trigger)
+    {
+        ui.tableView_searches->edit(index);
+        return;
+    }
+
     auto engines = plugin_->engines();
     auto &engine = engines[index.row()];
 
@@ -179,6 +247,7 @@ void ConfigWidget::onActivated(QModelIndex index)
                               engine.name,
                               engine.trigger,
                               engine.url,
+                              engine.fallback,
                               this);
 
     if (editor.exec()){
@@ -189,7 +258,7 @@ void ConfigWidget::onActivated(QModelIndex index)
 
 void ConfigWidget::onButton_new()
 {
-    if (SearchEngineEditor editor(":default", "", "", "", this); editor.exec()){
+    if (SearchEngineEditor editor(":default", "", "", "", false, this); editor.exec()){
         SearchEngine engine;
         engine.id = QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
         engine.iconUrl = ":default";
