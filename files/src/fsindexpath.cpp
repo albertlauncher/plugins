@@ -1,11 +1,11 @@
 // Copyright (c) 2022 Manuel Schneider
 
-#include "albert/logging.h"
 #include "fileitems.h"
 #include "fsindexnodes.h"
 #include "fsindexpath.h"
 #include <QFileInfo>
 #include <QJsonObject>
+#include <albert/logging.h>
 using namespace std;
 
 FsIndexPath::FsIndexPath(const QString &path) : root_(RootNode::make(path))

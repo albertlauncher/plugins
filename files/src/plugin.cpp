@@ -1,9 +1,5 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
-#include "albert/extensionregistry.h"
-#include "albert/logging.h"
 #include "configwidget.h"
 #include "fileitems.h"
 #include "plugin.h"
@@ -11,6 +7,10 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSettings>
+#include <albert/extensionregistry.h>
+#include <albert/logging.h>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("files")
 using namespace albert;
 using namespace std;
@@ -44,7 +44,7 @@ Plugin::Plugin():
     connect(&fs_index_, &FsIndex::updatedFinished, this, [this](){ updateIndexItems(); });
 
     QJsonObject object;
-    if (QFile file(cacheDir().filePath(INDEX_FILE_NAME)); file.open(QIODevice::ReadOnly))
+    if (QFile file(createOrThrow(cacheLocation()).filePath(INDEX_FILE_NAME)); file.open(QIODevice::ReadOnly))
         object = QJsonDocument(QJsonDocument::fromJson(file.readAll())).object();
 
     auto s = settings();
@@ -75,10 +75,16 @@ Plugin::Plugin():
         {":app_icon"},
         {{"scan_files", tr("Scan"), [this](){ fs_index_.update(); }}}
     );
+
+    registry().registerExtension(&homebrowser);
+    registry().registerExtension(&rootbrowser);
 }
 
 Plugin::~Plugin()
 {
+    registry().deregisterExtension(&homebrowser);
+    registry().deregisterExtension(&rootbrowser);
+
     fs_index_.disconnect();
 
     auto s = settings();
@@ -99,27 +105,12 @@ Plugin::~Plugin()
     }
     s->setValue(CFG_PATHS, paths);
 
-    if (QFile file(cacheDir().filePath(INDEX_FILE_NAME)); file.open(QIODevice::WriteOnly)) {
+    if (QFile file(QDir(cacheLocation()).filePath(INDEX_FILE_NAME)); file.open(QIODevice::WriteOnly)) {
         DEBG << "Storing file index to" << file.fileName();
         file.write(QJsonDocument(object).toJson(QJsonDocument::Compact));
         file.close();
     } else
         WARN << "Couldn't write to file:" << file.fileName();
-}
-
-
-void Plugin::initialize(albert::ExtensionRegistry &registry, map<QString,PluginInstance*>)
-{
-    registry.registerExtension(this);
-    registry.registerExtension(&homebrowser);
-    registry.registerExtension(&rootbrowser);
-}
-
-void Plugin::finalize(albert::ExtensionRegistry &registry)
-{
-    registry.deregisterExtension(this);
-    registry.deregisterExtension(&homebrowser);
-    registry.deregisterExtension(&rootbrowser);
 }
 
 void Plugin::updateIndexItems()
@@ -144,19 +135,19 @@ void Plugin::updateIndexItems()
         tr("Your trash folder"),
         {"xdg:user-trash-full", "qsp:SP_TrashIcon"},
         {
+#if defined(Q_OS_MAC)
             {
                 "open", tr("Open trash"),
-#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
-                [=](){ openUrl(QStringLiteral("trash:///")); }
-#elif defined(Q_OS_MAC)
                 [=](){ openUrl(QString("file://%1/.Trash").arg(QDir::homePath())); }
-#endif
-            }
-#if defined(Q_OS_MAC)
-            ,
+            },
             {
                 "empty", tr("Empty trash"),
                 [=](){ runDetachedProcess({"osascript", "-e", "tell application \"Finder\" to empty trash"}); }
+            }
+#elif defined(Q_OS_UNIX)
+            {
+                "open", tr("Open trash"),
+                [=](){ openUrl(QStringLiteral("trash:///")); }
             }
 #endif
         }

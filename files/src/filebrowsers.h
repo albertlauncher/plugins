@@ -1,7 +1,7 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
-#include "albert/extension/queryhandler/triggerqueryhandler.h"
+#include <albert/triggerqueryhandler.h>
 
 class FilePathBrowser : public albert::TriggerQueryHandler
 {
@@ -20,7 +20,7 @@ public:
     QString name() const override;
     QString description() const override;
     QString defaultTrigger() const override;
-    void handleTriggerQuery(TriggerQuery*) const override;
+    void handleTriggerQuery(albert::Query*) override;
 };
 
 class HomeBrowser : public FilePathBrowser
@@ -31,5 +31,5 @@ public:
     QString name() const override;
     QString description() const override;
     QString defaultTrigger() const override;
-    void handleTriggerQuery(TriggerQuery*) const override;
+    void handleTriggerQuery(albert::Query *) override;
 };

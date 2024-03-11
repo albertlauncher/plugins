@@ -1,19 +1,20 @@
-//// Copyright (c) 2022 Manuel Schneider
+//// Copyright (c) 2022-2024 Manuel Schneider
 
-#include "QtCore/qeventloop.h"
-#include "QtWidgets/qapplication.h"
-#include "src/fsindex.h"
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_COLORS_ANSI
-#include "albert/logging.h"
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest/doctest.h"
+#include "fileitems.h"
+#include "fsindex.h"
+#include "fsindexpath.h"
+#include <QCoreApplication>
 #include <QDebug>
 #include <QFile>
 #include <QTemporaryDir>
-#include "src/fileitems.h"
-#include "src/fsindexpath.h"
-using namespace std;
+#undef WARN
+#undef INFO
+#include <albert/logging.h>
 ALBERT_LOGGING_CATEGORY("files_test")
+using namespace std;
 
 TEST_CASE("FsIndexPath")
 {
@@ -46,7 +47,7 @@ TEST_CASE("FsIndexPath")
     //  └─┬─ b/
     //    └─ b/c/
 
-    vector<shared_ptr<AbstractFileItem>> items;
+    vector<shared_ptr<FileItem>> items;
     FsIndexPath *p;
 
     auto update = [&](){
@@ -137,7 +138,7 @@ TEST_CASE("FsIndex")
     int argc;
     char *argv = {};
 
-    QApplication app(argc, &argv);
+    QCoreApplication app(argc, &argv);
     QLoggingCategory::setFilterRules("*.debug=true");
 
     QTemporaryDir root;
@@ -149,8 +150,8 @@ TEST_CASE("FsIndex")
 
     FsIndex fsi;
     QObject::connect(&fsi, &FsIndex::updatedFinished, &app, [](){
-        QApplication::processEvents();
-        QApplication::quit();
+        QCoreApplication::processEvents();
+        QCoreApplication::quit();
     });
     QObject::connect(&fsi, &FsIndex::status, &app, [](const QString &s){ qDebug() << s; });
 
@@ -165,17 +166,18 @@ TEST_CASE("FsIndex")
 
     app.processEvents();
 
-    vector<shared_ptr<AbstractFileItem>> items;
+    vector<shared_ptr<FileItem>> items;
+    QThread::sleep(2); // Sleep some time such that the mdates differ at all
     fsp->items(items);
 
     CHECK(items.size() == 3);
-    QThread::sleep(2); // Sleep some time such that the mdates differ at all
     CHECK(dir.mkdir("b/c"));
 
     QTimer::singleShot(0, &app, [&](){fsi.update();});
     app.exec();
 
     items.clear();
+    QThread::sleep(2); // Sleep some time such that the mdates differ at all
     fsp->items(items);
     CHECK(items.size() == 4);
 

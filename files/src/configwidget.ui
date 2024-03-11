@@ -146,7 +146,7 @@
            <item row="2" column="0">
             <widget class="QLabel" name="label_depth">
              <property name="text">
-              <string>Max Depth</string>
+              <string>Max depth</string>
              </property>
             </widget>
            </item>
@@ -166,7 +166,7 @@
            <item row="3" column="0">
             <widget class="QLabel" name="label_interval">
              <property name="text">
-              <string extracomment="Abbr. minutes">Scan interval</string>
+              <string>Scan interval</string>
              </property>
             </widget>
            </item>

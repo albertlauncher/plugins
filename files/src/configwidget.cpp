@@ -22,7 +22,7 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
 {
     ui.setupUi(this);
 
-    ALBERT_PLUGIN_PROPERTY_CONNECT(plugin, fs_browsers_case_sensitive, ui.checkBox_fsBrowsersCaseSensitive, setChecked, toggled)
+    ALBERT_PROPERTY_CONNECT(plugin, fs_browsers_case_sensitive, ui.checkBox_fsBrowsersCaseSensitive, setChecked, toggled)
 
     auto &index_paths = plu->fsIndex().indexPaths();
     paths_model.setStringList(getPaths(index_paths));
@@ -181,7 +181,7 @@ void ConfigWidget::adjustMimeCheckboxes()
         if (patterns.contains(mime_prefix+"*"))
             checkbox->setCheckState(Qt::Checked);
         else if (any_of(patterns.begin(), patterns.end(),
-                        [mime_prefix=mime_prefix](const QString & str){ return str.startsWith(mime_prefix); }))
+                        [mp=mime_prefix](const QString & str){ return str.startsWith(mp); }))
             checkbox->setCheckState(Qt::PartiallyChecked);
         else
             checkbox->setCheckState(Qt::Unchecked);

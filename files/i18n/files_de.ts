@@ -2,47 +2,6 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="de_DE">
 <context>
-    <name>AbstractBrowser</name>
-    <message>
-        <location filename="../src/filebrowsers.cpp" line="15"/>
-        <source>Browse files by path</source>
-        <translation>Dateien anhand eines Pfades durchsuchen</translation>
-    </message>
-</context>
-<context>
-    <name>AbstractFileItem</name>
-    <message>
-        <location filename="../src/fileitems.cpp" line="49"/>
-        <source>Open with default application</source>
-        <translation>Mit Standardanwendung öffnen</translation>
-    </message>
-    <message>
-        <location filename="../src/fileitems.cpp" line="54"/>
-        <source>Execute</source>
-        <translation>Ausführen</translation>
-    </message>
-    <message>
-        <location filename="../src/fileitems.cpp" line="58"/>
-        <source>Reveal in file browser</source>
-        <translation>Im Dateibrowser anzeigen</translation>
-    </message>
-    <message>
-        <location filename="../src/fileitems.cpp" line="63"/>
-        <source>Open terminal here</source>
-        <translation>Terminal hier öffnen</translation>
-    </message>
-    <message>
-        <location filename="../src/fileitems.cpp" line="68"/>
-        <source>Copy file to clipboard</source>
-        <translation>Datei in die Zwischenablage kopieren</translation>
-    </message>
-    <message>
-        <location filename="../src/fileitems.cpp" line="94"/>
-        <source>Copy path to clipboard</source>
-        <translation>Pfad in die Zwischenablage kopieren</translation>
-    </message>
-</context>
-<context>
     <name>ConfigWidget</name>
     <message>
         <location filename="../src/configwidget.ui" line="29"/>
@@ -76,13 +35,12 @@
     </message>
     <message>
         <location filename="../src/configwidget.ui" line="149"/>
-        <source>Max Depth</source>
+        <source>Max depth</source>
         <translation>Maximale Tiefe</translation>
     </message>
     <message>
         <location filename="../src/configwidget.ui" line="169"/>
         <source>Scan interval</source>
-        <extracomment>Abbr. minutes</extracomment>
         <translation>Scan-Intervall</translation>
     </message>
     <message>
@@ -153,22 +111,74 @@
     </message>
 </context>
 <context>
-    <name>FsIndexPath</name>
-    <message numerus="yes">
-        <location filename="../src/fsindexpath.cpp" line="57"/>
-        <source>Indexed %n directories in %2.</source>
-        <translation>
-            <numerusform>%1 Verzeichnis in %2 indexiert.</numerusform>
-            <numerusform>%1 Verzeichnisse in %2 indexiert.</numerusform>
-        </translation>
+    <name>FileItem</name>
+    <message>
+        <location filename="../src/fileitems.cpp" line="47"/>
+        <source>Open with default application</source>
+        <translation>Mit Standardanwendung öffnen</translation>
+    </message>
+    <message>
+        <location filename="../src/fileitems.cpp" line="57"/>
+        <source>Execute</source>
+        <translation>Ausführen</translation>
+    </message>
+    <message>
+        <location filename="../src/fileitems.cpp" line="66"/>
+        <source>Reveal in file browser</source>
+        <translation>Im Dateibrowser anzeigen</translation>
+    </message>
+    <message>
+        <location filename="../src/fileitems.cpp" line="74"/>
+        <source>Open terminal here</source>
+        <translation>Terminal hier öffnen</translation>
+    </message>
+    <message>
+        <source>Open %1 here</source>
+        <translation type="vanished">%1 hier öffnen</translation>
+    </message>
+    <message>
+        <location filename="../src/fileitems.cpp" line="84"/>
+        <source>Copy file to clipboard</source>
+        <translation>Datei in die Zwischenablage kopieren</translation>
+    </message>
+    <message>
+        <location filename="../src/fileitems.cpp" line="113"/>
+        <source>Copy path to clipboard</source>
+        <translation>Pfad in die Zwischenablage kopieren</translation>
     </message>
 </context>
 <context>
-    <name>HomeBrowser</name>
+    <name>FilePathBrowser</name>
     <message>
-        <location filename="../src/filebrowsers.cpp" line="74"/>
-        <source>Home directory browser</source>
-        <translation>Home-Verzeichnis-Browser</translation>
+        <location filename="../src/filebrowsers.cpp" line="63"/>
+        <source>Root browser</source>
+        <translation>Root-Browser</translation>
+    </message>
+    <message>
+        <location filename="../src/filebrowsers.cpp" line="69"/>
+        <source>Browse root directory by path</source>
+        <translation>Durchsuche das Stammverzeichnis anhand eines Pfades</translation>
+    </message>
+    <message>
+        <location filename="../src/filebrowsers.cpp" line="88"/>
+        <source>Home browser</source>
+        <translation>Home-Browser</translation>
+    </message>
+    <message>
+        <location filename="../src/filebrowsers.cpp" line="94"/>
+        <source>Browse home directory by path</source>
+        <translation>Durchsuche das Nutzerverzeichnis anhand eines Pfades</translation>
+    </message>
+</context>
+<context>
+    <name>FsIndexPath</name>
+    <message numerus="yes">
+        <location filename="../src/fsindexpath.cpp" line="57"/>
+        <source>Indexed %n directories in %1.</source>
+        <translation>
+            <numerusform>%n Verzeichnis in %1 indexiert.</numerusform>
+            <numerusform>%n Verzeichnisse in %1 indexiert.</numerusform>
+        </translation>
     </message>
 </context>
 <context>
@@ -180,68 +190,69 @@
     </message>
     <message>
         <location filename="../src/mimefilterdialog.ui" line="32"/>
-        <source>Ignore patterns are Perl-compatible regular expressions that can be utilized to exclude files from indexing. The matched filepath is relative to the root directory. By default, patterns are excluding, but prepending an &apos;!&apos; to a pattern makes it including. Filenames are matched in the order specified by the filter list below.</source>
-        <translation>Ignoriermuster sind Perl-kompatible reguläre Ausdrücke, die dazu verwendet werden können, Dateien von der Indexierung auszuschließen. Der abgeglichene Pfad ist relativ zum Stammverzeichnis. Durch das Voranstellen eines &apos;!&apos; wird das Muster einschließend. Dateinamen werden in der Reihenfolge der unten stehenden Filterliste abgeglichen.</translation>
+        <source>MIME filters are used while indexing to filter files by their MIME type. Files whose MIME type is not matched by any of the MIME filter patterns below are not indexed. The filter patterns support wildcard characters (*). Utilize the MIME types list on the left to find supported MIME types.</source>
+        <translation>MIME-Filter werden während der Indexierung verwendet, um Dateien anhand ihres MIME Typs zu filtern. Dateien, deren MIME-Typ mit keinem der folgenden MIME-Filtermuster übereinstimmt, werden nicht indexiert. Die Filtermuster unterstützen Platzhalterzeichen (*). Nutzen Sie die verfügbare Liste der MIME-Typen auf der linken Seite, um unterstützte MIME-Typen zu finden.</translation>
     </message>
     <message>
         <location filename="../src/mimefilterdialog.ui" line="47"/>
-        <source>MIME Types</source>
-        <translation>MIME-Typen</translation>
+        <source>Available MIME types</source>
+        <translation>Verfügbare MIME-Filter</translation>
     </message>
     <message>
         <location filename="../src/mimefilterdialog.ui" line="78"/>
-        <source>Filter for the mimetypes…</source>
-        <translation>Filter für die MIME-Typen…</translation>
+        <source>Filter the available MIME types</source>
+        <translation>Verfügbare MIME-Filter filtern</translation>
     </message>
     <message>
         <location filename="../src/mimefilterdialog.ui" line="88"/>
-        <source>Filter patterns</source>
-        <translation>Filtermuster</translation>
+        <source>MIME filter patterns</source>
+        <translation>MIME-Filtermuster</translation>
     </message>
 </context>
 <context>
     <name>NameFilterDialog</name>
-    <message>
-        <location filename="../src/namefilterdialog.ui" line="32"/>
-        <source>Ignore patterns are Perl-compatible regular expressions that can be utilized to exclude files from indexing. The filepath matched is relative to the root directory. Prepending &apos;!&apos; makes the pattern including. Filenames are matched in the order given by the filter list below.</source>
-        <translation>Ignoriermuster sind Perl-kompatible reguläre Ausdrücke, die dazu verwendet werden können, Dateien von der Indexierung auszuschließen. Der abgeglichene Pfad ist relativ zum Stammverzeichnis. Durch das Voranstellen eines &apos;!&apos; wird das Muster einschließend. Dateinamen werden in der Reihenfolge der unten stehenden Filterliste abgeglichen.</translation>
-    </message>
     <message>
         <location filename="../src/namefilterdialog.ui" line="14"/>
         <location filename="../src/namefilterdialog.ui" line="47"/>
         <source>Ignore patterns</source>
         <translation>Ignoriermuster</translation>
     </message>
+    <message>
+        <location filename="../src/namefilterdialog.ui" line="32"/>
+        <source>Ignore patterns are Perl-compatible regular expressions that can be utilized to exclude files from indexing. The filepath matched is relative to the root directory. Prepending &apos;!&apos; makes the pattern including. Filenames are matched in the order given by the filter list below.</source>
+        <translation>Ignoriermuster sind Perl-kompatible reguläre Ausdrücke, die dazu verwendet werden können, Dateien von der Indexierung auszuschließen. Der abgeglichene Pfad ist relativ zum Stammverzeichnis. Durch das Voranstellen eines &apos;!&apos; wird das Muster einschließend. Dateinamen werden in der Reihenfolge der unten stehenden Filterliste abgeglichen.</translation>
+    </message>
 </context>
 <context>
     <name>Plugin</name>
     <message>
-        <location filename="../src/plugin.cpp" line="72"/>
+        <location filename="../src/plugin.cpp" line="73"/>
         <source>Update index</source>
         <translation>Index aktualisieren</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="73"/>
+        <location filename="../src/plugin.cpp" line="74"/>
         <source>Update the file index</source>
         <translation>Den Datei-Index aktualisieren</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="75"/>
+        <location filename="../src/plugin.cpp" line="76"/>
         <source>Scan</source>
         <translation>Scannen</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="129"/>
+        <location filename="../src/plugin.cpp" line="134"/>
         <source>Trash</source>
         <translation>Papierkorb</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="130"/>
+        <location filename="../src/plugin.cpp" line="135"/>
         <source>Your trash folder</source>
         <translation>Ihr Papierkorb-Verzeichnis</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="134"/>
+        <location filename="../src/plugin.cpp" line="140"/>
+        <location filename="../src/plugin.cpp" line="149"/>
         <source>Open trash</source>
         <translation>Papierkorb öffnen</translation>
     </message>
@@ -249,14 +260,6 @@
         <location filename="../src/plugin.cpp" line="144"/>
         <source>Empty trash</source>
         <translation>Papierkorb leeren</translation>
-    </message>
-</context>
-<context>
-    <name>RootBrowser</name>
-    <message>
-        <location filename="../src/filebrowsers.cpp" line="60"/>
-        <source>Root directory browser</source>
-        <translation>Stammverzeichnis-Browser</translation>
     </message>
 </context>
 </TS>

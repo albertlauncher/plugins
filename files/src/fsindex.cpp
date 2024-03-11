@@ -1,8 +1,8 @@
 // Copyright (c) 2022 Manuel Schneider
 
-#include "albert/logging.h"
 #include "fsindex.h"
 #include <QtConcurrent>
+#include <albert/logging.h>
 using namespace std;
 
 FsIndex::FsIndex(): abort(false)

@@ -1,14 +1,14 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
-#include "albert/albert.h"
 #include "fileitems.h"
 #include "fsindexnodes.h"
-#include <QApplication>
+#include <QGuiApplication>
 #include <QClipboard>
 #include <QDir>
 #include <QFileInfo>
 #include <QMimeData>
 #include <QUrl>
+#include <albert/util.h>
 using namespace albert;
 using namespace std;
 
@@ -32,7 +32,7 @@ QString FileItem::inputActionText() const
 QStringList FileItem::iconUrls() const
 {
     QStringList urls;
-#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+#if defined(Q_OS_UNIX) && !defined(Q_OS_MAC)
     urls << QString("xdg:%1").arg(mimeType().iconName());
     urls << QString("xdg:%1").arg(mimeType().genericIconName());
 #endif
@@ -86,7 +86,7 @@ vector<Action> FileItem::actions() const
         "f-copy", tr_c, [this]()
         {
             //  Get clipboard
-            QClipboard *cb = QApplication::clipboard();
+            QClipboard *cb = QGuiApplication::clipboard();
 
             // Ownership of the new data is transferred to the clipboard.
             auto *newMimeData = new QMimeData();

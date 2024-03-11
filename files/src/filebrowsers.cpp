@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QMimeDatabase>
+using namespace albert;
 using namespace std;
 
 FilePathBrowser::FilePathBrowser(bool &cs) : caseSensitive(cs)
@@ -14,9 +15,9 @@ FilePathBrowser::FilePathBrowser(bool &cs) : caseSensitive(cs)
 bool FilePathBrowser::allowTriggerRemap() const
 { return false; }
 
-vector<shared_ptr<albert::Item>> FilePathBrowser::buildItems(const QString &input) const
+vector<shared_ptr<Item>> FilePathBrowser::buildItems(const QString &input) const
 {
-    vector<shared_ptr<albert::Item>> results;
+    vector<shared_ptr<Item>> results;
 
     // Get all matching files
     QFileInfo query_file_info(input);
@@ -72,7 +73,7 @@ QString RootBrowser::description() const
 QString RootBrowser::defaultTrigger() const
 { return "/"; }
 
-void RootBrowser::handleTriggerQuery(TriggerQuery *query) const
+void RootBrowser::handleTriggerQuery(Query *query)
 { query->add(buildItems(QString("/%1").arg(query->string()))); }
 
 
@@ -97,7 +98,7 @@ QString HomeBrowser::description() const
 QString HomeBrowser::defaultTrigger() const
 { return "~"; }
 
-void HomeBrowser::handleTriggerQuery(TriggerQuery *query) const
+void HomeBrowser::handleTriggerQuery(Query *query)
 { query->add(buildItems(QString("%1%2").arg(QDir::homePath(), query->string()))); }
 
 
