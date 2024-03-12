@@ -79,8 +79,8 @@ static QString defaultCommand(SupportedCommands command)
             case LOGOUT:    return "qdbus org.kde.Shutdown /Shutdown  org.kde.Shutdown.logout";
             case SUSPEND:   break ;
             case HIBERNATE: break ;
-            case REBOOT:    return "org.kde.Shutdown /Shutdown  org.kde.Shutdown.logoutAndReboot";
-            case POWEROFF:  return "org.kde.Shutdown /Shutdown  org.kde.Shutdown.logoutAndShutdown";
+            case REBOOT:    return "qdbus org.kde.Shutdown /Shutdown  org.kde.Shutdown.logoutAndReboot";
+            case POWEROFF:  return "qdbus org.kde.Shutdown /Shutdown  org.kde.Shutdown.logoutAndShutdown";
         }
 
         else if (de == "X-Cinnamon" || de == "Cinnamon")
