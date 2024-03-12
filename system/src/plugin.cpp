@@ -76,11 +76,11 @@ static QString defaultCommand(SupportedCommands command)
         else if (de == "kde-plasma" || de == "KDE")
             switch (command) {
             case LOCK:      return "dbus-send --dest=org.freedesktop.ScreenSaver --type=method_call /ScreenSaver org.freedesktop.ScreenSaver.Lock";
-            case LOGOUT:    return "qdbus org.kde.ksmserver /KSMServer logout 0 0 0";
+            case LOGOUT:    return "qdbus org.kde.Shutdown /Shutdown  org.kde.Shutdown.logout";
             case SUSPEND:   break ;
             case HIBERNATE: break ;
-            case REBOOT:    return "qdbus org.kde.ksmserver /KSMServer logout 0 1 0";
-            case POWEROFF:  return "qdbus org.kde.ksmserver /KSMServer logout 0 2 0";
+            case REBOOT:    return "org.kde.Shutdown /Shutdown  org.kde.Shutdown.logoutAndReboot";
+            case POWEROFF:  return "org.kde.Shutdown /Shutdown  org.kde.Shutdown.logoutAndShutdown";
         }
 
         else if (de == "X-Cinnamon" || de == "Cinnamon")
