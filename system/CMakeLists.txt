@@ -1,4 +1,4 @@
-project(system VERSION 9.0)
+project(system VERSION 9.1)
 
 albert_plugin(
     SOURCE_FILES
