@@ -187,6 +187,7 @@ void Plugin::updateDocsetList()
     static const char *url = "https://api.zealdocs.org/v1/docsets";
     debug(tr("Downloading docset list from '%1'").arg(url));
     QNetworkReply *reply = albert::networkManager()->get(QNetworkRequest(QUrl{url}));
+    reply->setParent(this); // For the case the plugin is deleted before the reply is finished
 
     connect(reply, &QNetworkReply::finished, this, [this, reply](){
         reply->deleteLater();
