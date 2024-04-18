@@ -11,7 +11,7 @@ namespace albert { class Query; }
 class QmlInterface : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QObject* currentQuery_ READ currentQuery  NOTIFY currentQueryChanged)
+    Q_PROPERTY(QObject* current_query_ READ currentQuery  NOTIFY queryChanged)
 
 public:
     QmlInterface(Plugin *plugin);
@@ -31,11 +31,13 @@ public:
 
 private:
     Plugin *plugin_;
-    albert::Query *currentQuery_;
+    albert::Query *current_query_;
 
 signals:
-    void currentQueryChanged();
-    void currentQueryFinished(); // convenience signal to avoid the boilerplate in qml
+    void queryChanged();
+    // convenience signals to avoid the boilerplate in qml
+    void queryMatchesAdded();
+    void queryFinished();
 
 };
 

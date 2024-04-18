@@ -1,15 +1,15 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
 #pragma once
-#include "albert/extension/frontend/frontend.h"
-#include "albert/plugin.h"
 #include "qmlinterface.h"
 #include "window.h"
 #include <QSettings>
+#include <albert/frontend.h>
+#include <albert/plugininstance.h>
+#include <albert/property.h>
 
 class Plugin : public albert::Frontend, public albert::PluginInstance
 {
-    Q_OBJECT
     ALBERT_PLUGIN
 
 public:
@@ -31,13 +31,9 @@ protected:
     QmlInterface qml_interface_;
     Window window;
 
-    ALBERT_PLUGIN_PROPERTY_BASE(bool, always_on_top, true)
-    bool always_on_top() const;
-    void set_always_on_top_(bool value);
+    ALBERT_PLUGIN_PROPERTY_GETSET(bool, always_on_top, true)
     ALBERT_PLUGIN_PROPERTY_MEMBER(bool, clear_on_hide, window.clear_on_hide, true)
-    ALBERT_PLUGIN_PROPERTY_BASE(bool, display_system_shadow, true)
-    bool display_system_shadow() const;
-    void set_display_system_shadow_(bool value);
+    ALBERT_PLUGIN_PROPERTY_GETSET(bool, display_system_shadow, true)
     ALBERT_PLUGIN_PROPERTY_MEMBER(bool, follow_mouse, window.follow_mouse, true)
     ALBERT_PLUGIN_PROPERTY_MEMBER(bool, hide_on_close, window.hide_on_close, true)
     ALBERT_PLUGIN_PROPERTY_MEMBER(bool, hide_on_focus_loss, window.hide_on_focus_loss, true)

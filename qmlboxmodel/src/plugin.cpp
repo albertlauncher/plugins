@@ -1,7 +1,9 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
 #include "plugin.h"
+#include "propertyeditor/propertyeditor.h"
 #include "ui_configwidget.h"
+#include <albert/logging.h>
 
 namespace {
 static const char* K_WND_POS = "window_position";
@@ -21,8 +23,11 @@ Plugin::Plugin() : qml_interface_(this), window(qml_interface_)
     s = state();
     window.setPosition(s->value(K_WND_POS).toPoint());
 
-    connect(&window, &Window::inputChanged, this, &Plugin::inputChanged);
-    connect(&window, &Window::visibleChanged, this, &Plugin::visibleChanged);
+    connect(&window, &Window::inputTextChanged,
+            this, &Plugin::inputChanged);
+
+    connect(&window, &Window::visibleChanged,
+            this, &Plugin::visibleChanged);
 }
 
 Plugin::~Plugin()
@@ -34,9 +39,9 @@ bool Plugin::isVisible() const { return window.isVisible(); }
 
 void Plugin::setVisible(bool visible) { window.setVisible(visible); }
 
-QString Plugin::input() const { return window.input(); }
+QString Plugin::input() const { return window.inputText(); }
 
-void Plugin::setInput(const QString &input) { window.setInput(input); }
+void Plugin::setInput(const QString &input) { window.setInputText(input); }
 
 unsigned long long Plugin::winId() const { return window.winId(); }
 
@@ -46,13 +51,13 @@ QWidget* Plugin::createFrontendConfigWidget()
     Ui::ConfigWidget ui;
     ui.setupUi(w);
 
-    ALBERT_PLUGIN_PROPERTY_CONNECT(this, always_on_top, ui.checkBox_onTop, setChecked, toggled)
-    ALBERT_PLUGIN_PROPERTY_CONNECT(this, clear_on_hide, ui.checkBox_clearOnHide, setChecked, toggled)
-    ALBERT_PLUGIN_PROPERTY_CONNECT(this, display_system_shadow, ui.checkBox_systemShadow, setChecked, toggled)
-    ALBERT_PLUGIN_PROPERTY_CONNECT(this, follow_mouse, ui.checkBox_followMouse, setChecked, toggled)
-    ALBERT_PLUGIN_PROPERTY_CONNECT(this, hide_on_close, ui.checkBox_hideOnClose, setChecked, toggled)
-    ALBERT_PLUGIN_PROPERTY_CONNECT(this, hide_on_focus_loss, ui.checkBox_hideOnFocusOut, setChecked, toggled)
-    ALBERT_PLUGIN_PROPERTY_CONNECT(this, show_centered, ui.checkBox_center, setChecked, toggled)
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, always_on_top, ui.checkBox_onTop)
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, clear_on_hide, ui.checkBox_clearOnHide)
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, display_system_shadow, ui.checkBox_systemShadow)
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, follow_mouse, ui.checkBox_followMouse)
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, hide_on_close, ui.checkBox_hideOnClose)
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, hide_on_focus_loss, ui.checkBox_hideOnFocusOut)
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, show_centered, ui.checkBox_center)
 
     // Themes
 
@@ -86,11 +91,11 @@ QWidget* Plugin::createFrontendConfigWidget()
     //             applyTheme(theme_file_name);
     //         });
 
-    // connect(ui.toolButton_propertyEditor, &QToolButton::clicked, this, [this, w](){
-    //     PropertyEditor *pe = new PropertyEditor(this, w);
-    //     pe->setWindowModality(Qt::WindowModality::WindowModal);
-    //     pe->show();
-    // });
+    connect(ui.pushButton_styleEditor, &QPushButton::clicked, this, [this, w](){
+        PropertyEditor *pe = new PropertyEditor(window.getStyleObject(), w);
+        pe->setWindowModality(Qt::WindowModality::WindowModal);
+        pe->show();
+    });
 
     // connect(ui.toolButton_save, &QToolButton::clicked, this, [this, w, fillThemesCheckBox](){
     //     if (auto text = QInputDialog::getText(w, qApp->applicationDisplayName(), "Theme name:"); !text.isNull()){
@@ -109,7 +114,8 @@ QWidget* Plugin::createFrontendConfigWidget()
     return w;
 }
 
-void Plugin::setQuery(albert::Query *query) { qml_interface_.setQuery(query); }
+void Plugin::setQuery(albert::Query *query)
+{ qml_interface_.setQuery(query); }
 
 bool Plugin::always_on_top() const
 { return window.flags() & Qt::WindowStaysOnTopHint; }

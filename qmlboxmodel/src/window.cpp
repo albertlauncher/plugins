@@ -1,18 +1,20 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
-#include "albert/albert.h"
-// #include "albert/extension/frontend/frontend.h"
-#include "albert/extension/frontend/query.h"
-#include "albert/logging.h"
-// #include "albert/plugin.h"
 #include "imageprovider.h"
+#include "propertyeditor/propertyeditor.h"
+#include "qmlinterface.h"
+#include "window.h"
+#include <QApplication>
+#include <QQmlContext>
+#include <QQuickItem>
+#include <albert/logging.h>
+#include <albert/query.h>
+#include <albert/util.h>
+// #include "albert/extension/frontend/frontend.h"
+// #include "albert/plugin.h"
 // #include "imageprovider.h"
 // #include "plugin.h"
-#include "window.h"
-#include "qmlinterface.h"
-// #include "propertyeditor.h"
 // #include "ui_configwidget.h"
-#include <QApplication>
 // #include <QCursor>
 // #include <QDebug>
 // #include <QDir>
@@ -25,9 +27,7 @@
 // #include <QMessageBox>
 // #include <QPoint>
 // #include <QQmlComponent>
-#include <QQmlContext>
 // #include <QQmlEngine>
-#include <QQuickItem>
 // #include <QSettings>
 // #include <QSettings>
 // #include <QShortcut>
@@ -46,8 +46,8 @@ using namespace albert;
 
 namespace {
 static const char* DEFAULT_STYLE_FILE_PATH = "qrc:/DefaultStyle.qml";
-static const char* PREF_OBJ_NAME = "style";
-static const char* INPUT_OBJ_NAME = "input";
+static const char* STYLE_OBJECT_NAME = "style";
+static const char* INPUT_TEXT_PROP_NAME = "inputText";
 }
 
 Window::Window(QmlInterface &qmlif)
@@ -83,11 +83,11 @@ Window::Window(QmlInterface &qmlif)
 
 Window::~Window() {  }
 
-QString Window::input() const
-{ return input_->property("text").toString(); }
+QString Window::inputText() const
+{ return root_object_->property(INPUT_TEXT_PROP_NAME).toString(); }
 
-void Window::setInput(const QString &input)
-{ input_->setProperty("text", input); }
+void Window::setInputText(const QString &input)
+{ root_object_->setProperty(INPUT_TEXT_PROP_NAME, input); }
 
 // void Window::setVisible(bool visible)
 // {
@@ -117,11 +117,25 @@ void Window::loadRootComponent(const QString &path)
     setHeight(root_object_->height());
 
 
-    if (!(input_ = root_object_->findChild<QObject*>(INPUT_OBJ_NAME)))
-        qFatal("Failed to get object: %s", INPUT_OBJ_NAME);
+    connect(root_object_.get(), SIGNAL(inputTextEdited(QString)),
+            this, SIGNAL(inputTextChanged(QString)));
 
-    connect(input_, SIGNAL(textChanged()),
-            this, SIGNAL(inputChanged()));
+
+
+
+
+    // auto pe = new PropertyEditor(getStyleObject());
+    // pe->show();
+    // pe->setAttribute(Qt::WA_DeleteOnClose);
+
+
+
+
+
+
+
+
+
 
 //    applyTheme(availableThemes()[0].filePath());
 
@@ -174,56 +188,57 @@ bool Window::event(QEvent *event)
     {
     // Quit on Alt+F4
     case QEvent::Close:
+    {
         (hide_on_close) ? setVisible(false) : qApp->quit();
         return true;
+    }
 
     case QEvent::FocusOut:
+    {
         if (hide_on_focus_loss)
-            albert::hide();  // calls setvisible and therefore deactivates
+            setVisible(false);
         break;
-
-//    case QEvent::Move: {
-//        auto *moveEvent = static_cast<QMoveEvent*>(event);
-//        DEBG << "moveEvent" << moveEvent->oldPos() << ">" << moveEvent->pos();
-//        break;
-//    }
+    }
 
     case QEvent::MouseButtonPress:
+    {
         if (static_cast<QMouseEvent*>(event)->modifiers() == Qt::ControlModifier)
-            clickOffset_ = static_cast<QMouseEvent*>(event)->pos();
+            startSystemMove();
         break;
-
-    case QEvent::MouseButtonRelease:
-        clickOffset_ = QPoint();  // isNull
-        break;
-
-    case QEvent::MouseMove:
-        if (!clickOffset_.isNull())
-            setPosition(static_cast<QMouseEvent*>(event)->globalPosition().toPoint() - clickOffset_);
-        break;
+    }
 
     case QEvent::Hide:
-        image_provider_->clearCache();
+    {
+        // image_provider_->clearCache();
         if (clear_on_hide)
-            this->setInput("");
+            this->setInputText("");
         break;
+    }
 
     case QEvent::Show:
-        if (show_centered || !screen()) {
+    {
+        if (show_centered || !screen())
+        {
             QScreen *screen = nullptr;
-            if (!follow_mouse || !(screen = QGuiApplication::screenAt(QCursor::pos())))
+            if (follow_mouse){
+                if (screen = QGuiApplication::screenAt(QCursor::pos()); !screen){
+                    WARN << "Could not retrieve screen for cursor position. Using primary screen.";
+                    screen = QGuiApplication::primaryScreen();
+                }
+            }
+            else
                 screen = QGuiApplication::primaryScreen();
-            auto geo = screen->geometry();
-            auto win_width = width();
-            auto newX = geo.center().x() - win_width / 2;
-            auto newY = geo.top() + geo.height() / 8;
-            DEBG << screen->name() << screen->manufacturer() << screen->model() << screen->devicePixelRatio() << geo;
-            DEBG << "win_width" << win_width  << "newX" << newX << "newY" << newY;
-            setPosition(newX, newY);
+
+            auto screen_rect = screen->geometry();
+            DEBG << "Show on:" << screen->name() << screen_rect << screen->devicePixelRatio();
+            setPosition(screen_rect.center().x() - width() / 2,
+                        screen_rect.top() + screen_rect.height() / 8);
         }
         break;
+    }
 
-    case QEvent::KeyPress:{
+    case QEvent::KeyPress:
+    {
         auto *keyEvent = static_cast<QKeyEvent*>(event);
         //CRIT << "C++ PRESS" << QKeySequence(keyEvent->keyCombination()).toString();
         if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Escape ){
@@ -246,24 +261,7 @@ bool Window::event(QEvent *event)
         break;
     }
 
-//    case QEvent::Shortcut:{
-//        auto *e = static_cast<QShortcutEvent*>(event);
-//        CRIT << "Shortcut"<<  e->key().toString();
-//        return true;
-//    }
-
-//    case QEvent::ShortcutOverride:{
-//        auto *e = static_cast<QKeyEvent*>(event);
-//        CRIT << "ShortcutOverride" << QKeySequence(e->keyCombination()).toString();
-//        return true;
-//        break;
-//    }
-
-//    case QEvent::UpdateRequest:
-//        break; // mute debug
-
     default:
-//        DEBG << "QEvent " << event->type();
         break;
     }
 
@@ -305,9 +303,9 @@ bool Window::sendSyntheticKey(QKeyEvent *event, int key)
     return QApplication::sendEvent(this, &synth);
 }
 
-QObject *Window::getThemePropertiesObject() const
+QObject *Window::getStyleObject() const
 {
-    if (auto obj = root_object_->findChild<QObject*>(PREF_OBJ_NAME); obj)
+    if (auto obj = root_object_->findChild<QObject*>(STYLE_OBJECT_NAME); obj)
         return obj;
     else
         qFatal("Failed to get style object");

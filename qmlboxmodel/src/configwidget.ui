@@ -114,6 +114,26 @@
      </property>
     </widget>
    </item>
+   <item row="7" column="1">
+    <widget class="QPushButton" name="pushButton_styleEditor">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>Open</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QLabel" name="label_styleEditor">
+     <property name="text">
+      <string>Style editor</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <tabstops>

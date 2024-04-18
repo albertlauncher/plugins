@@ -3,7 +3,7 @@ import QtQuick.Shapes
 
 Loader {
     id: loader
-    active: debug
+    active: debug && target.visible
     property var target: parent
     property string name: target.objectName
     anchors.fill: target
@@ -18,11 +18,11 @@ Loader {
         z: 100
 
         Rectangle{
-            x: Math.random()*(parent.width-width)
-            y: Math.random()*(parent.height-height)
+            // x: Math.random()*(parent.width-width)
+            // y: Math.random()*(parent.height-height)
             width: text.width
             height: text.height
-            color: Qt.hsva(hue, 1, 1, 0.3)
+            color: Qt.hsva(hue, 1, 1, 0.2)
             Text{
                 id: text
                 text: name
@@ -35,8 +35,8 @@ Loader {
             anchors.fill: parent
             ShapePath {
                 dashPattern: [ 1, 2 ]
-                fillColor: Qt.hsva(hue, 1, 1, 0.1)
-                strokeColor: Qt.hsva(hue, 1, 1, 0.2)
+                fillColor: Qt.hsva(hue, 1, 1, 0.0)
+                strokeColor: Qt.hsva(hue, 1, 1, 0.4)
                 strokeStyle: ShapePath.DashLine
                 strokeWidth: 1
                 startX: 0; startY:0

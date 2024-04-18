@@ -1,6 +1,7 @@
-// Copyright (c) 2022-2023 Manuel Schneider
+// Copyright (c) 2022-2024 Manuel Schneider
 
-#include "plugin.h"
+#include "colordialog.h"
+#include "fontlisteditor.h"
 #include "propertyeditor.h"
 #include <QAbstractTableModel>
 #include <QHeaderView>
@@ -8,60 +9,68 @@
 #include <QStyledItemDelegate>
 #include <QTableView>
 #include <QVBoxLayout>
+#include <albert/logging.h>
 
 
 class PropertyModel final : public QAbstractTableModel
 {
 public:
-    PropertyModel(Plugin *plugin, QObject *parent = 0)
-        : QAbstractTableModel(parent), plugin_(plugin){
-        properties_ = plugin_->settableThemeProperties();
-        properties_.sort();
+    PropertyModel(QObject *style_object, QObject *parent = nullptr):
+        QAbstractTableModel(parent),
+        style_object_(style_object)
+    {
+        auto *mo = style_object_->metaObject();
+        for (int i = mo->propertyOffset(); i < mo->propertyCount(); ++i) {
+            auto p = mo->property(i);
+            CRIT << p.typeName() << p.name()<<  p.read(style_object);
+            properties_ << p.name();
+        }
     }
 
-    int rowCount(const QModelIndex & parent = QModelIndex()) const override {
-        Q_UNUSED(parent)
-        return properties_.count();
-    }
+    int rowCount(const QModelIndex&) const override
+    { return properties_.count(); }
 
-    int columnCount(const QModelIndex & parent = QModelIndex()) const override {
-        Q_UNUSED(parent)
-        return 2;
-    }
+    int columnCount(const QModelIndex&) const override
+    { return 2; }
 
-    QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const override {
-        if (role == Qt::DisplayRole || role == Qt::EditRole) {
-            if ( index.column() == 0 ){
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
+    {
+        if (role == Qt::DisplayRole || role == Qt::EditRole)
+        {
+            if ( index.column() == 0 )
+            {
                 auto string = properties_[index.row()];
                 string.replace(0, 1, string[0].toUpper());
                 string.replace("_", " ");
                 return string;
             }
             else if (index.column()==1)
-                return plugin_->property(properties_.at(index.row()).toLatin1().data());
+                return style_object_->property(properties_.at(index.row()).toLatin1().data());
         }
         return QVariant();
     }
 
-    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override {
-        if (orientation == Qt::Horizontal && role == Qt::DisplayRole){
+    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override
+    {
+        if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
+        {
             if (section==0)
                 return "Property";
             if (section==1)
                 return "Value";
         }
-        return QVariant();
+        return {};
     }
 
-    bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole) override {
-        if (role ==  Qt::EditRole){
-            plugin_->setProperty(properties_[index.row()].toLatin1().data(), value);
-            return true;
-        }
-        return true;
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override
+    {
+        if (role ==  Qt::EditRole)
+            return style_object_->setProperty(properties_[index.row()].toLatin1().data(), value);
+        return false;
     }
 
-    Qt::ItemFlags flags(const QModelIndex & index) const override {
+    Qt::ItemFlags flags(const QModelIndex &index) const override
+    {
         if (index.column() == 1)
             return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
         else
@@ -69,14 +78,14 @@ public:
     }
 
 private:
-    Plugin * const plugin_;
+    QObject *const style_object_;
     QStringList properties_;
 };
 
 
-PropertyEditor::PropertyEditor(Plugin *plugin, QWidget *parent)
-    : QDialog (parent){
-
+PropertyEditor::PropertyEditor(QObject *style_object, QWidget *parent):
+    QDialog(parent)
+{
     resize(480, 480);
     setWindowTitle("PropertyEditor");
 
@@ -84,7 +93,7 @@ PropertyEditor::PropertyEditor(Plugin *plugin, QWidget *parent)
 
     tableView->setAlternatingRowColors(true);
     tableView->setEditTriggers(QAbstractItemView::SelectedClicked|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed);
-    tableView->setModel(new PropertyModel(plugin, tableView));
+    tableView->setModel(new PropertyModel(style_object, tableView));
     tableView->setObjectName(QStringLiteral("tableView"));
 //    tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     tableView->setSelectionMode(QAbstractItemView::SingleSelection);

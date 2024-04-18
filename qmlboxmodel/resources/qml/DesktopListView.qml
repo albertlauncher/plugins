@@ -11,19 +11,20 @@ ListView {
 
     signal itemActivated(int index)
 
+    // reuseItems: true
     boundsBehavior: Flickable.StopAtBounds
+    boundsMovement: Flickable.StopAtBounds
     clip: true
     highlightMoveDuration : 0
     highlightMoveVelocity : -1
     snapMode: ListView.SnapToItem
+
     onCountChanged: {
-        // count is not guaranteed to equal the contentItem.children.length
-        // Especially invisible do not necessarily have to exist
-        // never let the list have height 0
-        visible=(count !== 0)
+        // never let the list have height 0, otherwise contentItem.children[0] will be undefined
         if (count !== 0)
         {
             height = Math.min(maxItems, count) * (contentItem.children[0].height + spacing) - spacing
+            // albert.info(`height ${height}, count ${count}, contentItem.children[0].height ${contentItem.children[0].height}`)
             if (currentIndex < 0)
                 currentIndex = 0
         }
