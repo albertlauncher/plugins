@@ -76,7 +76,6 @@ static void saveBase64ImageToFile(const QByteArray& base64Data, const QString& f
     QByteArray imageData = QByteArray::fromBase64(base64Data);
     QImage image;
     image.loadFromData(imageData);
-    image = image.scaled(image.size()*2); // fix pixmap sizes
 
     if (!image.isNull()) {
         QFile file(filePath);

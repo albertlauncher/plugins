@@ -1,6 +1,6 @@
 #if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
-project(docs VERSION 6.2)
+project(docs VERSION 6.3)
 
 find_package(Qt6 REQUIRED COMPONENTS Sql Network)
 find_package(LibArchive REQUIRED)
