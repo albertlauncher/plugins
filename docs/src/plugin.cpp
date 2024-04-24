@@ -373,11 +373,16 @@ std::vector<IndexItem> Docset::createIndexItems() const
 {
     std::vector<IndexItem> items;
 
-    if (auto file_path = QString("%1/Contents/Resources/Tokens.xml").arg(path); QFile::exists(file_path)){
+    if (auto file_path = QString("%1/Contents/Resources/Tokens.xml").arg(path); QFile::exists(file_path))
+    {
+        INFO << "Indexing docset" << file_path;
 
         QFile f(file_path);
         if (!f.open(QIODevice::ReadOnly|QIODevice::Text))
-            return items;
+        {
+            WARN << f.errorString();
+            return {};
+        }
 
         QXmlStreamReader xml(&f);
         xml.readNext();
@@ -385,29 +390,29 @@ std::vector<IndexItem> Docset::createIndexItems() const
         while (!xml.atEnd() && !xml.hasError())
         {
             auto tokenType = xml.readNext();
-
-            if (tokenType == QXmlStreamReader::StartElement && xml.name() == QLatin1String("Token")) {
+            if (tokenType == QXmlStreamReader::StartElement && xml.name() == QLatin1String("Token"))
+            {
                 QString n, t, p, a;
-
-                for (;!(xml.tokenType() == QXmlStreamReader::EndElement && xml.name() == QLatin1String("Token")); xml.readNext()){
-
-                    if (xml.tokenType() == QXmlStreamReader::StartElement){
-                        if (xml.name() == QLatin1String("TokenIdentifier")){
-
-                            for (;!(xml.tokenType() == QXmlStreamReader::EndElement && xml.name() == QLatin1String("TokenIdentifier")); xml.readNext()){
+                for (;!(xml.tokenType() == QXmlStreamReader::EndElement && xml.name() == QLatin1String("Token")); xml.readNext())
+                {
+                    if (xml.tokenType() == QXmlStreamReader::StartElement)
+                    {
+                        if (xml.name() == QLatin1String("TokenIdentifier"))
+                        {
+                            for (;!(xml.tokenType() == QXmlStreamReader::EndElement && xml.name() == QLatin1String("TokenIdentifier")); xml.readNext())
+                            {
                                 if (xml.name() == QLatin1String("Name"))
                                     n = xml.readElementText();
                                 else if (xml.name() == QLatin1String("Type"))
                                     t = xml.readElementText();
                             }
-
-                        } else if (xml.name() == QLatin1String("Path"))
+                        }
+                        else if (xml.name() == QLatin1String("Path"))
                             p = xml.readElementText();
                         else if (xml.name() == QLatin1String("Anchor"))
                             a = xml.readElementText();
                     }
                 }
-
                 if (!a.isEmpty())
                     continue; // Skip anchors, browsers cant handle them
 
@@ -416,30 +421,41 @@ std::vector<IndexItem> Docset::createIndexItems() const
             }
         }
         f.close();
-
-    } else if (file_path = QString("%1/Contents/Resources/docSet.dsidx").arg(path); QFile::exists(file_path)) {
+    }
+    else if (file_path = QString("%1/Contents/Resources/docSet.dsidx").arg(path); QFile::exists(file_path))
+    {
+        INFO << "Indexing docset" << file_path;
 
         {
             QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", docsets_dir);
             db.setDatabaseName(file_path);
-            if (!db.open()){
-                WARN << db.databaseName() << "Unable to open database connection.";
-                return items;
+            if (!db.open())
+            {
+                WARN << "Unable to open database connection" << db.databaseName();
+                return {};
             }
 
             QSqlQuery sql(db);
 
             // Check docset type
-            sql.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='{searchIndex}'");
+            if (!sql.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='searchIndex'"))
+            {
+                WARN << sql.lastQuery() << sql.lastError().text();
+                return {};
+            }
 
-            if (sql.size()) {  // searchIndex exists
+            if (sql.next()) // returns true if searchIndex exists
+            {
+                if (!sql.exec("SELECT name, type, path FROM searchIndex ORDER BY name;"))
+                {
+                    WARN << sql.lastQuery() << sql.lastError().text();
+                    return {};
+                }
 
-                sql.exec("SELECT name, type, path FROM searchIndex ORDER BY name;");
-                if (!sql.isActive())
-                    qFatal("SQL ERROR: %s %s", qPrintable(sql.executedQuery()), qPrintable(sql.lastError().text()));
-                while (sql.next()){
+                while (sql.next())
+                {
                     QString n = sql.value(0).toString();
-                    QString t = sql.value(1).toString();
+                    //QString t = sql.value(1).toString();
                     QString p = sql.value(2).toString();
                     if (p.contains("#"))
                         continue; // Skip anchors, browsers cant handle them
@@ -447,10 +463,10 @@ std::vector<IndexItem> Docset::createIndexItems() const
                     auto item = make_shared<DocumentationItem>(this, n, p);
                     items.emplace_back(item, item->text());
                 }
-
-            } else {
-
-                sql.exec(R"R(
+            }
+            else
+            {
+                if(!sql.exec(R"R(
                     SELECT
                         ztokenname, ztypename, zpath, zanchor
                     FROM ztoken
@@ -458,12 +474,15 @@ std::vector<IndexItem> Docset::createIndexItems() const
                         INNER JOIN zfilepath ON ztokenmetainformation.zfile = zfilepath.z_pk
                         INNER JOIN ztokentype ON ztoken.ztokentype = ztokentype.z_pk
                     ORDER BY ztokenname;
-                )R");
-                if (!sql.isActive())
-                    qFatal("SQL ERROR: %s %s", qPrintable(sql.executedQuery()), qPrintable(sql.lastError().text()));
+                )R"))
+                {
+                    WARN << sql.lastQuery() << sql.lastError().text();
+                    return {};
+                }
+
                 while (sql.next()){
                     QString n = sql.value(0).toString();
-                    QString t = sql.value(1).toString();
+                    //QString t = sql.value(1).toString();
                     QString p = sql.value(2).toString();
                     QString a = sql.value(3).toString();
                     if (!a.isEmpty())
@@ -473,14 +492,10 @@ std::vector<IndexItem> Docset::createIndexItems() const
                     items.emplace_back(item, item->text());
                 }
             }
-
             db.close();
         }
-
         QSqlDatabase::removeDatabase(docsets_dir);
-
     }
-
     return items;
 }
 
