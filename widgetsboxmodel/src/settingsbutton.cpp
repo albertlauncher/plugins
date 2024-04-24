@@ -1,6 +1,5 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
-#include "albert/albert.h"
 #include "settingsbutton.h"
 #include <QAction>
 #include <QPaintEvent>
@@ -8,6 +7,7 @@
 #include <QPropertyAnimation>
 #include <QStyleOptionButton>
 #include <QtSvg/QSvgRenderer>
+#include <albert/util.h>
 
 
 SettingsButton::SettingsButton(QWidget *parent) : QPushButton(parent)
@@ -26,9 +26,8 @@ SettingsButton::SettingsButton(QWidget *parent) : QPushButton(parent)
 
     auto *action = new QAction("Settings", this);
     action->setShortcuts({QKeySequence("Ctrl+,"), QKeySequence("Alt+,")});
-
     connect(action, &QAction::triggered, this, [](){ albert::showSettings(); });
-    connect(this, &QPushButton::clicked, this, [](){ albert::showSettings(); });
+    connect(this, &QPushButton::clicked, action, &QAction::trigger);
 }
 
 SettingsButton::~SettingsButton() = default;

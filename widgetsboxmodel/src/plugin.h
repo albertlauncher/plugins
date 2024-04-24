@@ -1,28 +1,23 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
-#include "albert/extension/frontend/frontend.h"
-#include "albert/plugin.h"
+
 #include "themesqueryhandler.h"
 #include "window.h"
 #include <QString>
-#include <map>
+#include <albert/frontend.h>
+#include <albert/plugininstance.h>
 
 class Plugin : public albert::Frontend,
                public albert::PluginInstance
 {
-    Q_OBJECT
     ALBERT_PLUGIN
 
 public:
 
     Plugin();
+    ~Plugin();
 
-    // albert::Plugin
-    void initialize(albert::ExtensionRegistry&, std::map<QString,PluginInstance*>) override;
-    void finalize(albert::ExtensionRegistry &registry) override;
-
-    // albert::Frontend
     bool isVisible() const override;
     void setVisible(bool visible) override;
     QString input() const override;

@@ -1,9 +1,9 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
-#include "albert/extensionregistry.h"
-#include "albert/logging.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
+#include <albert/extensionregistry.h>
+#include <albert/logging.h>
 ALBERT_LOGGING_CATEGORY("wbm")
 using namespace albert;
 using namespace std;
@@ -13,6 +13,12 @@ Plugin::Plugin() : window(this), themes_query_handler(&window)
 {
     connect(&window, &Window::inputChanged, this, &Plugin::inputChanged);
     connect(&window, &Window::visibleChanged, this, &Plugin::visibleChanged);
+    registry().registerExtension(&themes_query_handler);
+}
+
+Plugin::~Plugin()
+{
+    registry().deregisterExtension(&themes_query_handler);
 }
 
 QString Plugin::input() const
@@ -107,9 +113,3 @@ unsigned long long Plugin::winId() const
 
 void Plugin::setQuery(Query *q)
 { window.setQuery(q); }
-
-void Plugin::initialize(ExtensionRegistry &registry, map<QString,PluginInstance*>)
-{ registry.registerExtension(&themes_query_handler); }
-
-void Plugin::finalize(ExtensionRegistry &registry)
-{ registry.deregisterExtension(&themes_query_handler); }

@@ -1,7 +1,8 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
-#include "albert/extension/queryhandler/triggerqueryhandler.h"
+
+#include <albert/triggerqueryhandler.h>
 class Window;
 
 class ThemesQueryHandler : public albert::TriggerQueryHandler
@@ -13,9 +14,8 @@ public:
     QString id() const override;
     QString name() const override;
     QString description() const override;
-    QString synopsis() const override;
     QString defaultTrigger() const override;
-    void handleTriggerQuery(TriggerQuery*) const override;
+    void handleTriggerQuery(albert::Query*) override;
 
 private:
 

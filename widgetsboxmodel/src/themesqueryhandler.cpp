@@ -1,9 +1,9 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/extension/queryhandler/standarditem.h"
-#include "window.h"
 #include "themesqueryhandler.h"
+#include "window.h"
+#include <albert/standarditem.h>
+#include <albert/util.h>
 using namespace albert;
 using namespace std;
 
@@ -19,12 +19,9 @@ QString ThemesQueryHandler::name() const
 QString ThemesQueryHandler::description() const
 { return Window::tr("Switch themes"); }
 
-QString ThemesQueryHandler::synopsis() const
-{ return Window::tr("<theme name>"); }
-
 QString ThemesQueryHandler::defaultTrigger() const { return "theme "; }
 
-void ThemesQueryHandler::handleTriggerQuery(TriggerQuery *query) const
+void ThemesQueryHandler::handleTriggerQuery(Query *query)
 {
     auto trimmed = query->string().trimmed();
     for (const auto &[name, path] : window->themes)

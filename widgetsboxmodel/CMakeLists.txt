@@ -1,16 +1,8 @@
-project(widgetsboxmodel VERSION 7.1)
+cmake_minimum_required(VERSION 3.16)
+find_package(Albert REQUIRED)
 
-find_package(Qt6 REQUIRED COMPONENTS Svg StateMachine)
+project(widgetsboxmodel VERSION 7.2)
 
-albert_plugin(
-    SOURCE_FILES
-        ${PROJECT_NAME}.qrc
-        src/*.cpp
-        src/*.h
-        src/*.ui
-    PRIVATE_LINK_LIBRARIES
-        Qt6::StateMachine
-        Qt6::Svg
-)
+albert_plugin(QT Widgets StateMachine Svg)
 
 install(DIRECTORY "themes/" DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/${PROJECT_NAME}/themes")

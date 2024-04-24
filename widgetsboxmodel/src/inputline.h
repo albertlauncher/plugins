@@ -1,8 +1,9 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
-#include "albert/extension/frontend/inputhistory.h"
+
 #include <QLineEdit>
+#include <albert/inputhistory.h>
 
 // Input method problems: https://bugreports.qt.io/browse/QTBUG-106516
 class InputLine : public QLineEdit

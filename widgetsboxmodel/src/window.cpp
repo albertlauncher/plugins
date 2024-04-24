@@ -1,10 +1,6 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #include "actiondelegate.h"
-#include "albert/albert.h"
-#include "albert/extension/frontend/itemroles.h"
-#include "albert/extension/frontend/query.h"
-#include "albert/logging.h"
 #include "inputline.h"
 #include "itemdelegate.h"
 #include "plugin.h"
@@ -21,6 +17,7 @@
 #include <QKeyEventTransition>
 #include <QMessageBox>
 #include <QMouseEvent>
+#include <QPixmapCache>
 #include <QPropertyAnimation>
 #include <QSettings>
 #include <QSignalBlocker>
@@ -30,6 +27,11 @@
 #include <QStringListModel>
 #include <QStyleFactory>
 #include <QTimer>
+#include <albert/logging.h>
+#include <albert/pluginloader.h>
+#include <albert/pluginmetadata.h>
+#include <albert/query.h>
+#include <albert/util.h>
 using namespace albert;
 using namespace std;
 
@@ -130,7 +132,7 @@ static map<QString, QString> findThemes(const QString &plugin_id)
 }
 
 Window::Window(Plugin *p):
-    themes(findThemes(p->id())),
+    themes(findThemes(p->loader().metaData().id)),
     plugin(p),
     frame(new QFrame(this)),
     input_line(new InputLine(frame)),
@@ -690,7 +692,7 @@ bool Window::event(QEvent *event)
         else
             input_line->selectAll();
 
-        item_delegate->clearIconCache();
+        QPixmapCache::clear();
 
         emit visibleChanged(false);
     }

@@ -1,14 +1,14 @@
 // Copyright (c) 2014-2024 Manuel Schneider
 
-#include "albert/extension/frontend/itemroles.h"
 #include "itemdelegate.h"
 #include <QPainter>
+#include <QPixmapCache>
+#include <albert/frontend.h>
+#include <albert/iconprovider.h>
 using namespace albert;
 
 
 ItemDelegate::ItemDelegate(QObject *parent) : QStyledItemDelegate(parent) {}
-
-void ItemDelegate::clearIconCache() { icon_provider.clearCache(); }
 
 void ItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options, const QModelIndex &index) const
 {
@@ -43,15 +43,26 @@ void ItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options,
     option.widget->style()->drawPrimitive(QStyle::PE_PanelItemViewItem, &option, painter, option.widget);
 
     // Draw icon
-    QRect iconRect = QRect(
+    QRect icon_rect = QRect(
         QPoint((option.rect.height() - option.decorationSize.width())/2 + option.rect.x(),
                (option.rect.height() - option.decorationSize.height())/2 + option.rect.y()),
         option.decorationSize);
 
+    QPixmap pm;
     auto icon_urls = index.data(static_cast<int>(albert::ItemRoles::IconUrlsRole)).value<QStringList>();
-    QSize size;
-    auto pm = icon_provider.getPixmap(icon_urls, &size, option.decorationSize * option.widget->devicePixelRatioF()); // yes, needed
-    painter->drawPixmap(iconRect, pm);
+    auto icon_size = option.decorationSize.height();
+    const auto icon_cache_key = QString("albert$%1%2x%3")
+                                    .arg(icon_urls.join(""))
+                                    .arg(icon_size)
+                                    .arg(option.widget->devicePixelRatioF());
+    if (!QPixmapCache::find(icon_cache_key, &pm))
+    {
+        pm = pixmapFromUrls(icon_urls,
+                            QSize(icon_size, icon_size)
+                                * option.widget->devicePixelRatioF());  // yes, needed
+        QPixmapCache::insert(icon_cache_key, pm);
+    }
+    painter->drawPixmap(icon_rect, pm);
 
     // Calculate content rects
     QFont font1 = option.font;
