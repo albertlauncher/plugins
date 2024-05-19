@@ -1,9 +1,6 @@
-project(datetime VERSION 5.0)
+cmake_minimum_required(VERSION 3.16)
+find_package(Albert REQUIRED)
 
-albert_plugin(
-    SOURCE_FILES
-        ${PROJECT_NAME}.qrc
-        src/configwidget.ui
-        src/plugin.cpp
-        src/plugin.h
-)
+project(datetime VERSION 5.1)
+
+albert_plugin(QT Widgets)
