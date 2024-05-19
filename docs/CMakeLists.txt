@@ -1,19 +1,15 @@
-#if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if(NOT APPLE)
 
-project(docs VERSION 6.4)
+    cmake_minimum_required(VERSION 3.16)
+    find_package(Albert REQUIRED)
 
-find_package(Qt6 REQUIRED COMPONENTS Sql Network)
-find_package(LibArchive REQUIRED)
+    project(docs VERSION 6.5)
 
-albert_plugin(
-    SOURCE_FILES
-        src/configwidget.ui
-        src/plugin.cpp
-        src/plugin.h
-    PRIVATE_LINK_LIBRARIES
-        Qt6::Sql
-        Qt6::Network
-        LibArchive::LibArchive
-)
+    find_package(LibArchive REQUIRED)
 
-#endif()
+    albert_plugin(
+        LINK PRIVATE LibArchive::LibArchive
+        QT Network Sql Widgets
+    )
+
+endif()

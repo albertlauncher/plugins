@@ -1,8 +1,5 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/logging.h"
-#include "albert/query/item.h"
 #include "plugin.h"
 #include <QDir>
 #include <QDirIterator>
@@ -22,6 +19,8 @@
 #include <QSqlQuery>
 #include <QTemporaryDir>
 #include <QXmlStreamReader>
+#include <albert/logging.h>
+#include <albert/util.h>
 #include <archive.h>
 #include <archive_entry.h>
 ALBERT_LOGGING_CATEGORY("docs")
@@ -123,18 +122,15 @@ public:
     QString inputActionText() const override
     { return name; }
 
-    std::vector<Action> actions() const override
+    vector<Action> actions() const override
     {
-        static const auto tr = QCoreApplication::translate("DocumentationItem", "Open documentation");
         return {
             {
-                id(),
-                tr,
-                [this](){
-                    openUrl(QString("file://%1/Contents/Resources/Documents/%2").arg(docset->path, path));
+                id(), Plugin::tr("Open documentation"), [this] {
+                    openUrl(QString("file://%1/Contents/Resources/Documents/%2")
+                            .arg(docset->path, path));
                 }
-            }
-        };
+        }};
     }
 };
 
@@ -144,10 +140,12 @@ Plugin::Plugin()
     if(!QSqlDatabase::isDriverAvailable("QSQLITE"))
         throw "QSQLITE driver unavailable";
 
-    if (!dataDir().mkpath(docsets_dir))
+    auto data_dir = createOrThrow(dataLocation());
+    if (!data_dir.mkpath(docsets_dir))
         throw "Unable to create docsets dir";
 
-    if (!cacheDir().mkpath("icons"))
+    auto cache_dir = createOrThrow(cacheLocation());
+    if (!cache_dir.mkpath("icons"))
         throw "Unable to create icons dir";
 
     connect(this, &Plugin::docsetsChanged, this, &Plugin::updateIndexItems);
@@ -185,14 +183,14 @@ void Plugin::updateDocsetList()
 {
     static const char *url = "https://api.zealdocs.org/v1/docsets";
     debug(tr("Downloading docset list from '%1'").arg(url));
-    QNetworkReply *reply = albert::networkManager()->get(QNetworkRequest(QUrl{url}));
+    QNetworkReply *reply = albert::network()->get(QNetworkRequest(QUrl{url}));
     reply->setParent(this); // For the case the plugin is deleted before the reply is finished
 
     connect(reply, &QNetworkReply::finished, this, [this, reply](){
         reply->deleteLater();
 
         QByteArray replyData;
-        QFile cachedDocsetListFile(cacheDir().filePath("zeal_docset_list.json"));
+        QFile cachedDocsetListFile(QDir(cacheLocation()).filePath("zeal_docset_list.json"));
 
         if (reply->error() != QNetworkReply::NoError) {
             if (cachedDocsetListFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -205,8 +203,6 @@ void Plugin::updateDocsetList()
 
         docsets_.clear();
 
-        auto data_dir = dataDir();
-        auto cache_dir = cacheDir();
         QJsonParseError parse_error;
         const QJsonDocument json_document = QJsonDocument::fromJson(replyData, &parse_error);
         if (parse_error.error == QJsonParseError::NoError) {
@@ -216,7 +212,7 @@ void Plugin::updateDocsetList()
                 auto source = jsonObject[QStringLiteral("sourceId")].toString();
                 auto identifier = jsonObject[QStringLiteral("name")].toString();
                 auto title = jsonObject[QStringLiteral("title")].toString();
-                auto icon_path = cache_dir.filePath(QString("icons/%1.png").arg(identifier));
+                auto icon_path = QDir(cacheLocation()).filePath(QString("icons/%1.png").arg(identifier));
 //                auto path = data_dir->filePath(QString("%1/%2").arg(docsets_dir, identifier));
 
                 auto rawBase64 = jsonObject[QStringLiteral("icon2x")].toString().toLocal8Bit();
@@ -224,7 +220,7 @@ void Plugin::updateDocsetList()
 
                 auto [it, success] = docsets_.emplace(identifier, Docset{source, identifier, title, icon_path});
 
-                QDir dir(QString("%1/%2.docset").arg(data_dir.filePath(docsets_dir), identifier));
+                QDir dir(QString("%1/%2.docset").arg(QDir(dataLocation()).filePath(docsets_dir), identifier));
                 if (dir.exists())
                     it->second.path = dir.path();
             }
@@ -253,7 +249,7 @@ void Plugin::downloadDocset(const QString &name)
     static const char *docsets_url_template = "https://go.zealdocs.org/d/%1/%2/latest";
     auto url = QUrl{QString(docsets_url_template).arg(docset->source_id.chopped(5), docset->identifier)};
     debug(tr("Downloading docset from '%1'").arg(url.toString()));
-    download_ = albert::networkManager()->get(QNetworkRequest(url));
+    download_ = albert::network()->get(QNetworkRequest(url));
 
     connect(download_, &QNetworkReply::downloadProgress,
             this, [this](qint64 bytesReceived, qint64 bytesTotal){
@@ -264,8 +260,6 @@ void Plugin::downloadDocset(const QString &name)
 
     connect(download_, &QNetworkReply::finished, this, [this, docset]()
     {
-        auto cache_dir = cacheDir();
-
         if (download_)  // else aborted
         {
             auto tmp_dir = QTemporaryDir();
@@ -279,13 +273,13 @@ void Plugin::downloadDocset(const QString &name)
                     file.close();
 
                     debug(tr("Extracting file '%1'").arg(file.fileName()));
-                    if (QString err = extract(file.fileName(), cache_dir.path()); err.isEmpty())
+                    if (QString err = extract(file.fileName(), cacheLocation()); err.isEmpty())
                     {
-                        debug(tr("Searching docset in '%1'").arg(cache_dir.path()));
-                        if (QDirIterator it(cache_dir.path(), {"*.docset"}, QDir::Dirs, QDirIterator::Subdirectories); it.hasNext())
+                        debug(tr("Searching docset in '%1'").arg(cacheLocation()));
+                        if (QDirIterator it(cacheLocation(), {"*.docset"}, QDir::Dirs, QDirIterator::Subdirectories); it.hasNext())
                         {
                             auto src = it.next();
-                            auto dst = QString("%1/%2.docset").arg(dataDir().filePath(docsets_dir), docset->identifier);
+                            auto dst = QString("%1/%2.docset").arg(QDir(dataLocation()).filePath(docsets_dir), docset->identifier);
                             debug(tr("Renaming '%1' to '%2'").arg(src, dst));
                             if (QFile::rename(src, dst))
                             {
@@ -298,7 +292,7 @@ void Plugin::downloadDocset(const QString &name)
                                 error(tr("Failed renaming dir '%1' to '%2'.").arg(src, dst));
                         }
                         else
-                            error(tr("Failed finding extracted docset in %1").arg(cache_dir.path()));
+                            error(tr("Failed finding extracted docset in %1").arg(cacheLocation()));
                     }
                     else
                         error(tr("Extracting docset failed: '%1' (%2)").arg(file.fileName(), err));
