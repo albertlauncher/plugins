@@ -1,0 +1,10 @@
+{
+    "authors": ["@manuelschneid3r"],
+    "credits": "Freepik, for the icon",
+    "description": "Date and time for time zones",
+    "description[de]": "Datum- und Uhrzeit für Zeitzonen",
+    "license": "MIT",
+    "name": "Time zones",
+    "name[de]": "Zeitzonen",
+    "url": "https://github.com/albertlauncher/plugins/tree/main/timezones",
+}

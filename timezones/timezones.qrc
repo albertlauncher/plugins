@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="timezones">resources/timezones.png</file>
+    </qresource>
+</RCC>
