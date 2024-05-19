@@ -75,9 +75,13 @@ Plugin::~Plugin()
         }
 
         QFile file(dataDir().filePath(HISTORY_FILE_NAME));
+
+        if (!file.setPermissions(QFile::ReadOwner | QFile::WriteOwner))
+            WARN << "Failed setting permissions on clipboard history.";
+
         if (file.open(QIODevice::WriteOnly))
         {
-            DEBG << "Wrinting clipboard history to" << file.fileName();
+            DEBG << "Writing clipboard history to" << file.fileName();
             file.write(QJsonDocument(array).toJson());
             file.close();
         }
