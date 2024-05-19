@@ -1,0 +1,10 @@
+{
+    "authors": ["@manuelschneid3r"],
+    "credits": "Freepik, for the icon",
+    "description": "Set timers",
+    "description[de]": "Stelle Timer",
+    "license": "MIT",
+    "name": "Timers",
+    "name[de]": "Timer",
+    "url": "https://github.com/albertlauncher/plugins/tree/main/timer",
+}
