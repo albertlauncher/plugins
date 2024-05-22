@@ -1,0 +1,10 @@
+{
+    "authors": ["@manuelschneid3r"],
+    "credits": "exprTk MIT (Arash Partow)",
+    "description": "Evaluate math expressions",
+    "description[de]": "Werte mathematische Ausdrücke aus",
+    "license": "MIT",
+    "name": "Calculator",
+    "name[de]": "Rechner",
+    "url": "https://github.com/albertlauncher/plugins/tree/main/calculator_exprtk",
+}
