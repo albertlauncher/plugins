@@ -1,7 +1,5 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/util/standarditem.h"
 #include "plugin.h"
 #include <QCheckBox>
 #include <QGridLayout>
@@ -10,6 +8,8 @@
 #include <QSettings>
 #include <QSpacerItem>
 #include <QWidget>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 using namespace albert;
 using namespace std;
 
@@ -60,7 +60,16 @@ static const QStringList icon_urls[] = {
 
 static QString defaultCommand(SupportedCommands command)
 {
-#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+#if defined(Q_OS_MAC)
+    switch (command) {
+        case LOCK:      return R"R(pmset displaysleepnow)R";
+        case LOGOUT:    return R"R(osascript -e 'tell app "System Events" to  «event aevtrlgo»')R";
+        case SUSPEND:   return R"R(osascript -e 'tell app "System Events" to sleep')R";
+        case HIBERNATE: throw runtime_error("HIBERNATE not supported on MacOS");
+        case REBOOT:    return R"R(osascript -e 'tell app "System Events" to restart')R";
+        case POWEROFF:  return R"R(osascript -e 'tell app "System Events" to shut down')R";
+    }
+#elif defined(Q_OS_UNIX)
     for (const QString &de : QString(::getenv("XDG_CURRENT_DESKTOP")).split(":")) {
 
         if (de == "Unity" || de == "Pantheon" || de == "GNOME")
@@ -130,16 +139,7 @@ static QString defaultCommand(SupportedCommands command)
     case HIBERNATE: return "systemctl hibernate -i";
     case REBOOT:    return "notify-send \"Error.\" \"Reboot command is not set.\" --icon=system-reboot";
     case POWEROFF:  return "notify-send \"Error.\" \"Poweroff command is not set.\" --icon=system-shutdown";
-    }
-#elif defined(Q_OS_MAC)
-    switch (command) {
-        case LOCK:      return R"R(pmset displaysleepnow)R";
-        case LOGOUT:    return R"R(osascript -e 'tell app "System Events" to  «event aevtrlgo»')R";
-        case SUSPEND:   return R"R(osascript -e 'tell app "System Events" to sleep')R";
-        case HIBERNATE: throw runtime_error("HIBERNATE not supported on MacOS");
-        case REBOOT:    return R"R(osascript -e 'tell app "System Events" to restart')R";
-        case POWEROFF:  return R"R(osascript -e 'tell app "System Events" to shut down')R";
-    }
+    } 
 #endif
     return {};
 }
@@ -259,13 +259,14 @@ void Plugin::updateIndexItems()
 
     for (SupportedCommands action : {
              LOCK,
-                 LOGOUT,
-                 SUSPEND,
+             LOGOUT,
+             SUSPEND,
 #if not defined(Q_OS_MAC)
-                 HIBERNATE,
+             HIBERNATE,
 #endif
-                 REBOOT,
-                 POWEROFF}){
+             REBOOT,
+             POWEROFF
+        }){
 
         // skip if disabled
         if (!s->value(config_keys_enabled[action], true).toBool())
