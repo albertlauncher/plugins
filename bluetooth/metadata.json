@@ -1,0 +1,8 @@
+{
+    "authors": ["@manuelschneid3r"],
+    "description": "Connect Bluetooth devices",
+    "description[de]": "Bluetooth-Geräte verbinden",
+    "license": "MIT",
+    "name": "Bluetooth",
+    "url": "https://github.com/albertlauncher/plugins/tree/main/bluetooth",
+}
