@@ -1,7 +1,7 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/util/standarditem.h"
+#include <albert/util.h>
+#include <albert/standarditem.h>
 #include "plugin.h"
 #include <QCoreApplication>
 #include <QCryptographicHash>
