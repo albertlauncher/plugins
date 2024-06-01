@@ -1,0 +1,8 @@
+{
+    "authors": ["@manuelschneid3r"],
+    "credits": "Flatwoken Icon (CC BY-SA 4.0 DEED) by Alessandro Roncone",
+    "description": "Run executables in $PATH",
+    "license": "MIT",
+    "name": "PATH",
+    "url": "https://github.com/albertlauncher/plugins/tree/main/PATH"
+}

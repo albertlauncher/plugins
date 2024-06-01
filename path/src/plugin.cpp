@@ -1,11 +1,12 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/util/standarditem.h"
 #include "plugin.h"
 #include <QDirIterator>
 #include <QFileSystemWatcher>
 #include <QStringList>
+#include <albert/extensionregistry.h>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 #include <functional>
 ALBERT_LOGGING_CATEGORY("terminal")
 using namespace albert;
@@ -13,7 +14,7 @@ using namespace std;
 
 Plugin::Plugin()
 {
-    indexer.parallel = [](const bool &abort){
+    indexer_.parallel = [](const bool &abort){
         set<QString> result;
         QStringList paths = QString(::getenv("PATH")).split(':', Qt::SkipEmptyParts);
         DEBG << "Indexing" << paths.join(", ");
@@ -27,27 +28,28 @@ Plugin::Plugin()
         }
         return result;
     };
-    indexer.finish = [this](set<QString> && res){
+
+    indexer_.finish = [this](set<QString> && res){
         INFO << QStringLiteral("Indexed %1 executables [%2 ms]")
-                    .arg(res.size()).arg(indexer.runtime.count());
-        index = ::move(res);
+                    .arg(res.size()).arg(indexer_.runtime.count());
+        index_ = ::move(res);
     };
     
-    watcher.addPaths(QString(::getenv("PATH")).split(':', Qt::SkipEmptyParts));
-    connect(&watcher, &QFileSystemWatcher::directoryChanged, this, [this](){ indexer.run(); });
+    watcher_.addPaths(QString(::getenv("PATH")).split(':', Qt::SkipEmptyParts));
+    connect(&watcher_, &QFileSystemWatcher::directoryChanged, this, [this](){ indexer_.run(); });
 
-    indexer.run();
+    indexer_.run();
 }
 
-static vector<Action> buildActions(const QString &commandline)
+vector<Action> Plugin::buildActions(const QString &commandline)
 {
-    static const auto tr_r = Plugin::tr("Run");
-    static const auto tr_rc = Plugin::tr("Run and close on exit");
-    static const auto tr_rb = Plugin::tr("Run in background (without terminal)");
+    static const auto tr_r = tr("Run in terminal");
+    static const auto tr_rc = tr("Run in terminal and close on exit");
+    static const auto tr_rb = tr("Run in background (without terminal)");
     return {
         {
             "r", tr_r,
-            [=]() { runTerminal(commandline); }
+            [=]{ runTerminal(commandline); }
         },
         {
             "rc", tr_rc,
@@ -72,14 +74,14 @@ void Plugin::handleTriggerQuery(Query *query)
     QString potentialProgram = query->string().section(' ', 0, 0, QString::SectionSkipEmpty);
     QString remainder = query->string().section(' ', 1, -1, QString::SectionSkipEmpty);
 
-    static const auto tr_rcmd = tr("Run '%2'");
-    static const QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":terminal"};
+    static const auto tr_rcmd = tr("Run '%1'");
+    static const QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":path"};
 
     QString commonPrefix;
-    if (auto it = lower_bound(index.begin(), index.end(), potentialProgram); it != index.end()){
+    if (auto it = lower_bound(index_.begin(), index_.end(), potentialProgram); it != index_.end()){
         commonPrefix = *it;
 
-        while (it != index.end() && it->startsWith(potentialProgram)) {
+        while (it != index_.end() && it->startsWith(potentialProgram)) {
 
             // Update common prefix
             auto mismatchindexes = mismatch(it->begin() + potentialProgram.size() - 1, it->end(),
@@ -123,3 +125,4 @@ void Plugin::handleTriggerQuery(Query *query)
 
     query->add(results);
 }
+

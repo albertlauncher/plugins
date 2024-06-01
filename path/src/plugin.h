@@ -1,25 +1,32 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
 #pragma once
-#include "albert/query/triggerqueryhandler.h"
-#include "albert/util/backgroundexecutor.h"
-#include "albert/util/extensionplugin.h"
+
 #include <QFileSystemWatcher>
+#include <albert/backgroundexecutor.h>
+#include <albert/extensionplugin.h>
+#include <albert/triggerqueryhandler.h>
 #include <set>
+namespace albert { class Action; }
 
 class Plugin : public albert::ExtensionPlugin,
                public albert::TriggerQueryHandler
 {
-    Q_OBJECT ALBERT_PLUGIN
+    ALBERT_PLUGIN
 
 public:
+
     Plugin();
     QString synopsis() const override { return "<command> [params]"; }
     QString defaultTrigger() const override { return ">"; }
     void handleTriggerQuery(albert::Query*) override;
 
 private:
-    QFileSystemWatcher watcher;
-    std::set<QString> index;
-    albert::BackgroundExecutor<std::set<QString>> indexer;
+
+    std::vector<albert::Action> buildActions(const QString &commandline);
+
+    QFileSystemWatcher watcher_;
+    std::set<QString> index_;
+    albert::BackgroundExecutor<std::set<QString>> indexer_;
+
 };
