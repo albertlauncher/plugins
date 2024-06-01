@@ -1,9 +1,10 @@
 // Copyright (c) 2024 Manuel Schneider
 
 #pragma once
-#include "albert/extension.h"
-#include "albert/export.h"
+
 #include <QString>
+#include <albert/export.h>
+#include <albert/extension.h>
 class QWidget;
 
 class ALBERT_EXPORT Snippets : virtual public albert::Extension

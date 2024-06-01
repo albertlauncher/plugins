@@ -1,14 +1,12 @@
-project(snippets VERSION 5.2)
+cmake_minimum_required(VERSION 3.16)
+find_package(Albert REQUIRED)
+
+project(snippets VERSION 5.3)
 
 albert_plugin(
-    SOURCE_FILES
-        ${PROJECT_NAME}.qrc
-        src/configwidget.ui
-        src/plugin.cpp
-        src/plugin.h
-        include/snippets.h
-    PUBLIC_INCLUDE_DIRECTORIES
-        include
-    PRIVATE_LINK_LIBRARIES
-        Qt6::Concurrent
+    INCLUDE
+        INTERFACE include
+        PRIVATE include/albert/snippets
+    QT
+        Concurrent Widgets
 )

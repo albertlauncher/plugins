@@ -1,14 +1,13 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
-#include "albert/albert.h"
-#include "albert/query/item.h"
-#include "albert/util/standarditem.h"
 #include "plugin.h"
 #include "ui_configwidget.h"
 #include <QFileSystemModel>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QTextStream>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 #include <memory>
 ALBERT_LOGGING_CATEGORY("snippets")
 using namespace albert;
@@ -17,8 +16,7 @@ using namespace std;
 struct SnippetItem : Item
 {
     SnippetItem(const QFileInfo& fi, Plugin *p)
-        : file_base_name_(fi.completeBaseName()), plugin_(p)
-    {}
+        : file_base_name_(fi.completeBaseName()), plugin_(p) {}
 
     QString id() const override
     { return file_base_name_; }
@@ -47,7 +45,7 @@ struct SnippetItem : Item
             actions.emplace_back(
                 "cp", tr_cp,
                 [this]{
-                    QFile f(QDir(plugin_->snippets_path).filePath(file_base_name_+".txt"));
+                    QFile f(QDir(plugin_->configLocation()).filePath(file_base_name_+".txt"));
                     f.open(QIODevice::ReadOnly);
                     setClipboardTextAndPaste(QTextStream(&f).readAll());
                 }
@@ -56,7 +54,7 @@ struct SnippetItem : Item
         actions.emplace_back(
             "c", tr_c,
             [this]{
-                QFile f(QDir(plugin_->snippets_path).filePath(file_base_name_+".txt"));
+                QFile f(QDir(plugin_->configLocation()).filePath(file_base_name_+".txt"));
                 f.open(QIODevice::ReadOnly);
                 setClipboardText(QTextStream(&f).readAll());
             }
@@ -65,7 +63,7 @@ struct SnippetItem : Item
         actions.emplace_back(
             "o", tr_e,
             [this]{
-                auto path = QDir(plugin_->snippets_path).filePath(file_base_name_+".txt");
+                auto path = QDir(plugin_->configLocation()).filePath(file_base_name_+".txt");
                 openUrl(QUrl::fromLocalFile(path));
             }
         );
@@ -83,20 +81,16 @@ struct SnippetItem : Item
 };
 
 
-Plugin::Plugin(): snippets_path(configDir().path())
+Plugin::Plugin()
 {
-    // Todo remove in future
-    QDir snippets_dir(snippets_path);
-    for(const auto &fn : snippets_dir.entryList(QDir::Files))
-        if (!fn.endsWith(".txt"))
-            snippets_dir.rename(fn, fn + ".txt");
+    createOrThrow(configLocation());
 
-    fs_watcher.addPath(snippets_path);
+    fs_watcher.addPath(configLocation());
     connect(&fs_watcher, &QFileSystemWatcher::directoryChanged, this, [this](){updateIndexItems();});
 
     indexer.parallel = [this](const bool &abort){
         vector<IndexItem> r;
-        for (const auto &f : configDir().entryInfoList({"*.txt"}, QDir::Files)){
+        for (const auto &f : QDir(configLocation()).entryInfoList({"*.txt"}, QDir::Files)){
             if (abort) return r;
             r.emplace_back(make_shared<SnippetItem>(f, this), f.fileName());
         }
@@ -157,7 +151,7 @@ void Plugin::addSnippet(const QString &text, QWidget *parent) const
             continue;
         }
 
-        QFile file(QDir(snippets_path).filePath(name) + ".txt");
+        QFile file(QDir(configLocation()).filePath(name) + ".txt");
         if (file.exists())
         {
             QMessageBox::warning(parent, qApp->applicationDisplayName(),
@@ -184,7 +178,7 @@ void Plugin::addSnippet(const QString &text, QWidget *parent) const
 
 void Plugin::removeSnippet(const QString &file_name) const
 {
-    auto path = QDir(snippets_path).filePath(file_name);
+    auto path = QDir(configLocation()).filePath(file_name);
     if (!QFile::exists(path))
         WARN << "Path to remove does not exist:" << path;
     else if (QMessageBox::question(nullptr, qApp->applicationName(),
@@ -216,16 +210,16 @@ QWidget *Plugin::buildConfigWidget()
     auto *model = new RedIfNotTxtFileSystemModel(ui.listView);
     model->setFilter(QDir::Files);
     model->setReadOnly(false);
-    model->setRootPath(snippets_path);
+    model->setRootPath(configLocation());
 
     ui.listView->setModel(model);
-    ui.listView->setRootIndex(model->index(snippets_path));
+    ui.listView->setRootIndex(model->index(configLocation()));
 
     connect(ui.listView, &QListView::activated, this,
             [model](const QModelIndex &index){ openUrl(QUrl::fromLocalFile(model->filePath(index))); });
 
     connect(ui.pushButton_opendir, &QPushButton::clicked, this,
-            [this](){ openUrl(QUrl::fromLocalFile(snippets_path)); });
+            [this](){ openUrl(QUrl::fromLocalFile(configLocation())); });
 
     connect(ui.pushButton_add, &QPushButton::clicked,
             this, [this, w=w](){ addSnippet({}, w); });
