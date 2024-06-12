@@ -1,19 +1,25 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
+#include "primitives.h"
 #include "resizinglist.h"
+#include "style.h"
 #include <QKeyEvent>
+#include <QPixmapCache>
+#include <albert/logging.h>
 
 ResizingList::ResizingList(QWidget *parent) : QListView(parent), maxItems_(5)
 {
+    setEditTriggers(QAbstractItemView::NoEditTriggers);
     setFrameShape(QFrame::NoFrame);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-//    setLayoutMode(LayoutMode::Batched);
-    setUniformItemSizes(true);
-    connect(this, &ResizingList::clicked, this, &ResizingList::activated, Qt::QueuedConnection);
-    hide();
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    viewport()->setAutoFillBackground(false);
+    connect(this, &ResizingList::clicked, this,
+            &ResizingList::activated, Qt::QueuedConnection);
 }
 
-uint ResizingList::maxItems() const { return maxItems_; }
+uint ResizingList::maxItems() const
+{ return maxItems_; }
 
 void ResizingList::setMaxItems(uint maxItems)
 {
@@ -25,7 +31,10 @@ QSize ResizingList::sizeHint() const
 {
     if (model() == nullptr)
         return {};
-    return {width(), contentsMargins().bottom() + contentsMargins().top() + sizeHintForRow(0) * std::min(static_cast<int>(maxItems_), model()->rowCount(rootIndex()))};
+    auto count = std::min(static_cast<int>(maxItems_), model()->rowCount(rootIndex()));
+    return {width(), contentsMargins().bottom()
+                     + contentsMargins().top()
+                     + count * (sizeHintForRow(0) + 2 * spacing())};
 }
 
 QSize ResizingList::minimumSizeHint() const { return {0,0}; }
@@ -43,6 +52,45 @@ void ResizingList::setModel(QAbstractItemModel *m)
 
     QAbstractItemView::setModel(m);
     updateGeometry();
+}
+
+void ResizingList::setStyle(const Style *s)
+{
+    style = s;
+
+    // auto p = s->item_view_padding + s->item_view_border_width;
+   //setViewportMargins(p, p, p, p);
+    // setContentsMargins(p, p, p, p);
+
+    update();
+}
+
+void ResizingList::paintEvent(QPaintEvent *event)
+{
+    // Draw Frame if necessary
+    if (!(style->item_view_background_brush == Qt::NoBrush
+          && style->item_view_border_brush == Qt::NoBrush))
+    {
+        QPixmap pm;
+        if (const auto cache_key = QStringLiteral("_ItemViewFrame_w%1_h%2")
+                                       .arg(width()).arg(height());
+            !QPixmapCache::find(cache_key, &pm))
+        {
+            auto dpr = devicePixelRatioF();
+            pm = pixelPerfectRoundedRect(size() * dpr,
+                                         style->item_view_background_brush,
+                                         style->item_view_border_radius * dpr,
+                                         style->item_view_border_brush,
+                                         style->item_view_border_width * dpr);
+            pm.setDevicePixelRatio(dpr);
+            // QPixmapCache::insert(cache_key, pm);
+        }
+
+        QPainter p(viewport());
+        p.drawPixmap(contentsRect(), pm);
+    }
+
+    QListView::paintEvent(event);
 }
 
 bool ResizingList::eventFilter(QObject*, QEvent *event)

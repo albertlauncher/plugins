@@ -18,6 +18,8 @@ public:
     Plugin();
     ~Plugin();
 
+    void openStyleEditor();
+
     bool isVisible() const override;
     void setVisible(bool visible) override;
     QString input() const override;
@@ -32,3 +34,25 @@ private:
     ThemesQueryHandler themes_query_handler;
 
 };
+
+// class PluginT : public albert::Frontend,
+//                public albert::PluginInstance
+// {
+//     Q_OBJECT
+//     ALBERT_PLUGIN
+
+//     QWidget w;
+
+// public:
+//     // albert::Frontend
+//     bool isVisible() const override { return w.isVisible(); }
+//     void setVisible(bool visible) override { w.setVisible(visible); }
+//     QString input() const override { return ""; }
+//     void setInput(const QString&) override {}
+//     QWidget* createFrontendConfigWidget() override { return nullptr; }
+//     unsigned long long winId() const override { return w.winId(); }
+//     void setQuery(albert::Query *query) override {}
+
+// private:
+
+// };

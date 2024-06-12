@@ -11,7 +11,7 @@ using namespace std;
 ThemesQueryHandler::ThemesQueryHandler(Window *w) : window(w) {}
 
 QString ThemesQueryHandler::id() const
-{ return QStringLiteral("widgetboxmodel_themes"); }
+{ return QStringLiteral("widgetsboxmodel.themes"); }
 
 QString ThemesQueryHandler::name() const
 { return QStringLiteral("Themes"); }
@@ -24,8 +24,10 @@ QString ThemesQueryHandler::defaultTrigger() const { return "theme "; }
 void ThemesQueryHandler::handleTriggerQuery(Query *query)
 {
     auto trimmed = query->string().trimmed();
-    for (const auto &[name, path] : window->themes)
+    for (const auto &fi : window->findStyles())
     {
+        auto name = fi.baseName();
+        auto path = fi.canonicalFilePath();
         if (name.contains(trimmed, Qt::CaseInsensitive))
         {
             query->add(
@@ -33,19 +35,19 @@ void ThemesQueryHandler::handleTriggerQuery(Query *query)
                     QString("theme_%1").arg(name),
                     name,
                     path,
-                    {":app_icon"},
+                    {"gen:?text=🎨"},
                     {
                         {
                             "apply", Window::tr("Apply theme"),
-                            [w=window, n=name](){ w->applyThemeFile(w->themes.at(n)); }
+                            [=, this]{ window->setStyle(Style::read(path)); }
                         },
                         {
                             "setlight", Window::tr("Use in light mode"),
-                            [w=window, n=name](){ w->setLightTheme(n); }
+                            [=, this]{ window->set_light_style_file(path); }
                         },
                         {
                             "setdark", Window::tr("Use in dark mode"),
-                            [w=window, n=name](){ w->setDarkTheme(n); }
+                            [=, this]{ window->set_dark_style_file(path); }
                         },
                         {
                             "open", Window::tr("Open theme file"),

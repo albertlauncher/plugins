@@ -1,105 +1,88 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
+#include "actionslist.h"
+#include "frame.h"
+#include "inputframe.h"
+#include "inputline.h"
+#include "resizinglist.h"
+#include "resultslist.h"
+#include "roundedrect.h"
+#include "settingsbutton.h"
+#include "statemachine.h"
+#include "style.h"
+#include <QFileInfo>
+#include <QLabel>
+#include <QObject>
 #include <QPoint>
 #include <QWidget>
-namespace albert { class Query; }
-class ActionDelegate;
-class InputLine;
-class ItemDelegate;
-class QEvent;
+#include <albert/property.h>
 class Plugin;
-class QFrame;
-class ResizingList;
-class SettingsButton;
+namespace albert { class Query; }
 
 class Window : public QWidget
 {
     Q_OBJECT
+    friend class StateMachine;
 
 public:
 
     Window(Plugin *plugin);
+    ~Window();
 
     QString input() const;
     void setInput(const QString&);
     void setQuery(albert::Query *query);
+
+
+    // const QString &lightTheme() const;
+    // void setLightTheme(const QString& theme);
+
+    // const QString &darkTheme() const;
+    // void setDarkTheme(const QString& theme);
+
     void applyThemeFile(const QString& path);
 
-    // Properties
 
-    const std::map<QString, QString> themes;
 
-    const QString &lightTheme() const;
-    void setLightTheme(const QString& theme);
+    const Style &style();
+    void setStyle(const Style &style);
 
-    const QString &darkTheme() const;
-    void setDarkTheme(const QString& theme);
+    QFileInfoList findStyles() const;
 
-    bool alwaysOnTop() const;
-    void setAlwaysOnTop(bool alwaysOnTop);
-
-    bool clearOnHide() const;
-    void setClearOnHide(bool b = true);
-
-    bool displayClientShadow() const;
-    void setDisplayClientShadow(bool value);
-
-    bool displayScrollbar() const;
-    void setDisplayScrollbar(bool value);
-
-    bool displaySystemShadow() const;
-    void setDisplaySystemShadow(bool value);
-
-    bool followCursor() const;
-    void setFollowCursor(bool b = true);
-
-    bool hideOnFocusLoss() const;
-    void setHideOnFocusLoss(bool b = true);
-
-    bool historySearchEnabled() const;
-    void setHistorySearchEnabled(bool b = true);
-
-    uint maxResults() const;
-    void setMaxResults(uint max);
-
-    bool quitOnClose() const;
-    void setQuitOnClose(bool b = true);
-
-    bool showCentered() const;
-    void setShowCentered(bool b = true);
 
 private:
 
-    void init_statemachine();
+    std::unique_ptr<QSettings> settings() const;
     bool event(QEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+    void setStyle(const Style *s);
 
-    Plugin const * const plugin;
+    Plugin * const plugin;
 
-    QFrame *frame;
-    InputLine *input_line;
-    SettingsButton *settings_button;
-    ResizingList *results_list;
-    ResizingList *actions_list;
-    ItemDelegate *item_delegate;
-    ActionDelegate *action_delegate;
+    Frame window_frame;
+    RoundedRect input_frame;
+    InputLine input_line;
+    QLabel synopsis;
+    SettingsButton settings_button;
+    ResultsList results_list;
+    ActionsList actions_list;
 
-    QString theme_light_;
-    QString theme_dark_;
-    bool dark_mode_;
-    bool hideOnFocusLoss_{};
-    bool showCentered_{};
-    bool followCursor_{};
-    bool quitOnClose_{};
-    bool history_search_{};
+    Style style_;
+    QString light_style_file_;
+    QString dark_style_file_;
+
+    StateMachine state_machine;
 
     albert::Query *current_query;
 
-    enum class Mod {Shift, Meta, Contol, Alt};
-    Mod mod_command = Mod::Contol;
-    Mod mod_actions = Mod::Alt;
-    Mod mod_fallback = Mod::Meta;
+    Qt::KeyboardModifier command_mod = Qt::ControlModifier;
+    Qt::KeyboardModifier actions_mod = Qt::AltModifier;
+    Qt::KeyboardModifier fallback_mod = Qt::MetaModifier;
+    Qt::Key command_key= Qt::Key_Control;
+    Qt::Key actions_key= Qt::Key_Alt;
+    Qt::Key fallback_key= Qt::Key_Meta;
 
 signals:
 
@@ -108,5 +91,20 @@ signals:
     void queryChanged();
     void queryMatchesAdded();
     void queryFinished();
-};
 
+public:
+
+    // Properties
+    ALBERT_PROPERTY_GETSET(QString, light_style_file, {}, settings)
+    ALBERT_PROPERTY_GETSET(QString, dark_style_file, {}, settings)
+    ALBERT_PROPERTY_GETSET(bool, always_on_top, true, settings)
+    ALBERT_PROPERTY_MEMBER(bool, clear_on_hide, input_line.clear_on_hide, true, settings)
+    ALBERT_PROPERTY_GETSET(bool, display_client_shadow, true, settings)
+    ALBERT_PROPERTY_GETSET(bool, display_system_shadow, false, settings)
+    ALBERT_PROPERTY(bool, follow_cursor, true, settings)
+    ALBERT_PROPERTY(bool, hide_on_focus_loss, true, settings)
+    ALBERT_PROPERTY_MEMBER(bool, history_search, input_line.history_search, true, settings)
+    ALBERT_PROPERTY_GETSET(uint, max_results, 5, settings)
+    ALBERT_PROPERTY(bool, quit_on_close, false, settings)
+    ALBERT_PROPERTY(bool, show_centered, true, settings)
+};

@@ -2,24 +2,29 @@
 
 #pragma once
 #include <QListView>
-
+class Style;
 
 class ResizingList : public QListView
 {
 public:
 
-    ResizingList(QWidget *parent = nullptr);
+    ResizingList(QWidget *parent);
 
     uint maxItems() const;
     void setMaxItems(uint maxItems);
 
-    QSize minimumSizeHint() const override;
-    QSize sizeHint() const override;
     void setModel(QAbstractItemModel*) override;
 
-private:
+    void setStyle(const Style*);
 
+protected:
+
+    void paintEvent(QPaintEvent *event) override;
     bool eventFilter(QObject*, QEvent *event) override;
+    QSize minimumSizeHint() const override;
+    QSize sizeHint() const override;
+    const Style *style;
+
     uint maxItems_;
 
 };

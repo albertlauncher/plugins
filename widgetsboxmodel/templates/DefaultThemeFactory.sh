@@ -10,8 +10,18 @@ local selection_foreground_color="$5"
 local selection_background_color="$6"
 local output_path="$7"
 
-echo "$(pwd)/${output_path}"
+local outer_padding=8
+local radius=$((outer_padding + 2))
+local inner_padding=2
+#local outer_radius=$((border_size + inner_padding + outer_padding))
 
+local input_font_size=24
+local item_font_size=18
+local action_font_size=14
+
+local icon_size=36
+
+echo "$(pwd)/${output_path}"
 cat << EOF > "${output_path}"
 /* Copyright: Manuel Schneider, License: MIT */
 
@@ -22,26 +32,25 @@ cat << EOF > "${output_path}"
 }
 
 #frame {
-    padding: 8px 0px;
-    border-radius: 10px;
+    border-radius: ${radius}px;
     background-color: ${background_color};
     min-width:640px;
     max-width:640px;
 }
 
 #inputLine {
-    padding: 0px 8px;
-    font-size: 28px;
+    padding: ${outer_padding}px;
+    font-size: ${input_font_size}px;
     selection-color: ${selection_foreground_color};
     selection-background-color: ${selection_background_color};
     background-color: transparent;
 }
 
 #settingsButton {
-    margin: 6px 6px 0px 0px;
+    margin: ${outer_padding}px;
     color: ${button_color};
     background-color: transparent;
-    padding: 2px;
+    padding: 0px;
     min-width:14px;
     min-height:14px;
     max-width:14px;
@@ -51,6 +60,7 @@ cat << EOF > "${output_path}"
 /********** ListViews ************/
 
 QListView {
+    margin-bottom: ${outer_padding}px;
     background: transparent;
     selection-color: ${selection_foreground_color};
 }
@@ -59,7 +69,7 @@ QListView::item:selected {
     background: ${selection_background_color};
 }
 
-QListView QScrollBar:vertical  {
+QListView QScrollBar:vertical {
     width: 3px;
     background: transparent;
 }
@@ -82,8 +92,10 @@ QListView QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 /********** resultsList **********/
 
 QListView#resultsList {
-    icon-size: 40px;
-    font-size: 20px;
+    icon-size: ${icon_size}px;
+    font-size: ${item_font_size}px;
+    border-bottom-left-radius: ${radius}px;
+    border-bottom-right-radius: ${radius}px;
 }
 
 QListView#resultsList::item {
@@ -94,7 +106,7 @@ QListView#resultsList::item {
 /********** actionList **********/
 
 QListView#actionList {
-    font-size: 14px;
+    font-size: ${action_font_size}px;
 }
 
 QListView#actionList::item {
