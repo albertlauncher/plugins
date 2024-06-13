@@ -69,7 +69,9 @@ void InputLine::paintEvent(QPaintEvent *event)
 
         auto fm = fontMetrics();
         auto r = content_rect;
-        r.adjust(fm.horizontalAdvance(text()), 0, 0, 0);
+        int cursor_pos = cursorRect().right();
+        int offset = 5;
+        r.setLeft(cursor_pos + offset);        
         auto t = fm.elidedText(hint, Qt::ElideRight, r.width());
 
         p.drawText(r, Qt::TextSingleLine, t);
