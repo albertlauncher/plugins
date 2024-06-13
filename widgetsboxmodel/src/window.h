@@ -102,8 +102,6 @@ private:
     Mod mod_actions = Mod::Alt;
     Mod mod_fallback = Mod::Meta;
 
-    QPoint clickOffset_;  // The offset from cursor to topleft. Used when the window is dagged
-
 signals:
 
     void inputChanged(QString);

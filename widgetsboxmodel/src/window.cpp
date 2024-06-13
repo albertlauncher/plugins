@@ -27,6 +27,7 @@
 #include <QStringListModel>
 #include <QStyleFactory>
 #include <QTimer>
+#include <QWindow>
 #include <albert/logging.h>
 #include <albert/pluginloader.h>
 #include <albert/pluginmetadata.h>
@@ -654,14 +655,8 @@ bool Window::event(QEvent *event)
     if (event->type() == QEvent::Resize)  // Let settingsbutton stay in top right corner of frame
         settings_button->move(frame->geometry().topRight() - QPoint(settings_button->width()-1,0));
 
-    else if (event->type() == QEvent::MouseMove && !clickOffset_.isNull())
-        this->move(static_cast<QMouseEvent*>(event)->globalPosition().toPoint() - clickOffset_);
-
     else if (event->type() == QEvent::MouseButtonPress)
-        clickOffset_ = static_cast<QMouseEvent*>(event)->pos();
-
-    else if (event->type() == QEvent::MouseButtonRelease)
-        clickOffset_ = QPoint();  // isNull
+        windowHandle()->startSystemMove();
 
     else if (event->type() == QEvent::Show)
     {
