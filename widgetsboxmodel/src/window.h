@@ -92,7 +92,6 @@ private:
     bool showCentered_{};
     bool followCursor_{};
     bool quitOnClose_{};
-    bool clearOnHide_{};
     bool history_search_{};
 
     albert::Query *current_query;

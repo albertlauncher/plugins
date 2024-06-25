@@ -85,9 +85,16 @@ void InputLine::paintEvent(QPaintEvent *event)
     // }
 }
 
-void InputLine::hideEvent(QHideEvent*)
+void InputLine::hideEvent(QHideEvent *event)
 {
     history_.add(text());
     history_.resetIterator();
     user_text_.clear();
+
+    if (clear_on_hide)
+        clear();
+    else
+        selectAll();
+
+    QLineEdit::hideEvent(event);
 }

@@ -18,6 +18,8 @@ public:
     void next(bool search);
     void previous(bool search);
 
+    bool clear_on_hide;
+
 private:
 
     void paintEvent(QPaintEvent *event) override;

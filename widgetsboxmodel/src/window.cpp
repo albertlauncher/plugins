@@ -697,11 +697,6 @@ bool Window::event(QEvent *event)
     {
         plugin->state()->setValue(STATE_WND_POS, pos());
 
-        if (clearOnHide_)
-            input_line->clear();
-        else
-            input_line->selectAll();
-
         QPixmapCache::clear();
 
         emit visibleChanged(false);
@@ -861,10 +856,10 @@ void Window::setAlwaysOnTop(bool value)
 }
 
 bool Window::clearOnHide() const
-{ return clearOnHide_; }
+{ return input_line->clear_on_hide; }
 
 void Window::setClearOnHide(bool b)
-{ plugin->settings()->setValue(CFG_CLEAR_ON_HIDE, clearOnHide_ = b); }
+{ plugin->settings()->setValue(CFG_CLEAR_ON_HIDE, input_line->clear_on_hide = b); }
 
 bool Window::displayClientShadow() const
 { return graphicsEffect() != nullptr; }
