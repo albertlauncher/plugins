@@ -1,38 +1,76 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #include "plugin.h"
+#include "ui_configwidget_mac.h"
 #include <Cocoa/Cocoa.h>
 #include <QCoreApplication>
 #include <QDir>
+#include <QWidget>
 #include <albert/logging.h>
 #include <albert/standarditem.h>
 #include <albert/util.h>
+#include <set>
 ALBERT_LOGGING_CATEGORY("apps")
 using namespace albert;
 using namespace std;
 
 
-namespace {
 
-static IndexItem createAppIndexItem(const QString &bundle_path, const QString &display_name = {})
+static void addIndexItems(vector<IndexItem> &items, const QString &bundle_path, bool use_non_localized_name)
 {
+    set<QString> index_strings;
     @autoreleasepool {
         NSBundle *bundle = [NSBundle bundleWithPath:bundle_path.toNSString()];
+
+        // INFO << "-------------------------------------";
+        // INFO << "localized-display      " << QString::fromNSString([bundle.localizedInfoDictionary objectForKey:@"CFBundleDisplayName"]);
+        // INFO << "localized              " << QString::fromNSString([bundle.localizedInfoDictionary objectForKey:(NSString *) kCFBundleNameKey]);
+        // INFO << "unlocalized-display    " << QString::fromNSString([bundle.infoDictionary objectForKey:@"CFBundleDisplayName"]);
+        // INFO << "unlocalized            " << QString::fromNSString([bundle.infoDictionary objectForKey:(NSString *) kCFBundleNameKey]);
+        // INFO << "bundle path            " << bundle_path;
+        // // WARN << "infoDictionary         " << QString::fromNSString([bundle.infoDictionary description]);
+        // // WARN << "localizedInfoDictionar " << QString::fromNSString([bundle.localizedInfoDictionary description]);
+
         QString name;
-        if (!display_name.isNull())
-            name = display_name;
-        else if (NSString *nss = [bundle objectForInfoDictionaryKey:@"CFBundleDisplayName"]; nss != nil)
-            name = QString::fromNSString(nss);
-        else if (nss = [bundle objectForInfoDictionaryKey:(NSString *) kCFBundleNameKey]; nss != nil)
-            name = QString::fromNSString(nss);
-        else
-            name = bundle_path.section("/", -1, -1);
 
-        if (name.endsWith(".app"))
-            name.chop(4);
+        if (NSString *nss = [bundle.localizedInfoDictionary objectForKey:@"CFBundleDisplayName"];
+                nss != nil)
+        {
+            auto s = QString::fromNSString(nss);
+            index_strings.insert(s);
+            if (name.isEmpty())
+                name = s;
+        }
 
-        // Remove soft hypens
-        name.remove(QChar(0x00AD));
+        if (NSString *nss = [bundle.localizedInfoDictionary objectForKey:@"CFBundleName"];
+                nss != nil)
+        {
+            auto s = QString::fromNSString(nss);
+            index_strings.insert(s);
+            if (name.isEmpty())
+                name = s;
+        }
+
+        if (NSString *nss = [bundle.infoDictionary objectForKey:@"CFBundleDisplayName"];
+                nss != nil && (name.isEmpty() || use_non_localized_name))
+        {
+            auto s = QString::fromNSString(nss);
+            index_strings.insert(s);
+            if (name.isEmpty())
+                name = s;
+        }
+
+        if (NSString *nss = [bundle.infoDictionary objectForKey:@"CFBundleName"];
+                nss != nil && (name.isEmpty() || use_non_localized_name))
+        {
+            auto s = QString::fromNSString(nss);
+            index_strings.insert(s);
+            if (name.isEmpty())
+                name = s;
+        }
+
+        if (name.isEmpty())
+            name = bundle_path.section("/", -1, -1).chopped(4);  // remove .app
 
         auto item = StandardItem::make(
             QString::fromNSString(bundle.bundleIdentifier),
@@ -42,123 +80,77 @@ static IndexItem createAppIndexItem(const QString &bundle_path, const QString &d
             {QString("qfip:%1").arg(bundle_path)},
             {
                 {
-                    "launch",
-                    Plugin::tr("Launch app"),
+                    "launch", Plugin::tr("Launch app"),
                     [bundle_path]() { runDetachedProcess({"open", bundle_path}); }
+                },
+                {
+                    "term", Plugin::tr("Open terminal here"),
+                    [bundle_path]() { runTerminal({}, bundle_path); }
                 }
             }
-            );
+        );
 
-        return IndexItem(::move(item), name);
+        for (const auto &s : index_strings)
+            items.emplace_back(item, s);
     }
 }
 
-} // namespace
+class Plugin::Private {};  // Not used on macos
 
-
-@interface QueryResultsObserver : NSObject
-
-@property (nonatomic, strong) NSMetadataQuery *query;
-@property (nonatomic) Plugin *plugin;
-
-- (instancetype)initWithQuery:(NSMetadataQuery *)query
-                       plugin:(Plugin*)plugin;
-
-@end
-
-
-@implementation QueryResultsObserver
-
-- (instancetype)initWithQuery:(NSMetadataQuery *)query
-                       plugin:(Plugin*)plugin
+Plugin::Plugin() : d(make_unique<Private>())
 {
-    self = [super init];
-    _query = query;
-    _plugin = plugin;
-    [self.query addObserver:self
-                 forKeyPath:@"results"
-                    options:NSKeyValueObservingOptionNew context:nil];
-    return self;
-}
+    auto s = settings();
+    commonInitialize(s);
 
-- (void)dealloc
-{
-    [self.query removeObserver:self forKeyPath:@"results"];
+    indexer_.parallel = [this](const bool &abort)
+    {
+        QStringList apps;
+        apps << "/System/Library/CoreServices/Finder.app";
+        for (const auto &path : appDirectories())
+            for (const auto &fi : QDir(path).entryInfoList({"*.app"}))
+                apps << fi.absoluteFilePath();
+
+        vector<IndexItem> ii;
+        for (const auto & app : apps)
+            if (abort)
+                return ii;
+            else
+                addIndexItems(ii, app, use_non_localized_name());
+
+        INFO << QString("Indexed %1 apps.").arg(apps.size());
+
+        return ii;
+    };
+
+    indexer_.finish = [this](auto &&r) { setIndexItems(::move(r)); };
 
 }
 
-- (void)observeValueForKeyPath:(NSString *)keyPath
-                      ofObject:(id)object
-                        change:(NSDictionary<NSKeyValueChangeKey,id> *)change
-                       context:(void *)context
-{
-    _plugin->updateIndexItems();
-}
+Plugin::~Plugin() = default;
 
-@end
-
-
-class Plugin::Private
-{
-public:
-    NSMetadataQuery *query;
-    QueryResultsObserver *kvo;
-};
-
-
-Plugin::Plugin() : d(new Private)
-{
-    d->query = [[NSMetadataQuery alloc] init];
-    [d->query setSearchScopes:[NSArray arrayWithObjects:QDir::homePath().toNSString(),
-                                                        @"/Applications",
-                                                        @"/System/Applications",
-                                                        @"/System/Library/CoreServices/Applications",
-                                                        nil]];
-    [d->query setPredicate:[NSPredicate predicateWithFormat:@"kMDItemContentType == 'com.apple.application-bundle'"]];
-    d->kvo = [[QueryResultsObserver alloc] initWithQuery:d->query
-                                                  plugin:this];
-
-    if (![d->query startQuery])
-        throw "Could not start NSMetadataQuery.";
-}
-
-Plugin::~Plugin()
-{
-    [d->query stopQuery];
-}
-
-QString Plugin::defaultTrigger() const { return QStringLiteral("apps "); }
-
-void Plugin::updateIndexItems()
-{
-    vector<IndexItem> items;
-
-    [d->query disableUpdates];
-    for (NSMetadataItem *item in d->query.results) {
-        @autoreleasepool {
-            auto bundle_path = QString::fromNSString([item valueForAttribute:NSMetadataItemPathKey]);
-            auto display_name = QString::fromNSString([item valueForAttribute:@"kMDItemDisplayName"]);
-            items.emplace_back(createAppIndexItem(bundle_path, display_name));
-        }
-    }
-    [d->query enableUpdates];
-
-    items.emplace_back(createAppIndexItem("/System/Library/CoreServices/Finder.app"));
-
-    for (const auto &entry : QDir("/System/Library/CoreServices/Finder.app/Contents/Applications/").entryInfoList({"*.app"}))
-        items.emplace_back(createAppIndexItem(entry.absoluteFilePath()));
-
-    for (const auto &entry : QDir("/System/Library/PreferencePanes/").entryInfoList({"*.prefPane"}))
-        items.emplace_back(createAppIndexItem(entry.absoluteFilePath()));
-
-    INFO << QString("Indexed %1 apps.").arg(items.size());
-
-    setIndexItems(::move(items));
-}
+void Plugin::updateIndexItems() { indexer_.run(); }
 
 QWidget *Plugin::buildConfigWidget()
 {
-    return nullptr;
+    auto *w = new QWidget;
+    Ui::ConfigWidget ui;
+    ui.setupUi(w);
+
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_non_localized_name, ui.checkBox_useNonLocalizedName);
+
+    return w;
+}
+
+QStringList Plugin::appDirectories()
+{
+    return {
+        "/Applications",
+        "/Applications/Utilities",
+        "/System/Applications",
+        "/System/Applications/Utilities",
+        "/System/Library/CoreServices/Applications",
+        "/System/Library/CoreServices/Finder.app/Contents/Applications"
+    };
 }
 
 

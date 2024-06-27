@@ -16,7 +16,6 @@
 #include <albert/standarditem.h>
 #include <albert/util.h>
 #include <libintl.h>
-#include <locale.h>
 #include <memory>
 ALBERT_LOGGING_CATEGORY("apps")
 using namespace std;
@@ -371,14 +370,7 @@ static std::pair<shared_ptr<StandardItem>, QStringList> parseDesktopEntry(Plugin
     }
 }
 
-
-class Plugin::Private
-{
-public:
-    BackgroundExecutor<vector<IndexItem>> indexer;
-    QFileSystemWatcher fs_watcher;
-};
-
+class Plugin::Private {};
 
 Plugin::Plugin() : d(make_unique<Private>())
 {
@@ -400,14 +392,14 @@ Plugin::Plugin() : d(make_unique<Private>())
         connect(this, f, this, &Plugin::updateIndexItems);
 
     // Paths set on initial update finish
-    connect(&d->fs_watcher, &QFileSystemWatcher::directoryChanged,
-            this, [this](){ d->indexer.run(); });
+    connect(&fs_watcher_, &QFileSystemWatcher::directoryChanged,
+            this, [this](){ indexer_.run(); });
 
-    d->indexer.parallel = [this](const bool &abort)
+    indexer_.parallel = [this](const bool &abort)
     {
         // Get a map of unique desktop entries according to the spec
         map<QString /*desktop file id*/, QString /*path*/> desktopFiles;
-        for (const QString &dir : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation))
+        for (const QString &dir : appDirectories())
         {
             QDirIterator fIt(dir, QStringList("*.desktop"), QDir::Files,
                              QDirIterator::Subdirectories|QDirIterator::FollowSymlinks);
@@ -444,10 +436,10 @@ Plugin::Plugin() : d(make_unique<Private>())
         return results;
     };
 
-    d->indexer.finish = [this](vector<IndexItem> &&result)
+    indexer_.finish = [this](vector<IndexItem> &&result)
     {
         INFO << QStringLiteral("Indexed %1 apps [%2 ms]")
-                    .arg(result.size()).arg(d->indexer.runtime.count());
+                    .arg(result.size()).arg(indexer_.runtime.count());
 
         vector<IndexItem> index_items;
         for (const auto & ii : result)
@@ -455,37 +447,29 @@ Plugin::Plugin() : d(make_unique<Private>())
         setIndexItems(::move(index_items));
 
         // Finally update the watches (maybe folders changed)
-        if (!d->fs_watcher.directories().isEmpty())
-            d->fs_watcher.removePaths(d->fs_watcher.directories());
+        if (!fs_watcher_.directories().isEmpty())
+            fs_watcher_.removePaths(fs_watcher_.directories());
 
         for (const QString &path : QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation)) {
             if (QFile::exists(path)) {
-                d->fs_watcher.addPath(path);
+                fs_watcher_.addPath(path);
                 QDirIterator dit(path, QDir::Dirs|QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
                 while (dit.hasNext())
-                    d->fs_watcher.addPath(dit.next());
+                    fs_watcher_.addPath(dit.next());
             }
         }
     };
 }
 
-Plugin::~Plugin()= default;
+Plugin::~Plugin() = default;
 
-QString Plugin::defaultTrigger() const
-{ return QStringLiteral("apps "); }
-
-void Plugin::updateIndexItems()
-{ d->indexer.run(); }
+void Plugin::updateIndexItems()  { indexer_.run(); }
 
 QWidget *Plugin::buildConfigWidget()
 {
     auto widget = new QWidget;
     Ui::ConfigWidget ui;
     ui.setupUi(widget);
-
-    // Show the app dirs in the label
-    ui.label->setText(ui.label->text().replace("__XDG_DATA_DIRS__",
-                                               QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation).join(", ")));
 
     ALBERT_PROPERTY_CONNECT_CHECKBOX(this, ignore_show_in_keys, ui.checkBox_ignoreShowInKeys);
     ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_exec, ui.checkBox_useExec);
@@ -494,4 +478,9 @@ QWidget *Plugin::buildConfigWidget()
     ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_non_localized_name, ui.checkBox_useNonLocalizedName);
 
     return widget;
+}
+
+QStringList Plugin::appDirectories()
+{
+    return QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation);
 }
