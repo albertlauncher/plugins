@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(python VERSION 4.3)
+project(python VERSION 4.4)
 
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-find_package(pybind11 CONFIG REQUIRED)
+set(PYBIND11_FINDPYTHON ON)
+add_subdirectory(pybind11)
 
 albert_plugin(
     LINK PRIVATE pybind11::embed
@@ -20,7 +20,43 @@ install(
     PATTERN "__pycache__" EXCLUDE
 )
 
+
+
+
+
 ## – –
+
+
+
+
+
+
+
+# find_package(Python COMPONENTS Interpreter Development REQUIRED)
+
+# message(STATUS "Python_INCLUDE_DIRS ${Python_INCLUDE_DIRS}")
+# message(STATUS "Python_LIBRARIES ${Python_LIBRARIES}")
+# message(STATUS "Python_LIBRARY ${Python_LIBRARY}")
+# message(STATUS "PYTHON_LIBRARY ${PYTHON_LIBRARY}")
+
+
+# # set(PYTHON_LIBRARY ${Python_LIBRARIES})
+# message(STATUS "PYTHON_LIBRARY ${PYTHON_LIBRARY}")
+
+# set(Python_LIBRARY ${Python_LIBRARIES})
+# message(STATUS "Python_LIBRARY ${Python_LIBRARY}")
+# message(STATUS "PYTHON_LIBRARY ${PYTHON_LIBRARY}")
+
+# if (NOT Python_FOUND)
+#     message(FATAL_ERROR "Python3 not found")
+# else()
+# endif()
+
+
+
+
+
+
 
 #find_program(
 #    Python3_EXECUTABLE python3
