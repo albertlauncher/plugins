@@ -51,26 +51,27 @@ Changes in 2.2:
 
 Changes in 2.3:
 
-- Add Matcher and Match convenience classes
-- Module
+- Module:
     - Deprecate md_id. Use PluginInstance.id.
 - PluginInstance:
-    - Add read only property id
-    - Add read only property name
-    - Add read only property description
-    - Add instance method registerExtension(…)
-    - Add instance method deregisterExtension(…)
+    - Add read only property id.
+    - Add read only property name.
+    - Add read only property description.
+    - Add instance method registerExtension(…).
+    - Add instance method deregisterExtension(…).
     - Deprecate initialize(…). Use __init__(…).
     - Deprecate finalize(…). Use __del__(…).
     - Deprecate __init__ extensions parameter. Use (de)registerExtension(…).
-    - Auto(de)register plugin extension. (if isinstance(Plugin, Extension))
+    - Auto(de)register plugin extension (if isinstance(Plugin, Extension)).
+- Use Query instead of TriggerQuery and GlobalQuery.
+    - The interface is backward compatible, however type hints may break.
+- Add Matcher and Match convenience classes.
 - Notification:
-    - Add property title
-    - Add property text
-    - Add instance method send()
-    - Add instance method dismiss()
-- Minor breaking change that is probably not even in use:
-    Notification does not display unless send(…) has been called
+    - Add property title.
+    - Add property text.
+    - Add instance method send().
+    - Add instance method dismiss().
+    - Note: Notification does not display unless send(…) has been called.
 
 
 ## List of things 3.0 will break
@@ -78,10 +79,11 @@ Changes in 2.3:
 - Drop PluginInstance.initialize. Use PluginInstance.__init__(…).
 - Drop PluginInstance.finalize. Use PluginInstance.__del__(…).
 - Drop PluginInstance.__init__ extensions parameter. Use PluginInstance.(de)registerExtension(…).
-- Drop implicit directory creation in cacheLocation
-- Drop implicit directory creation in configLocation
-- Drop implicit directory creation in dataLocation
-- Drop md_id
+- Drop implicit directory creation in cacheLocation.
+- Drop implicit directory creation in configLocation.
+- Drop implicit directory creation in dataLocation.
+- Drop md_id.
+
 """
 
 from abc import abstractmethod, ABC
@@ -365,8 +367,8 @@ class FallbackHandler(Extension):
         ...
 
 
-class TriggerQuery(ABC):
-    """https://albertlauncher.github.io/reference/classalbert_1_1TriggerQueryHandler_1_1TriggerQuery.html"""
+class Query():
+    """https://albertlauncher.github.io/reference/classalbert_1_1Query.html"""
 
     @property
     def trigger(self) -> str:
@@ -427,7 +429,7 @@ class TriggerQueryHandler(Extension):
         ...
 
     @abstractmethod
-    def handleTriggerQuery(self, query: TriggerQuery):
+    def handleTriggerQuery(self, query: Query):
         ...
 
 
@@ -439,18 +441,6 @@ class RankItem:
 
     item: Item
     score: float
-
-
-class GlobalQuery(ABC):
-    """https://albertlauncher.github.io/reference/classalbert_1_1GlobalQueryHandler_1_1GlobalQuery.html"""
-
-    @property
-    def string(self) -> str:
-        ...
-
-    @property
-    def isValid(self) -> bool:
-        ...
 
 
 class GlobalQueryHandler(TriggerQueryHandler):
@@ -467,8 +457,11 @@ class GlobalQueryHandler(TriggerQueryHandler):
         ...
 
     @abstractmethod
-    def handleGlobalQuery(self, query: GlobalQuery) -> List[RankItem]:
-        ...
+    def handleGlobalQuery(self, query: Query) -> List[RankItem]:
+        """
+        Note that underlying C++ type of query is `const Query`.
+        Behavior on non const access (e.g. add) is undefined.
+        """
 
     def applyUsageScore(self, rank_items:  List[RankItem]):
         ...
