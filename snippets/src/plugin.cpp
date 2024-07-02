@@ -13,10 +13,24 @@ ALBERT_LOGGING_CATEGORY("snippets")
 using namespace albert;
 using namespace std;
 
+static const int preview_max_size = 100;
+
 struct SnippetItem : Item
 {
     SnippetItem(const QFileInfo& fi, Plugin *p)
-        : file_base_name_(fi.completeBaseName()), plugin_(p) {}
+        : file_base_name_(fi.completeBaseName()), plugin_(p)
+    {
+        QFile file(fi.filePath());
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QTextStream in(&file);
+            preview_ = in.readAll().simplified();
+            if (preview_.size() > preview_max_size)
+                preview_ = preview_.left(preview_max_size) + " …";
+            preview_.squeeze();
+            file.close();
+        } else
+            WARN << "Failed to read from snippet file" << path();
+    }
 
     QString id() const override
     { return file_base_name_; }
@@ -27,7 +41,7 @@ struct SnippetItem : Item
     QString subtext() const override
     {
         static const auto tr = QCoreApplication::translate("SnippetItem", "Text snippet");
-        return tr;
+        return QString("%1 – %2").arg(tr, preview_);
     }
 
     QStringList iconUrls() const override
@@ -39,13 +53,14 @@ struct SnippetItem : Item
         static const auto tr_c = QCoreApplication::translate("SnippetItem", "Copy");
         static const auto tr_e = QCoreApplication::translate("SnippetItem", "Edit");
         static const auto tr_r = QCoreApplication::translate("SnippetItem", "Remove");
+
         vector<Action> actions;
 
         if (havePasteSupport())
             actions.emplace_back(
                 "cp", tr_cp,
                 [this]{
-                    QFile f(QDir(plugin_->configLocation()).filePath(file_base_name_+".txt"));
+                    QFile f(path());
                     f.open(QIODevice::ReadOnly);
                     setClipboardTextAndPaste(QTextStream(&f).readAll());
                 }
@@ -54,29 +69,26 @@ struct SnippetItem : Item
         actions.emplace_back(
             "c", tr_c,
             [this]{
-                QFile f(QDir(plugin_->configLocation()).filePath(file_base_name_+".txt"));
+                QFile f(path());
                 f.open(QIODevice::ReadOnly);
                 setClipboardText(QTextStream(&f).readAll());
             }
         );
 
-        actions.emplace_back(
-            "o", tr_e,
-            [this]{
-                auto path = QDir(plugin_->configLocation()).filePath(file_base_name_+".txt");
-                openUrl(QUrl::fromLocalFile(path));
-            }
-        );
+        actions.emplace_back("o", tr_e, [this]{ openUrl(QUrl::fromLocalFile(path())); });
 
-        actions.emplace_back(
-            "r", tr_r,
-            [this]() { plugin_->removeSnippet(file_base_name_+".txt"); }
-        );
+        actions.emplace_back("r", tr_r, [this]{ plugin_->removeSnippet(file_base_name_+".txt"); });
 
         return actions;
     }
 
+    QString path() const
+    { return QDir(plugin_->configLocation()).filePath(file_base_name_ + ".txt"); }
+
+private:
+
     const QString file_base_name_;
+    QString preview_;
     Plugin * const plugin_;
 };
 
@@ -92,7 +104,7 @@ Plugin::Plugin()
         vector<IndexItem> r;
         for (const auto &f : QDir(configLocation()).entryInfoList({"*.txt"}, QDir::Files)){
             if (abort) return r;
-            r.emplace_back(make_shared<SnippetItem>(f, this), f.fileName());
+            r.emplace_back(make_shared<SnippetItem>(f, this), f.completeBaseName());
         }
         return r;
     };

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(snippets VERSION 5.3)
+project(snippets VERSION 5.4)
 
 albert_plugin(
     INCLUDE
