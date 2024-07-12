@@ -1,11 +1,12 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
-#include <albert/standarditem.h>
 #include "plugin.h"
 #include <QDesktopServices>
 #include <QFile>
 #include <QTextStream>
 #include <QUrl>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 using namespace albert;
 using namespace std;
 
@@ -49,7 +50,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
                 {
                     {
                         "open_url", tr("Open URL"),
-                        [url](){ QDesktopServices::openUrl(url); }
+                        [url](){ openUrl(url); }
                     }
                 }
             ),
