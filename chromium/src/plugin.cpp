@@ -16,7 +16,7 @@ ALBERT_LOGGING_CATEGORY("chromium")
 using namespace albert;
 using namespace std;
 
-static const char* CFG_BOOKMARKS_PATH = "bookmarks_path";
+static const char* CFG_BM_PATHS = "bookmarks_path";
 static const char* CFG_INDEX_HOSTNAME = "indexHostname";
 static const bool  DEF_INDEX_HOSTNAME = false;
 
@@ -71,17 +71,15 @@ Plugin::Plugin()
     auto s = settings();
     index_hostname_ = s->value(CFG_INDEX_HOSTNAME, DEF_INDEX_HOSTNAME).toBool();
 
-    // If not configured try to automatically set paths
-    if (!s->contains(CFG_BOOKMARKS_PATH))
-        resetPaths();
-    else
-        // caution: setPath does some important things;
-        setPaths(s->value(CFG_BOOKMARKS_PATH).toStringList());
+    paths_ = s->contains(CFG_BM_PATHS) ? s->value(CFG_BM_PATHS).toStringList() : defaultPaths();
+    paths_.sort();
 
-    connect(&file_system_watcher_, &QFileSystemWatcher::fileChanged, this, [this](){
+    fs_watcher_.addPaths(paths_);
+    connect(&fs_watcher_, &QFileSystemWatcher::fileChanged, this, [this]{
         // Update watches. Chromium seems to mv the file (inode change).
-        file_system_watcher_.removePaths(file_system_watcher_.files());
-        file_system_watcher_.addPaths(paths_);
+        if (!fs_watcher_.files().isEmpty())
+            fs_watcher_.removePaths(fs_watcher_.files());
+        fs_watcher_.addPaths(paths_);
         indexer.run();
     });
 
@@ -91,27 +89,32 @@ Plugin::Plugin()
         INFO << QStringLiteral("Indexed %1 bookmarks [%2 ms]")
                     .arg(res.size()).arg(indexer.runtime.count());
 
-        emit statusChanged(tr("%n bookmarks indexed.", nullptr, bookmarks_.size()));
+        emit statusChanged(tr("%n bookmarks indexed.", nullptr, res.size()));
 
         bookmarks_ = ::move(res);
 
         updateIndexItems();
     };
-    indexer.run();  // < called on setindex
+    indexer.run();
 }
 
 void Plugin::setPaths(const QStringList& paths)
 {
     paths_ = paths;
     paths_.sort();
-    if (!file_system_watcher_.files().isEmpty())
-        file_system_watcher_.removePaths(file_system_watcher_.files());
-    file_system_watcher_.addPaths(paths_);
-    settings()->setValue(CFG_BOOKMARKS_PATH, paths_);
+
+    // Chromium seems to mv the file (inode change).
+    if (!fs_watcher_.files().isEmpty())
+        fs_watcher_.removePaths(fs_watcher_.files());
+    if(!paths_.isEmpty())
+        fs_watcher_.addPaths(paths_);
+
+    settings()->setValue(CFG_BM_PATHS, paths_);
+
     indexer.run();
 }
 
-void Plugin::resetPaths()
+QStringList Plugin::defaultPaths() const
 {
     QStringList paths;
     for (auto loc : {QStandardPaths::GenericDataLocation, QStandardPaths::GenericConfigLocation})
@@ -120,8 +123,10 @@ void Plugin::resetPaths()
                 for (QDirIterator it(QDir(path).filePath(app_dir_name), {"Bookmarks"},
                                      QDir::Files, QDirIterator::Subdirectories); it.hasNext();)
                     paths << it.next();
-    setPaths(paths);
+    return paths;
 }
+
+void Plugin::resetPaths() { setPaths(defaultPaths()); }
 
 void Plugin::updateIndexItems()
 {
