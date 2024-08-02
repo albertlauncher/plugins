@@ -4,9 +4,13 @@ find_package(Albert REQUIRED)
 project(applications VERSION 11.0)
 
 albert_plugin(
+    INCLUDE
+        INTERFACE include
+        PRIVATE include/albert/${PROJECT_NAME}
     SOURCES
         src/plugin.cpp
         src/plugin.h
+        include/albert/${PROJECT_NAME}/${PROJECT_NAME}.h
     I18N_SOURCES
         src/*.h
         src/*.cpp

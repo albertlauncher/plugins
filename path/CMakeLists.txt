@@ -3,4 +3,7 @@ find_package(Albert REQUIRED)
 
 project(path VERSION 1.0)
 
-albert_plugin(QT Concurrent)
+albert_plugin(
+    INCLUDE PRIVATE $<TARGET_PROPERTY:albert::applications,INTERFACE_INCLUDE_DIRECTORIES>
+    QT Concurrent
+)

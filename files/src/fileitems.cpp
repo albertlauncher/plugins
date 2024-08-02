@@ -71,14 +71,14 @@ vector<Action> FileItem::actions() const
             openUrl(QUrl::fromLocalFile(QFileInfo(filePath()).path()).toString());
         });
 
-    static const auto tr_t = QCoreApplication::translate("FileItem", "Open terminal here");
-    actions.emplace_back(
-        "f-term", tr_t,
-        [this]()
-        {
-            QFileInfo fi(filePath());
-            runTerminal({}, fi.isDir() ? fi.filePath() : fi.path());
-        });
+    // static const auto tr_t = QCoreApplication::translate("FileItem", "Open terminal here");
+    // actions.emplace_back(
+    //     "f-term", tr_t,
+    //     [this]()
+    //     {
+    //         QFileInfo fi(filePath());
+    //         runTerminal({}, fi.isDir() ? fi.filePath() : fi.path());
+    //     });
 
 
     static const auto tr_c = QCoreApplication::translate("FileItem", "Copy file to clipboard");

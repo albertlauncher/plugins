@@ -96,14 +96,7 @@ Plugin::Plugin()
     }
 }
 
-Plugin::~Plugin()
-{
-    release_.reset();
-    plugins_.clear();
 
-    // Causes hard to debug crashes, mem leaked, but nobody will toggle it a lot
-    // py::finalize_interpreter();
-}
 
 vector<PluginLoader*> Plugin::plugins()
 {

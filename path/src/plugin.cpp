@@ -12,7 +12,8 @@ ALBERT_LOGGING_CATEGORY("terminal")
 using namespace albert;
 using namespace std;
 
-Plugin::Plugin()
+Plugin::Plugin():
+    apps_(registry(), "applications")
 {
     indexer_.parallel = [](const bool &abort){
         set<QString> result;
@@ -41,6 +42,8 @@ Plugin::Plugin()
     indexer_.run();
 }
 
+Plugin::~Plugin() = default;
+
 vector<Action> Plugin::buildActions(const QString &commandline)
 {
     static const auto tr_r = tr("Run in terminal");
@@ -49,16 +52,15 @@ vector<Action> Plugin::buildActions(const QString &commandline)
     return {
         {
             "r", tr_r,
-            [=]{ runTerminal(commandline); }
+            [=, this]{ apps_->runTerminal(commandline); }
         },
         {
             "rc", tr_rc,
-            [=]() { runTerminal(commandline, {}, true); }
+            [=, this]{ apps_->runTerminal(commandline, {}, true); }
         },
         {
-            "rb",
-            tr_rb,
-            [=]() { runDetachedProcess({"sh", "-c", commandline}); }
+            "rb", tr_rb,
+            [=]{ runDetachedProcess({"sh", "-c", commandline}); }
         }
     };
 }

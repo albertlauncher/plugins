@@ -1,6 +1,7 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
+#include "applications.h"
 #include <QFileSystemWatcher>
 #include <QStringList>
 #include <albert/backgroundexecutor.h>
@@ -10,7 +11,8 @@
 #include <memory>
 
 class Plugin : public albert::ExtensionPlugin,
-               public albert::IndexQueryHandler
+               public albert::IndexQueryHandler,
+               public applications::Applications
 {
     ALBERT_PLUGIN
     ALBERT_PLUGIN_PROPERTY(bool, use_non_localized_name, false)
@@ -26,21 +28,30 @@ public:
 
     Plugin();
     ~Plugin();
-
     void commonInitialize(std::unique_ptr<QSettings> &s);
 
+    // albert::ExtensionPlugin
+    QWidget *buildConfigWidget() override;
+
+    // albert::IndexQueryHandler
     QString defaultTrigger() const override;
     void updateIndexItems() override;
-    QWidget *buildConfigWidget() override;
+
+    // applications::Applications
+    void runTerminal(const QString &script = {}, const QString &working_dir = {}, bool close_on_exit = false) override;
+    void runTerminal(const QStringList &commandline, const QString &working_dir = {}) override;
+    std::vector<albert::Action> actions(const QUrl&) const override;
 
 private:
 
     static QStringList appDirectories();
+#if defined(Q_OS_UNIX)
+    static QString userShell();
+#endif
 
     class Private;
     std::unique_ptr<Private> d;
 
-    albert::BackgroundExecutor<std::vector<albert::IndexItem>> indexer_;
     QFileSystemWatcher fs_watcher_;
 
 };
