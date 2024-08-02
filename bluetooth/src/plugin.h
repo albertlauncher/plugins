@@ -16,6 +16,8 @@ public:
     ~Plugin();
 
     QString defaultTrigger() const override;
+    bool supportsFuzzyMatching() const override;
+    void setFuzzyMatching(bool) override;
     std::vector<RankItem> handleGlobalQuery(const Query *) const override;
 
 private:

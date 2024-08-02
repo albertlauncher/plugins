@@ -54,6 +54,7 @@ public:
     QString tr_bt = Plugin::tr("Bluetooth");
     static const QStringList icon_urls;
     __strong BluetoothConnectionHandler* delegate;
+    bool fuzzy;
 };
 
 const QStringList Plugin::Private::icon_urls =
@@ -75,13 +76,17 @@ QString Plugin::defaultTrigger() const
     return QStringLiteral("bt ");
 }
 
+bool Plugin::supportsFuzzyMatching() const { return true; }
+
+void Plugin::setFuzzyMatching(bool val) { d->fuzzy = val; }
+
 vector<RankItem> Plugin::handleGlobalQuery(const Query *q) const
 {
     vector<RankItem> r;
 
     bool enabled = IOBluetoothPreferenceGetControllerPowerState();
 
-    Matcher matcher(q->string());
+    Matcher matcher(q->string(), {.fuzzy = d->fuzzy});
 
     if (auto m = matcher.match(d->tr_bt))
     {
