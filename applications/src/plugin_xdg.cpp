@@ -757,7 +757,7 @@ Plugin::~Plugin() = default;
 
 void Plugin::updateIndexItems()  { d->indexer.run(); }
 
-void Plugin::runTerminal(const QString &script, const QString &working_dir, bool close_on_exit)
+void Plugin::runTerminal(const QString &script, const QString &working_dir, bool close_on_exit) const
 {
     auto shell = userShell();
     auto args = QStringList() << shell;
@@ -775,7 +775,7 @@ void Plugin::runTerminal(const QString &script, const QString &working_dir, bool
     runTerminal(args, working_dir);
 }
 
-void Plugin::runTerminal(const QStringList &commandline, const QString &working_dir)
+void Plugin::runTerminal(const QStringList &commandline, const QString &working_dir) const
 {
     if (!d->user_terminal)
     {

@@ -7,6 +7,7 @@ set(PYBIND11_FINDPYTHON ON)
 add_subdirectory(pybind11)
 
 albert_plugin(
+    INCLUDE PRIVATE $<TARGET_PROPERTY:albert::applications,INTERFACE_INCLUDE_DIRECTORIES>
     LINK PRIVATE pybind11::embed
     QT Concurrent Widgets
 )

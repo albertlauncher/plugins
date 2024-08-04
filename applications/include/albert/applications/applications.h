@@ -67,9 +67,9 @@ public:
     /// \param script The script to run
     /// \param working_dir The working directory
     /// \param close_on_exit Close the terminal on exit. Has no effect if script is emtpy.
-    virtual void runTerminal(const QString &script = {}, const QString &working_dir = {}, bool close_on_exit = false) = 0;
+    virtual void runTerminal(const QString &script = {}, const QString &working_dir = {}, bool close_on_exit = false) const = 0;
 
-    virtual void runTerminal(const QStringList &commandline, const QString &working_dir = {}) = 0;
+    virtual void runTerminal(const QStringList &commandline, const QString &working_dir = {}) const = 0;
 
     /// Create actions The applications on this system.
     virtual std::vector<albert::Action> actions(const QUrl&) const = 0;

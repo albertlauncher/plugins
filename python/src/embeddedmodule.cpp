@@ -3,15 +3,17 @@
 #include "cast_specialization.h" // Has to be imported first
 #include "trampolineclasses.h" // Has to be imported first
 #include <QDir>
+#include <albert/applications/applications.h>
 #include <albert/indexqueryhandler.h>
 #include <albert/logging.h>
+#include <albert/matcher.h>
 #include <albert/notification.h>
 #include <albert/plugininstance.h>
 #include <albert/standarditem.h>
 #include <albert/util.h>
-#include <albert/matcher.h>
 using namespace albert;
 using namespace std;
+extern applications::Applications *apps;
 
 
 /*
@@ -253,7 +255,8 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
           py::arg("cmdln") = QStringList(),
           py::arg("workdir") = QString());
 
-    m.def("runTerminal", &runTerminal,
+    m.def("runTerminal",
+          [](const QString &s, const QString &w, bool c){ apps->runTerminal(s, w, c); },
           py::arg("script") = QString(),
           py::arg("workdir") = QString(),
           py::arg("close_on_exit") = false);

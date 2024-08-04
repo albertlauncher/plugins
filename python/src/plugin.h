@@ -1,8 +1,9 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
 #pragma once
-
+#include <albert/applications/applications.h>
 #include <albert/extensionplugin.h>
+#include <albert/plugindependency.h>
 #include <albert/pluginprovider.h>
 #include <memory>
 class PyPluginLoader;
@@ -28,6 +29,7 @@ private:
     QString sitePackagesLocation() const;
     QString stubLocation() const;
 
+    albert::StrongDependency<applications::Applications> apps;
     std::vector<std::unique_ptr<PyPluginLoader>> plugins_;
     std::unique_ptr<pybind11::gil_scoped_release> release_;
 

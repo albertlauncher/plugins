@@ -38,8 +38,8 @@ public:
     void updateIndexItems() override;
 
     // applications::Applications
-    void runTerminal(const QString &script = {}, const QString &working_dir = {}, bool close_on_exit = false) override;
-    void runTerminal(const QStringList &commandline, const QString &working_dir = {}) override;
+    void runTerminal(const QString &script = {}, const QString &working_dir = {}, bool close_on_exit = false) const override;
+    void runTerminal(const QStringList &commandline, const QString &working_dir = {}) const override;
     std::vector<albert::Action> actions(const QUrl&) const override;
 
 private:

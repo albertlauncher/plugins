@@ -6,5 +6,6 @@
     "exec_dependencies": "ssh",
     "license": "MIT",
     "name": "SSH",
+    "plugin_dependencies": ["applications"],
     "url": "https://github.com/albertlauncher/plugins/tree/main/ssh"
 }

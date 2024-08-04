@@ -2,15 +2,18 @@
 
 #include "fileitems.h"
 #include "fsindexnodes.h"
-#include <QGuiApplication>
 #include <QClipboard>
 #include <QDir>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QMimeData>
 #include <QUrl>
+#include <albert/applications/applications.h>
 #include <albert/util.h>
 using namespace albert;
 using namespace std;
+
+extern applications::Applications *apps;
 
 QString FileItem::id() const { return filePath(); }
 
@@ -71,14 +74,14 @@ vector<Action> FileItem::actions() const
             openUrl(QUrl::fromLocalFile(QFileInfo(filePath()).path()).toString());
         });
 
-    // static const auto tr_t = QCoreApplication::translate("FileItem", "Open terminal here");
-    // actions.emplace_back(
-    //     "f-term", tr_t,
-    //     [this]()
-    //     {
-    //         QFileInfo fi(filePath());
-    //         runTerminal({}, fi.isDir() ? fi.filePath() : fi.path());
-    //     });
+    static const auto tr_t = QCoreApplication::translate("FileItem", "Open terminal here");
+    actions.emplace_back(
+        "f-term", tr_t,
+        [this]()
+        {
+            QFileInfo fi(filePath());
+            apps->runTerminal(QString{}, fi.isDir() ? fi.filePath() : fi.path());
+        });
 
 
     static const auto tr_c = QCoreApplication::translate("FileItem", "Copy file to clipboard");

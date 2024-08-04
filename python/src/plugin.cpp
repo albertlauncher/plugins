@@ -23,8 +23,13 @@ namespace py = pybind11;
 
 static const constexpr char *PLUGIN_DIR = "plugins";
 
-Plugin::Plugin()
+applications::Applications *apps;
+
+Plugin::Plugin():
+    apps(registry(), "applications")
 {
+    ::apps = apps.get();
+
     /*
      * The python interpreter is never unloaded once it has been loaded. This
      * is working around the ugly segfault that occur when third-party libraries
@@ -96,7 +101,7 @@ Plugin::Plugin()
     }
 }
 
-
+Plugin::~Plugin() = default;
 
 vector<PluginLoader*> Plugin::plugins()
 {

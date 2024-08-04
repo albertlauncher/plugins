@@ -1,11 +1,12 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
 #pragma once
-
 #include <QRegularExpression>
 #include <QSet>
 #include <QString>
+#include <albert/applications/applications.h>
 #include <albert/extensionplugin.h>
+#include <albert/plugindependency.h>
 #include <albert/globalqueryhandler.h>
 
 class Plugin : public albert::ExtensionPlugin,
@@ -26,6 +27,7 @@ private:
 
     std::vector<albert::RankItem> getItems(const QString &query, bool allowParams) const;
 
+    albert::StrongDependency<applications::Applications> apps;
     QSet<QString> hosts;
     const QString tr_desc;
     const QString tr_conn;

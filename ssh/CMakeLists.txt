@@ -3,4 +3,7 @@ find_package(Albert REQUIRED)
 
 project(ssh VERSION 8.3)
 
-albert_plugin(QT Widgets)
+albert_plugin(
+    INCLUDE PRIVATE $<TARGET_PROPERTY:albert::applications,INTERFACE_INCLUDE_DIRECTORIES>
+    QT Widgets
+)
