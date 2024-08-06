@@ -29,7 +29,7 @@ private:
     QString sitePackagesLocation() const;
     QString stubLocation() const;
 
-    albert::StrongDependency<applications::Applications> apps;
+    albert::StrongDependency<applications::Plugin> apps;
     std::vector<std::unique_ptr<PyPluginLoader>> plugins_;
     std::unique_ptr<pybind11::gil_scoped_release> release_;
 

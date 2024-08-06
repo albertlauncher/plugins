@@ -12,7 +12,7 @@
 
 class Plugin : public albert::ExtensionPlugin,
                public albert::IndexQueryHandler,
-               public applications::Applications
+               public applications::Plugin
 {
     ALBERT_PLUGIN
     ALBERT_PLUGIN_PROPERTY(bool, use_non_localized_name, false)
@@ -37,21 +37,21 @@ public:
     QString defaultTrigger() const override;
     void updateIndexItems() override;
 
-    // applications::Applications
-    void runTerminal(const QString &script = {}, const QString &working_dir = {}, bool close_on_exit = false) const override;
-    void runTerminal(const QStringList &commandline, const QString &working_dir = {}) const override;
-    std::vector<albert::Action> actions(const QUrl&) const override;
+    // applications::Plugin
+    std::shared_ptr<applications::Terminal> userTerminal() const override;
+    void runTerminal(const QString &script = {}, const QString &working_dir = {}) const override;
+
+    static QStringList appDirectories();
 
 private:
 
-    static QStringList appDirectories();
-#if defined(Q_OS_UNIX)
-    static QString userShell();
-#endif
-
-    class Private;
-    std::unique_ptr<Private> d;
+    void setUserTerminalFromConfig();
+    QWidget *createTerminalFormWidget();
 
     QFileSystemWatcher fs_watcher_;
+    albert::BackgroundExecutor<std::vector<std::shared_ptr<applications::Application>>> indexer;
+    std::vector<std::shared_ptr<applications::Application>> applications;
+    std::vector<std::shared_ptr<applications::Terminal>> terminals;
+    std::shared_ptr<applications::Terminal> user_terminal;
 
 };

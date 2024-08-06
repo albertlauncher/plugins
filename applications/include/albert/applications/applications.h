@@ -55,28 +55,45 @@ namespace applications {
 // };
 
 
-class ALBERT_EXPORT Applications : virtual public albert::Extension
+class ALBERT_EXPORT Application
+{
+public:
+    virtual QString id() const = 0;
+    virtual QString name() const = 0;
+    virtual QString path() const = 0;
+    virtual void launch(const QString &working_dir = {}) const = 0;
+    virtual void launchWithUrls(QStringList urls = {}, const QString &working_dir = {}) const = 0;
+protected:
+    virtual ~Application() = default;
+};
+
+
+class ALBERT_EXPORT Terminal : public Application
+{
+public:
+    virtual void launchWithScript(QString script, const QString &working_dir = {}) const = 0;
+protected:
+    virtual ~Terminal() = default;
+};
+
+
+class ALBERT_EXPORT Plugin : virtual public albert::Extension
 {
 public:
 
-    /// Launch a script in the user shell the user configured terminal.
+    /// Launch a script in the user configured terminal and shell.
     ///
-    /// To allow flexible closing logic exit use the exit builtin. E.g.
-    /// `command && exit` with `close_on_exit = true` (close on succes).
+    /// To keep the terminal open use `exec $SHELL`
     ///
     /// \param script The script to run
     /// \param working_dir The working directory
-    /// \param close_on_exit Close the terminal on exit. Has no effect if script is emtpy.
-    virtual void runTerminal(const QString &script = {}, const QString &working_dir = {}, bool close_on_exit = false) const = 0;
+    virtual void runTerminal(const QString &script = {}, const QString &working_dir = {}) const = 0;
+    virtual std::shared_ptr<Terminal> userTerminal() const = 0;
 
-    virtual void runTerminal(const QStringList &commandline, const QString &working_dir = {}) const = 0;
-
-    /// Create actions The applications on this system.
-    virtual std::vector<albert::Action> actions(const QUrl&) const = 0;
 
 protected:
 
-    virtual ~Applications() = default;
+    virtual ~Plugin() = default;
 
 };
 

@@ -31,7 +31,7 @@ public:
 
 private:
 
-    albert::StrongDependency<applications::Applications> apps;
+    albert::StrongDependency<applications::Plugin> apps;
     FsIndex fs_index_;
     std::shared_ptr<albert::Item> update_item;
     HomeBrowser homebrowser;

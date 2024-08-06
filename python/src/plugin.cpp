@@ -23,7 +23,7 @@ namespace py = pybind11;
 
 static const constexpr char *PLUGIN_DIR = "plugins";
 
-applications::Applications *apps;
+applications::Plugin *apps;
 
 Plugin::Plugin():
     apps(registry(), "applications")

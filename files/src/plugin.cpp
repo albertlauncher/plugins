@@ -35,7 +35,7 @@ const uint8_t DEF_MAX_DEPTH = 255;
 const char* CFG_SCAN_INTERVAL = "scanInterval";
 const uint DEF_SCAN_INTERVAL = 5;
 const char* INDEX_FILE_NAME = "file_index.json";
-applications::Applications *apps;
+applications::Plugin *apps;
 
 Plugin::Plugin():
     apps(registry(), "applications"),

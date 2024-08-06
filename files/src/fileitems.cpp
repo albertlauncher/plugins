@@ -13,7 +13,7 @@
 using namespace albert;
 using namespace std;
 
-extern applications::Applications *apps;
+extern applications::Plugin *apps;
 
 QString FileItem::id() const { return filePath(); }
 

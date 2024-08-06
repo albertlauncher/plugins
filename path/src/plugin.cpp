@@ -46,23 +46,18 @@ Plugin::~Plugin() = default;
 
 vector<Action> Plugin::buildActions(const QString &commandline)
 {
-    static const auto tr_r = tr("Run in terminal");
-    static const auto tr_rc = tr("Run in terminal and close on exit");
-    static const auto tr_rb = tr("Run in background (without terminal)");
-    return {
-        {
-            "r", tr_r,
-            [=, this]{ apps_->runTerminal(commandline); }
-        },
-        {
-            "rc", tr_rc,
-            [=, this]{ apps_->runTerminal(commandline, {}, true); }
-        },
-        {
-            "rb", tr_rb,
-            [=]{ runDetachedProcess({"sh", "-c", commandline}); }
-        }
-    };
+    vector<Action> a;
+
+    a.emplace_back("r", tr("Run in terminal"),
+                   [=, this]{ apps_->runTerminal(QString("%1 ; exec $SHELL").arg(commandline)); });
+
+    a.emplace_back("rc", tr("Run in terminal and close on exit"),
+                   [=, this]{ apps_->runTerminal(commandline); });
+
+    a.emplace_back("rb", tr("Run in background (without terminal)"),
+                   [=]{ runDetachedProcess({"sh", "-c", commandline}); });
+
+    return a;
 }
 
 void Plugin::handleTriggerQuery(Query *query)

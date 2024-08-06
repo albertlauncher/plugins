@@ -13,7 +13,7 @@
 #include <albert/util.h>
 using namespace albert;
 using namespace std;
-extern applications::Applications *apps;
+extern applications::Plugin *apps;
 
 
 /*
@@ -256,10 +256,9 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
           py::arg("workdir") = QString());
 
     m.def("runTerminal",
-          [](const QString &s, const QString &w, bool c){ apps->runTerminal(s, w, c); },
+          [](const QString &s, const QString &w){ apps->runTerminal(s, w); },
           py::arg("script") = QString(),
-          py::arg("workdir") = QString(),
-          py::arg("close_on_exit") = false);
+          py::arg("workdir") = QString());
 
     py::class_<Notification>(m, "Notification")
         .def(py::init<const QString&, const QString&>(),

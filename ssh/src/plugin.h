@@ -27,7 +27,7 @@ private:
 
     std::vector<albert::RankItem> getItems(const QString &query, bool allowParams) const;
 
-    albert::StrongDependency<applications::Applications> apps;
+    albert::StrongDependency<applications::Plugin> apps;
     QSet<QString> hosts;
     const QString tr_desc;
     const QString tr_conn;

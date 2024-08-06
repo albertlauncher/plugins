@@ -1,5 +1,6 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
+#include "applications.h"
 #include "plugin.h"
 #include "ui_configwidget_mac.h"
 #include <Cocoa/Cocoa.h>
@@ -9,126 +10,351 @@
 #include <albert/logging.h>
 #include <albert/standarditem.h>
 #include <albert/util.h>
+#include <pwd.h>
 #include <set>
-ALBERT_LOGGING_CATEGORY("apps")
+#include <unistd.h>
 using namespace albert;
 using namespace std;
 
+#import <Foundation/Foundation.h>
+#import <AppKit/AppKit.h>
+#include <QMessageBox>
+
+static Plugin* plugin = nullptr;
 
 
-static void addIndexItems(vector<IndexItem> &items, const QString &bundle_path, bool use_non_localized_name)
+static void printBundleInfo(QString path, NSBundle *bundle)
 {
-    set<QString> index_strings;
-    @autoreleasepool {
-        NSBundle *bundle = [NSBundle bundleWithPath:bundle_path.toNSString()];
+    INFO << "-------------------------------------";
+    INFO << path;
+    INFO << "bundleIdentifier       " << QString::fromNSString(bundle.bundleIdentifier);
+    INFO << "localized-display      " << QString::fromNSString([bundle.localizedInfoDictionary objectForKey:@"CFBundleDisplayName"]);
+    INFO << "localized              " << QString::fromNSString([bundle.localizedInfoDictionary objectForKey:(NSString *) kCFBundleNameKey]);
+    INFO << "unlocalized-display    " << QString::fromNSString([bundle.infoDictionary objectForKey:@"CFBundleDisplayName"]);
+    INFO << "unlocalized            " << QString::fromNSString([bundle.infoDictionary objectForKey:(NSString *) kCFBundleNameKey]);
+    // WARN << "infoDictionary         " << QString::fromNSString([bundle.infoDictionary description]);
+    // WARN << "localizedInfoDictionar " << QString::fromNSString([bundle.localizedInfoDictionary description]);
 
-        // INFO << "-------------------------------------";
-        // INFO << "localized-display      " << QString::fromNSString([bundle.localizedInfoDictionary objectForKey:@"CFBundleDisplayName"]);
-        // INFO << "localized              " << QString::fromNSString([bundle.localizedInfoDictionary objectForKey:(NSString *) kCFBundleNameKey]);
-        // INFO << "unlocalized-display    " << QString::fromNSString([bundle.infoDictionary objectForKey:@"CFBundleDisplayName"]);
-        // INFO << "unlocalized            " << QString::fromNSString([bundle.infoDictionary objectForKey:(NSString *) kCFBundleNameKey]);
-        // INFO << "bundle path            " << bundle_path;
-        // // WARN << "infoDictionary         " << QString::fromNSString([bundle.infoDictionary description]);
-        // // WARN << "localizedInfoDictionar " << QString::fromNSString([bundle.localizedInfoDictionary description]);
+    // NSURL *bundleURL = [bundle bundleURL];
+    // NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
 
-        QString name;
 
-        if (NSString *nss = [bundle.localizedInfoDictionary objectForKey:@"CFBundleDisplayName"];
-                nss != nil)
+    NSArray *documentTypes = [bundle.infoDictionary objectForKey:@"CFBundleDocumentTypes"];
+    if (documentTypes != nil)
+    {
+        for (NSDictionary *documentType in documentTypes)
         {
-            auto s = QString::fromNSString(nss);
-            index_strings.insert(s);
-            if (name.isEmpty())
-                name = s;
+            NSString *typeName = [documentType objectForKey:@"CFBundleTypeName"];
+            NSString *typeRole = [documentType objectForKey:@"CFBundleTypeRole"];
+            NSString *handlerRank = [documentType objectForKey:@"LSHandlerRank"];
+            NSArray *contentTypes = [documentType objectForKey:@"LSItemContentTypes"];
+            NSArray *fileExtensions = [documentType objectForKey:@"CFBundleTypeExtensions"];
+            NSArray *mimeTypes = [documentType objectForKey:@"CFBundleTypeMIMETypes"];
+            NSString *iconFile = [documentType objectForKey:@"CFBundleTypeIconFile"];
+
+            // NSLog(@"Document Type Name: %@", typeName);
+            // NSLog(@"Document Type Role: %@", typeRole);
+            // NSLog(@"Content Types: %@", contentTypes);
+            // NSLog(@"File Extensions: %@", fileExtensions);
+            // NSLog(@"MIME Types: %@", mimeTypes);
+            // NSLog(@"Icon File: %@", iconFile);
+
+
+            if (typeRole != nil)
+                WARN << "typeRole" << QString::fromNSString(typeRole);
+
+            if (handlerRank != nil)
+                WARN << "handlerRank" << QString::fromNSString(handlerRank);
+
+            if (contentTypes != nil)
+                for (NSString *contentType in contentTypes)
+                    WARN << "contentType" << QString::fromNSString(contentType);
+
+            if (fileExtensions != nil)
+                for (NSString *fileExtension in fileExtensions)
+                    WARN << "fileExtension" << QString::fromNSString(fileExtension);
+
+            if (mimeTypes != nil)
+                for (NSString *mimeType in mimeTypes)
+                    WARN << "mimeType" << QString::fromNSString(mimeType);
+
+
         }
-
-        if (NSString *nss = [bundle.localizedInfoDictionary objectForKey:@"CFBundleName"];
-                nss != nil)
-        {
-            auto s = QString::fromNSString(nss);
-            index_strings.insert(s);
-            if (name.isEmpty())
-                name = s;
-        }
-
-        if (NSString *nss = [bundle.infoDictionary objectForKey:@"CFBundleDisplayName"];
-                nss != nil && (name.isEmpty() || use_non_localized_name))
-        {
-            auto s = QString::fromNSString(nss);
-            index_strings.insert(s);
-            if (name.isEmpty())
-                name = s;
-        }
-
-        if (NSString *nss = [bundle.infoDictionary objectForKey:@"CFBundleName"];
-                nss != nil && (name.isEmpty() || use_non_localized_name))
-        {
-            auto s = QString::fromNSString(nss);
-            index_strings.insert(s);
-            if (name.isEmpty())
-                name = s;
-        }
-
-        if (name.isEmpty())
-            name = bundle_path.section("/", -1, -1).chopped(4);  // remove .app
-
-        auto item = StandardItem::make(
-            QString::fromNSString(bundle.bundleIdentifier),
-            name,
-            bundle_path,
-            name,
-            {QString("qfip:%1").arg(bundle_path)},
-            {
-                {
-                    "launch", Plugin::tr("Launch app"),
-                    [bundle_path]() { runDetachedProcess({"open", bundle_path}); }
-                },
-                {
-                    "term", Plugin::tr("Open terminal here"),
-                    [bundle_path]() { runTerminal({}, bundle_path); }
-                }
-            }
-        );
-
-        for (const auto &s : index_strings)
-            items.emplace_back(item, s);
     }
+            // NSError *error = nil;
+            // NSArray *types = [workspace typeIdentifiersForBundleAtURL:bundleURL error:&error];
 }
 
-class Plugin::Private {};  // Not used on macos
 
-Plugin::Plugin() : d(make_unique<Private>())
+class Application : public applications::Application,
+                    public albert::Item
 {
+public:
+    Application(const QString &p, bool use_non_localized_name)
+        : bundle_path_(QFileInfo(p).absoluteFilePath())
+    {
+
+
+        @autoreleasepool {
+            NSBundle *bundle = [NSBundle bundleWithPath:bundle_path_.toNSString()];
+            printBundleInfo(bundle_path_, bundle);
+
+            id_ = QString::fromNSString(bundle.bundleIdentifier);
+            if (id_.isEmpty())
+                throw runtime_error(format("No bundle identifier for {}.", bundle_path_.toStdString()));
+
+            NSString *nss;
+            nss = [bundle.localizedInfoDictionary objectForKey:@"CFBundleDisplayName"];
+            if (nss == nil)
+            {
+                nss = [bundle.localizedInfoDictionary objectForKey:@"CFBundleName"];
+                if (nss != nil)
+                    if (auto name = QString::fromNSString(nss); !names_.contains(name))
+                        names_ << QString::fromNSString(nss);
+
+            }
+            else
+                names_ << QString::fromNSString(nss);
+
+            if (use_non_localized_name)
+            {
+                nss = [bundle.infoDictionary objectForKey:@"CFBundleDisplayName"];
+                if (nss == nil)
+                {
+                    nss = [bundle.infoDictionary objectForKey:@"CFBundleName"];
+                    if (nss != nil)
+                        if (auto name = QString::fromNSString(nss); !names_.contains(name))
+                            names_ << QString::fromNSString(nss);
+
+                }
+                else
+                {
+                    if (auto name = QString::fromNSString(nss); !names_.contains(name))
+                        names_ << name;
+                }
+            }
+
+            if (names_.isEmpty() || use_non_localized_name)
+                if (auto name = bundle_path_.section("/", -1, -1).chopped(4); !names_.contains(name))// remove .app
+                    names_ << QString::fromNSString(nss);
+        }
+    }
+
+    QString path() const override { return bundle_path_; }
+
+    QString id() const override { return id_; }
+
+    QString name() const override { return names_[0]; }
+
+    QStringList names() const { return names_; }
+
+    QString text() const override { return names_[0]; }
+
+    QString inputActionText() const override { return names_[0]; }
+
+    QString subtext() const override { return bundle_path_; }
+
+    QStringList iconUrls() const override { return {QString("qfip:%1").arg(bundle_path_)}; }
+
+    vector<Action> actions() const override
+    {
+        vector<Action> actions;
+
+        actions.emplace_back("launch", Plugin::tr("Launch app"),
+                             [this]{ launch(); });
+
+        // actions.emplace_back("term", Plugin::tr("Open terminal here"),
+        //                      [this]{ plugin->runpluginuser_launch(); });
+
+        return actions;
+    }
+
+    void launch(const QString &working_dir = {}) const override
+    {
+        runDetachedProcess({"open", bundle_path_}, working_dir);
+    }
+
+    void launchWithUrls(QStringList urls = {},  const QString &working_dir = {}) const override
+    {
+        Q_UNUSED(urls);
+        Q_UNUSED(working_dir);
+        qFatal("Not implemented");
+    }
+
+private:
+    QString bundle_path_;
+    QString id_;
+    QStringList names_;
+
+};
+
+
+class Terminal : public applications::Terminal
+{
+    shared_ptr<Application> app_;
+public:
+    Terminal(const shared_ptr<Application> &app) : app_(app) {}
+    QString id() const override { return app_->id(); }
+    QString name() const override { return app_->name(); }
+    QString path() const override { return app_->path(); }
+
+    void launch(const QString &working_dir) const override {
+        app_->launch(working_dir);
+    }
+
+    void launchWithUrls(QStringList urls, const QString &working_dir) const override
+    {
+        app_->launchWithUrls(urls, working_dir);
+    }
+};
+
+class AppleScriptLaunchableTerminal : public Terminal
+{
+    const char *apple_script_;
+public:
+
+    /// \note the apple script must contain the placeholder %1 for the command line to run
+    AppleScriptLaunchableTerminal(const shared_ptr<Application> &app, const char* apple_script)
+        : Terminal(app), apple_script_(apple_script) {}
+
+
+
+    void launch(const QString &working_dir) const override
+    {
+        launchWithScript("exec $SHELL", working_dir);
+    }
+
+    void launchWithScript(QString script, const QString &working_dir) const override
+    {
+        if (!working_dir.isEmpty())
+            script = QString("cd \"%1\"; ").arg(working_dir) + script;
+
+        if (passwd *pwd = getpwuid(geteuid()); pwd == nullptr)
+            CRIT << "Ignoring call to launchWithScript. getpwuid(…) failed.";
+
+        else if (QFile file(QDir(cacheLocation()).filePath("terminal_command"));
+                 !file.open(QIODevice::WriteOnly))
+            WARN << QString("Running command in %1 failed. Could not create temporary file: %2")
+                    .arg(name(), file.errorString());
+        else
+        {
+            // Note for future self
+            // QTemporaryFile does not start
+            // Deleting the file introduces race condition
+
+            if (!working_dir.isEmpty())
+                file.write(QString(R"(cd "%1";)").arg(working_dir).toUtf8());
+            file.write("clear;");
+            file.write(script.toUtf8());
+            file.close();
+
+            auto command = QString("%1 -i %2").arg(pwd->pw_shell, file.fileName());
+
+            albert::runDetachedProcess({"/usr/bin/osascript", "-l", "AppleScript",
+                                        "-e", QString(apple_script_).arg(command)});
+        }
+    }
+};
+
+
+
+
+
+
+Plugin::Plugin()
+{
+    ::plugin = this;
+
     auto s = settings();
     commonInitialize(s);
 
-    indexer_.parallel = [this](const bool &abort)
+    indexer.parallel = [this](const bool &abort)
     {
-        QStringList apps;
-        apps << "/System/Library/CoreServices/Finder.app";
+        vector<shared_ptr<applications::Application>> apps;
+
+        apps.emplace_back(make_shared<Application>("/System/Library/CoreServices/Finder.app",
+                                                   use_non_localized_name_));
+
         for (const auto &path : appDirectories())
             for (const auto &fi : QDir(path).entryInfoList({"*.app"}))
-                apps << fi.absoluteFilePath();
+                if (abort)
+                    return apps;
+                else
+                    try {
+                        apps.emplace_back(make_shared<Application>(fi.absoluteFilePath(),
+                                                                   use_non_localized_name_));
+                    } catch (const runtime_error &e) {
+                        WARN << e.what();
+                    }
 
-        vector<IndexItem> ii;
-        for (const auto & app : apps)
-            if (abort)
-                return ii;
-            else
-                addIndexItems(ii, app, use_non_localized_name());
-
-        INFO << QString("Indexed %1 apps.").arg(apps.size());
-
-        return ii;
+        return apps;
     };
 
-    indexer_.finish = [this](auto &&r) { setIndexItems(::move(r)); };
+    indexer.finish = [this](auto &&result)
+    {
+        INFO << QString("Indexed %1 applications.").arg(result.size());
+        applications = ::move(result);
+
+        ranges::sort(applications, [](const auto &a, const auto &b){ return a->id() < b->id(); });
+
+        for (const auto &app : applications)
+            INFO << QString("%1: %2").arg(app->id(), static_pointer_cast<Application>(app)->names().join(", "));
+
+        // Add terminals
+
+        terminals.clear();
+
+        auto id = QStringLiteral("com.apple.Terminal");
+        if (auto it = ranges::find_if(applications,
+                                      [&](const auto &app){ return app->id() == id; });
+                it != applications.end())
+            terminals.emplace_back(make_unique<AppleScriptLaunchableTerminal>(
+                *it,
+                R"(tell application "Terminal" to activate
+                   tell application "Terminal" to do script "exec %1")"
+                ));
+
+        id = QStringLiteral("com.googlecode.iterm2");
+        if (auto it = ranges::find_if(applications,
+                                      [&](const auto &app){ return app->id() == id; });
+                it != applications.end())
+            terminals.emplace_back(make_unique<AppleScriptLaunchableTerminal>(
+                *it,
+                R"(tell application "iTerm" to create window with default profile command "%1")"
+            ));
+
+        setUserTerminalFromConfig();
+
+        // Build index items
+
+        vector<IndexItem> ii;
+        for (const auto &app : applications)
+            for (const auto &name : static_pointer_cast<Application>(app)->names())
+                ii.emplace_back(static_pointer_cast<Application>(app), name);
+        setIndexItems(::move(ii));
+    };
 
 }
 
 Plugin::~Plugin() = default;
 
-void Plugin::updateIndexItems() { indexer_.run(); }
+shared_ptr<applications::Terminal> Plugin::userTerminal() const
+{
+    return user_terminal;
+}
+
+void Plugin::runTerminal(const QString &script, const QString &working_dir) const
+{
+    if (!user_terminal)
+        QMessageBox::warning(nullptr, {},
+                             tr("Failed to run terminal. No supported terminal available."));
+    else if (script.isEmpty())
+        user_terminal->launch(working_dir);
+    else
+        user_terminal->launchWithScript(script, working_dir);
+}
+
+void Plugin::updateIndexItems() { indexer.run(); }
 
 QWidget *Plugin::buildConfigWidget()
 {
@@ -137,6 +363,8 @@ QWidget *Plugin::buildConfigWidget()
     ui.setupUi(w);
 
     ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_non_localized_name, ui.checkBox_useNonLocalizedName);
+
+    ui.formLayout->addRow(tr("Terminal"), createTerminalFormWidget());
 
     return w;
 }
@@ -153,127 +381,3 @@ QStringList Plugin::appDirectories()
     };
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// // older snippets
-
-
-
-//static void printNSMetadataItem(NSMetadataItem *item)
-//{
-//  INFO << QString::fromNSString([item valueForAttribute:NSMetadataItemPathKey]);
-//  for (NSString * attr in [item attributes])
-//    NSLog(@"%@: %@", attr, [item valueForAttribute:attr]);  // Objects returned getting this into qt is too much
-//}
-
-//#define currentLanguageBundle [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:[[NSLocale preferredLanguages] objectAtIndex:0] ofType:@"lproj"]]
-
-//static void printBundleInfo(NSBundle *bundle)
-//{
-//  auto ns2qs = [](NSString *s){ return QString::fromNSString(s); };
-//  auto nsobj2nss = [](auto *d){ return [NSString stringWithFormat:@"%@", d]; };
-
-//  [[NSUserDefaults standardUserDefaults]
-//      setObject:[NSArray arrayWithObject:@"de"]
-//         forKey:@"AppleLanguages"];
-
-//  auto *locale = [NSLocale currentLocale];
-//  INFO << "locale languageCode" << nsobj2nss(locale.languageCode);
-//  INFO << "locale localizedStringForLanguageCode" << nsobj2nss([locale localizedStringForLanguageCode:locale.languageCode]);
-
-//  auto *main = [NSBundle mainBundle];
-//  INFO << "main bundlePath" << ns2qs(main.bundlePath);
-//  INFO << "main preferredLocalizations" << ns2qs(nsobj2nss(main.preferredLocalizations));
-
-//  INFO << "------ BundleInfo ------";
-
-//  NSString *path = [bundle pathForResource:@"de" ofType:@"lproj" ];
-//  INFO << "lpath" << ns2qs(path);
-
-
-//  auto *lb = [[NSBundle bundleWithPath:path] retain];
-//  INFO << "lb localizedInfoDictionary" << ns2qs(nsobj2nss(lb.infoDictionary));
-//  NSLog(@"localizedStringForKey: %@", [lb localizedStringForKey: (@"CFBundleName") value: nil table: nil]);
-
-//  auto *s = NSLocalizedStringFromTableInBundle(@"CFBundleDisplayName", nil, currentLanguageBundle, @"");
-//  INFO << "NSLocalizedStringFromTableInBundle" << ns2qs(s);
-
-
-//  NSFileManager *fileManager = [[NSFileManager alloc] init];
-//  INFO << "displayNameAtPath" << [fileManager displayNameAtPath:bundle.bundlePath];
-
-//  [[NSUserDefaults standardUserDefaults] setObject:[NSArray arrayWithObjects:@"de", nil] forKey:@"AppleLanguages"];
-//  [[NSUserDefaults standardUserDefaults] synchronize]; //to make the change immediate
-
-//  INFO << "bundlePath" << ns2qs(bundle.bundlePath);
-//  INFO << "bundleIdentifier" << ns2qs(bundle.bundleIdentifier);
-//  INFO << "executablePath" << ns2qs(bundle.executablePath);
-//  INFO << "localizations" << ns2qs(nsobj2nss(bundle.localizations));
-//  INFO << "developmentLocalization" << ns2qs(nsobj2nss(bundle.developmentLocalization));
-//  INFO << "preferredLocalizations" << ns2qs(nsobj2nss(bundle.preferredLocalizations));
-////  main.preferredLocalizations = [NSArray arrayWithObjects:@"de", nil]
-//  INFO << "localizedInfoDictionary" << ns2qs(nsobj2nss(bundle.localizedInfoDictionary));
-////  INFO << "infoDictionary" << ns2qs(nsobj2nss(bundle.infoDictionary));
-
-//  // Get the localized name using the specified key and bundle
-////  NSString *localizedAppName = NSLocalizedStringFromTableInBundle(@"CFBundleDisplayName", nil, bundle, nil);
-//  NSString *localizedAppName = [bundle localizedStringForKey: (@"CFBundleDisplayName") value: nil table: nil];
-//  NSLog(@"Localized App Name: %@", localizedAppName);
-
-//  NSLog(@"localizedStringForKey: %@", [bundle localizedStringForKey: (@"CFBundleDisplayName") value: nil table: nil]);
-//}
-
-
-
-// NSString *ns_bundle_identifier = [result valueForAttribute:(NSString *)kMDItemCFBundleIdentifier];
-// auto name = nsstrtoqstr([result valueForAttribute:(NSString *)kMDItemDisplayName]);
-// NSURL *ns_url = [[NSWorkspace sharedWorkspace] URLForApplicationWithBundleIdentifier:ns_bundle_identifier];
-// auto url = nsstrtoqstr([[ns_url  absoluteString ] stringByRemovingPercentEncoding]);
-//    for (NSMetadataItem * result in [query results]) {
-//      NSString *ns_bundle_identifier = [result valueForAttribute:(NSString *)kMDItemCFBundleIdentifier];
-//            auto name = QString::fromNSString([result valueForAttribute:(NSString *)kMDItemDisplayName]);
-//            NSString *ns_item_desc = [result valueForAttribute:(NSString *)kMDItemDescription];
-//            if (ns_item_desc == nil)
-//                WARN << "kMDItemDescription" <<  QString::fromNSString((NSString *)ns_item_desc);
-
-//    //        NSWorkspaceOpenConfiguration* configuration = [NSWorkspaceOpenConfiguration new];
-//    //        [[NSWorkspace sharedWorkspace] openApplicationAtURL: [NSURL fileURLWithPath: path]
-//    //                                              configuration: configuration
-//    //                                                            error: &error];
-
-//  if (![[NSWorkspace sharedWorkspace]
-//        launchAppWithBundleIdentifier:qstrtonsstr(identifier)
-//                              options:NSWorkspaceLaunchDefault
-//       additionalEventParamDescriptor:NULL
-//                     launchIdentifier:NULL]) {
