@@ -46,6 +46,7 @@ static QSet<QString> parseConfigFile(const QString &path)
 }
 
 Plugin::Plugin():
+    apps(registry(), "applications"),
     tr_desc(tr("Configured SSH host – %1")),
     tr_conn(tr("Connect"))
 {
@@ -86,15 +87,15 @@ std::vector<RankItem> Plugin::getItems(const QString &query, bool allowParams) c
             if (!q_params.isEmpty())
                 cmd += ' ' + q_params;
 
+            auto a = [cmd, this]{ apps->runTerminal(QString("%1 || exec $SHELL").arg(cmd)); };
+
             r.emplace_back(
-                StandardItem::make(
-                    host, host, tr_desc.arg(cmd), cmd, icon_urls,
-                    {{ "c", tr_conn, [=]{ runTerminal(QString("%1 && exit").arg(cmd)); } }}
-                ),
+                StandardItem::make(host, host, tr_desc.arg(cmd), cmd, icon_urls, {{"c", tr_conn, a}}),
                 (double)q_host.size() / host.size()
             );
         }
     }
+
     return r;
 }
 
