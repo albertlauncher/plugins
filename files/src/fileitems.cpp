@@ -2,15 +2,18 @@
 
 #include "fileitems.h"
 #include "fsindexnodes.h"
-#include <QGuiApplication>
 #include <QClipboard>
 #include <QDir>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QMimeData>
 #include <QUrl>
+#include <albert/plugin/applications.h>
 #include <albert/util.h>
 using namespace albert;
 using namespace std;
+
+extern applications::Plugin *apps;
 
 QString FileItem::id() const { return filePath(); }
 
@@ -77,7 +80,8 @@ vector<Action> FileItem::actions() const
         [this]()
         {
             QFileInfo fi(filePath());
-            runTerminal({}, fi.isDir() ? fi.filePath() : fi.path());
+            apps->runTerminal(QString("cd %1; exec $SHELL")
+                              .arg(fi.isDir() ? fi.filePath() : fi.path()));
         });
 
 

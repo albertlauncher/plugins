@@ -35,11 +35,15 @@ const uint8_t DEF_MAX_DEPTH = 255;
 const char* CFG_SCAN_INTERVAL = "scanInterval";
 const uint DEF_SCAN_INTERVAL = 5;
 const char* INDEX_FILE_NAME = "file_index.json";
+applications::Plugin *apps;
 
 Plugin::Plugin():
+    apps(registry(), "applications"),
     homebrowser(fs_browsers_case_sensitive_),
     rootbrowser(fs_browsers_case_sensitive_)
 {
+    ::apps = apps.get();
+
     connect(&fs_index_, &FsIndex::status, this, &Plugin::statusInfo);
     connect(&fs_index_, &FsIndex::updatedFinished, this, [this](){ updateIndexItems(); });
 

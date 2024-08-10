@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(files VERSION 8.1)
+project(files VERSION 8.2)
 
-albert_plugin(QT Concurrent Widgets)
+albert_plugin(
+    INCLUDE PRIVATE $<TARGET_PROPERTY:albert::applications,INTERFACE_INCLUDE_DIRECTORIES>
+    QT Concurrent Widgets
+)
 
 if (BUILD_TESTS)
     set(TARGET_TST ${PROJECT_NAME}_test)

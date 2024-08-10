@@ -7,6 +7,8 @@
 #include <QSettings>
 #include <albert/extensionplugin.h>
 #include <albert/indexqueryhandler.h>
+#include <albert/plugin/applications.h>
+#include <albert/plugindependency.h>
 #include <albert/property.h>
 
 class Plugin : public albert::ExtensionPlugin,
@@ -29,6 +31,7 @@ public:
 
 private:
 
+    albert::StrongDependency<applications::Plugin> apps;
     FsIndex fs_index_;
     std::shared_ptr<albert::Item> update_item;
     HomeBrowser homebrowser;
