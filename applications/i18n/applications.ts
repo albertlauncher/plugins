@@ -2,39 +2,39 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="en_US">
 <context>
+    <name>ApplicationBase</name>
+    <message>
+        <source>Launch application</source>
+        <translation></translation>
+    </message>
+</context>
+<context>
     <name>ConfigWidget</name>
     <message>
-        <location filename="../src/configwidget_xdg.ui" line="21"/>
         <source>Run desktop applications as described in the [freedesktop.org Desktop Entry Specification](https://specifications.freedesktop.org/desktop-entry-spec/latest/).</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/configwidget_xdg.ui" line="39"/>
         <source>Ignore &apos;OnlyShowIn&apos;/&apos;NotShowIn&apos;</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/configwidget_xdg.ui" line="53"/>
         <source>Use &apos;Exec&apos; for lookup</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/configwidget_xdg.ui" line="67"/>
         <source>Use &apos;Keywords&apos; for lookup</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/configwidget_xdg.ui" line="81"/>
         <source>Use &apos;GenericName&apos; for lookup</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/configwidget_xdg.ui" line="95"/>
         <source>Use non-localized &apos;Name&apos; for lookup</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/configwidget_mac.ui" line="9"/>
         <source>Index non-localized name</source>
         <translation></translation>
     </message>
@@ -42,14 +42,37 @@
 <context>
     <name>Plugin</name>
     <message>
-        <location filename="../src/plugin_mac.mm" line="83"/>
-        <location filename="../src/plugin_xdg.cpp" line="281"/>
-        <source>Launch app</source>
+        <source>Terminal</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin_mac.mm" line="87"/>
-        <source>Open terminal here</source>
+        <source>Open desktop entry</source>
+        <translation></translation>
+    </message>
+</context>
+<context>
+    <name>PluginBase</name>
+    <message>
+        <source>Report missing terminals &lt;a href=&quot;%1&quot;&gt;here&lt;/a&gt;.</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>No terminal available.</source>
+        <translation></translation>
+    </message>
+</context>
+<context>
+    <name>Terminal</name>
+    <message>
+        <source>Failed to run terminal with script: getpwuid(…) failed.</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Failed to run terminal with script: Script is empty.</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Failed to run terminal with script: Could not create temporary script file.</source>
         <translation></translation>
     </message>
 </context>
