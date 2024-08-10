@@ -4,5 +4,6 @@
     "description": "Run executables in $PATH",
     "license": "MIT",
     "name": "PATH",
+    "plugin_dependencies": ["applications"],
     "url": "https://github.com/albertlauncher/plugins/tree/main/PATH"
 }
