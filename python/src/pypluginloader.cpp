@@ -1,7 +1,6 @@
 // Copyright (c) 2023-2024 Manuel Schneider
 
-#include "embeddedmodule.h"
-#include "trampolineclasses.h"
+#include "trampolineclasses.hpp"
 
 #include "plugin.h"
 #include "pypluginloader.h"
@@ -312,7 +311,7 @@ void PyPluginLoader::load_()
         py::object pyspec = importlib_util.attr("spec_from_file_location")(QString("albert.%1").arg(metadata_.id), source_path_); // Prefix to avoid conflicts
         module_ = importlib_util.attr("module_from_spec")(pyspec);
 
-        // Set default md_id
+        // Set default md_id TODO: Remove as of 3.0
         if (!py::hasattr(module_, ATTR_MD_ID))
             module_.attr("md_id") = metadata_.id;
 

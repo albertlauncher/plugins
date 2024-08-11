@@ -1,17 +1,22 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
-#include "cast_specialization.h" // Has to be imported first
-#include "trampolineclasses.h" // Has to be imported first
+#pragma once
+
+#include "cast_specialization.hpp" // Has to be imported first
+#include "trampolineclasses.hpp" // Has to be imported first
+
 #include <QDir>
 #include <albert/indexqueryhandler.h>
 #include <albert/logging.h>
+#include <albert/matcher.h>
 #include <albert/notification.h>
+#include <albert/plugin/applications.h>
 #include <albert/plugininstance.h>
 #include <albert/standarditem.h>
 #include <albert/util.h>
-#include <albert/matcher.h>
 using namespace albert;
 using namespace std;
+extern applications::Plugin *apps;
 
 
 /*
@@ -253,7 +258,33 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
           py::arg("cmdln") = QStringList(),
           py::arg("workdir") = QString());
 
-    m.def("runTerminal", &runTerminal,
+    auto runTerminal = [](const QString &s, const QString &w, bool c){
+
+        // TODO Remove in v3.0
+
+        QString script;
+
+        if (!w.isEmpty())
+        {
+            WARN << "Parameter `workdir` is deprecated and will be removed in v3.0."
+                 << "Prepend `cd <workdir>;` to your script";
+            script = QString("cd %1; ").arg(w);
+        }
+
+        script.append(s);
+
+        if (c)
+        {
+            WARN << "Parameter `close_on_exit` is deprecated and will be removed in v3.0."
+                 << "Append `exec $SHELL;` to your script.";
+            script.append(QString(" ; exec $SHELL"));
+        }
+
+        apps->runTerminal(script);
+
+    };
+
+    m.def("runTerminal", runTerminal,
           py::arg("script") = QString(),
           py::arg("workdir") = QString(),
           py::arg("close_on_exit") = false);

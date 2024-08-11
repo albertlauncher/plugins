@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "cast_specialization.h" // Has to be imported first
+#include "cast_specialization.hpp" // Has to be imported first
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -502,7 +502,7 @@ public:
     void handleTriggerQuery(albert::Query *query) override
     { CATCH_PYBIND11_OVERRIDE(void, Base, handleTriggerQuery, query); }
 
-    vector<RankItem> handleGlobalQuery(const albert::Query *query) const override
+    vector<RankItem> handleGlobalQuery(const albert::Query *query) override
     { CATCH_PYBIND11_OVERRIDE_PURE(vector<RankItem>, Base, handleGlobalQuery, query); return {}; }
 
 };
@@ -536,7 +536,7 @@ public:
     // (1) overrides handleGlobalQuery "final"
     // (2) overrides "pure" on python side
     // (3) has to override non-pure otherwise calls will throw "call to pure" error
-    vector<RankItem> handleGlobalQuery(const Query *query) const override
+    vector<RankItem> handleGlobalQuery(const Query *query) override
     { CATCH_PYBIND11_OVERRIDE(vector<RankItem>, Base, handleGlobalQuery, query); return {}; }
 
     void updateIndexItems() override

@@ -1,8 +1,7 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
-#include <pybind11/embed.h>
-#include "cast_specialization.h"
-#include "embeddedmodule.h"
+#include "cast_specialization.hpp"
+#include "embeddedmodule.hpp"
 // import pybind first
 
 #include "plugin.h"
@@ -23,8 +22,13 @@ namespace py = pybind11;
 
 static const constexpr char *PLUGIN_DIR = "plugins";
 
-Plugin::Plugin()
+applications::Plugin *apps;
+
+Plugin::Plugin():
+    apps(registry(), "applications")
 {
+    ::apps = apps.get();
+
     /*
      * The python interpreter is never unloaded once it has been loaded. This
      * is working around the ugly segfault that occur when third-party libraries
@@ -57,7 +61,9 @@ Plugin::Plugin()
             QFile src(":albert.pyi");
             QFile dst(dir.filePath("albert.pyi"));
             const char * k_stub_ver = "stub_version";
-            auto v = QString("%1.%2").arg(MAJOR_INTERFACE_VERSION).arg(MINOR_INTERFACE_VERSION);
+            auto v = QString("%1.%2")
+                    .arg(PyPluginLoader::MAJOR_INTERFACE_VERSION)
+                    .arg(PyPluginLoader::MINOR_INTERFACE_VERSION);
 
             if (v != state()->value(k_stub_ver).toString() && dst.exists() && !dst.remove())
                 WARN << "Failed removing former interface spec" << dst.error();

@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(python VERSION 4.5)
+project(python VERSION 4.6)
 
 set(PYBIND11_FINDPYTHON ON)
 add_subdirectory(pybind11)
 
 albert_plugin(
+    INCLUDE PRIVATE $<TARGET_PROPERTY:albert::applications,INTERFACE_INCLUDE_DIRECTORIES>
     LINK PRIVATE pybind11::embed
     QT Concurrent Widgets
 )

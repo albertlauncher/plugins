@@ -1,8 +1,8 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
 #pragma once
-
 #include "pybind11/pybind11.h"
+
 #include <QLoggingCategory>
 #include <albert/pluginloader.h>
 #include <albert/pluginmetadata.h>
@@ -10,6 +10,7 @@
 class Plugin;
 class QFileInfo;
 namespace albert { class PluginProvider; }
+
 
 class NoPluginException: public std::exception
 {
@@ -20,9 +21,13 @@ private:
     std::string what_;
 };
 
+
 class PyPluginLoader : public albert::PluginLoader
 {
 public:
+
+    static const int MAJOR_INTERFACE_VERSION = 2;
+    static const int MINOR_INTERFACE_VERSION = 4;
 
     PyPluginLoader(Plugin &provider, const QString &module_path);
     ~PyPluginLoader();
@@ -50,8 +55,3 @@ private:
     pybind11::object instance_;
 
 };
-
-
-
-
-

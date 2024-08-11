@@ -1,5 +1,5 @@
 """
-# Albert Python interface v2.3
+# Albert Python interface v2.4
 
 
 The Python interface is a subset of the internal C++ interface exposed to Python with some minor adjustments. A Python
@@ -73,6 +73,10 @@ Changes in 2.3:
     - Add instance method dismiss().
     - Note: Notification does not display unless send(…) has been called.
 
+Changes in 2.4:
+
+- Deprecate parameter `workdir` of runTerminal. Prepend `cd <workdir>;` to your script.
+- Deprecate parameter `close_on_exit` of runTerminal. Append `exec $SHELL;` to your script.
 
 ## List of things 3.0 will break
 
@@ -83,6 +87,8 @@ Changes in 2.3:
 - Drop implicit directory creation in configLocation.
 - Drop implicit directory creation in dataLocation.
 - Drop md_id.
+- Drop parameter `workdir` in runTerminal.
+- Drop parameter `close_on_exit` in runTerminal.
 
 """
 
