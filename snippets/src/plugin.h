@@ -11,7 +11,8 @@ class QWidget;
 
 class Plugin : public albert::ExtensionPlugin,
                public albert::IndexQueryHandler,
-               public Snippets
+               public snippets::Plugin
+
 {
     ALBERT_PLUGIN
 public:
