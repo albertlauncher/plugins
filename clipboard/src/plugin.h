@@ -1,14 +1,14 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
-#include <albert/triggerqueryhandler.h>
-#include <albert/extensionplugin.h>
-#include <albert/plugindependency.h>
 #include <QClipboard>
 #include <QDateTime>
 #include <QTimer>
+#include <albert/extensionplugin.h>
+#include <albert/plugin/snippets.h>
+#include <albert/plugindependency.h>
+#include <albert/triggerqueryhandler.h>
 #include <shared_mutex>
-class Snippets;
 
 
 struct ClipboardEntry
@@ -48,7 +48,7 @@ private:
     // explicit current, such that users can delete recent ones
     QString clipboard_text;
     
-    albert::WeakDependency<Snippets> snippets;
+    albert::WeakDependency<snippets::Plugin> snippets;
 };
 
 

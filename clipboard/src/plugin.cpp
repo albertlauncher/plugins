@@ -16,7 +16,7 @@
 #include <albert/extensionregistry.h>
 #include <albert/logging.h>
 #include <albert/matcher.h>
-#include <albert/snippets/snippets.h>
+#include <albert/plugin/snippets.h>
 #include <albert/standarditem.h>
 #include <albert/util.h>
 #include <shared_mutex>
