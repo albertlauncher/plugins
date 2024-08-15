@@ -1,6 +1,6 @@
 if(NOT APPLE)
 
-    cmake_minimum_required(VERSION 3.16)
+    cmake_minimum_required(VERSION 3.17)
     find_package(Albert REQUIRED)
 
     project(docs VERSION 6.5)

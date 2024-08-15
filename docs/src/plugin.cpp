@@ -407,8 +407,11 @@ std::vector<IndexItem> Docset::createIndexItems() const
                             a = xml.readElementText();
                     }
                 }
+
+                // Macos and Win cant handle anchors. Use it though because it is still better than
+                // skipping the item entirely. TODO use applications::schemeHandlers if ready.
                 if (!a.isEmpty())
-                    continue; // Skip anchors, browsers cant handle them
+                    p = QString("%1#%2").arg(p, a.section("/", -1));
 
                 auto item = make_shared<DocumentationItem>(this, n, p);
                 items.emplace_back(item, item->text());
