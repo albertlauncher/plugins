@@ -20,7 +20,7 @@ public:
     QString synopsis() const override;
     bool allowTriggerRemap() const override;
     void handleTriggerQuery(albert::Query *) override;
-    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) override;
     QWidget* buildConfigWidget() override;
 
 private:

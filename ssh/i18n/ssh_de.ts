@@ -4,14 +4,6 @@
 <context>
     <name>Plugin</name>
     <message>
-        <source>Failed getting dependency &apos;%1&apos;.</source>
-        <translation type="vanished">Fehler beim Abrufen der Abhängigkeit &apos;%1&apos;.</translation>
-    </message>
-    <message>
-        <source>Configured SSH host – ssh %1</source>
-        <translation type="vanished">Konfigurierter SSH Host – ssh %1</translation>
-    </message>
-    <message>
         <source>Configured SSH host – %1</source>
         <translation>Konfigurierter SSH Host - %1</translation>
     </message>

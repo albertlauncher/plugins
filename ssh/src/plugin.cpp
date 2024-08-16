@@ -108,7 +108,7 @@ void Plugin::handleTriggerQuery(albert::Query *query)
         query->add(i);
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
 {
     return getItems(query->string(), false);
 }
