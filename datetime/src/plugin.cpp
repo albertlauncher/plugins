@@ -28,7 +28,7 @@ QString Plugin::synopsis() const
             .arg(tr("Date").toLower(), tr("Time").toLower());
 }
 
-vector<shared_ptr<Item>> Plugin::handleEmptyQuery(const Query *) const
+vector<shared_ptr<Item>> Plugin::handleEmptyQuery(const Query *)
 {
     if (show_date_on_empty_query_)
     {
@@ -56,7 +56,7 @@ inline static QString tr_copy_with_placeholder()
     return Plugin::tr("Copy '%1' to clipboard");
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
 {
     vector<RankItem> r;
     const auto &s = query->string();
@@ -172,7 +172,6 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
 
     return r;
 }
-
 
 QWidget *Plugin::buildConfigWidget()
 {

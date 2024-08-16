@@ -20,8 +20,8 @@ public:
 
     QWidget *buildConfigWidget() override;
     QString synopsis() const override;
-    std::vector<std::shared_ptr<albert::Item>> handleEmptyQuery(const albert::Query*) const override;
-    std::vector<RankItem> handleGlobalQuery(const Query *query) const override;
+    std::vector<std::shared_ptr<albert::Item>> handleEmptyQuery(const albert::Query*) override;
+    std::vector<RankItem> handleGlobalQuery(const Query *query) override;
 
     QStringList icon_urls{":datetime"};
 

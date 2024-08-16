@@ -4,12 +4,10 @@
 <context>
     <name>ConfigWidget</name>
     <message>
-        <location filename="../src/configwidget.ui" line="9"/>
         <source>Show date and time on empty query</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/configwidget.ui" line="23"/>
         <source>The &apos;date and time&apos; extension provides the items *date*, *time*, *unix* and *utc*. It also converts unix timestamps (numbers) to local time.</source>
         <translation></translation>
     </message>
@@ -29,39 +27,30 @@
 <context>
     <name>albert::datetime::Plugin</name>
     <message>
-        <location filename="../src/plugin.cpp" line="17"/>
-        <location filename="../src/plugin.cpp" line="28"/>
         <source>Time</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="18"/>
-        <location filename="../src/plugin.cpp" line="28"/>
         <source>Date</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="19"/>
         <source>Unix time</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="51"/>
         <source>Copy to clipboard</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="56"/>
         <source>Copy &apos;%1&apos; to clipboard</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="136"/>
         <source>UTC date and time</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="161"/>
         <source>Date and time from unix time</source>
         <translation></translation>
     </message>

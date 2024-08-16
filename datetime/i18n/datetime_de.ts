@@ -4,12 +4,10 @@
 <context>
     <name>ConfigWidget</name>
     <message>
-        <location filename="../src/configwidget.ui" line="9"/>
         <source>Show date and time on empty query</source>
         <translation>Datum und Uhrzeit bei leerer Abfrage anzeigen</translation>
     </message>
     <message>
-        <location filename="../src/configwidget.ui" line="23"/>
         <source>The &apos;date and time&apos; extension provides the items *date*, *time*, *unix* and *utc*. It also converts unix timestamps (numbers) to local time.</source>
         <translation>Die Erweiterung &apos;Datum und Uhrzeit&apos; bietet die Elemente *datum*, *zeit*, *unix* und *utc*. Sie konvertiert auch Unix-Zeitstempel (Zahlen) in die lokale Zeit.</translation>
     </message>
@@ -164,39 +162,30 @@
 <context>
     <name>albert::datetime::Plugin</name>
     <message>
-        <location filename="../src/plugin.cpp" line="17"/>
-        <location filename="../src/plugin.cpp" line="28"/>
         <source>Time</source>
         <translation>Zeit</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="18"/>
-        <location filename="../src/plugin.cpp" line="28"/>
         <source>Date</source>
         <translation>Datum</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="19"/>
         <source>Unix time</source>
         <translation>Unixzeit</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="51"/>
         <source>Copy to clipboard</source>
         <translation>In die Zwischenablage kopieren</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="56"/>
         <source>Copy &apos;%1&apos; to clipboard</source>
         <translation>&apos;%1&apos; in die Zwischenablage kopieren</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="136"/>
         <source>UTC date and time</source>
         <translation>UTC Datum und Uhrzeit</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="161"/>
         <source>Date and time from unix time</source>
         <translation>Datum und Uhrzeit aus Unixzeit</translation>
     </message>
