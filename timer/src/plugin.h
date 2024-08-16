@@ -32,8 +32,8 @@ public:
 
     QString defaultTrigger() const override;
     QString synopsis() const override;
-    std::vector<RankItem> handleGlobalQuery(const Query *) const override;
-    std::vector<std::shared_ptr<Item>> handleEmptyQuery(const Query *) const override;
+    std::vector<RankItem> handleGlobalQuery(const Query *) override;
+    std::vector<std::shared_ptr<Item>> handleEmptyQuery(const Query *) override;
 
 private:
 

@@ -165,44 +165,36 @@
 <context>
     <name>albert::timer::Plugin</name>
     <message>
-        <location filename="../src/plugin.cpp" line="32"/>
         <source>timer </source>
         <comment>The trigger. Lowercase.</comment>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="35"/>
         <source>[[h:]min:]s [name]</source>
         <translation>[[h:]min:]s [Name]</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="100"/>
         <source>Set timer: %1</source>
         <translation>Timer stellen: %1</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="105"/>
         <source>Start</source>
         <comment>Action verb form</comment>
         <translation>Starten</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="129"/>
         <source>Timer: %1</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="130"/>
         <source>%1, Times out %2</source>
         <translation>%1, Läuft ab %2</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="130"/>
         <source>%1, Timed out %2</source>
         <translation>%1, Um %2 abgelaufen</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="136"/>
         <source>Remove</source>
         <comment>Action verb form</comment>
         <translation>Entfernen</translation>
@@ -211,12 +203,10 @@
 <context>
     <name>albert::timer::Timer</name>
     <message>
-        <location filename="../src/plugin.cpp" line="25"/>
         <source>Timer %1</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="27"/>
         <source>Timed out %1</source>
         <translation>Um %1 abgelaufen</translation>
     </message>

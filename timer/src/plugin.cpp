@@ -73,7 +73,7 @@ static uint parseDurationString(const QString &s)
     return dur;
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
 {
     if (!query->isValid())
         return {};
@@ -114,7 +114,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
     return r;
 }
 
-vector<shared_ptr<Item>> Plugin::handleEmptyQuery(const Query *) const
+vector<shared_ptr<Item>> Plugin::handleEmptyQuery(const Query *)
 {
     vector<shared_ptr<Item>> results;
     for (auto &timer: timers_)

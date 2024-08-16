@@ -19,44 +19,36 @@
 <context>
     <name>albert::timer::Plugin</name>
     <message>
-        <location filename="../src/plugin.cpp" line="32"/>
         <source>timer </source>
         <comment>The trigger. Lowercase.</comment>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="35"/>
         <source>[[h:]min:]s [name]</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="100"/>
         <source>Set timer: %1</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="105"/>
         <source>Start</source>
         <comment>Action verb form</comment>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="129"/>
         <source>Timer: %1</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="130"/>
         <source>%1, Times out %2</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="130"/>
         <source>%1, Timed out %2</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="136"/>
         <source>Remove</source>
         <comment>Action verb form</comment>
         <translation></translation>
@@ -65,12 +57,10 @@
 <context>
     <name>albert::timer::Timer</name>
     <message>
-        <location filename="../src/plugin.cpp" line="25"/>
         <source>Timer %1</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="27"/>
         <source>Timed out %1</source>
         <translation></translation>
     </message>
