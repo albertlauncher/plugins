@@ -1,15 +1,14 @@
 // Copyright (c) 2024 Manuel Schneider
 
-#include <albert/util.h>
-#include <albert/logging.h>
-#include <albert/matcher.h>
-#include <albert/standarditem.h>
-#include <albert/notification.h>
 #include "plugin.h"
 #include <IOBluetooth/IOBluetooth.h>
 #include <QTimer>
+#include <albert/logging.h>
+#include <albert/matcher.h>
+#include <albert/notification.h>
+#include <albert/standarditem.h>
+#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("bluetooth")
-using namespace albert::bluetooth;
 using namespace albert;
 using namespace std;
 
@@ -25,26 +24,6 @@ void IOBluetoothPreferenceSetDiscoverableState(int state);
 
 @interface BluetoothConnectionHandler : NSObject
 - (void)connectionComplete:(IOBluetoothDevice *)device status:(IOReturn)status;
-@end
-
-@implementation BluetoothConnectionHandler
-- (void)connectionComplete:(IOBluetoothDevice *)device status:(IOReturn)status {
-    auto name = QString::fromNSString(device.name);
-    if (status == kIOReturnSuccess)
-        INFO << QString("Successfully connected to device: '%1'").arg(name);
-    else
-    {
-        WARN << QString("Failed to connect to device: '%1', status: '%2'")
-                .arg(name).arg(status);
-
-        auto *n = new Notification(
-            name,
-            Plugin::tr("Connection failed")
-        );
-        QTimer::singleShot(5000, n, [n]{ n->deleteLater(); });
-        n->send();
-    }
-}
 @end
 
 
@@ -80,7 +59,7 @@ bool Plugin::supportsFuzzyMatching() const { return true; }
 
 void Plugin::setFuzzyMatching(bool val) { d->fuzzy = val; }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *q) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *q)
 {
     vector<RankItem> r;
 
@@ -151,3 +130,30 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *q) const
     }
     return r;
 }
+
+
+// Do not move upwards
+// Interface implenmentation before plugin implementation confuses lupdate
+
+@implementation BluetoothConnectionHandler
+
+- (void)connectionComplete:(IOBluetoothDevice *)device status:(IOReturn)status
+{
+    auto name = QString::fromNSString(device.name);
+    if (status == kIOReturnSuccess)
+        INFO << QString("Successfully connected to device: '%1'").arg(name);
+    else
+    {
+        WARN << QString("Failed to connect to device: '%1', status: '%2'")
+                .arg(name).arg(status);
+
+        auto *n = new Notification(
+            name,
+            Plugin::tr("Connection failed")
+        );
+        QTimer::singleShot(5000, n, [n]{ n->deleteLater(); });
+        n->send();
+    }
+}
+
+@end

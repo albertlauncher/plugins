@@ -4,7 +4,6 @@
 #include <albert/globalqueryhandler.h>
 #include <albert/extensionplugin.h>
 
-namespace albert::bluetooth {
 class Plugin : public albert::ExtensionPlugin,
                public albert::GlobalQueryHandler
 {
@@ -18,7 +17,7 @@ public:
     QString defaultTrigger() const override;
     bool supportsFuzzyMatching() const override;
     void setFuzzyMatching(bool) override;
-    std::vector<RankItem> handleGlobalQuery(const Query *) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query *) override;
 
 private:
 
@@ -26,4 +25,3 @@ private:
     std::unique_ptr<Private> d;
 
 };
-}
