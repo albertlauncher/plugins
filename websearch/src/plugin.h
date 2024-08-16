@@ -30,7 +30,7 @@ public:
     void restoreDefaultEngines();
 
 private:
-    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) override;
     std::vector<std::shared_ptr<albert::Item>> fallbacks(const QString &) const override;
     QWidget *buildConfigWidget() override;
 
