@@ -12,7 +12,7 @@ using namespace albert;
 using namespace std;
 
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
 {
   vector<RankItem> results;
   @autoreleasepool {

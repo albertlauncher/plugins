@@ -13,6 +13,6 @@ public:
 
     QWidget *buildConfigWidget() override;
     QString defaultTrigger() const override { return QStringLiteral("cn "); }
-    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) override;
 
 };
