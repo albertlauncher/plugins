@@ -125,7 +125,7 @@ shared_ptr<Item> Plugin::buildItem(const QString &query, const MathStructure &ms
     );
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
 {
     vector<RankItem> results;
 

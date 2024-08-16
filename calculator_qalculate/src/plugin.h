@@ -16,8 +16,8 @@ public:
 
     QString defaultTrigger() const override;
     QString synopsis() const override;
-    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) const override;
     void handleTriggerQuery(albert::Query*) override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) override;
     QWidget* buildConfigWidget() override;
 
 private:
