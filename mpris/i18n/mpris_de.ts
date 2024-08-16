@@ -4,7 +4,6 @@
 <context>
     <name>ConfigWidget</name>
     <message>
-        <location filename="../src/configwidget.ui" line="21"/>
         <source>See the [MPRIS D-Bus Interface Specification](https://specifications.freedesktop.org/mpris-spec/latest/#About).
 
 Supported commands:
@@ -26,36 +25,46 @@ Stopp</translation>
     </message>
 </context>
 <context>
-    <name>Player</name>
+    <name>Plugin</name>
     <message>
-        <location filename="../src/plugin.cpp" line="114"/>
-        <source>%1 media player control</source>
-        <translation>%1 Mediaplayersteuerung</translation>
+        <source>Raise</source>
+        <translation>Nach vorne bringen</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="137"/>
-        <source>Stop</source>
-        <translation>Stopp</translation>
+        <source>Quit</source>
+        <translation>Beenden</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="142"/>
-        <source>Pause</source>
-        <translation>Pause</translation>
-    </message>
-    <message>
-        <location filename="../src/plugin.cpp" line="147"/>
         <source>Play</source>
         <translation>Wiedergabe</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="151"/>
+        <source>Pause</source>
+        <translation>Pause</translation>
+    </message>
+    <message>
+        <source>Stop</source>
+        <translation>Stopp</translation>
+    </message>
+    <message>
         <source>Next</source>
         <translation>Nächster</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="155"/>
         <source>Previous</source>
         <translation>Vorheriger</translation>
+    </message>
+    <message>
+        <source>Playing</source>
+        <translation>Wiedergabe</translation>
+    </message>
+    <message>
+        <source>Paused</source>
+        <translation>Pausiert</translation>
+    </message>
+    <message>
+        <source>Stopped</source>
+        <translation>Gestoppt</translation>
     </message>
 </context>
 </TS>

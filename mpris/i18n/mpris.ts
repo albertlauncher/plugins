@@ -4,7 +4,6 @@
 <context>
     <name>ConfigWidget</name>
     <message>
-        <location filename="../src/configwidget.ui" line="21"/>
         <source>See the [MPRIS D-Bus Interface Specification](https://specifications.freedesktop.org/mpris-spec/latest/#About).
 
 Supported commands:
@@ -18,35 +17,45 @@ Supported commands:
     </message>
 </context>
 <context>
-    <name>Player</name>
+    <name>Plugin</name>
     <message>
-        <location filename="../src/plugin.cpp" line="114"/>
-        <source>%1 media player control</source>
+        <source>Raise</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="137"/>
-        <source>Stop</source>
+        <source>Quit</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="142"/>
-        <source>Pause</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/plugin.cpp" line="147"/>
         <source>Play</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="151"/>
+        <source>Pause</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Stop</source>
+        <translation></translation>
+    </message>
+    <message>
         <source>Next</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="155"/>
         <source>Previous</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Playing</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Paused</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Stopped</source>
         <translation></translation>
     </message>
 </context>

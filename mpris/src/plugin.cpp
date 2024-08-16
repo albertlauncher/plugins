@@ -10,7 +10,6 @@
 #include <albert/logging.h>
 #include <albert/matcher.h>
 #include <albert/standarditem.h>
-
 ALBERT_LOGGING_CATEGORY("mpris")
 using namespace albert;
 using namespace std;
@@ -211,7 +210,7 @@ Plugin::Plugin() : d(make_unique<Private>())
 
 Plugin::~Plugin() = default;
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
 {
     vector<RankItem> results;
     for (auto &[service, player] : d->players)

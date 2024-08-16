@@ -3,7 +3,7 @@ if(UNIX AND NOT APPLE)
     cmake_minimum_required(VERSION 3.16)
     find_package(Albert REQUIRED)
 
-    project(mpris VERSION 4.0)
+    project(mpris VERSION 4.1)
 
     albert_plugin(QT DBus Widgets)
 
