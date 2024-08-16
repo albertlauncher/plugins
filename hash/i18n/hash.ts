@@ -4,12 +4,10 @@
 <context>
     <name>Plugin</name>
     <message>
-        <location filename="../src/plugin.cpp" line="24"/>
         <source>Copy</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="25"/>
         <source>Copy short form (8 char)</source>
         <translation></translation>
     </message>

@@ -42,7 +42,7 @@ static shared_ptr<Item> buildItem(int algo_index, const QString& string_to_hash)
     );
 };
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query) const
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
 {
     vector<RankItem> results;
     for (int i = 0; i < algo_count; ++i){

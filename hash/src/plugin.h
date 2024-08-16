@@ -8,7 +8,10 @@ class Plugin : public albert::ExtensionPlugin,
                public albert::GlobalQueryHandler
 {
     ALBERT_PLUGIN
+
 public:
-    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) const override;
+
     void handleTriggerQuery(albert::Query*) override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) override;
+
 };
