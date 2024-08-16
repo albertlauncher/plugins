@@ -1,62 +1,17 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
 #include "plugin.h"
+#include "ui_configwidget.h"
 #include <QCheckBox>
-#include <QGridLayout>
-#include <QLabel>
 #include <QLineEdit>
 #include <QSettings>
-#include <QSpacerItem>
-#include <QWidget>
+#include <albert/extensionregistry.h>
+#include <albert/logging.h>
 #include <albert/standarditem.h>
 #include <albert/util.h>
+ALBERT_LOGGING_CATEGORY("system")
 using namespace albert;
 using namespace std;
-
-enum SupportedCommands {
-    LOCK,
-    LOGOUT,
-    SUSPEND,
-    HIBERNATE,
-    REBOOT,
-    POWEROFF
-};
-
-static const constexpr char *config_keys_enabled[] = {
-    "lock_enabled",
-    "logout_enabled",
-    "suspend_enabled",
-    "hibernate_enabled",
-    "reboot_enabled",
-    "poweroff_enabled"
-};
-
-static const constexpr char *config_keys_title[] = {
-    "title_lock",
-    "title_logout",
-    "title_suspend",
-    "title_hibernate",
-    "title_reboot",
-    "title_poweroff"
-};
-
-static const constexpr char *config_keys_command[] = {
-    "command_lock",
-    "command_logout",
-    "command_suspend",
-    "command_hibernate",
-    "command_reboot",
-    "command_poweroff"
-};
-
-static const QStringList icon_urls[] = {
-    {"xdg:system-lock-screen", ":lock"},
-    {"xdg:system-log-out", ":logout"},
-    {"xdg:system-suspend", ":suspend"},
-    {"xdg:system-suspend-hibernate", ":hibernate"},
-    {"xdg:system-reboot", ":reboot"},
-    {"xdg:system-shutdown", ":poweroff"}
-};
 
 static QString defaultCommand(SupportedCommands command)
 {
@@ -65,7 +20,6 @@ static QString defaultCommand(SupportedCommands command)
         case LOCK:      return R"R(pmset displaysleepnow)R";
         case LOGOUT:    return R"R(osascript -e 'tell app "System Events" to  «event aevtrlgo»')R";
         case SUSPEND:   return R"R(osascript -e 'tell app "System Events" to sleep')R";
-        case HIBERNATE: throw runtime_error("HIBERNATE not supported on MacOS");
         case REBOOT:    return R"R(osascript -e 'tell app "System Events" to restart')R";
         case POWEROFF:  return R"R(osascript -e 'tell app "System Events" to shut down')R";
     }
@@ -144,65 +98,110 @@ static QString defaultCommand(SupportedCommands command)
     return {};
 }
 
-Plugin::Plugin()
+Plugin::Plugin():
+    commands{
+        {
+            .id = LOCK,
+            .config_key_enabled = "lock_enabled",
+            .config_key_title = "title_lock",
+            .config_key_command = "command_lock",
+            .icon_urls = {"xdg:system-lock-screen", ":lock"},
+            .default_title = tr("Lock"),
+            .description = tr("Lock the session"),
+            .command = defaultCommand(LOCK),
+        },
+        {
+            .id = LOGOUT,
+            .config_key_enabled = "logout_enabled",
+            .config_key_title = "title_logout",
+            .config_key_command = "command_logout",
+            .icon_urls = {"xdg:system-log-out", ":logout"},
+            .default_title = tr("Logout"),
+            .description = tr("Quit the session"),
+            .command = defaultCommand(LOGOUT),
+        },
+        {
+            .id = SUSPEND,
+            .config_key_enabled = "suspend_enabled",
+            .config_key_title = "title_suspend",
+            .config_key_command = "command_suspend",
+            .icon_urls = {"xdg:system-suspend", ":suspend"},
+            .default_title = tr("Suspend"),
+            .description = tr("Suspend to memory"),
+            .command = defaultCommand(SUSPEND),
+        },
+#if not defined(Q_OS_MAC)
+        {
+            .id = HIBERNATE,
+            .config_key_enabled = "hibernate_enabled",
+            .config_key_title = "title_hibernate",
+            .config_key_command = "command_hibernate",
+            .icon_urls = {"xdg:system-suspend-hibernate", ":hibernate"},
+            .default_title = tr("Hibernate"),
+            .description = tr("Suspend to disk"),
+            .command = defaultCommand(HIBERNATE),
+        },
+#endif
+        {
+            .id = REBOOT,
+            .config_key_enabled = "reboot_enabled",
+            .config_key_title = "title_reboot",
+            .config_key_command = "command_reboot",
+            .icon_urls = {"xdg:system-reboot", ":reboot"},
+            .default_title = tr("Reboot"),
+            .description = tr("Restart the machine"),
+            .command = defaultCommand(REBOOT),
+        },
+        {
+            .id = POWEROFF,
+            .config_key_enabled = "poweroff_enabled",
+            .config_key_title = "title_poweroff",
+            .config_key_command = "command_poweroff",
+            .icon_urls = {"xdg:system-shutdown", ":poweroff"},
+            .default_title = tr("Poweroff"),
+            .description = tr("Shut down the machine"),
+            .command = defaultCommand(POWEROFF),
+        }
+    }
 {
-    default_title = {
-        tr("Lock"),
-        tr("Logout"),
-        tr("Suspend"),
-        tr("Hibernate"),
-        tr("Reboot"),
-        tr("Poweroff")
-    };
+    registry().registerExtension(&inhibit_sleep);
 
-    descriptions = {
-        tr("Lock the session"),
-        tr("Quit the session"),
-        tr("Suspend to memory"),
-        tr("Suspend to disk"),
-        tr("Restart the machine"),
-        tr("Shut down the machine")
-    };
+    restore_default_timeout(settings());
+}
+
+
+Plugin::~Plugin()
+{
+    registry().deregisterExtension(&inhibit_sleep);
 }
 
 QWidget* Plugin::buildConfigWidget()
 {
-    auto s = settings();
     auto *w = new QWidget;
-    auto *l = new QGridLayout(w);
-    w->setLayout(l);
+    Ui::ConfigWidget ui;
+    ui.setupUi(w);
 
-    auto *infoLabel = new QLabel(
-        tr("If you are missing sensible default values for your system, "
-           "please leave a note on the GitHub issue tracker."));
-    infoLabel->setWordWrap(true);
-    int row = 0;
-    l->addWidget(infoLabel, row++, 0, 1, 3);
-    for (SupportedCommands action : {
-             LOCK,
-             LOGOUT,
-             SUSPEND,
-#if not defined(Q_OS_MAC)
-             HIBERNATE,
-#endif
-             REBOOT,
-             POWEROFF}){
+    auto s = settings();
+    for (uint i = 0; i < commands.size(); ++i)
+    {
+        const auto &c = commands[i];
 
         auto *checkbox = new QCheckBox(w);
-        auto *label = new QLabel(descriptions[action], w);
+        auto *label = new QLabel(c.description, w);
         auto *line_edit_title = new QLineEdit(w);
         auto *line_edit_command = new QLineEdit(w);
 
-        bool enabled = s->value(config_keys_enabled[action], true).toBool();
+        bool enabled = s->value(c.config_key_enabled, true).toBool();
 
         checkbox->setCheckState(enabled ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
-        connect(checkbox, &QCheckBox::clicked, this, [=, this](bool checked) {
-            settings()->setValue(config_keys_enabled[action], checked);
+        connect(checkbox, &QCheckBox::clicked, this, [=, this](bool checked)
+        {
+            settings()->setValue(c.config_key_enabled, checked);
 
             // Restore defaults if unchecked
             if (!checked){
-                settings()->remove(config_keys_title[action]);
-                settings()->remove(config_keys_command[action]);
+                settings()->remove(c.config_key_title);
+                settings()->remove(c.config_key_command);
                 line_edit_title->clear();
                 line_edit_command->clear();
             }
@@ -217,72 +216,69 @@ QWidget* Plugin::buildConfigWidget()
         label->setEnabled(enabled);
 
         line_edit_title->setEnabled(enabled);
+        // line_edit_title->setClearButtonEnabled(true);
         line_edit_title->setFixedWidth(100);
-        line_edit_title->setPlaceholderText(default_title[action]);
-        line_edit_title->setText(s->value(config_keys_title[action]).toString());
-        connect(line_edit_title, &QLineEdit::editingFinished, this, [this, line_edit_title, action]() {
+        line_edit_title->setPlaceholderText(c.default_title);
+        line_edit_title->setText(s->value(c.config_key_title).toString());
+        connect(line_edit_title, &QLineEdit::editingFinished,
+                this, [this, line_edit_title, ck=c.config_key_title]
+        {
             if (line_edit_title->text().isEmpty())
-                settings()->remove(config_keys_title[action]);
+                settings()->remove(ck);
             else
-                settings()->setValue(config_keys_title[action], line_edit_title->text());
+                settings()->setValue(ck, line_edit_title->text());
             updateIndexItems();
         });
 
         line_edit_command->setEnabled(enabled);
-        line_edit_command->setPlaceholderText(defaultCommand(action));
-        line_edit_command->setText(s->value(config_keys_command[action]).toString());
-        connect(line_edit_command, &QLineEdit::editingFinished, this, [this, line_edit_command, action]() {
+        // line_edit_command->setClearButtonEnabled(true);
+        line_edit_command->setPlaceholderText(defaultCommand(c.id));
+        line_edit_command->setText(s->value(c.config_key_command).toString());
+        connect(line_edit_command, &QLineEdit::editingFinished,
+                this, [this, line_edit_command, ck=c.config_key_command]
+        {
             if (line_edit_command->text().isEmpty())
-                settings()->remove(config_keys_command[action]);
+                settings()->remove(ck);
             else
-                settings()->setValue(config_keys_command[action], line_edit_command->text());
+                settings()->setValue(ck, line_edit_command->text());
             updateIndexItems();
         });
 
-        l->addWidget(checkbox, row*2, 0);
-        l->addWidget(label, row*2, 1, 1, 2);
-        l->addWidget(line_edit_title, row*2+1, 1);
-        l->addWidget(line_edit_command, row*2+1, 2);
-
-        ++row;
+        ui.gridLayout_commands->addWidget(checkbox, i * 2, 0);
+        ui.gridLayout_commands->addWidget(label, i * 2, 1, 1, 2);
+        ui.gridLayout_commands->addWidget(line_edit_title, i * 2 + 1, 1);
+        ui.gridLayout_commands->addWidget(line_edit_command, i * 2 + 1, 2);
     }
-    l->addItem(new QSpacerItem(0,0,QSizePolicy::Expanding,QSizePolicy::Expanding), row*2, 0, 1, 3);
-    l->setColumnStretch(1,2);  // strech last column
-    l->setContentsMargins(0,0,0,0);
+
+    ALBERT_PROPERTY_CONNECT_SPINBOX(this, default_timeout, ui.spinBox_minutes)
+
+    ui.verticalLayout->addStretch();
+
     return w;
 }
 
 void Plugin::updateIndexItems()
 {
-    std::vector<albert::IndexItem> index_items;
+    vector<albert::IndexItem> index_items;
     auto s = settings();
 
-    for (SupportedCommands action : {
-             LOCK,
-             LOGOUT,
-             SUSPEND,
-#if not defined(Q_OS_MAC)
-             HIBERNATE,
-#endif
-             REBOOT,
-             POWEROFF
-        }){
-
+    for (const auto &c : commands)
+    {
         // skip if disabled
-        if (!s->value(config_keys_enabled[action], true).toBool())
+        if (!s->value(c.config_key_enabled, true).toBool())
             continue;
 
         auto item = StandardItem::make(
-            default_title[action],
-            settings()->value(config_keys_title[action], default_title[action]).toString(),
-            descriptions[action],
-            icon_urls[action],
+            c.default_title,
+            settings()->value(c.config_key_title, c.default_title).toString(),
+            c.description,
+            c.icon_urls,
             {
                 {
-                    default_title[action], descriptions[action],
-                    [this, action](){ albert::runDetachedProcess({
+                    c.default_title, c.description,
+                    [this, &c](){ albert::runDetachedProcess({
                         "/bin/sh", "-c",
-                        settings()->value(config_keys_command[action], defaultCommand(action)).toString()});
+                        settings()->value(c.config_key_command, defaultCommand(c.id)).toString()});
                     }
                 }
             }
