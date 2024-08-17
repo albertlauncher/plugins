@@ -122,7 +122,7 @@ vector<shared_ptr<Item>> Plugin::handleEmptyQuery(const Query *)
     return results;
 }
 
-std::shared_ptr<Item> Plugin::makeTimerItem(Timer &t) const
+std::shared_ptr<Item> Plugin::makeTimerItem(Timer &t)
 {
     return StandardItem::make(
         QStringLiteral("timer_item"),
@@ -140,7 +140,7 @@ std::shared_ptr<Item> Plugin::makeTimerItem(Timer &t) const
     );
 }
 
-void Plugin::startTimer(const QString &name, uint seconds) const
+void Plugin::startTimer(const QString &name, uint seconds)
 {
     ++timer_counter_;
     auto &timer = timers_.emplace_front(name, seconds);
@@ -148,7 +148,7 @@ void Plugin::startTimer(const QString &name, uint seconds) const
                      &timer.notification, [t=&timer, this]{ removeTimer(t); });
 }
 
-void Plugin::removeTimer(Timer *t) const
+void Plugin::removeTimer(Timer *t)
 {
     if (auto it = std::find_if(timers_.begin(), timers_.end(),
                                [&](const auto& o) {return t == &o;});

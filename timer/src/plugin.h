@@ -37,13 +37,13 @@ public:
 
 private:
 
-    std::shared_ptr<Item> makeTimerItem(Timer&) const;
-    void startTimer(const QString &name, uint seconds) const;
-    void removeTimer(Timer*) const;
+    std::shared_ptr<Item> makeTimerItem(Timer&);
+    void startTimer(const QString &name, uint seconds);
+    void removeTimer(Timer*);
 
     const QStringList icon_urls{":timer"};
-    mutable std::list<Timer> timers_;
-    mutable uint timer_counter_ = 0;
+    std::list<Timer> timers_;
+    uint timer_counter_ = 0;
 
 };
 
