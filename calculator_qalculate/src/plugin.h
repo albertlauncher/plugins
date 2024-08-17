@@ -27,6 +27,6 @@ private:
     std::unique_ptr<Calculator> qalc;
     EvaluationOptions eo;
     PrintOptions po;
-    mutable std::mutex qalculate_mutex;
+    std::mutex qalculate_mutex;
     static const QStringList icon_urls;
 };

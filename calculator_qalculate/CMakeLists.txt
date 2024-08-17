@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(calculator_qalculate VERSION 5.2)
+project(calculator_qalculate VERSION 5.3)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBQALCULATE REQUIRED libqalculate)
