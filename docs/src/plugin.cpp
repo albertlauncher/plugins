@@ -28,6 +28,7 @@ using namespace albert;
 using namespace std;
 
 static const char *docsets_dir = "docsets";
+Plugin *plugin;
 
 static QString extract(const QString &src, const QString &dst)
 {
@@ -123,20 +124,35 @@ public:
     { return name; }
 
     vector<Action> actions() const override
+    { return {{ id(), Plugin::tr("Open documentation"), [this] { open(); } }}; }
+
+    // Workaround for some browsers not opening "file:" urls having an anchor
+    void open() const
     {
-        return {
-            {
-                id(), Plugin::tr("Open documentation"), [this] {
-                    openUrl(QString("file://%1/Contents/Resources/Documents/%2")
-                            .arg(docset->path, path));
-                }
-        }};
+        // QTemporaryFile will not work here because its deletion introduces race condition
+        if (QFile file(QDir(plugin->cacheLocation()).filePath("trampoline.html"));
+            file.open(QIODevice::WriteOnly))
+        {
+            auto s = QString("file://%1/Contents/Resources/Documents/%2").arg(docset->path, path);
+            s = QString(R"(<html><head><meta http-equiv="refresh" content="0;%1"></head></html>)")
+                    .arg(s);
+
+            QTextStream stream(&file);
+            stream << s;
+            file.close();
+
+            openUrl("file:" + file.fileName());
+        }
+        else
+            WARN << "Failed to open file for writing" << file.fileName() << file.errorString();
     }
 };
 
 
 Plugin::Plugin()
 {
+    ::plugin = this;
+
     if(!QSqlDatabase::isDriverAvailable("QSQLITE"))
         throw "QSQLITE driver unavailable";
 
