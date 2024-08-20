@@ -42,9 +42,9 @@ private:
     QTimer timer;
     QClipboard * const clipboard;
     uint length;
-    mutable std::list<ClipboardEntry> history;
-    mutable bool persistent;
-    mutable std::shared_mutex mutex;
+    std::list<ClipboardEntry> history;
+    bool persistent;
+    std::shared_mutex mutex;
     // explicit current, such that users can delete recent ones
     QString clipboard_text;
     
