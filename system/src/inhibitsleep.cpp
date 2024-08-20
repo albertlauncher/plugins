@@ -96,7 +96,9 @@ vector<RankItem> InhibitSleep::handleGlobalQuery(const Query *query)
     vector<RankItem> r;
 
     Matcher matcher(query->string());
-    if (auto m = matcher.match(name()))
+    if (auto m = matcher.match(trigger); m)
+        r.emplace_back(makeItem(), m);
+    else if (m = matcher.match(name()); m)
         r.emplace_back(makeItem(), m);
 
     return r;
