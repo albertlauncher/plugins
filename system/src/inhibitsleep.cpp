@@ -83,8 +83,6 @@ QString InhibitSleep::name() const { return tr("Sleep inhibition"); }
 
 QString InhibitSleep::description() const { return tr("Prevent the system from sleeping"); }
 
-bool InhibitSleep::allowTriggerRemap() const { return false; }
-
 void InhibitSleep::setTrigger(const QString &t) { trigger = t; }
 
 QString InhibitSleep::defaultTrigger() const { return tr("si ", "abbr of name()"); }

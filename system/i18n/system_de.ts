@@ -66,6 +66,11 @@
     <message>
         <source>si </source>
         <comment>abbr sleep inhibition</comment>
+        <translation type="vanished">su </translation>
+    </message>
+    <message>
+        <source>si </source>
+        <comment>abbr of name()</comment>
         <translation>su </translation>
     </message>
 </context>

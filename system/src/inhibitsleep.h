@@ -17,7 +17,6 @@ class InhibitSleep : public albert::GlobalQueryHandler
     QString name() const override final;
     QString description() const override;
     void setTrigger(const QString&) override;
-    bool allowTriggerRemap() const override;
     QString defaultTrigger() const override;
     QString synopsis() const override;
     void handleTriggerQuery(albert::Query *) override;
