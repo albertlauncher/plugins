@@ -11,10 +11,6 @@
         <source>Update</source>
         <translation></translation>
     </message>
-    <message>
-        <source>Remove docset &apos;%1&apos; at %2?</source>
-        <translation></translation>
-    </message>
 </context>
 <context>
     <name>Plugin</name>
@@ -92,6 +88,10 @@
     </message>
     <message>
         <source>Open documentation</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Remove docset &apos;%1&apos; at %2?</source>
         <translation></translation>
     </message>
 </context>

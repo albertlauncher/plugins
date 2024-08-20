@@ -1,23 +1,10 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
-#include <albert/indexqueryhandler.h>
+#include "docset.h"
 #include <albert/extensionplugin.h>
-#include "ui_configwidget.h"
+#include <albert/indexqueryhandler.h>
 class QNetworkReply;
-
-struct Docset
-{
-    Docset(QString source_id, QString identifier, QString title, QString icon_path);
-
-    std::vector<albert::IndexItem> createIndexItems() const;
-
-    const QString source_id;
-    const QString identifier;
-    const QString title;
-    const QString icon_path;
-    QString path;  // not downloaded yet if null
-};
 
 
 class Plugin : public albert::ExtensionPlugin,
@@ -34,20 +21,23 @@ public:
     QWidget* buildConfigWidget() override;
 
     void updateDocsetList();
-    const std::map<QString, Docset> &docsets() const;
+    const std::vector<Docset> &docsets() const;
 
-    void downloadDocset(const QString &name);
+    void downloadDocset(uint index);
     void cancelDownload();
     bool isDownloading() const;
-    void removeDocset(const QString &name);
+    void removeDocset(uint index);
+
+    static Plugin *instance();
 
 private:
 
     void debug(const QString &);
     void error(const QString &, QWidget *modal_parent = nullptr);
 
-    std::map<QString, Docset> docsets_;
+    std::vector<Docset> docsets_;
     QNetworkReply *download_ = nullptr;
+    static Plugin *instance_;
 
 signals:
 
@@ -55,15 +45,4 @@ signals:
     void downloadStateChanged();
     void statusInfo(const QString&);
 
-};
-
-class ConfigWidget final : public QWidget
-{
-    Q_OBJECT
-public:
-    ConfigWidget(Plugin *);
-private:
-    void updateDocsets();
-    Plugin * const plugin;
-    Ui::ConfigWidget ui;
 };

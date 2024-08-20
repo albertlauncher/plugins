@@ -13,7 +13,14 @@
     </message>
     <message>
         <source>Remove docset &apos;%1&apos; at %2?</source>
-        <translation>Docset &apos;%1&apos; (%2) entfernen?</translation>
+        <translation type="vanished">Docset &apos;%1&apos; (%2) entfernen?</translation>
+    </message>
+</context>
+<context>
+    <name>DocsetsModel</name>
+    <message>
+        <source>Remove docset &apos;%1&apos; at %2?</source>
+        <translation type="obsolete">Docset &apos;%1&apos; (%2) entfernen?</translation>
     </message>
 </context>
 <context>
@@ -100,6 +107,10 @@
     <message>
         <source>Open documentation</source>
         <translation>Dokumentation öffnen</translation>
+    </message>
+    <message>
+        <source>Remove docset &apos;%1&apos; at %2?</source>
+        <translation>Docset &apos;%1&apos; (%2) entfernen?</translation>
     </message>
 </context>
 </TS>

@@ -1,9 +1,9 @@
-if(NOT APPLE)
+#if(NOT APPLE)
 
-    cmake_minimum_required(VERSION 3.18)
+    cmake_minimum_required(VERSION 3.16)
     find_package(Albert REQUIRED)
 
-    project(docs VERSION 6.5)
+    project(docs VERSION 7.0)
 
     find_package(LibArchive REQUIRED)
 
@@ -12,4 +12,4 @@ if(NOT APPLE)
         QT Network Sql Widgets
     )
 
-endif()
+#endif()

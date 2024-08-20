@@ -1,24 +1,17 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
+#include "configwidget.h"
 #include "plugin.h"
-#include <QDir>
 #include <QDirIterator>
-#include <QFileInfo>
 #include <QImageWriter>
 #include <QJsonArray>
 #include <QJsonParseError>
-#include <QLabel>
-#include <QListWidget>
 #include <QMessageBox>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QSqlDatabase>
-#include <QSqlDriver>
-#include <QSqlError>
-#include <QSqlQuery>
 #include <QTemporaryDir>
-#include <QXmlStreamReader>
 #include <albert/logging.h>
 #include <albert/util.h>
 #include <archive.h>
@@ -28,7 +21,7 @@ using namespace albert;
 using namespace std;
 
 static const char *docsets_dir = "docsets";
-Plugin *plugin;
+Plugin *Plugin::instance_ = nullptr;
 
 static QString extract(const QString &src, const QString &dst)
 {
@@ -91,67 +84,10 @@ static void saveBase64ImageToFile(const QByteArray& base64Data, const QString& f
     else WARN << "Failed to load image from Base64 data";
 }
 
-static QString fixPath(QString path) {
-    static const QRegularExpression dashEntryRegExp(QStringLiteral("<dash_entry_.*>"));
-    path.remove(dashEntryRegExp);
-    return path;
-}
-
-
-class DocumentationItem : public albert::Item
-{
-public:
-    DocumentationItem(const Docset *ds, const QString &n, const QString &p)
-        : docset(ds), name(n), path(fixPath(p)) { }
-
-    const Docset * const docset;
-    const QString name;
-    const QString path;
-
-    QString id() const override
-    { return path; }
-
-    QString text() const override
-    { return name; }
-
-    QString subtext() const override
-    { return docset->title; }
-
-    QStringList iconUrls() const override
-    { return {"file:"+docset->icon_path}; }
-
-    QString inputActionText() const override
-    { return name; }
-
-    vector<Action> actions() const override
-    { return {{ id(), Plugin::tr("Open documentation"), [this] { open(); } }}; }
-
-    // Workaround for some browsers not opening "file:" urls having an anchor
-    void open() const
-    {
-        // QTemporaryFile will not work here because its deletion introduces race condition
-        if (QFile file(QDir(plugin->cacheLocation()).filePath("trampoline.html"));
-            file.open(QIODevice::WriteOnly))
-        {
-            auto s = QString("file://%1/Contents/Resources/Documents/%2").arg(docset->path, path);
-            s = QString(R"(<html><head><meta http-equiv="refresh" content="0;%1"></head></html>)")
-                    .arg(s);
-
-            QTextStream stream(&file);
-            stream << s;
-            file.close();
-
-            openUrl("file:" + file.fileName());
-        }
-        else
-            WARN << "Failed to open file for writing" << file.fileName() << file.errorString();
-    }
-};
-
 
 Plugin::Plugin()
 {
-    ::plugin = this;
+    instance_ = this;
 
     if(!QSqlDatabase::isDriverAvailable("QSQLITE"))
         throw "QSQLITE driver unavailable";
@@ -175,78 +111,88 @@ Plugin::~Plugin()
         cancelDownload();
 }
 
+Plugin *Plugin::instance() { return instance_; }
+
 void Plugin::updateIndexItems()
 {
     vector<IndexItem> items;
 
-    for (auto &[name, docset] : docsets_) {
-        if (!docset.path.isNull()){
-            auto docset_items = docset.createIndexItems();
-            items.insert(items.end(),
-                         std::make_move_iterator(docset_items.begin()),
-                         std::make_move_iterator(docset_items.end()));
-        }
-    }
+    for (const auto &docset : docsets_)
+        if (!docset.path.isNull())
+            docset.createIndexItems(items);
 
-    setIndexItems(std::move(items));
+    setIndexItems(::move(items));
 }
 
-QWidget *Plugin::buildConfigWidget() { return new ConfigWidget(this); }
+QWidget *Plugin::buildConfigWidget() { return new ConfigWidget; }
 
-const std::map<QString, Docset> &Plugin::docsets() const { return docsets_; }
+const vector<Docset> &Plugin::docsets() const { return docsets_; }
 
 void Plugin::updateDocsetList()
 {
+    if (download_)
+        return;
+
     static const char *url = "https://api.zealdocs.org/v1/docsets";
+
     debug(tr("Downloading docset list from '%1'").arg(url));
-    QNetworkReply *reply = albert::network()->get(QNetworkRequest(QUrl{url}));
+
+    QNetworkReply *reply = network()->get(QNetworkRequest(QUrl{url}));
     reply->setParent(this); // For the case the plugin is deleted before the reply is finished
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply](){
+    connect(reply, &QNetworkReply::finished, this, [this, reply]
+    {
         reply->deleteLater();
 
         QByteArray replyData;
         QFile cachedDocsetListFile(QDir(cacheLocation()).filePath("zeal_docset_list.json"));
 
-        if (reply->error() != QNetworkReply::NoError) {
-            if (cachedDocsetListFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        if (reply->error() != QNetworkReply::NoError)
+        {
+            if (cachedDocsetListFile.open(QIODevice::ReadOnly | QIODevice::Text))
+            {
                 replyData = cachedDocsetListFile.readAll();
                 cachedDocsetListFile.close();
-            } else
+            }
+            else
                 return error(tr("Error fetching docset list: %1").arg(reply->errorString()));
-        } else
+        }
+        else
             replyData = reply->readAll();
 
         docsets_.clear();
 
         QJsonParseError parse_error;
         const QJsonDocument json_document = QJsonDocument::fromJson(replyData, &parse_error);
-        if (parse_error.error == QJsonParseError::NoError) {
-            for (const QJsonValue &v : json_document.array()) {
-                QJsonObject jsonObject = v.toObject();
+        if (parse_error.error == QJsonParseError::NoError)
+        {
+            for (const QJsonValue &val : json_document.array())
+            {
+                QJsonObject obj = val.toObject();
 
-                auto source = jsonObject[QStringLiteral("sourceId")].toString();
-                auto identifier = jsonObject[QStringLiteral("name")].toString();
-                auto title = jsonObject[QStringLiteral("title")].toString();
-                auto icon_path = QDir(cacheLocation()).filePath(QString("icons/%1.png").arg(identifier));
-//                auto path = data_dir->filePath(QString("%1/%2").arg(docsets_dir, identifier));
-
-                auto rawBase64 = jsonObject[QStringLiteral("icon2x")].toString().toLocal8Bit();
+                auto name = obj[QStringLiteral("name")].toString();
+                auto title = obj[QStringLiteral("title")].toString();
+                auto source = obj[QStringLiteral("sourceId")].toString();
+                auto icon_path = QDir(cacheLocation()).filePath(QString("icons/%1.png").arg(name));
+                auto rawBase64 = obj[QStringLiteral("icon2x")].toString().toLocal8Bit();
                 saveBase64ImageToFile(rawBase64, icon_path);
 
-                auto [it, success] = docsets_.emplace(identifier, Docset{source, identifier, title, icon_path});
+                docsets_.emplace_back(name, title, source, icon_path);
 
-                QDir dir(QString("%1/%2.docset").arg(QDir(dataLocation()).filePath(docsets_dir), identifier));
+                QDir dir(QString("%1/%2.docset").arg(QDir(dataLocation()).filePath(docsets_dir), name));
                 if (dir.exists())
-                    it->second.path = dir.path();
+                    docsets_.back().path = dir.path();
             }
             debug(tr("Docset list updated."));
 
-            if (reply->error() == QNetworkReply::NoError) {
-                if (cachedDocsetListFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            if (reply->error() == QNetworkReply::NoError)
+            {
+                if (cachedDocsetListFile.open(QIODevice::WriteOnly | QIODevice::Text))
+                {
                     cachedDocsetListFile.write(replyData);
                     cachedDocsetListFile.close();
-                } else
+                }
+                else
                     debug(tr("Failed to save fetched docset list: %1").arg(cachedDocsetListFile.errorString()));
             }
         }
@@ -257,24 +203,27 @@ void Plugin::updateDocsetList()
     });
 }
 
-void Plugin::downloadDocset(const QString &name)
+void Plugin::downloadDocset(uint index)
 {
     Q_ASSERT(!download_);
 
-    auto *docset = &docsets_.at(name);
-    static const char *docsets_url_template = "https://go.zealdocs.org/d/%1/%2/latest";
-    auto url = QUrl{QString(docsets_url_template).arg(docset->source_id.chopped(5), docset->identifier)};
+    auto &ds = docsets_.at(index);
+
+    auto url = QUrl{QString("https://go.zealdocs.org/d/%1/%2/latest")
+            .arg(ds.source_id.chopped(5), ds.name)};
+
     debug(tr("Downloading docset from '%1'").arg(url.toString()));
-    download_ = albert::network()->get(QNetworkRequest(url));
+    download_ = network()->get(QNetworkRequest(url));
 
     connect(download_, &QNetworkReply::downloadProgress,
-            this, [this](qint64 bytesReceived, qint64 bytesTotal){
+            this, [this](qint64 bytesReceived, qint64 bytesTotal)
+    {
         auto info = QString("%1/%2 MiB").arg((float)bytesReceived/1000000, 0, 'f', 1)
                                         .arg((float)bytesTotal/1000000, 0, 'f', 1);
         emit statusInfo(info);
     });
 
-    connect(download_, &QNetworkReply::finished, this, [this, docset]()
+    connect(download_, &QNetworkReply::finished, this, [this, &ds] () mutable
     {
         if (download_)  // else aborted
         {
@@ -295,14 +244,14 @@ void Plugin::downloadDocset(const QString &name)
                         if (QDirIterator it(cacheLocation(), {"*.docset"}, QDir::Dirs, QDirIterator::Subdirectories); it.hasNext())
                         {
                             auto src = it.next();
-                            auto dst = QString("%1/%2.docset").arg(QDir(dataLocation()).filePath(docsets_dir), docset->identifier);
+                            auto dst = QString("%1/%2.docset").arg(QDir(dataLocation()).filePath(docsets_dir), ds.name);
                             debug(tr("Renaming '%1' to '%2'").arg(src, dst));
                             if (QFile::rename(src, dst))
                             {
-                                docset->path = dst;
+                                ds.path = dst;
                                 emit docsetsChanged();
                                 updateIndexItems();
-                                emit statusInfo(tr("Docset '%1' ready.").arg(docset->identifier));
+                                emit statusInfo(tr("Docset '%1' ready.").arg(ds.name));
                             }
                             else
                                 error(tr("Failed renaming dir '%1' to '%2'.").arg(src, dst));
@@ -324,7 +273,7 @@ void Plugin::downloadDocset(const QString &name)
             download_ = nullptr;
         }
         else
-            debug(tr("Cancelled '%1' docset download.").arg(docset->identifier));
+            debug(tr("Cancelled '%1' docset download.").arg(ds.name));
 
         emit downloadStateChanged();
     });
@@ -345,17 +294,37 @@ void Plugin::cancelDownload()
 
 bool Plugin::isDownloading() const { return download_; }
 
-void Plugin::removeDocset(const QString &name)
+void Plugin::removeDocset(uint index)
 {
-    auto &docset = docsets_.at(name);
-    QDir dir(docset.path);
-    if (dir.exists() && dir.removeRecursively()){  // Note this may fail if filebrowser is open on macos
-        debug(tr("Directory removed '%1'").arg(docset.path));
-        docset.path.clear();
+    auto &ds = docsets_.at(index);
+
+    if (!ds.isInstalled())
+    {
+        WARN << "Docset not installed";
+    }
+    else if (QDir dir(ds.path); !dir.exists())
+    {
+        WARN << "Docset dir does not exist";
+        ds.path.clear();
         emit docsetsChanged();
     }
+    else if (QMessageBox::question(nullptr, qApp->applicationName(),
+                                   tr("Remove docset '%1' at %2?").arg(ds.title, ds.path))
+             != QMessageBox::Yes)
+    {
+        DEBG << "Docset removal cancelled by user";
+    }
+    else if (!dir.removeRecursively())
+    {
+        // Note this may fail if filebrowser is open on macos
+        error(tr("Failed to remove directory '%1'").arg(ds.path));
+    }
     else
-        error(tr("Failed to remove directory '%1'").arg(docset.path));
+    {
+        debug(tr("Directory removed '%1'").arg(ds.path));
+        ds.path.clear();
+        emit docsetsChanged();
+    }
 }
 
 void Plugin::debug(const QString &msg)
@@ -369,198 +338,4 @@ void Plugin::error(const QString &msg, QWidget * modal_parent)
     WARN << msg;
     emit statusInfo(msg);
     QMessageBox::warning(modal_parent, qApp->applicationDisplayName(), msg);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-Docset::Docset(QString sid, QString id, QString t, QString ip)
-    : source_id(sid), identifier(id), title(t), icon_path(ip)
-{
-
-}
-
-std::vector<IndexItem> Docset::createIndexItems() const
-{
-    std::vector<IndexItem> items;
-
-    if (auto file_path = QString("%1/Contents/Resources/Tokens.xml").arg(path); QFile::exists(file_path))
-    {
-        INFO << "Indexing docset" << file_path;
-
-        QFile f(file_path);
-        if (!f.open(QIODevice::ReadOnly|QIODevice::Text))
-        {
-            WARN << f.errorString();
-            return {};
-        }
-
-        QXmlStreamReader xml(&f);
-        xml.readNext();
-
-        while (!xml.atEnd() && !xml.hasError())
-        {
-            auto tokenType = xml.readNext();
-            if (tokenType == QXmlStreamReader::StartElement && xml.name() == QLatin1String("Token"))
-            {
-                QString n, t, p, a;
-                for (;!(xml.tokenType() == QXmlStreamReader::EndElement && xml.name() == QLatin1String("Token")); xml.readNext())
-                {
-                    if (xml.tokenType() == QXmlStreamReader::StartElement)
-                    {
-                        if (xml.name() == QLatin1String("TokenIdentifier"))
-                        {
-                            for (;!(xml.tokenType() == QXmlStreamReader::EndElement && xml.name() == QLatin1String("TokenIdentifier")); xml.readNext())
-                            {
-                                if (xml.name() == QLatin1String("Name"))
-                                    n = xml.readElementText();
-                                else if (xml.name() == QLatin1String("Type"))
-                                    t = xml.readElementText();
-                            }
-                        }
-                        else if (xml.name() == QLatin1String("Path"))
-                            p = xml.readElementText();
-                        else if (xml.name() == QLatin1String("Anchor"))
-                            a = xml.readElementText();
-                    }
-                }
-
-                // Macos and Win cant handle anchors. Use it though because it is still better than
-                // skipping the item entirely. TODO use applications::schemeHandlers if ready.
-                if (!a.isEmpty())
-                    p = QString("%1#%2").arg(p, a.section("/", -1));
-
-                auto item = make_shared<DocumentationItem>(this, n, p);
-                items.emplace_back(item, item->text());
-            }
-        }
-        f.close();
-    }
-    else if (file_path = QString("%1/Contents/Resources/docSet.dsidx").arg(path); QFile::exists(file_path))
-    {
-        INFO << "Indexing docset" << file_path;
-
-        {
-            QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", docsets_dir);
-            db.setDatabaseName(file_path);
-            if (!db.open())
-            {
-                WARN << "Unable to open database connection" << db.databaseName();
-                return {};
-            }
-
-            QSqlQuery sql(db);
-
-            // Check docset type
-            if (!sql.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='searchIndex'"))
-            {
-                WARN << sql.lastQuery() << sql.lastError().text();
-                return {};
-            }
-
-            if (sql.next()) // returns true if searchIndex exists
-            {
-                if (!sql.exec("SELECT name, type, path FROM searchIndex ORDER BY name;"))
-                {
-                    WARN << sql.lastQuery() << sql.lastError().text();
-                    return {};
-                }
-
-                while (sql.next())
-                {
-                    QString n = sql.value(0).toString();
-                    //QString t = sql.value(1).toString();
-                    QString p = sql.value(2).toString();
-                    if (p.contains("#"))
-                        continue; // Skip anchors, browsers cant handle them
-
-                    auto item = make_shared<DocumentationItem>(this, n, p);
-                    items.emplace_back(item, item->text());
-                }
-            }
-            else
-            {
-                if(!sql.exec(R"R(
-                    SELECT
-                        ztokenname, ztypename, zpath, zanchor
-                    FROM ztoken
-                        INNER JOIN ztokenmetainformation ON ztoken.zmetainformation = ztokenmetainformation.z_pk
-                        INNER JOIN zfilepath ON ztokenmetainformation.zfile = zfilepath.z_pk
-                        INNER JOIN ztokentype ON ztoken.ztokentype = ztokentype.z_pk
-                    ORDER BY ztokenname;
-                )R"))
-                {
-                    WARN << sql.lastQuery() << sql.lastError().text();
-                    return {};
-                }
-
-                while (sql.next()){
-                    QString n = sql.value(0).toString();
-                    //QString t = sql.value(1).toString();
-                    QString p = sql.value(2).toString();
-                    QString a = sql.value(3).toString();
-                    if (!a.isEmpty())
-                        continue; // Skip anchors, browsers cant handle them
-
-                    auto item = make_shared<DocumentationItem>(this, n, p);
-                    items.emplace_back(item, item->text());
-                }
-            }
-            db.close();
-        }
-        QSqlDatabase::removeDatabase(docsets_dir);
-    }
-    return items;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-ConfigWidget::ConfigWidget(Plugin *p) : plugin(p)
-{
-    ui.setupUi(this);
-
-    connect(ui.update_button, &QPushButton::pressed, plugin, &Plugin::updateDocsetList);
-
-    connect(ui.cancel_button, &QPushButton::pressed, plugin, &Plugin::cancelDownload);
-
-    connect(plugin, &Plugin::docsetsChanged, this, &ConfigWidget::updateDocsets);
-
-    connect(plugin, &Plugin::statusInfo, ui.status_label, &QLabel::setText);
-
-    connect(plugin, &Plugin::downloadStateChanged, this, [this](){
-        ui.cancel_button->setVisible(plugin->isDownloading());
-        ui.list_widget->setEnabled(!plugin->isDownloading());
-        ui.update_button->setEnabled(!plugin->isDownloading());
-    });
-
-    connect(ui.list_widget, &QListWidget::itemChanged, this, [this](QListWidgetItem* item){
-        auto &ds = plugin->docsets().at(item->data(Qt::UserRole).toString());
-        if (item->checkState() == Qt::Checked)
-            plugin->downloadDocset(ds.identifier);
-        else {
-            auto ret = QMessageBox::question(this, qApp->applicationName(),
-                                             tr("Remove docset '%1' at %2?").arg(ds.title, ds.path));
-            if (ret == QMessageBox::Yes)
-                plugin->removeDocset(ds.identifier);
-        }
-        updateDocsets();
-    });
-
-    ui.cancel_button->hide();
-    updateDocsets();
-}
-
-void ConfigWidget::updateDocsets()
-{
-    ui.list_widget->clear();
-    QSignalBlocker blocker(this); // avoid itemChanged being triggered
-    for (const auto &[name, docset] : plugin->docsets()){
-        auto *item = new QListWidgetItem();
-        item->setText(docset.title);
-        item->setIcon(QIcon(docset.icon_path));
-        item->setData(Qt::ToolTipRole, QString("%1 %2").arg(docset.identifier, docset.path));
-        item->setData(Qt::UserRole, docset.identifier);
-        item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-        item->setCheckState(docset.path.isNull() ? Qt::Unchecked : Qt::Checked);
-        ui.list_widget->addItem(item);
-    }
 }

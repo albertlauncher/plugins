@@ -24,9 +24,9 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QListWidget" name="list_widget">
+    <widget class="QListView" name="list_view">
      <property name="editTriggers">
-      <set>QAbstractItemView::NoEditTriggers</set>
+      <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
      </property>
      <property name="showDropIndicator" stdset="0">
       <bool>false</bool>
