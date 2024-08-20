@@ -88,6 +88,10 @@
         <source>Enabling file system watches comes with caveats. You should only activate this option if you know what you are doing. A lot of file system changes (compilation, installing, etc) while having watches enabled can put your system under high load.</source>
         <translation>Das Aktivieren der Dateisystemüberwachung ist mit Einschränkungen verbunden. Sie sollten diese Option nur aktivieren, wenn Sie wissen, was Sie tun. Viele Dateisystemänderungen (Kompilieren, Installieren usw.) bei aktivierter Überwachung können Ihr System stark belasten.</translation>
     </message>
+    <message>
+        <source>Index the entire file path</source>
+        <translation>Den ganzen Dateipfad indexieren</translation>
+    </message>
 </context>
 <context>
     <name>FileItem</name>

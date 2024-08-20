@@ -45,14 +45,19 @@ Plugin::Plugin():
     ::apps = apps.get();
 
     connect(&fs_index_, &FsIndex::status, this, &Plugin::statusInfo);
-    connect(&fs_index_, &FsIndex::updatedFinished, this, [this](){ updateIndexItems(); });
+    connect(&fs_index_, &FsIndex::updatedFinished, this, &Plugin::updateIndexItems);
+    connect(this, &Plugin::index_file_path_changed, this, &Plugin::updateIndexItems);
 
     QJsonObject object;
     if (QFile file(createOrThrow(cacheLocation()).filePath(INDEX_FILE_NAME)); file.open(QIODevice::ReadOnly))
         object = QJsonDocument(QJsonDocument::fromJson(file.readAll())).object();
 
     auto s = settings();
+
+    restore_index_file_path(s);
+    restore_fs_browsers_case_sensitive(s);
     auto paths = s->value(CFG_PATHS, QStringList()).toStringList();
+
     for (const auto &path : paths){
         auto fsp = make_unique<FsIndexPath>(path);
 
@@ -119,15 +124,22 @@ Plugin::~Plugin()
 
 void Plugin::updateIndexItems()
 {
+    vector<IndexItem> ii;
+
     // Get file items
-    vector<shared_ptr<FileItem>> items;
     for (auto &[path, fsp] : fs_index_.indexPaths())
+    {
+        vector<shared_ptr<FileItem>> items;
         fsp->items(items);
 
-    // Create index items
-    vector<IndexItem> ii;
-    for (auto &file_item : items)
-        ii.emplace_back(file_item, file_item->name());
+        // Create index items
+        for (auto &file_item : items)
+        {
+            ii.emplace_back(file_item, file_item->name());
+            if (index_file_path())
+                ii.emplace_back(file_item, file_item->filePath());
+        }
+    }
 
     // Add update item
     ii.emplace_back(update_item, update_item->text());

@@ -22,7 +22,11 @@ ConfigWidget::ConfigWidget(Plugin *plu, QWidget *par) : QWidget(par), plugin(plu
 {
     ui.setupUi(this);
 
-    ALBERT_PROPERTY_CONNECT(plugin, fs_browsers_case_sensitive, ui.checkBox_fsBrowsersCaseSensitive, setChecked, toggled)
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(plugin, fs_browsers_case_sensitive,
+                                     ui.checkBox_fsBrowsersCaseSensitive)
+
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(plugin, index_file_path,
+                                     ui.checkbox_indexFilePath)
 
     auto &index_paths = plu->fsIndex().indexPaths();
     paths_model.setStringList(getPaths(index_paths));

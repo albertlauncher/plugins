@@ -16,6 +16,7 @@ class Plugin : public albert::ExtensionPlugin,
 {
     ALBERT_PLUGIN
     ALBERT_PLUGIN_PROPERTY(bool, fs_browsers_case_sensitive, false)
+    ALBERT_PLUGIN_PROPERTY(bool, index_file_path, false)
 
 public:
 
@@ -38,5 +39,7 @@ private:
     RootBrowser rootbrowser;
 
 signals:
+
     void statusInfo(const QString&);
+
 };

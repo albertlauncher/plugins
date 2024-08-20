@@ -88,6 +88,10 @@
         <source>Enabling file system watches comes with caveats. You should only activate this option if you know what you are doing. A lot of file system changes (compilation, installing, etc) while having watches enabled can put your system under high load.</source>
         <translation></translation>
     </message>
+    <message>
+        <source>Index the entire file path</source>
+        <translation></translation>
+    </message>
 </context>
 <context>
     <name>FileItem</name>
