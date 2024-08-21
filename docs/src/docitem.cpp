@@ -16,7 +16,7 @@ DocItem::DocItem(const Docset &ds, const QString &t, const QString &n, const QSt
     : docset(ds), type(t), name(n), path(p), anchor(a) {}
 
 QString DocItem::id() const
-{ return path; }
+{ return docset.name + name; }
 
 QString DocItem::text() const
 { return name; }
