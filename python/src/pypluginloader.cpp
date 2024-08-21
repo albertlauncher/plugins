@@ -318,10 +318,25 @@ void PyPluginLoader::load_()
         // Attach logcat functions
         // https://bugreports.qt.io/browse/QTBUG-117153
         // https://code.qt.io/cgit/pyside/pyside-setup.git/commit/?h=6.5&id=2823763072ce3a2da0210dbc014c6ad3195fbeff
-        py::setattr(module_,"debug", py::cpp_function([this](const QString &s){ qCDebug((*logging_category),) << s; }));
-        py::setattr(module_,"info", py::cpp_function([this](const QString &s){ qCInfo((*logging_category),) << s; }));
-        py::setattr(module_,"warning", py::cpp_function([this](const QString &s){ qCWarning((*logging_category),) << s; }));
-        py::setattr(module_,"critical", py::cpp_function([this](const QString &s){ qCCritical((*logging_category),) << s; }));
+        py::setattr(module_, "debug",
+                    py::cpp_function([this](const QString &s){
+                        qCDebug((*logging_category),).noquote() << s;
+                    }));
+
+        py::setattr(module_, "info",
+                    py::cpp_function([this](const QString &s){
+                        qCInfo((*logging_category),).noquote() << s;
+                    }));
+
+        py::setattr(module_, "warning",
+                    py::cpp_function([this](const QString &s){
+                        qCWarning((*logging_category),).noquote() << s;
+                    }));
+
+        py::setattr(module_, "critical",
+                    py::cpp_function([this](const QString &s){
+                        qCCritical((*logging_category),).noquote() << s;
+                    }));
 
         // Execute module
         pyspec.attr("loader").attr("exec_module")(module_);
