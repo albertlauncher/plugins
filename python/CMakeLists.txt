@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(python VERSION 4.7)
+project(python VERSION 4.8)
 
 set(PYBIND11_FINDPYTHON ON)
 add_subdirectory(pybind11)
@@ -17,8 +17,9 @@ target_sources(${PROJECT_NAME} PRIVATE albert.pyi)
 install(
     DIRECTORY "plugins/"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/albert/${PROJECT_NAME}/plugins"
-    REGEX "/\\..*" EXCLUDE  # exclude hidden files
+    REGEX "plugins\\/\\..+" EXCLUDE  # exclude hidden files
     PATTERN "__pycache__" EXCLUDE
+    PATTERN "*.md" EXCLUDE
 )
 
 
