@@ -163,7 +163,9 @@ void Plugin::updateDocsetList()
         docsets_.clear();
 
         QJsonParseError parse_error;
-        const QJsonDocument json_document = QJsonDocument::fromJson(replyData, &parse_error);
+        bool local = false;
+        QJsonDocument json_document = QJsonDocument::fromJson(replyData, &parse_error);
+    again:
         if (parse_error.error == QJsonParseError::NoError)
         {
             for (const QJsonValue &val : json_document.array())
@@ -183,7 +185,19 @@ void Plugin::updateDocsetList()
                 if (dir.exists())
                     docsets_.back().path = dir.path();
             }
-            debug(tr("Docset list updated."));
+            if (local)
+                debug("Custom docsets have been added.");
+            else
+                debug(tr("Docset list updated."));
+
+            QFile customDocsetListFile(QDir(dataLocation()).filePath("custom_docsets.json"));
+            if (!local && customDocsetListFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                QByteArray customData = customDocsetListFile.readAll();
+                customDocsetListFile.close();
+                json_document = QJsonDocument::fromJson(customData, &parse_error);
+                local = true;
+                goto again;
+            }
 
             if (reply->error() == QNetworkReply::NoError)
             {
