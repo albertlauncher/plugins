@@ -1,11 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(applications VERSION 12.1)
+project(applications VERSION 12.2)
 
 file(GLOB_RECURSE I18N_SOURCES src/*)
-
-message(STATUS "I18N_SOURCES: ${I18N_SOURCES}")
 
 albert_plugin(
     INCLUDE
