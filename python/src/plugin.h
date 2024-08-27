@@ -19,16 +19,19 @@ public:
 
     Plugin();
     ~Plugin() override;
+    bool installPackages(const QStringList &packages);
 
     QWidget* buildConfigWidget() override;
     std::vector<albert::PluginLoader*> plugins() override;
 
 private:
 
-    QStringList pluginsLocations() const;
-    QString userPluginsLocation() const;
-    QString sitePackagesLocation() const;
-    QString stubLocation() const;
+    inline QString venv() const;
+    inline QString venv_pip() const;
+    inline QString venv_python() const;
+    inline QString sitePackagesLocation() const;
+    inline QString userPluginsLocation() const;
+    inline QString stubLocation() const;
 
     albert::StrongDependency<applications::Plugin> apps;
     std::vector<std::unique_ptr<PyPluginLoader>> plugins_;

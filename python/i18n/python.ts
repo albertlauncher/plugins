@@ -23,16 +23,17 @@
 <context>
     <name>Plugin</name>
     <message>
-        <source>Failed creating site-packages dir %1</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Failed creating writeable plugin dir %1</source>
         <translation></translation>
     </message>
-</context>
-<context>
-    <name>PyPluginLoader</name>
+    <message>
+        <source>Failed initializing the interpreter: %1 %2</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Failed initializing virtual environment. Exit code: %1.</source>
+        <translation></translation>
+    </message>
     <message>
         <source>Some modules in the plugin &apos;%1&apos; were not found.
 

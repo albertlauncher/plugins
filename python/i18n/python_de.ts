@@ -31,23 +31,16 @@
         <translation type="vanished">Fehler beim Abrufen der Abhängigkeit &apos;%1&apos;.</translation>
     </message>
     <message>
-        <source>Failed creating site-packages dir %1</source>
-        <translation>Fehler beim Erstellen des &quot;site-packages&quot; Verzeichnis %1</translation>
-    </message>
-    <message>
         <source>Failed creating writeable plugin dir %1</source>
         <translation>Erstellung des beschreibbaren Plugin-Verzeichnisses %1 fehlgeschlagen</translation>
     </message>
-</context>
-<context>
-    <name>PyPluginLoader</name>
     <message>
-        <source>Some modules in the plugin &apos;%1&apos; were not found. Probably the plugin has dependencies which are not installed on this system.
-
-Install dependencies into the Albert virtual environment?</source>
-        <translation type="obsolete">Einige Module im Plugin &apos;%1&apos; wurden nicht gefunden. Wahrscheinlich hat das Plugin Abhängigkeiten, die auf diesem System nicht installiert sind.
-
-Abhängigkeiten in die Albert-Umgebung installieren?</translation>
+        <source>Failed initializing the interpreter: %1 %2</source>
+        <translation>Initialisierung des Intrerpreters fehlgeschlagen: %1 %2</translation>
+    </message>
+    <message>
+        <source>Failed initializing virtual environment. Exit code: %1.</source>
+        <translation>Initialisierung der virtuellen Umgebung fehlgeschlagen. Rückgabewert: %1.</translation>
     </message>
     <message>
         <source>Some modules in the plugin &apos;%1&apos; were not found.
@@ -59,7 +52,7 @@ Abhängigkeiten in die virtuelle Umgebung installieren?</translation>
     </message>
     <message>
         <source>No &apos;%1&apos; in $PATH.</source>
-        <translation>&apos;%1&apos; nicht in $PATH.</translation>
+        <translation>Kein &apos;%1&apos; in $PATH.</translation>
     </message>
 </context>
 </TS>

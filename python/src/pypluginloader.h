@@ -29,7 +29,7 @@ public:
     static const int MAJOR_INTERFACE_VERSION = 2;
     static const int MINOR_INTERFACE_VERSION = 4;
 
-    PyPluginLoader(Plugin &provider, const QString &module_path);
+    PyPluginLoader(Plugin &plugin, const QString &module_path);
     ~PyPluginLoader();
 
     QString path() const override;
@@ -42,7 +42,7 @@ private:
 
     void load_();
 
-    Plugin &provider_;
+    Plugin &plugin_;
 
     const QString module_path_;
     QString source_path_;

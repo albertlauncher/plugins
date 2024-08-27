@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(python VERSION 4.8)
+project(python VERSION 4.9)
 
 set(PYBIND11_FINDPYTHON ON)
+#find_package(Python 3.8 COMPONENTS Interpreter Development REQUIRED)
 add_subdirectory(pybind11)
 
 albert_plugin(
@@ -36,10 +37,15 @@ install(
 
 # find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
+# message(STATUS "Python3_INCLUDE_DIRS ${Python3_INCLUDE_DIRS}")
+# message(STATUS "Python3_INTERPRETER ${Python3_INTERPRETER}")
+# message(STATUS "Python3_LIBRARIES ${Python3_LIBRARIES}")
+# message(STATUS "Python3_LIBRARY ${Python3_LIBRARY}")
+# message(STATUS "Python_EXECUTABLE ${Python_EXECUTABLE}")
 # message(STATUS "Python_INCLUDE_DIRS ${Python_INCLUDE_DIRS}")
+# message(STATUS "Python_INTERPRETER ${Python_INTERPRETER}")
 # message(STATUS "Python_LIBRARIES ${Python_LIBRARIES}")
 # message(STATUS "Python_LIBRARY ${Python_LIBRARY}")
-# message(STATUS "PYTHON_LIBRARY ${PYTHON_LIBRARY}")
 
 
 # # set(PYTHON_LIBRARY ${Python_LIBRARIES})

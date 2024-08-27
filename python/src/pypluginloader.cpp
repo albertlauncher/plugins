@@ -4,20 +4,15 @@
 
 #include "plugin.h"
 #include "pypluginloader.h"
-#include <QCoreApplication>
 #include <QDir>
 #include <QEventLoop>
 #include <QFileInfo>
-#include <QFontDatabase>
 #include <QFutureWatcher>
+#include <QLoggingCategory>
 #include <QMessageBox>
-#include <QPointer>
-#include <QProcess>
 #include <QRegularExpression>
 #include <QStandardPaths>
-#include <QTextEdit>
 #include <QtConcurrent>
-#include <albert/logging.h>
 namespace py = pybind11;
 using namespace albert;
 using namespace std;
@@ -38,8 +33,8 @@ static const char *ATTR_MD_PLATFORMS   = "md_platforms";
 //static const char *ATTR_MD_MINPY     = "md_min_python";
 
 
-PyPluginLoader::PyPluginLoader(Plugin &provider, const QString &module_path)
-    : provider_(provider), module_path_(module_path)
+PyPluginLoader::PyPluginLoader(Plugin &plugin, const QString &module_path)
+    : plugin_(plugin), module_path_(module_path)
 {
     const QFileInfo file_info(module_path);
     if(!file_info.exists())
@@ -237,55 +232,17 @@ void PyPluginLoader::load()
         QMessageBox mb;
         mb.setIcon(QMessageBox::Information);
         mb.setWindowTitle("Module not found");
-        mb.setText(
-            QCoreApplication::translate(
-                "PyPluginLoader",
-                "Some modules in the plugin '%1' were not found.\n\n"
-                "Install dependencies into the virtual environment?")
-                .arg(metadata_.name));
+        mb.setText(Plugin::tr(
+                       "Some modules in the plugin '%1' were not found.\n\n"
+                       "Install dependencies into the virtual environment?")
+                   .arg(metadata_.name));
         mb.setStandardButtons(QMessageBox::Yes|QMessageBox::No);
         mb.setDefaultButton(QMessageBox::Yes);
         // mb.setInformativeText(e.what());
         if (mb.exec() == QMessageBox::Yes)
         {
-            // Install dependencies
-            QProcess proc;
-            proc.start(
-                "python3",
-                QStringList()
-                    << "-m"
-                    << "pip"
-                    << "install"
-                    << "--disable-pip-version-check"
-                    << "--target"
-                    << QDir(provider_.dataLocation()).filePath("site-packages")
-                    << metadata_.runtime_dependencies
-                );
-
-            QPointer<QTextEdit> te(new QTextEdit);
-            te->setCurrentFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
-            te->setReadOnly(true);
-            te->setWindowTitle(QString("Installing '%1' dependencies").arg(metadata_.name));
-            te->resize(600, 480);
-            te->setAttribute(Qt::WA_DeleteOnClose);
-            te->show();
-
-            QObject::connect(&proc, &QProcess::readyReadStandardOutput, te,
-                             [te, &proc](){ te->append(QString::fromUtf8(proc.readAllStandardOutput())); });
-            QObject::connect(&proc, &QProcess::readyReadStandardError, te,
-                             [te, &proc](){ te->append(QString::fromUtf8(proc.readAllStandardError())); });
-
-            QEventLoop loop;
-            QObject::connect(&proc, &QProcess::finished, &loop, &QEventLoop::quit);
-            loop.exec();
-
-            if (proc.exitStatus() == QProcess::ExitStatus::NormalExit && proc.exitCode() == EXIT_SUCCESS)
-            {
-                if (te)
-                    te->close();  // auto-close on success only
+            if (plugin_.installPackages(metadata_.runtime_dependencies))
                 return load_();  // On success try to load again
-
-            }
             else
                 throw;
         }
@@ -299,13 +256,11 @@ void PyPluginLoader::load_()
     // Check binary dependencies
     for (const auto& exec : metadata_.binary_dependencies)
         if (QStandardPaths::findExecutable(exec).isNull())
-            throw runtime_error(
-                QCoreApplication::translate("PyPluginLoader", "No '%1' in $PATH.")
-                    .arg(exec).toStdString());
+            throw runtime_error(Plugin::tr("No '%1' in $PATH.").arg(exec).toStdString());
 
     py::gil_scoped_acquire acquire;
-    try {
 
+    try {
         // Import as __name__ = albert.package_name
         py::module importlib_util = py::module::import("importlib.util");
         py::object pyspec = importlib_util.attr("spec_from_file_location")(QString("albert.%1").arg(metadata_.id), source_path_); // Prefix to avoid conflicts
@@ -370,7 +325,7 @@ void PyPluginLoader::unload()
     if (py::isinstance<Extension>(instance_))
     {
         auto *root_extension = instance_.cast<Extension*>();
-        provider_.registry().deregisterExtension(root_extension);
+        plugin_.registry().deregisterExtension(root_extension);
     }
 
     instance_ = py::object();
@@ -406,7 +361,7 @@ PluginInstance *PyPluginLoader::createInstance()
             if (py::isinstance<Extension>(instance_))
             {
                 auto *root_extension = instance_.cast<Extension*>();
-                provider_.registry().registerExtension(root_extension);
+                plugin_.registry().registerExtension(root_extension);
             }
 
         } catch (const std::exception &e) {
