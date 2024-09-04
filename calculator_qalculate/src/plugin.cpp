@@ -19,6 +19,11 @@ const char* CFG_PARSINGMODE = "parsing_mode";
 const uint  DEF_PARSINGMODE = (int)PARSING_MODE_CONVENTIONAL;
 const char* CFG_PRECISION = "precision";
 const uint  DEF_PRECISION = 16;
+const char* CFG_UNITS = "units_in_global_query";
+const bool  DEF_UNITS = false;
+const char* CFG_FUNCS = "functions_in_global_query";
+const bool  DEF_FUNCS = false;
+
 }
 
 const QStringList Plugin::icon_urls = {"xdg:calc", ":qalculate"};
@@ -41,10 +46,10 @@ Plugin::Plugin()
 
     // parse options
     eo.parse_options.angle_unit = static_cast<AngleUnit>(s->value(CFG_ANGLEUNIT, DEF_ANGLEUNIT).toInt());
-    eo.parse_options.functions_enabled = false;
+    eo.parse_options.functions_enabled = s->value(CFG_FUNCS, DEF_FUNCS).toBool();
     eo.parse_options.limit_implicit_multiplication = true;
     eo.parse_options.parsing_mode = static_cast<ParsingMode>(s->value(CFG_PARSINGMODE, DEF_PARSINGMODE).toInt());
-    eo.parse_options.units_enabled = false;
+    eo.parse_options.units_enabled = s->value(CFG_UNITS, DEF_UNITS).toBool();
     eo.parse_options.unknowns_enabled = false;
 
     // print options
@@ -101,6 +106,24 @@ QWidget *Plugin::buildConfigWidget()
         qalc->setPrecision(value);
     });
 
+    // Units in global query
+    ui.unitsInGlobalQueryCheckBox->setChecked(eo.parse_options.units_enabled);
+    connect(ui.unitsInGlobalQueryCheckBox, &QCheckBox::toggled, this, [this](bool checked)
+    {
+        settings()->setValue(CFG_UNITS, checked);
+        lock_guard locker(qalculate_mutex);
+        eo.parse_options.units_enabled = checked;
+    });
+
+    // Functions in global query
+    ui.functionsInGlobalQueryCheckBox->setChecked(eo.parse_options.functions_enabled);
+    connect(ui.functionsInGlobalQueryCheckBox, &QCheckBox::toggled, this, [this](bool checked)
+    {
+        settings()->setValue(CFG_FUNCS, checked);
+        lock_guard locker(qalculate_mutex);
+        eo.parse_options.functions_enabled = checked;
+    });
+
     return widget;
 }
 
@@ -125,56 +148,10 @@ shared_ptr<Item> Plugin::buildItem(const QString &query, const MathStructure &ms
     );
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
+std::variant<QStringList, MathStructure>
+Plugin::runQalculateLocked(const albert::Query *query, const EvaluationOptions &eo_)
 {
-    vector<RankItem> results;
-
-    auto trimmed = query->string().trimmed();
-    if (trimmed.isEmpty())
-        return results;
-
-    lock_guard locker(qalculate_mutex);
-
     auto expression = qalc->unlocalizeExpression(query->string().toStdString(), eo.parse_options);
-
-    qalc->startControl();
-    MathStructure mstruct;
-    qalc->calculate(&mstruct, expression, 0, eo);
-    for (; qalc->busy(); QThread::msleep(10))
-        if (!query->isValid())
-            qalc->abort();
-    qalc->stopControl();
-
-    if (!query->isValid())
-        return results;
-
-    if (qalc->message()){
-        for (auto msg = qalc->message(); msg; msg = qalc->nextMessage())
-            DEBG << QString::fromUtf8(qalc->message()->c_message());
-        return results;
-    }
-
-    mstruct.format(po);
-
-    results.emplace_back(buildItem(trimmed, mstruct), 1.0f);
-
-    return results;
-}
-
-void Plugin::handleTriggerQuery(Query *query)
-{
-    auto trimmed = query->string().trimmed();
-    if (trimmed.isEmpty())
-        return;
-
-    lock_guard locker(qalculate_mutex);
-
-    auto eo_ = eo;
-    eo_.parse_options.functions_enabled = true;
-    eo_.parse_options.units_enabled = true;
-    eo_.parse_options.unknowns_enabled = true;
-
-    auto expression = qalc->unlocalizeExpression(query->string().toStdString(), eo_.parse_options);
 
     qalc->startControl();
     MathStructure mstruct;
@@ -185,7 +162,7 @@ void Plugin::handleTriggerQuery(Query *query)
     qalc->stopControl();
 
     if (!query->isValid())
-        return;
+        return QStringList();
 
     QStringList errors;
     for (auto msg = qalc->message(); msg; msg = qalc->nextMessage())
@@ -194,20 +171,80 @@ void Plugin::handleTriggerQuery(Query *query)
     if (errors.empty())
     {
         mstruct.format(po);
-        query->add(buildItem(trimmed, mstruct));
+        return mstruct;
     }
     else
-    {
-        static const auto tr_e = tr("Evaluation error.");
-        static const auto tr_d = tr("Visit documentation");
-        query->add(
-            StandardItem::make(
-                "qalc-err",
-                tr_e,
-                errors.join(" "),
-                icon_urls,
-                {{"manual", tr_d, [=](){ openUrl(URL_MANUAL); }}}
-            )
-        );
+        return errors;
+}
+
+vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
+{
+    vector<RankItem> results;
+
+    auto trimmed = query->string().trimmed();
+    if (trimmed.isEmpty())
+        return results;
+
+    lock_guard locker(qalculate_mutex);
+
+    auto ret = runQalculateLocked(query, eo);
+
+    if (!query->isValid())
+        return results;
+
+    try {
+        auto mstruct = std::get<MathStructure>(ret);
+        results.emplace_back(buildItem(trimmed, mstruct), 1.0f);
+    } catch (const std::bad_variant_access &) {
+        try {
+            auto errors = std::get<QStringList>(ret);
+            for (const auto & e : errors)
+                DEBG << e;
+        } catch (const std::bad_variant_access &) {
+            CRIT << "Unhandled bad_variant_access";
+        }
+    }
+
+    return results;
+}
+
+void Plugin::handleTriggerQuery(Query *query)
+{
+    auto trimmed = query->string().trimmed();
+    if (trimmed.isEmpty())
+        return;
+
+    auto eo_ = eo;
+    eo_.parse_options.functions_enabled = true;
+    eo_.parse_options.units_enabled = true;
+    eo_.parse_options.unknowns_enabled = true;
+
+    lock_guard locker(qalculate_mutex);
+
+    auto ret = runQalculateLocked(query, eo_);
+
+    if (!query->isValid())
+        return;
+
+    try {
+        auto mstruct = std::get<MathStructure>(ret);
+        query->add(buildItem(trimmed, mstruct));
+    } catch (const std::bad_variant_access &) {
+        try {
+            auto errors = std::get<QStringList>(ret);
+            static const auto tr_e = tr("Evaluation error.");
+            static const auto tr_d = tr("Visit documentation");
+            query->add(
+                StandardItem::make(
+                    "qalc-err",
+                    tr_e,
+                    errors.join(", "),
+                    icon_urls,
+                    {{"manual", tr_d, [=](){ openUrl(URL_MANUAL); }}}
+                )
+            );
+        } catch (const std::bad_variant_access &) {
+            CRIT << "Unhandled bad_variant_access";
+        }
     }
 }

@@ -137,6 +137,26 @@ The global handler evaluates basic math expressions. Use the trigger handler to 
        </property>
       </widget>
      </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="functionsInGlobalQueryLabel">
+       <property name="text">
+        <string>Functions in global query</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QCheckBox" name="functionsInGlobalQueryCheckBox"/>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="unitsInGlobalQueryLabel">
+       <property name="text">
+        <string>Units in global query</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QCheckBox" name="unitsInGlobalQueryCheckBox"/>
+     </item>
     </layout>
    </item>
    <item>

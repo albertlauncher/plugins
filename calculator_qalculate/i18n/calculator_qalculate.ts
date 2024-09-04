@@ -63,6 +63,14 @@ The global handler evaluates basic math expressions. Use the trigger handler to 
         <source>Precision for approximate calculations.</source>
         <translation></translation>
     </message>
+    <message>
+        <source>Functions in global query</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Units in global query</source>
+        <translation></translation>
+    </message>
 </context>
 <context>
     <name>Plugin</name>

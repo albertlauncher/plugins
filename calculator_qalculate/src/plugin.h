@@ -11,7 +11,9 @@ class Plugin : public albert::ExtensionPlugin,
                public albert::GlobalQueryHandler
 {
     ALBERT_PLUGIN
+
 public:
+
     Plugin();
 
     QString defaultTrigger() const override;
@@ -21,6 +23,10 @@ public:
     QWidget* buildConfigWidget() override;
 
 private:
+
+    std::variant<QStringList, MathStructure>
+    runQalculateLocked(const albert::Query *query, const EvaluationOptions &eo) ;
+
     std::shared_ptr<albert::Item> buildItem(const QString &query, const MathStructure &mstruct) const;
 
     QString iconPath;
@@ -29,4 +35,5 @@ private:
     PrintOptions po;
     std::mutex qalculate_mutex;
     static const QStringList icon_urls;
+
 };

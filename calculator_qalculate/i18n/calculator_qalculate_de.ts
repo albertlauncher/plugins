@@ -67,6 +67,14 @@ Der globale Handler wertet grundlegende mathematische Ausdrücke aus. Verwenden 
         <source>Precision for approximate calculations.</source>
         <translation>Präzision für ungefähre Berechnungen.</translation>
     </message>
+    <message>
+        <source>Functions in global query</source>
+        <translation>Funktionen in globaler Abfrage</translation>
+    </message>
+    <message>
+        <source>Units in global query</source>
+        <translation>Einheiten in globaler Abfrage</translation>
+    </message>
 </context>
 <context>
     <name>Plugin</name>
