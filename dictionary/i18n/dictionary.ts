@@ -4,7 +4,6 @@
 <context>
     <name>Plugin</name>
     <message>
-        <location filename="../src/plugin.mm" line="42"/>
         <source>Open in dictionary</source>
         <translation></translation>
     </message>
