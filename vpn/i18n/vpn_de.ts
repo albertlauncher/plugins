@@ -4,52 +4,42 @@
 <context>
     <name>albert::vpn::Plugin</name>
     <message>
-        <location filename="../src/plugin.mm" line="44"/>
         <source>Invalid</source>
         <translation>Ungültig</translation>
     </message>
     <message>
-        <location filename="../src/plugin.mm" line="46"/>
         <source>Disconnected</source>
         <translation>Verbindung getrennt</translation>
     </message>
     <message>
-        <location filename="../src/plugin.mm" line="48"/>
         <source>Connecting…</source>
         <translation>Verbindung wird hergestellt…</translation>
     </message>
     <message>
-        <location filename="../src/plugin.mm" line="50"/>
         <source>Connected</source>
         <translation>Verbunden</translation>
     </message>
     <message>
-        <location filename="../src/plugin.mm" line="52"/>
         <source>Disconnecting…</source>
         <translation>Verbindung wird getrennt…</translation>
     </message>
     <message>
-        <location filename="../src/plugin.mm" line="54"/>
         <source>Unknown</source>
         <translation>Unbekannt</translation>
     </message>
     <message>
-        <location filename="../src/plugin.mm" line="66"/>
         <source>Failed connecting &apos;%1&apos;: %2.</source>
         <translation>Fehler beim Verbinden mit &apos;%1&apos;: %2.</translation>
     </message>
     <message>
-        <location filename="../src/plugin.mm" line="78"/>
         <source>Failed disconnecting &apos;%1&apos;: %2.</source>
         <translation>Fehler beim Trennen von &apos;%1&apos;: %2.</translation>
     </message>
     <message>
-        <location filename="../src/plugin.mm" line="116"/>
         <source>Disconnect</source>
         <translation>Verbindung trennen</translation>
     </message>
     <message>
-        <location filename="../src/plugin.mm" line="124"/>
         <source>Connect</source>
         <translation>Verbindung herstellen</translation>
     </message>
