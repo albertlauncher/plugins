@@ -165,17 +165,14 @@
 <context>
     <name>albert::timezones::Plugin</name>
     <message>
-        <location filename="../src/plugin.cpp" line="15"/>
         <source>tz </source>
         <translation>zz </translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="21"/>
         <source>Copy to clipboard</source>
         <translation>In die Zwischenablage kopieren</translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="22"/>
         <source>Copy &apos;%1&apos; to clipboard</source>
         <translation>&apos;%1&apos; in die Zwischenablage kopieren</translation>
     </message>

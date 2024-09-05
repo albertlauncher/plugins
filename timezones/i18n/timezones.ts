@@ -19,17 +19,14 @@
 <context>
     <name>albert::timezones::Plugin</name>
     <message>
-        <location filename="../src/plugin.cpp" line="15"/>
         <source>tz </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="21"/>
         <source>Copy to clipboard</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/plugin.cpp" line="22"/>
         <source>Copy &apos;%1&apos; to clipboard</source>
         <translation></translation>
     </message>
