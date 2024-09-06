@@ -47,7 +47,7 @@ QString DesktopEntryParser::getRawValue(const QString &section, const QString &k
                                   .arg(section, key).toStdString());
         }
     } catch (const out_of_range&) {
-        throw SectionDoesNotExist(QString("Section '%1' does not contain a key '{}'.")
+        throw SectionDoesNotExist(QString("Desktop entry does not contain a section '%1'.")
                                   .arg(section).toStdString());
     }
 }

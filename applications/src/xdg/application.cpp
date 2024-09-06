@@ -159,7 +159,7 @@ Application::Application(const QString &id, const QString &path, ParseOptions po
             }
             catch (const out_of_range &e)
             {
-                WARN << "Desktop action" << action_id << "skipped: " << e.what();
+                WARN << QString("%1: Desktop action '%2' skipped: %3").arg(path, action_id, e.what());
             }
         }
     } catch (const out_of_range &) { }

@@ -7,6 +7,7 @@
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QWidget>
+#include <ranges>
 using namespace std;
 using namespace albert;
 
@@ -99,56 +100,57 @@ Plugin::Plugin()
 
     // Indexer
 
-    indexer.parallel = [this](const bool &abort)
+    indexer.parallel = [this](const bool &abort) -> vector<shared_ptr<applications::Application>>
     {
-        // Get a map of unique desktop entries according to the spec
 
-        map<QString, QString> desktopFiles;  // Desktop id > path
+        Application::ParseOptions po {
+            .ignore_show_in_keys = ignore_show_in_keys(),
+            .use_exec = use_exec(),
+            .use_generic_name = use_generic_name(),
+            .use_keywords = use_keywords(),
+            .use_non_localized_name = use_non_localized_name()
+        };
+
+        // Get a map of unique desktop entries according to the spec
+        map<QString, shared_ptr<applications::Application>> apps;  // Desktop id > path
         for (const QString &dir : appDirectories())
         {
+            DEBG << "Scanning desktop entries in:" << dir;
+
             QDirIterator fIt(dir, QStringList("*.desktop"), QDir::Files,
                              QDirIterator::Subdirectories|QDirIterator::FollowSymlinks);
 
             while (!fIt.next().isEmpty())
             {
+                if (abort)
+                    return {};
+
+                const auto path = fIt.filePath();
+
                 // To determine the ID of a desktop file, make its full path relative to
                 // the $XDG_DATA_DIRS component in which the desktop file is installed,
                 // remove the "applications/" prefix, and turn '/' into '-'.
-                static QRegularExpression re("^.*applications/");
-                QString desktopFileId = fIt.filePath().remove(re).replace("/","-").chopped(8).toLower();  // sizeof '.desktop'
-                if (const auto &[it, success] = desktopFiles.emplace(desktopFileId, fIt.filePath()); !success)
-                    DEBG << QString("Desktop file '%1' will be skipped: Shadowed by '%2'").arg(fIt.filePath(), desktopFiles[desktopFileId]);
+                static const QRegularExpression re("^.*applications/");
+                const auto id = fIt.filePath().remove(re).replace("/","-").chopped(8).toLower();  // '.desktop'
+
+                try
+                {
+                    if (const auto &[it, success] = apps.emplace(id, make_shared<Application>(id, path, po));
+                            success)
+                        DEBG << QString("Valid desktop file '%1': '%2'").arg(path, it->second->name());
+                    else
+                        DEBG << QString("Skipped %1: Shadowed by '%2'").arg(path, it->second->path());
+                }
+                catch (const exception &e)
+                {
+                    DEBG << QString("Skipped %1: %2").arg(path, e.what());
+                }
             }
         }
 
-        // Index the unique desktop files
-        vector<shared_ptr<applications::Application>> apps;
-        for (const auto &[id, path] : desktopFiles)
-        {
-            if (abort)
-                return apps;
-
-            try
-            {
-                Application::ParseOptions po{
-                    .ignore_show_in_keys = ignore_show_in_keys(),
-                    .use_exec = use_exec(),
-                    .use_generic_name = use_generic_name(),
-                    .use_keywords = use_keywords(),
-                    .use_non_localized_name = use_non_localized_name()
-                };
-
-                apps.emplace_back(make_shared<Application>(id, path, po));
-            }
-            catch (const exception &e)
-            {
-                DEBG << QString("Skipped desktop entry '%1': %2").arg(path, e.what());
-            }
-        }
-
-        ranges::sort(apps, [](const auto &a, const auto &b){ return a->id() < b->id(); });
-
-        return apps;
+        vector<shared_ptr<applications::Application>> ret;
+        ranges::move(apps | ranges::views::values, back_inserter(ret));
+        return ret;
     };
 
     indexer.finish = [this](vector<shared_ptr<applications::Application>> &&result)
@@ -172,7 +174,6 @@ Plugin::Plugin()
         setUserTerminalFromConfig();
 
         // Populate index
-
         vector<IndexItem> index_items;
         for (const auto &app : applications)
             for (const auto & alias : static_pointer_cast<Application>(app)->names())
