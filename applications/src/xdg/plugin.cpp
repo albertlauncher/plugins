@@ -21,6 +21,7 @@ static const map<QString, QStringList> exec_args  // Desktop id > ExecArg
     {"console", {"-e"}},
     {"contour", {"execute"}},
     {"cool-retro-term", {"-e"}},
+    {"debian-xterm", {"-e"}},
     {"deepin-terminal", {"-e"}},
     {"deepin-terminal-gtk", {"-e"}},
     {"elementary-terminal", {"-x"}},
@@ -46,6 +47,7 @@ static const map<QString, QStringList> exec_args  // Desktop id > ExecArg
     {"uxterm", {"-e"}},
     {"wezterm", {"-e"}},
     {"xfce-terminal", {"-x"}},
+    {"xfce4-terminal", {"-x"}},
     {"xterm", {"-e"}},
 };
 
