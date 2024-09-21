@@ -17,7 +17,7 @@
     </message>
     <message>
         <source>Open snippet dir</source>
-        <translation>Schipselverzeichnis öffnen</translation>
+        <translation>Schnipselverzeichnis öffnen</translation>
     </message>
 </context>
 <context>
