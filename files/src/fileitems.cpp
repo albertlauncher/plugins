@@ -80,7 +80,7 @@ vector<Action> FileItem::actions() const
         [this]()
         {
             QFileInfo fi(filePath());
-            apps->runTerminal(QString("cd %1; exec $SHELL")
+            apps->runTerminal(QString("cd '%1'; exec $SHELL")
                               .arg(fi.isDir() ? fi.filePath() : fi.path()));
         });
 
