@@ -19,6 +19,7 @@ static QStringList appDirectories()
         "/Applications/Utilities",
         "/System/Applications",
         "/System/Applications/Utilities",
+        "/System/Cryptexes/App/System/Applications",  // Safari Home
         "/System/Library/CoreServices/Applications",
         "/System/Library/CoreServices/Finder.app/Contents/Applications"
     };
