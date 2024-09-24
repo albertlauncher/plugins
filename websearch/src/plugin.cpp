@@ -81,10 +81,8 @@ static vector<SearchEngine> deserializeEngines(const QByteArray &json)
 
 Plugin::Plugin()
 {
-    auto config_dir = QDir(configLocation());
-    if (!config_dir.exists() && !config_dir.mkpath("."))
-        throw runtime_error("Could not create config directory");
-
+    createOrThrow(dataLocation());
+    auto config_dir = createOrThrow(configLocation());
     QFile f(config_dir.filePath(ENGINES_FILE_NAME));
     if (f.open(QIODevice::ReadOnly))
         setEngines(deserializeEngines(f.readAll()));
