@@ -4,7 +4,15 @@
 <context>
     <name>Plugin</name>
     <message>
-        <source>Open in dictionary</source>
+        <source>Dictionary</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Lookup in dictionary</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Lookup &apos;%1&apos; in dictionary</source>
         <translation></translation>
     </message>
 </context>
