@@ -35,7 +35,7 @@ static const map<QString, QStringList> exec_args  // Desktop id > ExecArg
     {"org.gnome.terminal", {"--"}},
     {"org.kde.konsole", {"-e"}},  // Flatpak
     {"org.wezfurlong.wezterm", {"-e"}},  // Flatpak
-    {"ptyxis", {"--"}},
+    {"org.gnome.ptyxis", {"--"}},
     {"qterminal", {"-e"}},
     {"roxterm", {"-x"}},
     {"st", {"-e"}},
