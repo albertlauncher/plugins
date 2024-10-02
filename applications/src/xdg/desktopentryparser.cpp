@@ -38,18 +38,17 @@ QString DesktopEntryParser::getRawValue(const QString &section, const QString &k
     class SectionDoesNotExist : public std::out_of_range { using out_of_range::out_of_range; };
     class KeyDoesNotExist : public std::out_of_range { using out_of_range::out_of_range; };
 
-    try {
-        auto &s = data.at(section);
-        try {
-            return s.at(key);
-        } catch (const out_of_range&) {
-            throw KeyDoesNotExist(QString("Section '%1' does not contain a key '%2'.")
-                                  .arg(section, key).toStdString());
-        }
-    } catch (const out_of_range&) {
+    auto s = data.find(section);
+    if (s == data.end())
         throw SectionDoesNotExist(QString("Desktop entry does not contain a section '%1'.")
                                   .arg(section).toStdString());
-    }
+
+    auto v = s->second.find(key);
+    if (v == s->second.end())
+        throw KeyDoesNotExist(QString("Section '%1' does not contain a key '%2'.")
+                              .arg(section, key).toStdString());
+
+    return v->second;
 }
 
 QString DesktopEntryParser::getEscapedValue(const QString &section, const QString &key) const

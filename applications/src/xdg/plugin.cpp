@@ -116,7 +116,8 @@ Plugin::Plugin()
         };
 
         // Get a map of unique desktop entries according to the spec
-        map<QString, shared_ptr<applications::Application>> apps;  // Desktop id > path
+        map<QString, QString> known_apps;  // Desktop id > path
+        vector<shared_ptr<applications::Application>> apps;
         for (const QString &dir : appDirectories())
         {
             DEBG << "Scanning desktop entries in:" << dir;
@@ -137,24 +138,45 @@ Plugin::Plugin()
                 static const QRegularExpression re("^.*applications/");
                 const auto id = fIt.filePath().remove(re).replace("/","-").chopped(8).toLower();  // '.desktop'
 
+                if (auto known_app = known_apps.find(id); known_app != known_apps.end())
+                {
+                    DEBG << QString("Skipped '%1': Shadowed by '%2'").arg(path, known_app->second);
+                    continue;
+                }
+
                 try
                 {
-                    if (const auto &[it, success] = apps.emplace(id, make_shared<Application>(id, path, po));
-                            success)
-                        DEBG << QString("Valid desktop file '%1': '%2'").arg(path, it->second->name());
-                    else
-                        DEBG << QString("Skipped %1: Shadowed by '%2'").arg(path, it->second->path());
+                    const auto app = make_shared<Application>(id, path, po);
+                    known_apps[id] = path;
+
+                    switch (app->excludeReason())
+                    {
+                    case Application::ExcludeReason::None:
+                        apps.push_back(app);
+                        DEBG << QString("Valid desktop file '%1': '%2'").arg(path, app->name());
+                        break;
+                    case Application::ExcludeReason::NoDisplay:
+                        DEBG << QString("Skipped '%1': Desktop entry excluded by 'NoDisplay'.").arg(path);
+                        break;
+                    case Application::ExcludeReason::NotShowIn:
+                        DEBG << QString("Skipped '%1': Desktop entry excluded by 'NotShowIn'.").arg(path);
+                        break;
+                    case Application::ExcludeReason::OnlyShowIn:
+                        DEBG << QString("Skipped '%1': Desktop entry excluded by 'OnlyShowIn'.").arg(path);
+                        break;
+                    case Application::ExcludeReason::EmptyExec:
+                        DEBG << QString("Skipped '%1': Empty Exec value.").arg(path);
+                        break;
+                    }
                 }
                 catch (const exception &e)
                 {
-                    DEBG << QString("Skipped %1: %2").arg(path, e.what());
+                    DEBG << QString("Invalid desktop file '%1': %2").arg(path, e.what());
                 }
             }
         }
 
-        vector<shared_ptr<applications::Application>> ret;
-        ranges::move(apps | ranges::views::values, back_inserter(ret));
-        return ret;
+        return apps;
     };
 
     indexer.finish = [this](vector<shared_ptr<applications::Application>> &&result)

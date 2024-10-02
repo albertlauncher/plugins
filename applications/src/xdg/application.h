@@ -19,6 +19,15 @@ public:
         bool use_non_localized_name;
     };
 
+    enum class ExcludeReason
+    {
+        None,
+        NoDisplay,
+        NotShowIn,
+        OnlyShowIn,
+        EmptyExec,
+    };
+
     Application(const QString &id, const QString &path, ParseOptions po);
     Application(const Application &) = default;
 
@@ -28,6 +37,7 @@ public:
     std::vector<albert::Action> actions() const override final;
 
     const QStringList &exec() const;
+    const ExcludeReason &excludeReason() const;
 
 protected:
 
@@ -51,5 +61,6 @@ private:
     QString working_dir_;
     std::vector<DesktopAction> desktop_actions_;
     bool term_ = false;
+    ExcludeReason exclude_reason_ = ExcludeReason::None;
 
 };
