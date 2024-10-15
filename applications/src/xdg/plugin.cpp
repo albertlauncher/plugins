@@ -16,6 +16,7 @@ static const map<QString, QStringList> exec_args  // Desktop id > ExecArg
     {"alacritty", {"-e"}},
     {"app.devsuite.ptyxis", {"--"}},  // Flatpak
     {"blackbox", {"--"}},
+    {"com.alacritty.Alacritty", {"-e"}},
     {"com.gexperts.tilix", {"-e"}},
     {"com.raggesilver.blackbox", {"--"}},  // Flatpak
     {"console", {"-e"}},
