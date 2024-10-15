@@ -16,7 +16,7 @@
     </message>
     <message>
         <source>Ignore &apos;OnlyShowIn&apos;/&apos;NotShowIn&apos;</source>
-        <translation>Ignoriere &apos;OnlyShowIn&apos;/&apos;NotShowIn&apos;</translation>
+        <translation>&apos;OnlyShowIn&apos;/&apos;NotShowIn&apos; ignorieren</translation>
     </message>
     <message>
         <source>Use &apos;Exec&apos;</source>
@@ -29,10 +29,6 @@
     <message>
         <source>Use &apos;GenericName&apos;</source>
         <translation>&apos;GenericName&apos; verwenden</translation>
-    </message>
-    <message>
-        <source>Use non-localized &apos;Name&apos;</source>
-        <translation>Nicht lokalisierten &apos;Name&apos; verwenden</translation>
     </message>
 </context>
 <context>

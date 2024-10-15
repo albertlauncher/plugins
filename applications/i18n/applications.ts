@@ -30,10 +30,6 @@
         <source>Use &apos;GenericName&apos;</source>
         <translation></translation>
     </message>
-    <message>
-        <source>Use non-localized &apos;Name&apos;</source>
-        <translation></translation>
-    </message>
 </context>
 <context>
     <name>Plugin</name>
