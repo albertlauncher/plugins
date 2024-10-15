@@ -48,4 +48,8 @@ protected:
     ALBERT_PLUGIN_PROPERTY(bool, split_camel_case, true)
     ALBERT_PLUGIN_PROPERTY(bool, use_acronyms, true)
 
+signals:
+
+    void appsChanged();
+
 };
