@@ -123,8 +123,9 @@ Plugin::Plugin()
             QDirIterator fIt(dir, QStringList("*.desktop"), QDir::Files,
                              QDirIterator::Subdirectories|QDirIterator::FollowSymlinks);
 
-            while (!fIt.next().isEmpty())
+            while (fIt.hasNext())
             {
+                fIt.next();
                 if (abort)
                     return {};
 
