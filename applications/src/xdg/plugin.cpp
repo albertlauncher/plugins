@@ -23,6 +23,7 @@ static const map<QString, QStringList> exec_args  // Desktop id > ExecArg
     {"contour", {"execute"}},
     {"cool-retro-term", {"-e"}},
     {"debian-xterm", {"-e"}},
+    {"debian-uxterm", {"-e"}},
     {"deepin-terminal", {"-e"}},
     {"deepin-terminal-gtk", {"-e"}},
     {"elementary-terminal", {"-x"}},
