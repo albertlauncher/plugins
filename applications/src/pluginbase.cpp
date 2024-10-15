@@ -2,13 +2,17 @@
 
 #include "pluginbase.h"
 #include "terminal.h"
+#include <QCheckBox>
 #include <QComboBox>
+#include <QFormLayout>
 #include <QLabel>
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QWidget>
 #include <albert/iconprovider.h>
+#include <albert/indexitem.h>
 #include <albert/logging.h>
+using namespace albert;
 using namespace std;
 ALBERT_LOGGING_CATEGORY("apps")
 
@@ -21,8 +25,13 @@ void PluginBase::updateIndexItems()  { indexer.run(); }
 void PluginBase::commonInitialize(unique_ptr<QSettings> &s)
 {
     restore_use_non_localized_name(s);
-    connect(this, &PluginBase::use_non_localized_name_changed,
-            this, &PluginBase::updateIndexItems);
+    restore_split_camel_case(s);
+    restore_use_acronyms(s);
+
+    for (auto f : { &PluginBase::use_non_localized_name_changed,
+                    &PluginBase::split_camel_case_changed,
+                    &PluginBase::use_acronyms_changed })
+        connect(this, f, this, &PluginBase::updateIndexItems);
 }
 
 void PluginBase::setUserTerminalFromConfig()
@@ -97,8 +106,76 @@ QWidget *PluginBase::createTerminalFormWidget()
 
     l->addWidget(cb);
     l->addWidget(lbl);
+    l->setContentsMargins(0,0,0,0);
+
     w->setLayout(l);
+
     return w;
+}
+
+void PluginBase::addBaseConfig(QFormLayout *l)
+{
+    auto *cb = new QCheckBox;
+    l->addRow(tr("Use non-localized name"), cb);
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_non_localized_name, cb);
+
+    cb = new QCheckBox;
+    l->addRow(tr("Split CamelCase words (medial capital)"), cb);
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, split_camel_case, cb);
+
+    cb = new QCheckBox;
+    l->addRow(tr("Use acronyms"), cb);
+    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_acronyms, cb);
+
+    l->addRow(tr("Terminal"), createTerminalFormWidget());
+}
+
+vector<IndexItem> PluginBase::buildIndexItems() const
+{
+    vector<IndexItem> r;
+
+    for (const auto &iapp : applications)
+    {
+        auto app = static_pointer_cast<Application>(iapp);
+        for (const auto &name : app->names())
+        {
+            r.emplace_back(app, name);
+
+            // https://en.wikipedia.org/wiki/Combining_Diacritical_Marks
+            static QRegularExpression re(R"([\x{0300}-\x{036f}])");
+            auto normalized = name.normalized(QString::NormalizationForm_D).remove(re);
+
+            auto ccs = camelCaseSplit(normalized);
+
+            if (split_camel_case_)
+                r.emplace_back(app, ccs.join(QChar::Space));
+
+            if (use_acronyms_)
+            {
+                QString acronym;
+                for (const auto &w : ccs)
+                    if (w.size())
+                        acronym.append(w[0]);
+
+                if (acronym.size() > 1)
+                    r.emplace_back(app, acronym);
+            }
+        }
+    }
+
+    return r;
+}
+
+QStringList PluginBase::camelCaseSplit(const QString &s)
+{
+    static QRegularExpression re(R"([A-Z0-9]?[a-z]+|[A-Z0-9]+(?![a-z]))");
+    auto it = re.globalMatch(s);
+
+    QStringList words;
+    while (it.hasNext())
+        words << it.next().captured();
+
+    return words;
 }
 
 void PluginBase::runTerminal(const QString &script) const

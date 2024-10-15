@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 class Terminal;
+class QFormLayout;
 
 class PluginBase : public albert::ExtensionPlugin,
                    public albert::IndexQueryHandler,
@@ -33,6 +34,9 @@ protected:
 
     void setUserTerminalFromConfig();
     QWidget *createTerminalFormWidget();
+    void addBaseConfig(QFormLayout*);
+    std::vector<albert::IndexItem> buildIndexItems() const;
+    static QStringList camelCaseSplit(const QString &s);
 
     QFileSystemWatcher fs_watcher;
     albert::BackgroundExecutor<std::vector<std::shared_ptr<applications::Application>>> indexer;
@@ -41,5 +45,7 @@ protected:
     Terminal* terminal = nullptr;
 
     ALBERT_PLUGIN_PROPERTY(bool, use_non_localized_name, false)
+    ALBERT_PLUGIN_PROPERTY(bool, split_camel_case, true)
+    ALBERT_PLUGIN_PROPERTY(bool, use_acronyms, true)
 
 };

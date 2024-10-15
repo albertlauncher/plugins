@@ -4,24 +4,12 @@
 <context>
     <name>ApplicationBase</name>
     <message>
-        <source>Launch app</source>
-        <translation type="obsolete">Anwendung starten</translation>
-    </message>
-    <message>
         <source>Launch application</source>
         <translation>Anwendung starten</translation>
     </message>
 </context>
 <context>
     <name>ConfigWidget</name>
-    <message>
-        <source>Run desktop applications as described in the [freedesktop.org Desktop Entry Specification](https://specifications.freedesktop.org/desktop-entry-spec/latest/).
-
-Your current environment configuration results in the following applications directories: *__XDG_DATA_DIRS__*.</source>
-        <translation type="vanished">Führen Sie Desktop-Anwendungen gemäß der [freedesktop.org Desktop Entry Specification](https://specifications.freedesktop.org/desktop-entry-spec/latest/) aus.
-
-Ihre aktuelle Umgebungskonfiguration führt zu den folgenden Anwendungsverzeichnissen: XDG_DATA_DIRS.</translation>
-    </message>
     <message>
         <source>Run desktop applications as described in the [freedesktop.org Desktop Entry Specification](https://specifications.freedesktop.org/desktop-entry-spec/latest/).</source>
         <translation>Führen Sie Desktop-Anwendungen gemäß der [freedesktop.org Desktop Entry Specification](https://specifications.freedesktop.org/desktop-entry-spec/latest/) aus.</translation>
@@ -31,40 +19,24 @@ Ihre aktuelle Umgebungskonfiguration führt zu den folgenden Anwendungsverzeichn
         <translation>Ignoriere &apos;OnlyShowIn&apos;/&apos;NotShowIn&apos;</translation>
     </message>
     <message>
-        <source>Use &apos;Exec&apos; for lookup</source>
-        <translation>Verwende &apos;Exec&apos; für die Suche</translation>
+        <source>Use &apos;Exec&apos;</source>
+        <translation>&apos;Exec&apos; verwenden</translation>
     </message>
     <message>
-        <source>Use &apos;Keywords&apos; for lookup</source>
-        <translation>Verwende &apos;Keywords&apos; für die Suche</translation>
+        <source>Use &apos;Keywords&apos;</source>
+        <translation>&apos;Keywords&apos; verwenden</translation>
     </message>
     <message>
-        <source>Use &apos;GenericName&apos; for lookup</source>
-        <translation>Verwende &apos;GenericName&apos; für die Suche</translation>
+        <source>Use &apos;GenericName&apos;</source>
+        <translation>&apos;GenericName&apos; verwenden</translation>
     </message>
     <message>
-        <source>Use non-localized &apos;Name&apos; for lookup</source>
-        <translation>Den nicht lokalisierten &apos;Name&apos; für die Suche verwenden</translation>
-    </message>
-    <message>
-        <source>Index non-localized name</source>
-        <translation>Den nicht lokalisierten Namen indexieren</translation>
+        <source>Use non-localized &apos;Name&apos;</source>
+        <translation>Nicht lokalisierten &apos;Name&apos; verwenden</translation>
     </message>
 </context>
 <context>
     <name>Plugin</name>
-    <message>
-        <source>Launch app</source>
-        <translation type="vanished">Anwendung starten</translation>
-    </message>
-    <message>
-        <source>Open terminal here</source>
-        <translation type="vanished">Terminal hier öffnen</translation>
-    </message>
-    <message>
-        <source>Terminal</source>
-        <translation>Terminal</translation>
-    </message>
     <message>
         <source>Open desktop entry</source>
         <translation>Desktop Entry öffnen</translation>
@@ -79,6 +51,22 @@ Ihre aktuelle Umgebungskonfiguration führt zu den folgenden Anwendungsverzeichn
     <message>
         <source>No terminal available.</source>
         <translation>Kein Terminal verfügbar.</translation>
+    </message>
+    <message>
+        <source>Terminal</source>
+        <translation>Terminal</translation>
+    </message>
+    <message>
+        <source>Split CamelCase words (medial capital)</source>
+        <translation>CamelCase trennen (Binnenmajuskel)</translation>
+    </message>
+    <message>
+        <source>Use acronyms</source>
+        <translation>Akronyme verwenden</translation>
+    </message>
+    <message>
+        <source>Use non-localized name</source>
+        <translation>Nicht lokalisierten Namen verwenden</translation>
     </message>
 </context>
 <context>
