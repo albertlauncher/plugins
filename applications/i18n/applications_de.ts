@@ -16,7 +16,7 @@
     </message>
     <message>
         <source>Ignore &apos;OnlyShowIn&apos;/&apos;NotShowIn&apos;</source>
-        <translation>Ignoriere &apos;OnlyShowIn&apos;/&apos;NotShowIn&apos;</translation>
+        <translation>&apos;OnlyShowIn&apos;/&apos;NotShowIn&apos; ignorieren</translation>
     </message>
     <message>
         <source>Use &apos;Exec&apos;</source>
