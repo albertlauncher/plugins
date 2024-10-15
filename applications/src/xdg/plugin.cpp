@@ -14,6 +14,7 @@ using namespace albert;
 static const map<QString, QStringList> exec_args  // Desktop id > ExecArg
 {
     {"alacritty", {"-e"}},
+    {"com.alacritty.Alacritty", {"-e"}},
     {"app.devsuite.ptyxis", {"--"}},  // Flatpak
     {"blackbox", {"--"}},
     {"com.gexperts.tilix", {"-e"}},
