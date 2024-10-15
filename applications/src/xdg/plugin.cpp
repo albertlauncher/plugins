@@ -123,12 +123,12 @@ Plugin::Plugin()
             QDirIterator fIt(dir, QStringList("*.desktop"), QDir::Files,
                              QDirIterator::Subdirectories|QDirIterator::FollowSymlinks);
 
-            while (!fIt.next().isEmpty())
+            while (fIt.hasNext())
             {
                 if (abort)
                     return {};
 
-                const auto path = fIt.filePath();
+                const auto path = fIt.next();
 
                 // To determine the ID of a desktop file, make its full path relative to
                 // the $XDG_DATA_DIRS component in which the desktop file is installed,
