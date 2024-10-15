@@ -68,20 +68,27 @@ QWidget *PluginBase::createTerminalFormWidget()
     auto *l = new QVBoxLayout;
     auto *lbl = new QLabel;
 
-    auto sorted_terminals = terminals;
-    ranges::sort(sorted_terminals, [](const auto *t1, const auto *t2)
-                 { return t1->name().compare(t2->name(), Qt::CaseInsensitive) < 0; });
-
-    for (uint i = 0; i < sorted_terminals.size(); ++i)
+    auto updateTerminalsCheckBox = [this, cb]
     {
-        const auto t = sorted_terminals.at(i);
-        cb->addItem(albert::iconFromUrls(t->iconUrls()), t->name(), t->id());
-        cb->setItemData(i, t->id(), Qt::ToolTipRole);
-        if (t->id() == terminal->id())  // is current
-            cb->setCurrentIndex(i);
-    }
+        cb->clear();
 
-    // cb->addItem(QIcon(), tr("Custom command"));
+        auto sorted_terminals = terminals;
+        ranges::sort(sorted_terminals, [](const auto *t1, const auto *t2)
+                     { return t1->name().compare(t2->name(), Qt::CaseInsensitive) < 0; });
+
+        for (uint i = 0; i < sorted_terminals.size(); ++i)
+        {
+            const auto t = sorted_terminals.at(i);
+            cb->addItem(albert::iconFromUrls(t->iconUrls()), t->name(), t->id());
+            cb->setItemData(i, t->id(), Qt::ToolTipRole);
+            if (t->id() == terminal->id())  // is current
+                cb->setCurrentIndex(i);
+        }
+    };
+
+    connect(this, &PluginBase::appsChanged, cb, updateTerminalsCheckBox);
+
+    updateTerminalsCheckBox();
 
     connect(cb, qOverload<int>(&QComboBox::currentIndexChanged), this, [this, cb](int index)
     {

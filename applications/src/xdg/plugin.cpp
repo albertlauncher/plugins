@@ -178,6 +178,7 @@ Plugin::Plugin()
 
         setIndexItems(buildIndexItems());
 
+        emit appsChanged();
     };
 }
 
