@@ -175,12 +175,8 @@ Plugin::Plugin()
 
         setUserTerminalFromConfig();
 
-        // Populate index
-        vector<IndexItem> index_items;
-        for (const auto &app : applications)
-            for (const auto & alias : static_pointer_cast<Application>(app)->names())
-                index_items.emplace_back(static_pointer_cast<Application>(app), alias);
-        setIndexItems(::move(index_items));
+        setIndexItems(buildIndexItems());
+
     };
 }
 
@@ -196,9 +192,8 @@ QWidget *Plugin::buildConfigWidget()
     ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_exec, ui.checkBox_useExec);
     ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_generic_name, ui.checkBox_useGenericName);
     ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_keywords, ui.checkBox_useKeywords);
-    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_non_localized_name, ui.checkBox_useNonLocalizedName);
 
-    ui.formLayout->addRow(tr("Terminal"), createTerminalFormWidget());
+    addBaseConfig(ui.formLayout);
 
     return widget;
 }

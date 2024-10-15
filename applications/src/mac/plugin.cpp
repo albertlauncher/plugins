@@ -101,13 +101,9 @@ Plugin::Plugin()
 
         setUserTerminalFromConfig();
 
-        // Build index items
+        setIndexItems(buildIndexItems());
 
-        vector<IndexItem> ii;
-        for (const auto &app : applications)
-            for (const auto &name : static_pointer_cast<Application>(app)->names())
-                ii.emplace_back(static_pointer_cast<Application>(app), name);
-        setIndexItems(::move(ii));
+        emit appsChanged();
     };
 }
 
@@ -117,9 +113,7 @@ QWidget *Plugin::buildConfigWidget()
     Ui::ConfigWidget ui;
     ui.setupUi(w);
 
-    ALBERT_PROPERTY_CONNECT_CHECKBOX(this, use_non_localized_name, ui.checkBox_useNonLocalizedName);
-
-    ui.formLayout->addRow(tr("Terminal"), createTerminalFormWidget());
+    addBaseConfig(ui.formLayout);
 
     return w;
 }

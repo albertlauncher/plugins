@@ -19,32 +19,24 @@
         <translation></translation>
     </message>
     <message>
-        <source>Use &apos;Exec&apos; for lookup</source>
+        <source>Use &apos;Exec&apos;</source>
         <translation></translation>
     </message>
     <message>
-        <source>Use &apos;Keywords&apos; for lookup</source>
+        <source>Use &apos;Keywords&apos;</source>
         <translation></translation>
     </message>
     <message>
-        <source>Use &apos;GenericName&apos; for lookup</source>
+        <source>Use &apos;GenericName&apos;</source>
         <translation></translation>
     </message>
     <message>
-        <source>Use non-localized &apos;Name&apos; for lookup</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Index non-localized name</source>
+        <source>Use non-localized &apos;Name&apos;</source>
         <translation></translation>
     </message>
 </context>
 <context>
     <name>Plugin</name>
-    <message>
-        <source>Terminal</source>
-        <translation></translation>
-    </message>
     <message>
         <source>Open desktop entry</source>
         <translation></translation>
@@ -58,6 +50,22 @@
     </message>
     <message>
         <source>No terminal available.</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Terminal</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Split CamelCase words (medial capital)</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Use acronyms</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Use non-localized name</source>
         <translation></translation>
     </message>
 </context>
