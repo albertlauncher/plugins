@@ -95,6 +95,8 @@ Plugin::Plugin():
     // DEBG << "config.user_site_directory" << config.user_site_directory;
     // DEBG << "config.verbose" << config.verbose;
 
+    config.site_import = 0;
+
     DEBG << "Initializing Python interpreter";
     if (auto status = Py_InitializeFromConfig(&config); PyStatus_Exception(status))
         throw runtime_error(tr("Failed initializing the interpreter: %1 %2")
