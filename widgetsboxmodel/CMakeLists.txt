@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(widgetsboxmodel VERSION 7.6)
+project(widgetsboxmodel VERSION 7.7)
 
 albert_plugin(QT Widgets StateMachine Svg)
 
