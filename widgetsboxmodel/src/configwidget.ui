@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>ConfigWidget</class>
  <widget class="QWidget" name="ConfigWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>425</width>
-    <height>434</height>
-   </rect>
-  </property>
   <property name="windowTitle">
    <string>Frontend settings</string>
   </property>
@@ -338,7 +330,9 @@
   <tabstop>checkBox_quit_on_close</tabstop>
   <tabstop>checkBox_hideOnFocusOut</tabstop>
   <tabstop>checkBox_center</tabstop>
+  <tabstop>checkBox_followCursor</tabstop>
   <tabstop>comboBox_theme_light</tabstop>
+  <tabstop>comboBox_theme_dark</tabstop>
   <tabstop>spinBox_results</tabstop>
   <tabstop>checkBox_system_shadow</tabstop>
   <tabstop>checkBox_client_shadow</tabstop>
