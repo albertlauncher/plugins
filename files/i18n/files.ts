@@ -77,10 +77,6 @@
         <translation></translation>
     </message>
     <message>
-        <source>Case sensitive file browsers</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Choose directory</source>
         <translation></translation>
     </message>
@@ -90,6 +86,26 @@
     </message>
     <message>
         <source>Index the entire file path</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>File browsers</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Match case-sensitive</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Show hidden files</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Sort entries case-insensitve</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Show dirs first</source>
         <translation></translation>
     </message>
 </context>
@@ -121,25 +137,6 @@
     </message>
 </context>
 <context>
-    <name>FilePathBrowser</name>
-    <message>
-        <source>Root browser</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Browse root directory by path</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Home browser</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Browse home directory by path</source>
-        <translation></translation>
-    </message>
-</context>
-<context>
     <name>FsIndexPath</name>
     <message numerus="yes">
         <source>Indexed %n directories in %1.</source>
@@ -147,6 +144,17 @@
             <numerusform>Indexed %n directory in %1.</numerusform>
             <numerusform>Indexed %n directories in %1.</numerusform>
         </translation>
+    </message>
+</context>
+<context>
+    <name>HomeBrowser</name>
+    <message>
+        <source>Home browser</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Browse home directory by path</source>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -211,6 +219,17 @@
     </message>
     <message>
         <source>Empty trash</source>
+        <translation></translation>
+    </message>
+</context>
+<context>
+    <name>RootBrowser</name>
+    <message>
+        <source>Root browser</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Browse root directory by path</source>
         <translation></translation>
     </message>
 </context>

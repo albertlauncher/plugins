@@ -39,8 +39,14 @@ applications::Plugin *apps;
 
 Plugin::Plugin():
     apps(registry(), "applications"),
-    homebrowser(fs_browsers_case_sensitive_),
-    rootbrowser(fs_browsers_case_sensitive_)
+    homebrowser(fs_browsers_match_case_sensitive_,
+                fs_browsers_show_hidden_,
+                fs_browsers_sort_case_insensitive_,
+                fs_browsers_show_dirs_first_),
+    rootbrowser(fs_browsers_match_case_sensitive_,
+                fs_browsers_show_hidden_,
+                fs_browsers_sort_case_insensitive_,
+                fs_browsers_show_dirs_first_)
 {
     ::apps = apps.get();
 
@@ -53,9 +59,12 @@ Plugin::Plugin():
         object = QJsonDocument(QJsonDocument::fromJson(file.readAll())).object();
 
     auto s = settings();
-
     restore_index_file_path(s);
-    restore_fs_browsers_case_sensitive(s);
+    restore_fs_browsers_match_case_sensitive(s);
+    restore_fs_browsers_show_hidden(s);
+    restore_fs_browsers_sort_case_insensitive(s);
+    restore_fs_browsers_show_dirs_first(s);
+
     auto paths = s->value(CFG_PATHS, QStringList()).toStringList();
 
     for (const auto &path : paths){

@@ -77,10 +77,6 @@
         <translation>Erweitert</translation>
     </message>
     <message>
-        <source>Case sensitive file browsers</source>
-        <translation>Groß-/Kleinschreibung in Dateibrowsern beachten</translation>
-    </message>
-    <message>
         <source>Choose directory</source>
         <translation>Verzeichnis auswählen</translation>
     </message>
@@ -91,6 +87,26 @@
     <message>
         <source>Index the entire file path</source>
         <translation>Den ganzen Dateipfad indexieren</translation>
+    </message>
+    <message>
+        <source>File browsers</source>
+        <translation>Dateibrowser</translation>
+    </message>
+    <message>
+        <source>Match case-sensitive</source>
+        <translation>Groß-/Kleinschreibung bei Suche berücksichtigen</translation>
+    </message>
+    <message>
+        <source>Show hidden files</source>
+        <translation>Versteckte Dateien anzeigen</translation>
+    </message>
+    <message>
+        <source>Sort entries case-insensitve</source>
+        <translation>Groß- und Kleinschreibung bei der Sortierung nicht beachten.</translation>
+    </message>
+    <message>
+        <source>Show dirs first</source>
+        <translation>Verzeichnisse zuerst anzeigen</translation>
     </message>
 </context>
 <context>
@@ -112,35 +128,12 @@
         <translation>Terminal hier öffnen</translation>
     </message>
     <message>
-        <source>Open %1 here</source>
-        <translation type="vanished">%1 hier öffnen</translation>
-    </message>
-    <message>
         <source>Copy file to clipboard</source>
         <translation>Datei in die Zwischenablage kopieren</translation>
     </message>
     <message>
         <source>Copy path to clipboard</source>
         <translation>Pfad in die Zwischenablage kopieren</translation>
-    </message>
-</context>
-<context>
-    <name>FilePathBrowser</name>
-    <message>
-        <source>Root browser</source>
-        <translation>Root-Browser</translation>
-    </message>
-    <message>
-        <source>Browse root directory by path</source>
-        <translation>Durchsuche das Stammverzeichnis anhand eines Pfades</translation>
-    </message>
-    <message>
-        <source>Home browser</source>
-        <translation>Home-Browser</translation>
-    </message>
-    <message>
-        <source>Browse home directory by path</source>
-        <translation>Durchsuche das Nutzerverzeichnis anhand eines Pfades</translation>
     </message>
 </context>
 <context>
@@ -151,6 +144,17 @@
             <numerusform>%n Verzeichnis in %1 indexiert.</numerusform>
             <numerusform>%n Verzeichnisse in %1 indexiert.</numerusform>
         </translation>
+    </message>
+</context>
+<context>
+    <name>HomeBrowser</name>
+    <message>
+        <source>Home browser</source>
+        <translation>Home-Browser</translation>
+    </message>
+    <message>
+        <source>Browse home directory by path</source>
+        <translation>Durchsuche das Nutzerverzeichnis anhand eines Pfades</translation>
     </message>
 </context>
 <context>
@@ -216,6 +220,17 @@
     <message>
         <source>Empty trash</source>
         <translation>Papierkorb leeren</translation>
+    </message>
+</context>
+<context>
+    <name>RootBrowser</name>
+    <message>
+        <source>Root browser</source>
+        <translation>Root-Browser</translation>
+    </message>
+    <message>
+        <source>Browse root directory by path</source>
+        <translation>Durchsuche das Stammverzeichnis anhand eines Pfades</translation>
     </message>
 </context>
 </TS>

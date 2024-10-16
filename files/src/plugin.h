@@ -15,8 +15,11 @@ class Plugin : public albert::ExtensionPlugin,
                public albert::IndexQueryHandler
 {
     ALBERT_PLUGIN
-    ALBERT_PLUGIN_PROPERTY(bool, fs_browsers_case_sensitive, false)
     ALBERT_PLUGIN_PROPERTY(bool, index_file_path, false)
+    ALBERT_PLUGIN_PROPERTY(bool, fs_browsers_match_case_sensitive, true)
+    ALBERT_PLUGIN_PROPERTY(bool, fs_browsers_show_hidden, true)
+    ALBERT_PLUGIN_PROPERTY(bool, fs_browsers_sort_case_insensitive, true)
+    ALBERT_PLUGIN_PROPERTY(bool, fs_browsers_show_dirs_first, true)
 
 public:
 
