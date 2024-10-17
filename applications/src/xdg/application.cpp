@@ -24,10 +24,10 @@ Application::Application(const QString &id, const QString &path, ParseOptions po
     // NoDisplay - boolean, must not be true
     try {
         if (p.getBoolean(root_section, QStringLiteral("NoDisplay")))
-            throw runtime_error("Desktop entry excluded by 'NoDisplay'.");
+            exclude_reason_ = ExcludeReason::NoDisplay;
     } catch (const out_of_range &) { }
 
-    if (!po.ignore_show_in_keys)
+    if (!po.ignore_show_in_keys && exclude_reason_ == ExcludeReason::None)
     {
         const auto desktops(QString(getenv("XDG_CURRENT_DESKTOP")).split(':', Qt::SkipEmptyParts));
 
@@ -35,14 +35,14 @@ Application::Application(const QString &id, const QString &path, ParseOptions po
         try {
             if (ranges::any_of(p.getString(root_section, QStringLiteral("NotShowIn")).split(';', Qt::SkipEmptyParts),
                                [&](const auto &de){ return desktops.contains(de); }))
-                throw runtime_error("Desktop entry excluded by 'NotShowIn'.");
+                exclude_reason_ = ExcludeReason::NotShowIn;
         } catch (const out_of_range &) { }
 
         // OnlyShowIn - string(s), if exists has to be in XDG_CURRENT_DESKTOP
         try {
             if (!ranges::any_of(p.getString(root_section, QStringLiteral("OnlyShowIn")).split(';', Qt::SkipEmptyParts),
                                 [&](const auto &de){ return desktops.contains(de); }))
-                throw runtime_error("Desktop entry excluded by 'OnlyShowIn'.");
+                exclude_reason_ = ExcludeReason::OnlyShowIn;
         } catch (const out_of_range &) { }
     }
 
@@ -54,19 +54,20 @@ Application::Application(const QString &id, const QString &path, ParseOptions po
     if (po.use_non_localized_name)
         names_ << p.getString(root_section, QStringLiteral("Name"));
 
-    // Exec - string, REQUIRED despite not strictly by standard
+    // Exec - string
     try
     {
         exec_ = DesktopEntryParser::splitExec(p.getString(root_section, QStringLiteral("Exec"))).value();
-        if (exec_.isEmpty())
-            throw runtime_error("Empty Exec value.");
     }
+    catch (const out_of_range &) { }
     catch (const bad_optional_access&)
     {
         throw runtime_error("Malformed Exec value.");
     }
+    if (exec_.isEmpty() && exclude_reason_ == ExcludeReason::None)
+        exclude_reason_ = ExcludeReason::EmptyExec;
 
-    if (po.use_exec)
+    if (po.use_exec && !exec_.isEmpty())
     {
         static QStringList excludes = {
             "/",
@@ -195,6 +196,11 @@ vector<Action> Application::actions() const
                          [this](){ albert::openUrl(path_); });
 
     return actions;
+}
+
+const Application::ExcludeReason &Application::excludeReason() const
+{
+    return exclude_reason_;
 }
 
 const QStringList &Application::exec() const
