@@ -22,8 +22,8 @@ static const map<QString, QStringList> exec_args  // Desktop id > ExecArg
     {"console", {"-e"}},
     {"contour", {"execute"}},
     {"cool-retro-term", {"-e"}},
-    {"debian-xterm", {"-e"}},
     {"debian-uxterm", {"-e"}},
+    {"debian-xterm", {"-e"}},
     {"deepin-terminal", {"-e"}},
     {"deepin-terminal-gtk", {"-e"}},
     {"elementary-terminal", {"-x"}},
@@ -34,6 +34,7 @@ static const map<QString, QStringList> exec_args  // Desktop id > ExecArg
     {"org.codeberg.dnkl.foot", {}},
     {"org.contourterminal.contour", {"--"}},  // Flatpak
     {"org.gnome.console", {"-e"}},
+    {"org.gnome.ptyxis", {"--"}},
     {"org.gnome.terminal", {"--"}},
     {"org.kde.konsole", {"-e"}},  // Flatpak
     {"org.wezfurlong.wezterm", {"-e"}},  // Flatpak
