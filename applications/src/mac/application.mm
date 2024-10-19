@@ -28,13 +28,13 @@ void printBundleInfo(QString path, NSBundle *bundle)
     {
         for (NSDictionary *documentType in documentTypes)
         {
-            NSString *typeName = [documentType objectForKey:@"CFBundleTypeName"];
+            // NSString *typeName = [documentType objectForKey:@"CFBundleTypeName"];
             NSString *typeRole = [documentType objectForKey:@"CFBundleTypeRole"];
             NSString *handlerRank = [documentType objectForKey:@"LSHandlerRank"];
             NSArray *contentTypes = [documentType objectForKey:@"LSItemContentTypes"];
             NSArray *fileExtensions = [documentType objectForKey:@"CFBundleTypeExtensions"];
             NSArray *mimeTypes = [documentType objectForKey:@"CFBundleTypeMIMETypes"];
-            NSString *iconFile = [documentType objectForKey:@"CFBundleTypeIconFile"];
+            // NSString *iconFile = [documentType objectForKey:@"CFBundleTypeIconFile"];
 
             // NSLog(@"Document Type Name: %@", typeName);
             // NSLog(@"Document Type Role: %@", typeRole);
