@@ -2,7 +2,7 @@
 #include <QCoreApplication>
 #include <QtTest/QtTest>
 
-class Test : public QObject
+class FilesTests : public QObject
 {
     Q_OBJECT
 

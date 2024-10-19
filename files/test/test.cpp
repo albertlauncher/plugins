@@ -9,10 +9,10 @@
 using namespace std;
 
 
-QTEST_MAIN(Test)
+QTEST_APPLESS_MAIN(FilesTests)
 
 
-void Test::fs_index_path()
+void FilesTests::fs_index_path()
 {
     QTemporaryDir root;
     QVERIFY(root.isValid());
@@ -130,7 +130,7 @@ void Test::fs_index_path()
     QCOMPARE(items.size(),  3);
 }
 
-void Test::fs_index()
+void FilesTests::fs_index()
 {
     int argc;
     char *argv = {};
