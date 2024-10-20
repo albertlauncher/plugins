@@ -10,7 +10,7 @@
 using namespace std;
 using namespace albert;
 
-static const map<QString, QStringList> exec_args  // Desktop id > ExecArg
+const map<QString, QStringList> Plugin::exec_args  // Desktop id > ExecArg
 {
     {"Alacritty", {"-e"}},
     {"app.devsuite.Ptyxis", {"--"}},  // Flatpak
