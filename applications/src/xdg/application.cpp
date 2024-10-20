@@ -17,6 +17,14 @@ Application::Application(const QString &id, const QString &path, ParseOptions po
     DesktopEntryParser p(path);
     auto root_section = QStringLiteral("Desktop Entry");
 
+    // Post a warning on unsupported terminals
+    try {
+        if (ranges::any_of(p.getString(root_section, QStringLiteral("Categories")).split(';', Qt::SkipEmptyParts),
+                           [&](const auto &cat){ return cat == QStringLiteral("TerminalEmulator"); })
+            && !Plugin::exec_args.contains(id))
+            WARN << QString("Terminal '%1' not supported. Please post an issue.").arg(id);
+    } catch (const out_of_range &) { }
+
     // Type - string, REQUIRED to be Application
     if (p.getString(root_section, QStringLiteral("Type")) != QStringLiteral("Application"))
         throw runtime_error("Desktop entries of type other than 'Application' are not handled yet.");
