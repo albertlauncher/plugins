@@ -12,14 +12,14 @@ using namespace albert;
 
 static const map<QString, QStringList> exec_args  // Desktop id > ExecArg
 {
-    {"alacritty", {"-e"}},
-    {"app.devsuite.ptyxis", {"--"}},  // Flatpak
+    {"Alacritty", {"-e"}},
+    {"app.devsuite.Ptyxis", {"--"}},  // Flatpak
     {"blackbox", {"--"}},
     {"com.alacritty.Alacritty", {"-e"}},
     {"com.gexperts.tilix", {"-e"}},
-    {"com.raggesilver.blackbox", {"--"}},  // Flatpak
-    {"console", {"-e"}},
-    {"contour", {"execute"}},
+    {"com.raggesilver.BlackBox", {"--"}},  // Flatpak
+    {"Console", {"-e"}},
+    {"Contour", {"execute"}},
     {"cool-retro-term", {"-e"}},
     {"debian-uxterm", {"-e"}},
     {"debian-xterm", {"-e"}},
@@ -31,10 +31,10 @@ static const map<QString, QStringList> exec_args  // Desktop id > ExecArg
     {"lxterminal", {"-e"}},
     {"mate-terminal", {"-x"}},
     {"org.codeberg.dnkl.foot", {}},
-    {"org.contourterminal.contour", {"--"}},  // Flatpak
-    {"org.gnome.console", {"-e"}},
+    {"org.contourterminal.Contour", {"--"}},  // Flatpak
+    {"org.gnome.Console", {"-e"}},
     {"org.gnome.ptyxis", {"--"}},
-    {"org.gnome.terminal", {"--"}},
+    {"org.gnome.Terminal", {"--"}},
     {"org.kde.konsole", {"-e"}},  // Flatpak
     {"org.wezfurlong.wezterm", {"-e"}},  // Flatpak
     {"ptyxis", {"--"}},
@@ -124,7 +124,7 @@ Plugin::Plugin()
                 // the $XDG_DATA_DIRS component in which the desktop file is installed,
                 // remove the "applications/" prefix, and turn '/' into '-'. Chop off '.desktop'.
                 static QRegularExpression re("^.*applications/");
-                QString id = QString(path).remove(re).replace("/","-").chopped(8).toLower();
+                QString id = QString(path).remove(re).replace("/","-").chopped(8);
 
                 if (const auto &[dit, success] = desktop_files.emplace(id, path); !success)
                     DEBG << QString("Desktop file '%1' at '%2' will be skipped: Shadowed by '%3'")
