@@ -20,9 +20,12 @@ Application::Application(const QString &id, const QString &path, ParseOptions po
     // Post a warning on unsupported terminals
     try {
         if (ranges::any_of(p.getString(root_section, QStringLiteral("Categories")).split(';', Qt::SkipEmptyParts),
-                           [&](const auto &cat){ return cat == QStringLiteral("TerminalEmulator"); })
-            && !Plugin::exec_args.contains(id))
-            WARN << QString("Terminal '%1' not supported. Please post an issue.").arg(id);
+                           [&](const auto &cat){ return cat == QStringLiteral("TerminalEmulator"); }))
+        {
+            is_terminal_ = true;
+            if (!Plugin::exec_args.contains(id))
+                WARN << QString("Terminal '%1' not supported. Please post an issue.").arg(id);
+        }
     } catch (const out_of_range &) { }
 
     // Type - string, REQUIRED to be Application
@@ -209,6 +212,8 @@ const QStringList &Application::exec() const
 {
     return exec_;
 }
+
+bool Application::isTerminal() const { return is_terminal_; }
 
 void Application::launchExec(const QStringList &exec, QUrl url, const QString &working_dir) const
 {

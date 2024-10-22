@@ -3,8 +3,10 @@
 #pragma once
 #include "pluginbase.h"
 #include <QStringList>
+#include <albert/telemetryprovider.h>
 
-class Plugin : public PluginBase
+class Plugin : public PluginBase,
+               public albert::TelemetryProvider
 {
     ALBERT_PLUGIN
 
@@ -15,6 +17,9 @@ public:
 
     // albert::ExtensionPlugin
     QWidget *buildConfigWidget() override;
+
+    // albert::TelemetryProvider
+    QJsonObject telemetryData() const override;
 
     using PluginBase::runTerminal;
 

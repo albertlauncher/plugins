@@ -29,6 +29,8 @@ public:
 
     const QStringList &exec() const;
 
+    bool isTerminal() const;
+
 protected:
 
     void launchExec(const QStringList &exec, QUrl url, const QString &working_dir) const;
@@ -51,5 +53,6 @@ private:
     QString working_dir_;
     std::vector<DesktopAction> desktop_actions_;
     bool term_ = false;
+    bool is_terminal_ = false;
 
 };

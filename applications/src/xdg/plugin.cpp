@@ -209,3 +209,15 @@ void Plugin::runTerminal(QStringList commandline, const QString working_dir) con
 {
     terminal->launch(commandline, working_dir);
 }
+
+QJsonObject Plugin::telemetryData() const
+{
+    QJsonObject t;
+    for (const auto &iapp : applications)
+        if (const auto &app = static_pointer_cast<::Application>(iapp); app->isTerminal())
+            t.insert(app->id(), app->exec().join(" "));
+
+    QJsonObject o;
+    o.insert("terminals", t);
+    return o;
+}
