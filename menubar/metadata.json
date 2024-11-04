@@ -1,0 +1,9 @@
+{
+    "authors": ["@manuelschneid3r"],
+    "description": "Access menu items of the focused application",
+    "description[de]": "Zugriff auf die Menüelemente der fokussierten Anwendung",
+    "license": "MIT",
+    "name": "Menu bar",
+    "name[de]": "Menüleiste",
+    "url": "https://github.com/albertlauncher/plugins/tree/main/menubar",
+}
