@@ -8,70 +8,8 @@
         <translation>Falls Ihnen sinnvolle Standardwerte für Ihr System fehlen, hinterlassen Sie bitte eine Notiz im GitHub-Issue-Tracker.</translation>
     </message>
     <message>
-        <source>Sleep inhibition</source>
-        <translation>Schlafmodusunterdrückung</translation>
-    </message>
-    <message>
-        <source> min</source>
-        <extracomment>minutes abbr</extracomment>
-        <translation> Min</translation>
-    </message>
-    <message>
         <source>System commands</source>
         <translation>Systembefehle</translation>
-    </message>
-    <message>
-        <source>Default interval (Indefinitely if zero)</source>
-        <translation>Standardinterval (Unbegrenzt wenn Null)</translation>
-    </message>
-</context>
-<context>
-    <name>InhibitSleep</name>
-    <message>
-        <source>Sleep inhibition</source>
-        <translation>Schlafmodusunterdrückung</translation>
-    </message>
-    <message>
-        <source>Prevent the system from sleeping</source>
-        <translation>Das System daran hindern in den Schlafmodus zu gehen</translation>
-    </message>
-    <message>
-        <source>[h:]min</source>
-        <translation>[Stunden:]Minuten</translation>
-    </message>
-    <message>
-        <source>Stop sleep inhibition</source>
-        <translation>Schlafmodusunterdrückung stoppen</translation>
-    </message>
-    <message>
-        <source>Invalid interval. %1.</source>
-        <translation>Ungültiges Interval. %1.</translation>
-    </message>
-    <message>
-        <source>Albert inhibits sleep</source>
-        <translation>Albert unterdrückt den Schlafmodus</translation>
-    </message>
-    <message>
-        <source>Inhibit sleep for %1</source>
-        <translation>Schlafmodus für %1 unterdrücken</translation>
-    </message>
-    <message>
-        <source>Inhibit sleep</source>
-        <translation>Schlafmodus unterdrücken</translation>
-    </message>
-    <message>
-        <source>Click to stop the sleep inhibition</source>
-        <translation>Klicken um die Schlafmodusunterdrückung zu stoppen</translation>
-    </message>
-    <message>
-        <source>si </source>
-        <comment>abbr sleep inhibition</comment>
-        <translation type="vanished">su </translation>
-    </message>
-    <message>
-        <source>si </source>
-        <comment>abbr of name()</comment>
-        <translation>su </translation>
     </message>
 </context>
 <context>

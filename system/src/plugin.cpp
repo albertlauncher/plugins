@@ -164,16 +164,8 @@ Plugin::Plugin():
         }
     }
 {
-    registry().registerExtension(&inhibit_sleep);
-
-    restore_default_timeout(settings());
 }
 
-
-Plugin::~Plugin()
-{
-    registry().deregisterExtension(&inhibit_sleep);
-}
 
 QWidget* Plugin::buildConfigWidget()
 {
@@ -249,8 +241,6 @@ QWidget* Plugin::buildConfigWidget()
         ui.gridLayout_commands->addWidget(line_edit_title, i * 2 + 1, 1);
         ui.gridLayout_commands->addWidget(line_edit_command, i * 2 + 1, 2);
     }
-
-    ALBERT_PROPERTY_CONNECT_SPINBOX(this, default_timeout, ui.spinBox_minutes)
 
     ui.verticalLayout->addStretch();
 

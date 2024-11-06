@@ -8,64 +8,7 @@
         <translation></translation>
     </message>
     <message>
-        <source>Sleep inhibition</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source> min</source>
-        <extracomment>minutes abbr</extracomment>
-        <translation></translation>
-    </message>
-    <message>
         <source>System commands</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Default interval (Indefinitely if zero)</source>
-        <translation></translation>
-    </message>
-</context>
-<context>
-    <name>InhibitSleep</name>
-    <message>
-        <source>Sleep inhibition</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Prevent the system from sleeping</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>[h:]min</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Stop sleep inhibition</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Invalid interval. %1.</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Albert inhibits sleep</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Inhibit sleep for %1</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Inhibit sleep</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Click to stop the sleep inhibition</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>si </source>
-        <comment>abbr of name()</comment>
         <translation></translation>
     </message>
 </context>

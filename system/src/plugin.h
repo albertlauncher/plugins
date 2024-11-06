@@ -1,7 +1,6 @@
 // Copyright (c) 2017-2024 Manuel Schneider
 
 #pragma once
-#include "inhibitsleep.h"
 #include <QStringList>
 #include <albert/extensionplugin.h>
 #include <albert/indexqueryhandler.h>
@@ -41,14 +40,10 @@ class Plugin : public albert::ExtensionPlugin,
 public:
 
     Plugin();
-    ~Plugin();
 
     void updateIndexItems() override;
     QWidget* buildConfigWidget() override;
 
     const std::vector<Command> commands;
-    InhibitSleep inhibit_sleep;
-
-    ALBERT_PLUGIN_PROPERTY_MEMBER(uint, default_timeout, inhibit_sleep.default_timeout, 60)
 
 };
