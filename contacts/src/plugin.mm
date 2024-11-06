@@ -152,7 +152,6 @@ vector<Action> ContactItem::actions() const
 
 Plugin::Plugin() : d(make_unique<Private>())
 {
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     switch ([CNContactStore authorizationStatusForEntityType:CNEntityTypeContacts])
     {
     case CNAuthorizationStatusRestricted: {
@@ -169,6 +168,8 @@ Plugin::Plugin() : d(make_unique<Private>())
         INFO << "Requesting access to contact data.";
         __block bool granted = false;
         __block NSError * error;
+
+        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
         [d->store requestAccessForEntityType:CNEntityTypeContacts
                            completionHandler:^(BOOL grant, NSError *_Nullable err) {
