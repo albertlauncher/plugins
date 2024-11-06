@@ -1,0 +1,9 @@
+{
+    "authors": ["@manuelschneid3r"],
+    "description": "Inhibit sleep mode",
+    "description[de]": "Schlafmodus unterdrücken",
+    "license": "MIT",
+    "name": "Caffeine",
+    "name[de]": "Koffein",
+    "url": "https://github.com/albertlauncher/plugins/tree/main/caffeine",
+}
