@@ -43,17 +43,14 @@ const QStringList Plugin::Private::icon_urls =
 Plugin::Plugin() : d(make_unique<Private>())
 {
     d->delegate = [[BluetoothConnectionHandler alloc] init];
+
+    // Touch once to request permissions
+    IOBluetoothPreferenceGetControllerPowerState();
 }
 
-Plugin::~Plugin()
-{
+Plugin::~Plugin() = default;
 
-}
-
-QString Plugin::defaultTrigger() const
-{
-    return QStringLiteral("bt ");
-}
+QString Plugin::defaultTrigger() const { return QStringLiteral("bt "); }
 
 bool Plugin::supportsFuzzyMatching() const { return true; }
 
