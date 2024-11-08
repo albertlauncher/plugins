@@ -16,16 +16,23 @@ static QStringList appDirectories()
 {
     return {
         "/Applications",
-        "/Applications/Utilities",
         "/System/Applications",
-        "/System/Applications/Utilities",
         "/System/Cryptexes/App/System/Applications",  // Safari Home
-        "/System/Library/CoreServices/Applications",
         "/System/Library/CoreServices/Finder.app/Contents/Applications"
     };
 }
 }
 
+static void scanRecurse(QStringList &result, const QString &path, const bool abort = false)
+{
+    for (const auto &fi : QDir(path).entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot))
+        if (fi.isBundle())
+            result << fi.absoluteFilePath();
+        else if (abort)
+            break;
+        else
+            scanRecurse(result, fi.absoluteFilePath());
+}
 
 Plugin::Plugin()
 {
@@ -42,17 +49,19 @@ Plugin::Plugin()
         apps.emplace_back(make_shared<Application>("/System/Library/CoreServices/Finder.app",
                                                    use_non_localized_name_));
 
+        QStringList app_paths;
         for (const auto &path : appDirectories())
-            for (const auto &fi : QDir(path).entryInfoList({"*.app"}))
-                if (abort)
-                    return apps;
-                else
-                    try {
-                        apps.emplace_back(make_shared<Application>(fi.absoluteFilePath(),
-                                                                   use_non_localized_name_));
-                    } catch (const runtime_error &e) {
-                        WARN << e.what();
-                    }
+            scanRecurse(app_paths, path, abort);
+
+        for (const auto &path : app_paths)
+            if (abort)
+                return apps;
+            else
+                try {
+                    apps.emplace_back(make_shared<Application>(path, use_non_localized_name_));
+                } catch (const runtime_error &e) {
+                    WARN << e.what();
+                }
 
         ranges::sort(apps, [](const auto &a, const auto &b){ return a->id() < b->id(); });
 
