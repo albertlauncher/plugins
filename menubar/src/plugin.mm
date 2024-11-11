@@ -11,12 +11,36 @@ using namespace std;
 ALBERT_LOGGING_CATEGORY("menu")
 
 
+static Qt::KeyboardModifiers toQt(AXMenuItemModifiers command_modifiers)
+{
+    Qt::KeyboardModifiers qt_modifiers;
+
+    if (command_modifiers == kAXMenuItemModifierNone)
+        qt_modifiers.setFlag(Qt::ControlModifier); // see AXMenuItemModifiers
+
+    if (command_modifiers & kAXMenuItemModifierShift)
+        qt_modifiers.setFlag(Qt::ShiftModifier);
+
+    if (command_modifiers & kAXMenuItemModifierOption)
+        qt_modifiers.setFlag(Qt::AltModifier);
+
+    if (command_modifiers & kAXMenuItemModifierControl)
+        qt_modifiers.setFlag(Qt::MetaModifier);
+
+    if (command_modifiers & kAXMenuItemModifierNoCommand)
+        qt_modifiers = Qt::NoModifier;  // see AXMenuItemModifiers
+
+    return qt_modifiers;
+}
+
+
 /// Volatile lazy menu item.
 class MenuItem : public albert::Item
 {
 public:
-    MenuItem(QStringList path, AXUIElementRef element, NSRunningApplication *app):
+    MenuItem(QStringList path, AXUIElementRef element, NSRunningApplication *app, QString shortcut):
         path_(path),
+        shortcut_(shortcut),
         element_(element),
         app_(app)
     {
@@ -27,15 +51,17 @@ public:
 
     ~MenuItem() { CFRelease(element_); };
 
-    QString id() const override { return path_.join(" > "); }
+    QString id() const override { return path_.join(QString()); }
     QString text() const override { return path_.last(); }
-    QString subtext() const override { return path_.join(" > "); }
+    QString subtext() const override {
+        return shortcut_.isEmpty() ? pathString() : pathString() + "  |  " + shortcut_;
+    }
     QStringList iconUrls() const override {
         return icon_urls_.isEmpty()
                    ? icon_urls_ = QStringList("qfip:" + QUrl::fromNSURL(app_.bundleURL).toLocalFile())
                    : icon_urls_;
     }
-    QString inputActionText() const override { return path_.join(" "); }
+    QString inputActionText() const override { return pathString(); }
     std::vector<albert::Action> actions() const override
     {
         return {{
@@ -48,17 +74,31 @@ public:
         }};
     }
 
-private:
+    QString pathString() const { return path_.join(" > "); }
 
+private:
     QStringList path_;
+    QString shortcut_;
     AXUIElementRef element_;
     NSRunningApplication *app_;
     mutable QStringList icon_urls_;  // Fetched lazy
 
 };
 
+// Map Core Foundation modifiers to Qt modifiers
+Qt::KeyboardModifiers convertCFModifiersToQtModifiers(int cfModifiers)
+{
+    Qt::KeyboardModifiers qtModifiers = Qt::NoModifier;
+    if (cfModifiers & kCGEventFlagMaskShift)       qtModifiers |= Qt::ShiftModifier;
+    if (cfModifiers & kCGEventFlagMaskControl)     qtModifiers |= Qt::ControlModifier;
+    if (cfModifiers & kCGEventFlagMaskAlternate)   qtModifiers |= Qt::AltModifier;
+    if (cfModifiers & kCGEventFlagMaskCommand)     qtModifiers |= Qt::MetaModifier;
+    if (cfModifiers & kCGEventFlagMaskSecondaryFn) qtModifiers |= Qt::GroupSwitchModifier;
+    return qtModifiers;
+}
+
 static void retrieveMenuItemsRecurse(const bool & valid,
-                                     vector<shared_ptr<Item>>& items,
+                                     vector<shared_ptr<MenuItem>>& items,
                                      NSRunningApplication *app,
                                      QStringList path,
                                      AXUIElementRef element,
@@ -68,18 +108,41 @@ static void retrieveMenuItemsRecurse(const bool & valid,
         return;
 
     // Define attribute names to fetch at once
-    CFStringRef attributes[] = {kAXEnabledAttribute,
-                                kAXTitleAttribute,
-                                kAXChildrenAttribute,
-                                kAXRoleAttribute,
-                                kAXSubroleAttribute};
+    enum AXKeys {
+        Enabled,
+        Title,
+        Children,
+        // Role,
+        MenuItemCmdChar,
+        // MenuItemCmdVirtualKey,
+        // MenuItemCmdGlyph,
+        MenuItemCmdModifiers,
+        // MenuItemMarkChar,
+        // MenuItemPrimaryUIElement
+
+    };
+    CFStringRef ax_attributes[] = {
+        kAXEnabledAttribute,
+        kAXTitleAttribute,
+        kAXChildrenAttribute,
+        // kAXRoleAttribute,
+        kAXMenuItemCmdCharAttribute,
+        // kAXMenuItemCmdVirtualKeyAttribute,
+        // kAXMenuItemCmdGlyphAttribute,
+        kAXMenuItemCmdModifiersAttribute,
+        // kAXMenuItemMarkCharAttribute,
+        // kAXMenuItemPrimaryUIElementAttribute
+
+    };
     CFArrayRef attributes_array = CFArrayCreate(nullptr,
-                                               (const void **) attributes,
-                                               sizeof(attributes) / sizeof(attributes[0]),
+                                               (const void **) ax_attributes,
+                                               sizeof(ax_attributes) / sizeof(ax_attributes[0]),
                                                &kCFTypeArrayCallBacks);
     CFArrayRef attribute_values = nullptr;
-    auto error = AXUIElementCopyMultipleAttributeValues(element, attributes_array,
-                                                        0, &attribute_values);
+    auto error = AXUIElementCopyMultipleAttributeValues(element,
+                                                        attributes_array,
+                                                        0,
+                                                        &attribute_values);
 
     if (error != kAXErrorSuccess)
         WARN << QString("Failed to retrieve multiple attributes: %1 (See AXError.h)").arg(error);
@@ -96,7 +159,7 @@ static void retrieveMenuItemsRecurse(const bool & valid,
 
             // Get enabled state (kAXEnabledAttribute)
 
-            auto value = CFArrayGetValueAtIndex(attribute_values, 0);
+            auto value = CFArrayGetValueAtIndex(attribute_values, AXKeys::Enabled);
             if (!value)
                 throw runtime_error("Fetched kAXEnabledAttribute is null");
             else if (CFGetTypeID(value) == kAXValueAXErrorType)
@@ -114,7 +177,7 @@ static void retrieveMenuItemsRecurse(const bool & valid,
             QString title;
 
             try {
-                value = CFArrayGetValueAtIndex(attribute_values, 1);
+                value = CFArrayGetValueAtIndex(attribute_values, AXKeys::Title);
                 if (!value)
                     throw runtime_error("Fetched kAXTitleAttribute is null");
 
@@ -147,33 +210,14 @@ static void retrieveMenuItemsRecurse(const bool & valid,
 
             // Get children (kAXChildrenAttribute)
 
-            value = CFArrayGetValueAtIndex(attribute_values, 2);
+            value = CFArrayGetValueAtIndex(attribute_values, AXKeys::Children);
             if (!value)
                 throw runtime_error("Fetched kAXChildrenAttribute is null");
             else if (CFGetTypeID(value) == kAXValueAXErrorType)
                 throw runtime_error("Fetched kAXChildrenAttribute is kAXValueAXErrorType");
             else if (CFGetTypeID(value) != CFArrayGetTypeID())
                 throw runtime_error("Fetched kAXChildrenAttribute is not of type CFArrayRef");
-            else if (CFArrayGetCount((CFArrayRef)value) == 0)
-            {
-                if (CFArrayRef actions = nullptr;
-                    AXUIElementCopyActionNames(element, &actions) == kAXErrorSuccess && actions)
-                {
-                    if (CFArrayContainsValue(actions,
-                                             CFRangeMake(0, CFArrayGetCount(actions)),
-                                             kAXPressAction))
-                    {
-                        // DEBG << path.join(">");
-                        items.emplace_back(make_shared<MenuItem>(path, element, app));
-                    }
-
-                    // for (CFIndex i = 0, c = CFArrayGetCount(actions); i < c; ++i)
-                    //     DEBG << QString::fromCFString((CFStringRef)CFArrayGetValueAtIndex(actions, i));
-
-                    CFRelease(actions);
-                }
-            }
-            else
+            else if (CFArrayGetCount((CFArrayRef)value) > 0)
             {
                 // Recursively process children
 
@@ -191,6 +235,44 @@ static void retrieveMenuItemsRecurse(const bool & valid,
                     retrieveMenuItemsRecurse(valid, items, app, path, (AXUIElementRef)value, depth +1 );
                 }
             }
+            else
+            {
+                if (CFArrayRef actions = nullptr;
+                    AXUIElementCopyActionNames(element, &actions) == kAXErrorSuccess && actions)
+                {
+
+                    QString command_char;
+                    if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdChar);
+                        v && CFGetTypeID(v) == CFStringGetTypeID())
+                        command_char = QString::fromCFString((CFStringRef)v);
+
+                    Qt::KeyboardModifiers mods;
+                    if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdModifiers);
+                        v && CFGetTypeID(v) == CFNumberGetTypeID())
+                        mods = toQt([(__bridge NSNumber*)v intValue]);
+
+                    QString shortcut;
+                    if (!command_char.isEmpty())
+                        shortcut = QKeySequence(mods).toString(QKeySequence::NativeText) + command_char;
+
+                    // QString command_glyph;
+                    // if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdGlyph);
+                    //     v && CFGetTypeID(v) == CFStringGetTypeID())
+                    //     command_glyph = QString::fromCFString((CFStringRef)v);
+
+                    // int virtual_key_code;
+                    // if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdVirtualKey);
+                    //     v && CFGetTypeID(v) == CFNumberGetTypeID())
+                    //     mod = [(__bridge NSNumber*)v intValue];
+
+                    if (CFArrayContainsValue(actions,
+                                             CFRangeMake(0, CFArrayGetCount(actions)),
+                                             kAXPressAction))
+                        items.emplace_back(make_shared<MenuItem>(path, element, app, shortcut));
+
+                    CFRelease(actions);
+                }
+            }
         } catch (const skip &e) {
         } catch (const exception &e) {
             DEBG << depth << e.what();
@@ -201,9 +283,9 @@ static void retrieveMenuItemsRecurse(const bool & valid,
     CFRelease(attributes_array);
 }
 
-static vector<shared_ptr<Item>> retrieveMenuBarItems(const bool &valid, NSRunningApplication *app)
+static vector<shared_ptr<MenuItem>> retrieveMenuBarItems(const bool &valid, NSRunningApplication *app)
 {
-    vector<shared_ptr<Item>> menu_items;
+    vector<shared_ptr<MenuItem>> menu_items;
 
     auto ax_app = AXUIElementCreateApplication(app.processIdentifier);
 
@@ -245,7 +327,7 @@ class Plugin::Private
 {
 public:
     bool fuzzy;
-    std::vector<std::shared_ptr<albert::Item>> menu_items;
+    std::vector<std::shared_ptr<MenuItem>> menu_items;
     NSRunningApplication *app;
 };
 
@@ -261,11 +343,9 @@ Plugin::Plugin() : d(make_unique<Private>())
                                     "settings. Please toggle Albert in the accessibility settings, "
                                     "which will appear after you close this dialog."));
 
+        // Note: does not add an entry to the privacy settings in debug mode
         NSString* prefPage = @"x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility";
-        [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:prefPage]];
-
-        // NSDictionary *options = @{(__bridge NSString *)kAXTrustedCheckOptionPrompt: @YES};
-        // BOOL isTrusted = AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
+        [[NSWorkspace sharedWorkspace] openURL:(NSURL * __nonnull)[NSURL URLWithString:prefPage]];
     }
 }
 
@@ -293,7 +373,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
         d->app = app;
 
         // AX api is not thread save, dispatch in main thread
-        __block vector<shared_ptr<Item>> menu_items;
+        __block vector<shared_ptr<MenuItem>> menu_items;
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
         dispatch_async(dispatch_get_main_queue(), ^{
             menu_items = retrieveMenuBarItems(query->isValid(), app);
@@ -305,16 +385,12 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
     }
 
     vector<RankItem> results;
-    Matcher matcher(query->string(), {.fuzzy = d->fuzzy});
+    ;
 
     for (const auto& item : d->menu_items)
-    {
-        // Prefer item matches over path matches
-        if (auto m = matcher.match(item->text()); m)
+        if (auto m = Matcher(query->string(), {.fuzzy = d->fuzzy})
+                         .match(item->text(), item->pathString()); m)
             results.emplace_back(item, m);
-        else if (m = matcher.match(item->subtext()); m)
-            results.emplace_back(item, m);
-    }
 
     return results;
 }
