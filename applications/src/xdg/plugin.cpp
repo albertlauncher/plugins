@@ -10,47 +10,100 @@
 using namespace std;
 using namespace albert;
 
-const map<QString, QStringList> Plugin::exec_args  // Desktop id > ExecArg
+static QString normalizedContainerCommand(const QStringList &Exec)
 {
-    {"Alacritty", {"-e"}},
-    {"app.devsuite.Ptyxis", {"--"}},  // Flatpak
+    QString command;
+
+    // Todo de-env
+    // e.g. env TERM=xterm-256color byobu
+
+    // Flatpak
+    if (QFileInfo(Exec.at(0)).fileName() == QStringLiteral("flatpak"))
+    {
+        for (const auto &arg : Exec)
+            if (arg.startsWith(QStringLiteral("--command=")))
+                command = arg.mid(10);  // size of '--command='
+
+        if (command.isEmpty())
+            WARN << "Flatpak exec commandline w/o '--command':" << Exec.join(" ");
+    }
+
+    // Snapcraft
+    else if (auto it = find_if(Exec.begin(), Exec.end(),
+                               [](const auto &arg){ return arg.startsWith("/snap/bin/"); });
+             it != Exec.end())
+    {
+        if (command = it->mid(10); command.isEmpty())  // size of '/snap/bin/'
+            WARN << "Failed getting snap command: Exec:" << Exec.join(" ");
+    }
+
+    // Native command
+    else
+        command = QFileInfo(Exec.at(0)).fileName();
+
+    return command;
+}
+
+const map<QString, QStringList> Plugin::exec_args  // command > ExecArg
+{
+    {"alacritty", {"-e"}},
+    // {"asbru-cm", {}},
     {"blackbox", {"--"}},
-    {"com.alacritty.Alacritty", {"-e"}},
-    {"com.gexperts.tilix", {"-e"}},
-    {"com.raggesilver.BlackBox", {"--"}},  // Flatpak
-    {"Console", {"-e"}},
-    {"Contour", {"execute"}},
+    {"blackbox-terminal", {"--"}},
+    // {"byobu", {}},
+    // {"com.github.amezin.ddterm", {}},
+    {"contour", {"--"}},
     {"cool-retro-term", {"-e"}},
-    {"debian-uxterm", {"-e"}},
-    {"debian-xterm", {"-e"}},
+    // {"cosmic-term", {}},
     {"deepin-terminal", {"-e"}},
-    {"deepin-terminal-gtk", {"-e"}},
-    {"elementary-terminal", {"-x"}},
+    // {"deepin-terminal-gtk", {"-e"}},  // archived
+    // {"domterm", {}},
+    // {"electerm", {}},
+    // {"fish", {}},
+    {"foot", {}},  // yes empty
+    {"footclient", {}},  // yes empty
+    // {"gmrun", {}},
+    {"gnome-terminal", {"--"}},
+    // {"guake", {}},
+    // {"hyper", {}},
+    {"io.elementary.terminal", {"-x"}},
+    {"kgx", {"-e"}},
     {"kitty", {"--"}},
     {"konsole", {"-e"}},
     {"lxterminal", {"-e"}},
     {"mate-terminal", {"-x"}},
-    {"org.codeberg.dnkl.foot", {}},
-    {"org.contourterminal.Contour", {"--"}},  // Flatpak
-    {"org.gnome.Console", {"-e"}},
-    {"org.gnome.ptyxis", {"--"}},
-    {"org.gnome.Terminal", {"--"}},
-    {"org.kde.konsole", {"-e"}},  // Flatpak
-    {"org.wezfurlong.wezterm", {"-e"}},  // Flatpak
+    // {"mlterm", {}},
+    // {"pangoterm", {}},
+    // {"pods", {}},
     {"ptyxis", {"--"}},
+    // {"qtdomterm", {}},
     {"qterminal", {"-e"}},
     {"roxterm", {"-x"}},
+    // {"sakura", {}},
     {"st", {"-e"}},
+    // {"tabby.AppImage", {}},
     {"terminator", {"-u", "-x"}},  // https://github.com/gnome-terminator/terminator/issues/939
     {"terminology", {"-e"}},
+    // {"terminus", {}},
+    // {"termit", {}},
     {"termite", {"-e"}},
+    // {"termius", {}},
+    // {"tilda", {}},
     {"tilix", {"-e"}},
+    // {"txiterm", {}},
     {"urxvt", {"-e"}},
+    {"urxvt-tabbed", {"-e"}},
+    {"urxvtc", {"-e"}},
     {"uxterm", {"-e"}},
+    // {"warp-terminal", {}},
+    // {"waveterm", {}},
     {"wezterm", {"-e"}},
-    {"xfce-terminal", {"-x"}},
+    {"x-terminal-emulator", {"-e"}},
+    // {"x3270a", {}},
     {"xfce4-terminal", {"-x"}},
     {"xterm", {"-e"}},
+    // {"yakuake", {}},
+    // {"zutty", {}},
 };
 
 static QStringList appDirectories()
@@ -170,13 +223,27 @@ Plugin::Plugin()
 
         // Replace terminal apps with terminals and populate terminals
         // Filter supported terms by availability using destkop id
+
         terminals.clear();
-        for (auto &app : applications)
-            if (auto it = exec_args.find(app->id()); it != exec_args.cend())
+
+        for (auto &base : applications)
+            if (auto app = static_pointer_cast<::Application>(base);
+                app->isTerminal())
             {
-                auto term = make_shared<Terminal>(*static_cast<::Application*>(app.get()), it->second);
-                app = static_pointer_cast<::Application>(term);
-                terminals.emplace_back(term.get());
+                if (auto command = normalizedContainerCommand(app->exec());
+                    !command.isEmpty())
+                    if (auto it = exec_args.find(command); it != exec_args.end())
+                    {
+                        auto term = make_shared<Terminal>(*app, it->second);
+                        base = static_pointer_cast<::Application>(term);
+                        terminals.emplace_back(term.get());
+                    }
+                    else
+                        WARN << QString("Terminal '%1' not supported. Please post an issue. Exec: %2")
+                                    .arg(app->id(), app->exec().join(" "));
+                else
+                    WARN << QString("Failed to get normalized command. Terminal '%1' not supported. Please post an issue. Exec: %2")
+                                .arg(app->id(), app->exec().join(" "));
             }
 
         setUserTerminalFromConfig();
