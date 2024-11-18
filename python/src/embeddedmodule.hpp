@@ -146,8 +146,9 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
 
     py::class_<Matcher>(m, "Matcher")
         .def(py::init<const QString&>())
-        .def("match", static_cast<Match(Matcher::*)(const Item&) const>(&Matcher::match))
         .def("match", static_cast<Match(Matcher::*)(const QString&) const>(&Matcher::match))
+        .def("match", static_cast<Match(Matcher::*)(const QStringList&) const>(&Matcher::match))
+        .def("match", [](Matcher *self, py::args args){ return self->match(py::cast<QStringList>(args)); });
         ;
 
     // ------------------------------------------------------------------------

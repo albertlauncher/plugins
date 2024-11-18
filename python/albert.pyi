@@ -1,5 +1,5 @@
 """
-# Albert Python interface v2.4
+# Albert Python interface v2.5
 
 
 The Python interface is a subset of the internal C++ interface exposed to Python with some minor adjustments. A Python
@@ -77,6 +77,12 @@ Changes in 2.4:
 
 - Deprecate parameter `workdir` of runTerminal. Prepend `cd <workdir>;` to your script.
 - Deprecate parameter `close_on_exit` of runTerminal. Append `exec $SHELL;` to your script.
+
+Changes in 2.5:
+- Matcher now not considered experimental anymore.
+- Add `Matcher.match(strings: List[str])`.
+- Add `Matcher.match(*args: str)`.
+
 
 ## List of things 3.0 will break
 
@@ -550,12 +556,16 @@ class Matcher:
         ...
 
     @overload
-    def match(self, item: Item) -> Match:
+    def match(self, string: str) -> Match:
         """Since 2.3"""
 
     @overload
-    def match(self, string: str) -> Match:
-        """Since 2.3"""
+    def match(self, strings: List[str]) -> Match:
+        """Since 2.5"""
+
+    @overload
+    def match(self, *args: str) -> Match:
+        """Since 2.5"""
 
 
 def debug(arg: Any):
