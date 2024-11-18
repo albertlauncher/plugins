@@ -19,13 +19,15 @@ public:
 
     Plugin();
     ~Plugin();
-    QString synopsis() const override { return "<command> [params]"; }
-    QString defaultTrigger() const override { return ">"; }
+
+    QWidget *buildConfigWidget() override;
+    QString synopsis() const override;
+    QString defaultTrigger() const override;
     void handleTriggerQuery(albert::Query*) override;
 
 private:
 
-    std::vector<albert::Action> buildActions(const QString &commandline);
+    std::vector<albert::Action> buildActions(const QString &commandline) const;
 
     QFileSystemWatcher watcher_;
     std::set<QString> index_;

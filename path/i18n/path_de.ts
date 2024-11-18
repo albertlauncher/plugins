@@ -4,18 +4,6 @@
 <context>
     <name>Plugin</name>
     <message>
-        <source>Failed getting dependency &apos;%1&apos;.</source>
-        <translation type="vanished">Fehler beim Abrufen der Abhängigkeit &apos;%1&apos;.</translation>
-    </message>
-    <message>
-        <source>Run in %1</source>
-        <translation type="vanished">In %1 ausführen</translation>
-    </message>
-    <message>
-        <source>Run in %1 and close on exit</source>
-        <translation type="vanished">In %1 ausführen und bei Erfolg schließen</translation>
-    </message>
-    <message>
         <source>Run in terminal</source>
         <translation>In Terminal ausführen</translation>
     </message>
@@ -38,6 +26,10 @@
     <message>
         <source>Try running &apos;%1&apos;</source>
         <translation>Versuchen &apos;%1&apos; auszuführen</translation>
+    </message>
+    <message>
+        <source>&lt;command&gt; [params]</source>
+        <translation>&lt;Befehl&gt; [Parameter…]</translation>
     </message>
 </context>
 </TS>

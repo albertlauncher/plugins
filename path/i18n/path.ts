@@ -27,5 +27,9 @@
         <source>Try running &apos;%1&apos;</source>
         <translation></translation>
     </message>
+    <message>
+        <source>&lt;command&gt; [params]</source>
+        <translation></translation>
+    </message>
 </context>
 </TS>

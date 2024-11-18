@@ -3,6 +3,7 @@
 #include "plugin.h"
 #include <QDirIterator>
 #include <QFileSystemWatcher>
+#include <QLabel>
 #include <QStringList>
 #include <albert/extensionregistry.h>
 #include <albert/standarditem.h>
@@ -44,7 +45,25 @@ Plugin::Plugin():
 
 Plugin::~Plugin() = default;
 
-vector<Action> Plugin::buildActions(const QString &commandline)
+QWidget *Plugin::buildConfigWidget()
+{
+    QString t = QString(R"(<ul style="margin-left:-1em">)");
+    for (const auto & path : QString(::getenv("PATH")).split(':', Qt::SkipEmptyParts))
+        t += QString(R"(<li><a href="file://%1")>%1</a></li>)").arg(path);
+    t +=  "</ul>";
+
+    auto l = new QLabel(t);
+    l->setOpenExternalLinks(true);
+    l->setWordWrap(true);
+    l->setAlignment(Qt::AlignTop);
+    return l;
+}
+
+QString Plugin::synopsis() const { return tr("<command> [params]"); }
+
+QString Plugin::defaultTrigger() const { return ">"; }
+
+vector<Action> Plugin::buildActions(const QString &commandline) const
 {
     vector<Action> a;
 
