@@ -29,7 +29,7 @@ public:
 
 private:
 
-    ALBERT_PLUGIN_PROPERTY(bool, ignore_show_in_keys, false)
+    ALBERT_PLUGIN_PROPERTY(bool, ignore_show_in_keys, true)
     ALBERT_PLUGIN_PROPERTY(bool, use_exec, false)
     ALBERT_PLUGIN_PROPERTY(bool, use_generic_name, false)
     ALBERT_PLUGIN_PROPERTY(bool, use_keywords, false)
