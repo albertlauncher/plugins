@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(applications VERSION 13.11)
+project(applications VERSION 13.12)
 
 file(GLOB_RECURSE I18N_SOURCES src/*)
 
@@ -23,7 +23,6 @@ albert_plugin(
 )
 
 if(APPLE)
-    target_compile_options(${PROJECT_NAME} PRIVATE "-fobjc-arc")
     target_link_libraries(${PROJECT_NAME} PRIVATE objc "-framework Cocoa")
     target_include_directories(${PROJECT_NAME} PRIVATE src/mac)
     target_sources(${PROJECT_NAME} PRIVATE
