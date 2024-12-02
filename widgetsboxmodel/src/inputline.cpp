@@ -35,7 +35,7 @@ void InputLine::next(bool search)
     if (t == text())
         t = history_.next(search ? user_text_ : QString());
 
-    // Empty text is history sentinal
+    // Empty text is history sentinel
     if (!t.isEmpty())
         setText(t);
 }
@@ -44,11 +44,11 @@ void InputLine::previous(bool search)
 {
     auto t = history_.prev(search ? user_text_ : QString());
 
-    // Empty text is history sentinal, restore user text
+    // Empty text is history sentinel, restore user text
     if (t.isEmpty())
-        setText(t);
-    else
         setText(user_text_);
+    else
+        setText(t);
 }
 
 void InputLine::paintEvent(QPaintEvent *event)
