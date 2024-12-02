@@ -91,7 +91,7 @@ Plugin::~Plugin()
             if (QFile file(data_dir.filePath(HISTORY_FILE_NAME));
                 file.open(QIODevice::WriteOnly))
             {
-                DEBG << "Wrinting clipboard history to" << file.fileName();
+                DEBG << "Writing clipboard history to" << file.fileName();
                 file.write(QJsonDocument(array).toJson());
                 file.close();
             }
