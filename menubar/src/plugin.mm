@@ -10,7 +10,6 @@ using namespace albert;
 using namespace std;
 ALBERT_LOGGING_CATEGORY("menu")
 
-
 static Qt::KeyboardModifiers toQt(AXMenuItemModifiers command_modifiers)
 {
     Qt::KeyboardModifiers qt_modifiers;
@@ -30,6 +29,78 @@ static Qt::KeyboardModifiers toQt(AXMenuItemModifiers command_modifiers)
     return qt_modifiers;
 }
 
+// See
+// https://github.com/216k155/MacOSX-SDKs/blob/master/MacOSX10.11.sdk/System/Library/Frameworks/
+//   Carbon.framework/Versions/A/Frameworks/HIToolbox.framework/Versions/A/Headers/Menus.h
+// https://github.com/Hammerspoon/hammerspoon/blob/master/extensions/application/application.lua
+static const map<char, const char*> glyph_map
+{
+    // {0x00, ""},  // Null (always glyph 1)
+    {0x02, "⇥"},  // Tab to the right key (for left-to-right script systems)
+    {0x03, "⇤"},  // Tab to the left key (for right-to-left script systems)
+    {0x04, "⌤"},  // Enter key
+    {0x05, "⇧"},  // Shift key
+    {0x06, "⌃"},  // Control key
+    {0x07, "⌥"},  // Option key
+    {0x09, "␣"},  // Space (always glyph 3) key
+    {0x0A, "⌦"},  // Delete to the right key (for right-to-left script systems)
+    {0x0B, "↩"},  // Return key (for left-to-right script systems)
+    {0x0C, "↪"},  // Return key (for right-to-left script systems)
+    {0x0D, "↩"},  // Nonmarking return key
+    {0x0F, ""},  // Pencil key
+    {0x10, "⇣"},  // Downward dashed arrow key
+    {0x11, "⌘"},  // Command key
+    {0x12, "✓"},  // Checkmark key
+    {0x13, "◇"},  // Diamond key
+    {0x14, ""},  // Apple logo key (filled)
+    // {0x15, ""},  // Unassigned (paragraph in Korean)
+    {0x17, "⌫"},  // Delete to the left key (for left-to-right script systems)
+    {0x18, "⇠"},  // Leftward dashed arrow key
+    {0x19, "⇡"},  // Upward dashed arrow key
+    {0x1A, "⇢"},  // Rightward dashed arrow key
+    {0x1B, "⎋"},  // Escape key
+    {0x1C, "⌧"},  // Clear key
+    {0x1D, "『"},  // Unassigned (left double quotes in Japanese)
+    {0x1E, "』"},  // Unassigned (right double quotes in Japanese)
+    // {0x1F, ""},  // Unassigned (trademark in Japanese)
+    {0x61, "␢"},  // Blank key
+    {0x62, "⇞"},  // Page up key
+    {0x63, "⇪"},  // Caps lock key
+    {0x64, "←"},  // Left arrow key
+    {0x65, "→"},  // Right arrow key
+    {0x66, "↖"},  // Northwest arrow key
+    {0x67, "﹖"},  // Help key
+    {0x68, "↑"},  // Up arrow key
+    {0x69, "↘"},  // Southeast arrow key
+    {0x6A, "↓"},  // Down arrow key
+    {0x6B, "⇟"},  // Page down key
+    {0x6C, ""},  // Apple logo key (outline)
+    {0x6D, ""},  // Contextual menu key
+    {0x6E, "⌽"},  // Power key
+    {0x6F, "F1"},  // F1 key
+    {0x70, "F2"},  // F2 key
+    {0x71, "F3"},  // F3 key
+    {0x72, "F4"},  // F4 key
+    {0x73, "F5"},  // F5 key
+    {0x74, "F6"},  // F6 key
+    {0x75, "F7"},  // F7 key
+    {0x76, "F8"},  // F8 key
+    {0x77, "F9"},  // F9 key
+    {0x78, "F10"},  // F10 key
+    {0x79, "F11"},  // F11 key
+    {0x7A, "F12"},  // F12 key
+    {0x87, "F13"},  // F13 key
+    {0x88, "F14"},  // F14 key
+    {0x89, "F15"},  // F15 key
+    {0x8A, "⎈"},  // Control key (ISO standard)
+    {0x8C, "⏏"},  // Eject key (available on Mac OS X 10.2 and later)
+    {0x8D, "英数"},  // Japanese eisu key (available in Mac OS X 10.4 and later)
+    {0x8E, "かな"},  // Japanese kana key (available in Mac OS X 10.4 and later)
+    {0x8F, "F16"},  // F16 key (available in SnowLeopard and later)
+    {0x90, "F17"},  // F17 key (available in SnowLeopard and later)
+    {0x91, "F18"},  // F18 key (available in SnowLeopard and later)
+    {0x92, "F19"}   // F19 key (available in SnowLeopard and later)
+};
 
 /// Volatile lazy menu item.
 class MenuItem : public albert::Item
@@ -112,7 +183,7 @@ static void retrieveMenuItemsRecurse(const bool & valid,
         // Role,
         MenuItemCmdChar,
         // MenuItemCmdVirtualKey,
-        // MenuItemCmdGlyph,
+        MenuItemCmdGlyph,
         MenuItemCmdModifiers,
         // MenuItemMarkChar,
         // MenuItemPrimaryUIElement
@@ -125,7 +196,7 @@ static void retrieveMenuItemsRecurse(const bool & valid,
         // kAXRoleAttribute,
         kAXMenuItemCmdCharAttribute,
         // kAXMenuItemCmdVirtualKeyAttribute,
-        // kAXMenuItemCmdGlyphAttribute,
+        kAXMenuItemCmdGlyphAttribute,
         kAXMenuItemCmdModifiersAttribute,
         // kAXMenuItemMarkCharAttribute,
         // kAXMenuItemPrimaryUIElementAttribute
@@ -243,6 +314,16 @@ static void retrieveMenuItemsRecurse(const bool & valid,
                         v && CFGetTypeID(v) == CFStringGetTypeID())
                         command_char = QString::fromCFString((CFStringRef)v);
 
+                    // if there is a glyph use that instead
+                    if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdGlyph);
+                        v && CFGetTypeID(v) == CFNumberGetTypeID())
+                    {
+                        int glyphID;
+                        CFNumberGetValue((CFNumberRef)v, kCFNumberIntType, &glyphID);
+                        if (auto it = glyph_map.find(glyphID); it != glyph_map.end())
+                            command_char = it->second;
+                    }
+
                     Qt::KeyboardModifiers mods;
                     if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdModifiers);
                         v && CFGetTypeID(v) == CFNumberGetTypeID())
@@ -251,11 +332,6 @@ static void retrieveMenuItemsRecurse(const bool & valid,
                     QString shortcut;
                     if (!command_char.isEmpty())
                         shortcut = QKeySequence(mods).toString(QKeySequence::NativeText) + command_char;
-
-                    // QString command_glyph;
-                    // if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdGlyph);
-                    //     v && CFGetTypeID(v) == CFStringGetTypeID())
-                    //     command_glyph = QString::fromCFString((CFStringRef)v);
 
                     // int virtual_key_code;
                     // if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdVirtualKey);
