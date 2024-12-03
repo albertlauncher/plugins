@@ -15,9 +15,6 @@ static Qt::KeyboardModifiers toQt(AXMenuItemModifiers command_modifiers)
 {
     Qt::KeyboardModifiers qt_modifiers;
 
-    if (command_modifiers == kAXMenuItemModifierNone)
-        qt_modifiers.setFlag(Qt::ControlModifier); // see AXMenuItemModifiers
-
     if (command_modifiers & kAXMenuItemModifierShift)
         qt_modifiers.setFlag(Qt::ShiftModifier);
 
@@ -27,8 +24,8 @@ static Qt::KeyboardModifiers toQt(AXMenuItemModifiers command_modifiers)
     if (command_modifiers & kAXMenuItemModifierControl)
         qt_modifiers.setFlag(Qt::MetaModifier);
 
-    if (command_modifiers & kAXMenuItemModifierNoCommand)
-        qt_modifiers = Qt::NoModifier;  // see AXMenuItemModifiers
+    if (!(command_modifiers & kAXMenuItemModifierNoCommand))
+        qt_modifiers.setFlag(Qt::ControlModifier); // see AXMenuItemModifiers
 
     return qt_modifiers;
 }
