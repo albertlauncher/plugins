@@ -69,10 +69,16 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *q)
         auto desc = enabled ? tr("Enabled") : tr("Disabled");
         r.emplace_back(StandardItem::make(
             id(), d->tr_bt, desc, d->icon_urls,
-            {{
-                QStringLiteral("pow"), enabled ? tr("Disable") : tr("Enable"),
-                [=]{ IOBluetoothPreferenceSetControllerPowerState(enabled ? 0 : 1); }
-            }}),
+            {
+                {
+                    QStringLiteral("pow"), enabled ? tr("Disable") : tr("Enable"),
+                    [=]{ IOBluetoothPreferenceSetControllerPowerState(enabled ? 0 : 1); }
+                },
+                {
+                    QStringLiteral("sett"), tr("Open settings"),
+                    [=]{ openUrl("x-apple.systempreferences:com.apple.Bluetooth"); }
+                }
+            }),
             m.score()
         );
     }
