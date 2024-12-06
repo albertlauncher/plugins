@@ -9,6 +9,9 @@
 using namespace albert;
 using namespace std;
 ALBERT_LOGGING_CATEGORY("menu")
+#if  ! __has_feature(objc_arc)
+#error This file must be compiled with ARC.
+#endif
 
 static Qt::KeyboardModifiers toQt(AXMenuItemModifiers command_modifiers)
 {
@@ -291,8 +294,7 @@ static void retrieveMenuItemsRecurse(const bool & valid,
                 if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdGlyph);
                     v && CFGetTypeID(v) == CFNumberGetTypeID())
                 {
-                    int glyphID;
-                    CFNumberGetValue((CFNumberRef)v, kCFNumberIntType, &glyphID);
+                    int glyphID = [(__bridge NSNumber*)v intValue];
                     if (auto it = glyph_map.find(glyphID); it != glyph_map.end())
                         command_char = it->second;
                 }

@@ -3,7 +3,7 @@ if (APPLE)
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(menubar VERSION 1.5)
+project(menubar VERSION 1.6)
 
 find_library(CORESERVICES_LIBRARY CoreServices)
 
@@ -16,5 +16,7 @@ albert_plugin(
     QT
         Widgets
 )
+
+target_compile_options(${PROJECT_NAME} PRIVATE "-fobjc-arc")
 
 endif()
