@@ -7,6 +7,9 @@
 #include <albert/util.h>
 using namespace albert;
 using namespace std;
+#if  ! __has_feature(objc_arc)
+#error This file must be compiled with ARC.
+#endif
 
 void printBundleInfo(QString path, NSBundle *bundle)
 {
