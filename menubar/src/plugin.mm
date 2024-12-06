@@ -102,58 +102,45 @@ static const map<char, const char*> glyph_map
     {0x92, "F19"}   // F19 key (available in SnowLeopard and later)
 };
 
-/// Volatile lazy menu item.
-class MenuItem : public albert::Item
+struct MenuItem : public albert::Item
 {
-public:
-    MenuItem(QStringList path, AXUIElementRef element, NSRunningApplication *app, QString shortcut):
-        path_(path),
-        shortcut_(shortcut),
-        element_(element),
-        app_(app)
-    {
-        // INFO << buildPathRecurse(element_).join(" > ");
-        // CRIT << "Menu" << QString::fromNSString(title);
-        CFRetain(element);
-    }
+    MenuItem(AXUIElementRef e, QStringList p, const QString &s, const QString &i)
+        : element(e), path(p), shortcut(s), icon_url(i) { CFRetain(element); }
 
-    ~MenuItem() { CFRelease(element_); };
+    ~MenuItem() { CFRelease(element); };
 
-    QString id() const override { return path_.join(QString()); }
-    QString text() const override { return path_.last(); }
+    QString id() const override { return path.join(QString()); }
+
+    QString text() const override { return path.last(); }
+
     QString subtext() const override {
-        return shortcut_.isEmpty() ? pathString() : pathString() + "  |  " + shortcut_;
+        return shortcut.isEmpty() ?
+                   pathString() : QStringLiteral("%1 (%2)").arg(pathString(), shortcut);
     }
-    QStringList iconUrls() const override {
-        return icon_urls_.isEmpty()
-                   ? icon_urls_ = QStringList("qfip:" + QUrl::fromNSURL(app_.bundleURL).toLocalFile())
-                   : icon_urls_;
-    }
-    QString inputActionText() const override { return pathString(); }
+    QStringList iconUrls() const override { return {icon_url}; }
+
+    QString inputActionText() const override { return text(); }
+
     std::vector<albert::Action> actions() const override
     {
         return {{
             "activate", Plugin::tr("Activate"),
             [this] {
-                if (auto err = AXUIElementPerformAction(element_, kAXPressAction);
+                if (auto err = AXUIElementPerformAction(element, kAXPressAction);
                     err != kAXErrorSuccess)
                     WARN << "Failed to activate menu item";
             }
         }};
     }
 
-    QString pathString() const { return path_.join(" > "); }
+    QString pathString() const { return path.join(" → "); }
 
-private:
-    QStringList path_;
-    QString shortcut_;
-    AXUIElementRef element_;
-    NSRunningApplication *app_;
-    mutable QStringList icon_urls_;  // Fetched lazy
-
+    AXUIElementRef element;
+    const QStringList path;
+    const QString shortcut;
+    const QString icon_url;
 };
 
-// Map Core Foundation modifiers to Qt modifiers
 Qt::KeyboardModifiers convertCFModifiersToQtModifiers(int cfModifiers)
 {
     Qt::KeyboardModifiers qtModifiers = Qt::NoModifier;
@@ -167,10 +154,9 @@ Qt::KeyboardModifiers convertCFModifiersToQtModifiers(int cfModifiers)
 
 static void retrieveMenuItemsRecurse(const bool & valid,
                                      vector<shared_ptr<MenuItem>>& items,
-                                     NSRunningApplication *app,
+                                     const QString &icon_url,
                                      QStringList path,
-                                     AXUIElementRef element,
-                                     int depth = 0)
+                                     AXUIElementRef element)
 {
     if (!valid)
         return;
@@ -180,27 +166,17 @@ static void retrieveMenuItemsRecurse(const bool & valid,
         Enabled,
         Title,
         Children,
-        // Role,
         MenuItemCmdChar,
-        // MenuItemCmdVirtualKey,
         MenuItemCmdGlyph,
         MenuItemCmdModifiers,
-        // MenuItemMarkChar,
-        // MenuItemPrimaryUIElement
-
     };
     CFStringRef ax_attributes[] = {
         kAXEnabledAttribute,
         kAXTitleAttribute,
         kAXChildrenAttribute,
-        // kAXRoleAttribute,
         kAXMenuItemCmdCharAttribute,
-        // kAXMenuItemCmdVirtualKeyAttribute,
         kAXMenuItemCmdGlyphAttribute,
         kAXMenuItemCmdModifiersAttribute,
-        // kAXMenuItemMarkCharAttribute,
-        // kAXMenuItemPrimaryUIElementAttribute
-
     };
     CFArrayRef attributes_array = CFArrayCreate(nullptr,
                                                (const void **) ax_attributes,
@@ -220,8 +196,7 @@ static void retrieveMenuItemsRecurse(const bool & valid,
         WARN << QString("Failed to retrieve multiple attributes: Returned type is not array.");
     else{
 
-        class skip : exception
-        {};
+        class skip : exception {};
 
         try {
 
@@ -300,55 +275,47 @@ static void retrieveMenuItemsRecurse(const bool & valid,
                     else if (CFGetTypeID(value) != AXUIElementGetTypeID())
                         throw runtime_error("Fetched child is not of type AXUIElementRef");
 
-                    retrieveMenuItemsRecurse(valid, items, app, path, (AXUIElementRef)value, depth +1 );
+                    retrieveMenuItemsRecurse(valid, items, icon_url, path, (AXUIElementRef)value);
                 }
             }
-            else
+            else if (CFArrayRef actions = nullptr;
+                     AXUIElementCopyActionNames(element, &actions) == kAXErrorSuccess && actions)
             {
-                if (CFArrayRef actions = nullptr;
-                    AXUIElementCopyActionNames(element, &actions) == kAXErrorSuccess && actions)
+
+                QString command_char;
+                if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdChar);
+                    v && CFGetTypeID(v) == CFStringGetTypeID())
+                    command_char = QString::fromCFString((CFStringRef)v);
+
+                // if there is a glyph use that instead
+                if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdGlyph);
+                    v && CFGetTypeID(v) == CFNumberGetTypeID())
                 {
-
-                    QString command_char;
-                    if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdChar);
-                        v && CFGetTypeID(v) == CFStringGetTypeID())
-                        command_char = QString::fromCFString((CFStringRef)v);
-
-                    // if there is a glyph use that instead
-                    if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdGlyph);
-                        v && CFGetTypeID(v) == CFNumberGetTypeID())
-                    {
-                        int glyphID;
-                        CFNumberGetValue((CFNumberRef)v, kCFNumberIntType, &glyphID);
-                        if (auto it = glyph_map.find(glyphID); it != glyph_map.end())
-                            command_char = it->second;
-                    }
-
-                    Qt::KeyboardModifiers mods;
-                    if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdModifiers);
-                        v && CFGetTypeID(v) == CFNumberGetTypeID())
-                        mods = toQt([(__bridge NSNumber*)v intValue]);
-
-                    QString shortcut;
-                    if (!command_char.isEmpty())
-                        shortcut = QKeySequence(mods).toString(QKeySequence::NativeText) + command_char;
-
-                    // int virtual_key_code;
-                    // if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdVirtualKey);
-                    //     v && CFGetTypeID(v) == CFNumberGetTypeID())
-                    //     mod = [(__bridge NSNumber*)v intValue];
-
-                    if (CFArrayContainsValue(actions,
-                                             CFRangeMake(0, CFArrayGetCount(actions)),
-                                             kAXPressAction))
-                        items.emplace_back(make_shared<MenuItem>(path, element, app, shortcut));
-
-                    CFRelease(actions);
+                    int glyphID;
+                    CFNumberGetValue((CFNumberRef)v, kCFNumberIntType, &glyphID);
+                    if (auto it = glyph_map.find(glyphID); it != glyph_map.end())
+                        command_char = it->second;
                 }
+
+                Qt::KeyboardModifiers mods;
+                if (auto v = CFArrayGetValueAtIndex(attribute_values, AXKeys::MenuItemCmdModifiers);
+                    v && CFGetTypeID(v) == CFNumberGetTypeID())
+                    mods = toQt([(__bridge NSNumber*)v intValue]);
+
+                QString shortcut;
+                if (!command_char.isEmpty())
+                    shortcut = QKeySequence(mods).toString(QKeySequence::NativeText) + command_char;
+
+                if (CFArrayContainsValue(actions,
+                                         CFRangeMake(0, CFArrayGetCount(actions)),
+                                         kAXPressAction))
+                    items.emplace_back(make_shared<MenuItem>(element, path, shortcut, icon_url));
+
+                CFRelease(actions);
             }
         } catch (const skip &e) {
         } catch (const exception &e) {
-            DEBG << depth << e.what();
+            DEBG << e.what();
         }
 
         CFRelease(attribute_values);
@@ -361,6 +328,7 @@ static vector<shared_ptr<MenuItem>> retrieveMenuBarItems(const bool &valid, NSRu
     vector<shared_ptr<MenuItem>> menu_items;
 
     auto ax_app = AXUIElementCreateApplication(app.processIdentifier);
+    auto icon_url = QString("qfip:" + QUrl::fromNSURL(app.bundleURL).toLocalFile());
 
     CFTypeRef ax_menu_bar = nullptr;
     if (auto error = AXUIElementCopyAttributeValue(ax_app, kAXMenuBarAttribute, &ax_menu_bar);
@@ -380,12 +348,10 @@ static vector<shared_ptr<MenuItem>> retrieveMenuBarItems(const bool &valid, NSRu
         else {
             // Skip "Apple" menu
             for (CFIndex i = 1, c = CFArrayGetCount((CFArrayRef) ax_menus); i < c; ++i)
-                retrieveMenuItemsRecurse(valid,
-                                         menu_items,
-                                         app,
-                                         {},
-                                         (AXUIElementRef)
-                                             CFArrayGetValueAtIndex((CFArrayRef) ax_menus, i));
+                retrieveMenuItemsRecurse(
+                    valid, menu_items, icon_url, {},
+                    (AXUIElementRef)CFArrayGetValueAtIndex((CFArrayRef) ax_menus, i)
+                );
 
             CFRelease(ax_menus);
         }
@@ -438,10 +404,9 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
         return {};
     }
 
-    auto app = NSWorkspace.sharedWorkspace.frontmostApplication;
-
     // Update menu if app changed
-    if (app.bundleIdentifier != d->app.bundleIdentifier)
+    if (auto app = NSWorkspace.sharedWorkspace.frontmostApplication;
+        app && (!d->app || app.bundleIdentifier != d->app.bundleIdentifier))
     {
         d->app = app;
 
@@ -458,8 +423,6 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
     }
 
     vector<RankItem> results;
-    ;
-
     for (const auto& item : d->menu_items)
         if (auto m = Matcher(query->string(), {.fuzzy = d->fuzzy})
                          .match(item->text(), item->pathString()); m)
