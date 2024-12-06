@@ -74,7 +74,9 @@ Plugin::Plugin()
     paths_ = s->contains(CFG_BM_PATHS) ? s->value(CFG_BM_PATHS).toStringList() : defaultPaths();
     paths_.sort();
 
-    fs_watcher_.addPaths(paths_);
+    if (!paths_.isEmpty())
+        fs_watcher_.addPaths(paths_);
+
     connect(&fs_watcher_, &QFileSystemWatcher::fileChanged, this, [this]{
         // Update watches. Chromium seems to mv the file (inode change).
         if (!fs_watcher_.files().isEmpty())
