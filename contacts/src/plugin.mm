@@ -9,6 +9,9 @@
 ALBERT_LOGGING_CATEGORY("contacts")
 using namespace albert;
 using namespace std;
+#if  ! __has_feature(objc_arc)
+#error This file must be compiled with ARC.
+#endif
 
 
 class Plugin::Private
