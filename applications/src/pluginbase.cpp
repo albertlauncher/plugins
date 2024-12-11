@@ -103,9 +103,7 @@ QWidget *PluginBase::createTerminalFormWidget()
             WARN << QString("Selected terminal '%1' vanished.").arg(term_id);
     });
 
-    QString t = "https://github.com/albertlauncher/albert/issues/new"
-                "?assignees=ManuelSchneid3r&title=Terminal+[terminal-name]+missing"
-                "&body=Post+an+xterm+-e+compatible+commandline.";
+    QString t = "https://github.com/albertlauncher/albert/issues/new/choose";
     t = tr(R"(Report missing terminals <a href="%1">here</a>.)").arg(t);
     t = QString(R"(<span style="font-size:9pt; color:#808080;">%1</span>)").arg(t);
     lbl->setText(t);
