@@ -64,6 +64,8 @@ Plugin::Plugin()
     if (auto e = QStandardPaths::findExecutable(process.program()); e.isEmpty())
         throw runtime_error(process.program().toStdString() + " not found");
 
+    restore_default_timeout(settings());
+
     timer.setSingleShot(true);
 
     QObject::connect(&timer, &QTimer::timeout, [this]{ stop(); });
