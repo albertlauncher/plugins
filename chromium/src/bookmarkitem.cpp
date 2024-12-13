@@ -23,7 +23,14 @@ QString BookmarkItem::inputActionText() const
 
 QStringList BookmarkItem::iconUrls() const
 {
-    static const QStringList icon_urls = {"xdg:www", "xdg:web-browser", "xdg:emblem-web", ":favicon"};
+    static const QStringList icon_urls = {
+#if defined Q_OS_UNIX and not defined Q_OS_MAC
+        "xdg:www",
+        "xdg:web-browser",
+        "xdg:emblem-web",
+#endif
+        "qrc:star"
+    };
     return icon_urls;
 }
 

@@ -1,9 +1,5 @@
-<!--
-  ~ Copyright (c) 2022 Manuel Schneider
-  -->
-
 <RCC>
-    <qresource>
-        <file alias="favicon">resources/favicon.png</file>
+    <qresource prefix="/">
+        <file alias="star">resources/star.svg</file>
     </qresource>
 </RCC>
