@@ -42,12 +42,13 @@ void ItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options,
     // Draw selection
     option.widget->style()->drawPrimitive(QStyle::PE_PanelItemViewItem, &option, painter, option.widget);
 
-    // Draw icon
+    // Compute icon rect
     QRect icon_rect = QRect(
         QPoint((option.rect.height() - option.decorationSize.width())/2 + option.rect.x(),
                (option.rect.height() - option.decorationSize.height())/2 + option.rect.y()),
         option.decorationSize);
 
+    // Get the icon
     QPixmap pm;
     auto icon_urls = index.data(static_cast<int>(albert::ItemRoles::IconUrlsRole)).value<QStringList>();
     auto icon_size = option.decorationSize.height();
@@ -58,11 +59,17 @@ void ItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options,
     if (!QPixmapCache::find(icon_cache_key, &pm))
     {
         pm = pixmapFromUrls(icon_urls,
-                            QSize(icon_size, icon_size)
-                                * option.widget->devicePixelRatioF());  // yes, needed
+                            QSize(icon_size, icon_size) * option.widget->devicePixelRatioF());
+        pm.setDevicePixelRatio(option.widget->devicePixelRatioF());
         QPixmapCache::insert(icon_cache_key, pm);
     }
-    painter->drawPixmap(icon_rect, pm);
+
+    // Draw the icon such that it is centered in the icon_rect
+    painter->drawPixmap(icon_rect.x()
+                            + (icon_rect.width() - (int)pm.deviceIndependentSize().width()) / 2,
+                        icon_rect.y()
+                            + (icon_rect.height() - (int)pm.deviceIndependentSize().height()) / 2,
+                        pm);
 
     // Calculate content rects
     QFont font1 = option.font;
