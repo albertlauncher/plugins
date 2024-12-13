@@ -3,7 +3,7 @@ if (APPLE)
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(menubar VERSION 1.6)
+project(menubar VERSION 1.7)
 
 find_library(CORESERVICES_LIBRARY CoreServices)
 

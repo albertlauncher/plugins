@@ -1,11 +1,12 @@
 // Copyright (c) 2024-2024 Manuel Schneider
 
 #include "plugin.h"
-#include <QUrl>
 #include <Cocoa/Cocoa.h>
+#include <QKeySequence>
+#include <QMessageBox>
+#include <QUrl>
 #include <albert/logging.h>
 #include <albert/matcher.h>
-#include <QMessageBox>
 using namespace albert;
 using namespace std;
 ALBERT_LOGGING_CATEGORY("menu")
@@ -325,22 +326,22 @@ static void retrieveMenuItemsRecurse(const bool & valid,
     CFRelease(attributes_array);
 }
 
-static vector<shared_ptr<MenuItem>> retrieveMenuBarItems(const bool &valid, NSRunningApplication *app)
+static vector<shared_ptr<MenuItem>> retrieveMenuBarItems(const bool &valid)
 {
     vector<shared_ptr<MenuItem>> menu_items;
+    auto app = NSWorkspace.sharedWorkspace.frontmostApplication;
+    auto app_icon_url = QString("qfip:" + QUrl::fromNSURL(app.bundleURL).toLocalFile());
+    auto app_ax = AXUIElementCreateApplication(app.processIdentifier);
 
-    auto ax_app = AXUIElementCreateApplication(app.processIdentifier);
-    auto icon_url = QString("qfip:" + QUrl::fromNSURL(app.bundleURL).toLocalFile());
-
-    CFTypeRef ax_menu_bar = nullptr;
-    if (auto error = AXUIElementCopyAttributeValue(ax_app, kAXMenuBarAttribute, &ax_menu_bar);
+    CFTypeRef app_ax_menu_bar = nullptr;
+    if (auto error = AXUIElementCopyAttributeValue(app_ax, kAXMenuBarAttribute, &app_ax_menu_bar);
         error != kAXErrorSuccess)
         WARN << QString("Failed to retrieve menubar: %1 (See AXError.h)").arg(error);
-    else if (!ax_menu_bar)
+    else if (!app_ax_menu_bar)
         WARN << QString("Failed to retrieve menubar: Returned null.");
     else {
         CFTypeRef ax_menus = nullptr;
-        if (error = AXUIElementCopyAttributeValue((AXUIElementRef) ax_menu_bar,
+        if (error = AXUIElementCopyAttributeValue((AXUIElementRef)app_ax_menu_bar,
                                                   kAXChildrenAttribute,
                                                   &ax_menus);
             error != kAXErrorSuccess)
@@ -351,15 +352,15 @@ static vector<shared_ptr<MenuItem>> retrieveMenuBarItems(const bool &valid, NSRu
             // Skip "Apple" menu
             for (CFIndex i = 1, c = CFArrayGetCount((CFArrayRef) ax_menus); i < c; ++i)
                 retrieveMenuItemsRecurse(
-                    valid, menu_items, icon_url, {},
+                    valid, menu_items, app_icon_url, {},
                     (AXUIElementRef)CFArrayGetValueAtIndex((CFArrayRef) ax_menus, i)
                 );
 
             CFRelease(ax_menus);
         }
-        CFRelease(ax_menu_bar);
+        CFRelease(app_ax_menu_bar);
     }
-    CFRelease(ax_app);
+    CFRelease(app_ax);
 
     return menu_items;
 }
@@ -369,7 +370,7 @@ class Plugin::Private
 public:
     bool fuzzy;
     std::vector<std::shared_ptr<MenuItem>> menu_items;
-    NSRunningApplication *app;
+    pid_t current_menu_pid = 0;
 };
 
 Plugin::Plugin() : d(make_unique<Private>())
@@ -407,16 +408,16 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
     }
 
     // Update menu if app changed
-    if (auto app = NSWorkspace.sharedWorkspace.frontmostApplication;
-        app && (!d->app || app.bundleIdentifier != d->app.bundleIdentifier))
+    auto app = NSWorkspace.sharedWorkspace.frontmostApplication;
+    if (app && d->current_menu_pid != app.processIdentifier)
     {
-        d->app = app;
+        d->current_menu_pid = app.processIdentifier;
 
         // AX api is not thread save, dispatch in main thread
         __block vector<shared_ptr<MenuItem>> menu_items;
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
         dispatch_async(dispatch_get_main_queue(), ^{
-            menu_items = retrieveMenuBarItems(query->isValid(), app);
+            menu_items = retrieveMenuBarItems(query->isValid());
             dispatch_semaphore_signal(semaphore);
         });
         dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);  // Wait for user
