@@ -10,7 +10,6 @@ using namespace albert::timer;
 using namespace albert;
 using namespace std;
 
-
 Timer::Timer(const QString &name, int interval):
     end(QDateTime::currentSecsSinceEpoch() + interval)
 {
@@ -28,11 +27,9 @@ void Timer::onTimeout()
     notification.send();
 }
 
-QString Plugin::defaultTrigger() const
-{ return tr("timer ", "The trigger. Lowercase."); }
+QString Plugin::defaultTrigger() const { return tr("timer ", "The trigger. Lowercase."); }
 
-QString Plugin::synopsis() const
-{ return tr("[[h:]min:]s [name]"); }
+QString Plugin::synopsis() const { return tr("<duration> [name]"); }
 
 static QString durationString(uint seconds)
 {
@@ -49,28 +46,43 @@ static QString durationString(uint seconds)
 
 static uint parseDurationString(const QString &s)
 {
-    if (!s.contains(':'))
-        return 0;
-
-    auto fields = s.split(':');
-    if (fields.size() > 3)
-        return 0;
-
-    bool ok;
-    uint dur = 0;
-    uint scalar = 1;
-    for (auto it = fields.rbegin(); it != fields.rend(); ++it)
+    if (s.contains(':'))
     {
-        int val = 0;
-        if (!it->isEmpty()) {
-            val = it->toInt(&ok);
-            if (!ok || val < 0)
-                return {};
+        auto fields = s.split(':');
+        if (fields.size() > 3)
+            return 0;
+
+        bool ok;
+        uint dur = 0;
+        uint scalar = 1;
+        for (auto it = fields.rbegin(); it != fields.rend(); ++it)
+        {
+            int val = 0;
+            if (!it->isEmpty()) {
+                val = it->toInt(&ok);
+                if (!ok || val < 0)
+                    return {};
+            }
+            dur += val * scalar;
+            scalar *= 60;
         }
-        dur += val * scalar;
-        scalar *= 60;
+        return dur;
     }
-    return dur;
+
+    static QRegularExpression re(R"((?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?)");
+    if(auto match = re.match(s); match.hasMatch())
+    {
+        uint dur = 0;
+        if (match.capturedLength(1) > 0)
+            dur += match.captured(1).toInt() * 3600;
+        if (match.capturedLength(2) > 0)
+            dur += match.captured(2).toInt() * 60;
+        if (match.capturedLength(3) > 0)
+            dur += match.captured(3).toInt();
+        return dur;
+    }
+
+    return 0;
 }
 
 vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
@@ -94,21 +106,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
         if (name.isEmpty())
             name = QString("#%1").arg(timer_counter_);
 
-        r.emplace_back(
-            StandardItem::make(
-                QStringLiteral("timer"),
-                tr("Set timer: %1").arg(name),
-                durationString(dur),
-                {QStringLiteral(":datetime")},
-                {
-                    {
-                        QStringLiteral("set"), tr("Start", "Action verb form"),
-                        [=, this]{ startTimer(name, dur); }
-                    }
-                }
-            ),
-            1.0
-        );
+        r.emplace_back(makeSetTimerItem(dur, name), 1.0);
     }
 
     return r;
@@ -122,15 +120,31 @@ vector<shared_ptr<Item>> Plugin::handleEmptyQuery(const Query *)
     return results;
 }
 
-std::shared_ptr<Item> Plugin::makeTimerItem(Timer &t)
+shared_ptr<Item> Plugin::makeSetTimerItem(uint dur, const QString &name)
 {
     return StandardItem::make(
-        QStringLiteral("timer_item"),
+        QStringLiteral("timer"),
+        tr("Set timer: %1").arg(name),
+        durationString(dur),
+        icon_urls,
+        {
+            {
+                QStringLiteral("set"), tr("Start", "Action verb form"),
+                [=, this]{ startTimer(name, dur); }
+            }
+        }
+    );
+}
+
+shared_ptr<Item> Plugin::makeTimerItem(Timer &t)
+{
+    return StandardItem::make(
+        QStringLiteral("timer"),
         tr("Timer: %1").arg(t.objectName()),
         (t.isActive() ? tr("%1, Times out %2") : tr("%1, Timed out %2"))
-                .arg(durationString(t.interval() / 1000),
-                     QDateTime::fromSecsSinceEpoch(t.end).toString("hh:mm:ss")),
-        {QStringLiteral(":datetime")},
+            .arg(durationString(t.interval() / 1000),
+                 QDateTime::fromSecsSinceEpoch(t.end).toString("hh:mm:ss")),
+        icon_urls,
         {
             {
                 QStringLiteral("rem"), tr("Remove", "Action verb form"),
@@ -150,8 +164,7 @@ void Plugin::startTimer(const QString &name, uint seconds)
 
 void Plugin::removeTimer(Timer *t)
 {
-    if (auto it = std::find_if(timers_.begin(), timers_.end(),
-                               [&](const auto& o) {return t == &o;});
+    if (auto it = find_if(timers_.begin(), timers_.end(), [&](const auto& o) {return t == &o;});
         it != timers_.end())
         timers_.erase(it);
 }

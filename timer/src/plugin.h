@@ -37,11 +37,12 @@ public:
 
 private:
 
+    std::shared_ptr<Item> makeSetTimerItem(uint dur, const QString &name);
     std::shared_ptr<Item> makeTimerItem(Timer&);
     void startTimer(const QString &name, uint seconds);
     void removeTimer(Timer*);
 
-    const QStringList icon_urls{":timer"};
+    const QStringList icon_urls{"gen:?text=⏲️"};
     std::list<Timer> timers_;
     uint timer_counter_ = 0;
 
