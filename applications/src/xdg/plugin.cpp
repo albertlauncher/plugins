@@ -64,6 +64,7 @@ const map<QString, QStringList> Plugin::exec_args  // command > ExecArg
     {"footclient", {}},  // yes empty
     // {"gmrun", {}},
     {"gnome-terminal", {"--"}},
+    {"ghostty", {"-e"}},
     // {"guake", {}},
     // {"hyper", {}},
     {"io.elementary.terminal", {"-x"}},
