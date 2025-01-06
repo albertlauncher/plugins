@@ -1,0 +1,9 @@
+{
+    "authors": ["@manuelschneid3r"],
+    "description": "Manage Wifi connections",
+    "description[de]": "WLAN-Verbindungen verwalten",
+    "license": "MIT",
+    "name": "WiFi",
+    "name[de]": "WLAN",
+    "url": "https://github.com/albertlauncher/plugins/tree/main/wifi",
+}
