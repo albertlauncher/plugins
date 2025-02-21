@@ -25,7 +25,7 @@
     </message>
 </context>
 <context>
-    <name>albert::datetime::Plugin</name>
+    <name>Plugin</name>
     <message>
         <source>Time</source>
         <translation></translation>

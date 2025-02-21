@@ -6,9 +6,8 @@
 #include <QLocale>
 #include <QTimeZone>
 #include <QWidget>
+#include <albert/albert.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
-using namespace albert::datetime;
 using namespace albert;
 using namespace std;
 
@@ -22,46 +21,40 @@ Plugin::Plugin():
     restore_show_date_on_empty_query(settings());
 }
 
-QString Plugin::synopsis() const
+QString Plugin::synopsis(const QString &query) const
 {
-    return QStringLiteral("%1 | %2 | unix | utc | <number>")
+    if (query.isEmpty())
+        return QStringLiteral("%1 | %2 | unix | utc | <number>")
             .arg(tr("Date").toLower(), tr("Time").toLower());
-}
-
-vector<shared_ptr<Item>> Plugin::handleEmptyQuery(const Query *)
-{
-    if (show_date_on_empty_query_)
-    {
-        QLocale loc;
-        QDateTime dt = QDateTime::currentDateTime();
-        return {
-            StandardItem::make(
-                QStringLiteral("empty"),
-                loc.toString(dt.time(), QLocale::ShortFormat),
-                loc.toString(dt.date(), QLocale::LongFormat),
-                icon_urls
-            )
-        };
-    }
     return {};
 }
 
-inline static QString tr_copy()
-{
-    return Plugin::tr("Copy to clipboard");
-}
+inline static QString tr_copy() { return Plugin::tr("Copy to clipboard"); }
 
-inline static QString tr_copy_with_placeholder()
-{
-    return Plugin::tr("Copy '%1' to clipboard");
-}
+inline static QString tr_copy_with_placeholder() { return Plugin::tr("Copy '%1' to clipboard"); }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
+vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
 {
     vector<RankItem> r;
-    const auto &s = query->string();
+    const auto &s = query.string();
 
-    if (tr_time.startsWith(query->string(), Qt::CaseInsensitive))
+    if (show_date_on_empty_query_ && s.isEmpty())
+    {
+        const QLocale loc;
+        const auto dt = QDateTime::currentDateTime();
+
+        r.emplace_back(
+            StandardItem::make(
+                QStringLiteral("dt"),
+                loc.toString(dt.time(), QLocale::ShortFormat),
+                loc.toString(dt.date(), QLocale::LongFormat),
+                icon_urls
+            ),
+            1.0
+        );
+    }
+
+    if (tr_time.startsWith(query.string(), Qt::CaseInsensitive))
     {
         const QLocale loc;
         const auto dt = QDateTime::currentDateTime();
@@ -81,7 +74,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
         );
     }
 
-    if (tr_date.startsWith(query->string(), Qt::CaseInsensitive))
+    if (tr_date.startsWith(query.string(), Qt::CaseInsensitive))
     {
         const QLocale loc;
         const auto dt = QDateTime::currentDateTime();
@@ -106,7 +99,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
         );
     }
 
-    if (tr_unix.startsWith(query->string(), Qt::CaseInsensitive))
+    if (tr_unix.startsWith(query.string(), Qt::CaseInsensitive))
     {
         const auto t = QString::number(QDateTime::currentSecsSinceEpoch());
 
@@ -124,7 +117,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
         );
     }
 
-    if (utc.startsWith(query->string(), Qt::CaseInsensitive))
+    if (utc.startsWith(query.string(), Qt::CaseInsensitive))
     {
         const QLocale loc;
         const QDateTime dt = QDateTime::currentDateTimeUtc();
@@ -171,6 +164,24 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
     }
 
     return r;
+}
+
+vector<shared_ptr<Item>> Plugin::handleEmptyQuery()
+{
+    if (show_date_on_empty_query_)
+    {
+        QLocale loc;
+        QDateTime dt = QDateTime::currentDateTime();
+        return {
+            StandardItem::make(
+                QStringLiteral("empty"),
+                loc.toString(dt.time(), QLocale::ShortFormat),
+                loc.toString(dt.date(), QLocale::LongFormat),
+                icon_urls
+                )
+        };
+    }
+    return {};
 }
 
 QWidget *Plugin::buildConfigWidget()

@@ -6,8 +6,6 @@
 #include <albert/property.h>
 #include <QObject>
 
-namespace albert::datetime
-{
 class Plugin : public albert::ExtensionPlugin,
                public albert::GlobalQueryHandler
 {
@@ -15,13 +13,12 @@ class Plugin : public albert::ExtensionPlugin,
     ALBERT_PLUGIN_PROPERTY(bool, show_date_on_empty_query, false)
 
 public:
-
     Plugin();
 
     QWidget *buildConfigWidget() override;
-    QString synopsis() const override;
-    std::vector<std::shared_ptr<albert::Item>> handleEmptyQuery(const albert::Query*) override;
-    std::vector<RankItem> handleGlobalQuery(const Query *query) override;
+    QString synopsis(const QString &) const override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query &) override;
+    std::vector<std::shared_ptr<albert::Item>> handleEmptyQuery() override;
 
     QStringList icon_urls{":datetime"};
 
@@ -31,5 +28,3 @@ public:
     const QString utc;
 
 };
-
-}
