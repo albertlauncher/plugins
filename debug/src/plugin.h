@@ -12,6 +12,6 @@ public:
     ~Plugin() override;
 
     bool allowTriggerRemap() const override;
-    QString synopsis() const override;
-    void handleTriggerQuery(albert::Query*) override;
+    QString synopsis(const QString &) const override;
+    void handleTriggerQuery(albert::Query &) override;
 };
