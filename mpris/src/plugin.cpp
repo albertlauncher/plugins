@@ -94,11 +94,10 @@ public:
 
 
         Matcher matcher(query);
-        Match m;
 
         // Player item
 
-        if (m = matcher.match(id); m)
+        if (auto m = matcher.match(id); m)
         {
             vector<Action> actions;
 
@@ -157,23 +156,23 @@ public:
 
         // Control items
 
-        if (m = matcher.match(tr_next); m && control.canGoNext())
+        if (auto m = matcher.match(tr_next); m && control.canGoNext())
             items.emplace_back(makeCtlItem(tr_next, iu_next, act_next), m);
 
-        if (m = matcher.match(tr_prev); m && control.canGoPrevious())
+        if (auto m = matcher.match(tr_prev); m && control.canGoPrevious())
             items.emplace_back(makeCtlItem(tr_prev, iu_prev, act_prev), m);
 
         if (playback_status == Playing)
         {
-            if (m = matcher.match(tr_stop); m)
+            if (auto m = matcher.match(tr_stop); m)
                 items.emplace_back(makeCtlItem(tr_stop, iu_stop, act_stop), m);
 
-            if (m = matcher.match(tr_pause); m && control.canPause())
+            if (auto m = matcher.match(tr_pause); m && control.canPause())
                 items.emplace_back(makeCtlItem(tr_pause, iu_pause, act_pause), m);
         }
         else
         {
-            if (m = matcher.match(tr_play); m && control.canPlay())
+            if (auto m = matcher.match(tr_play); m && control.canPlay())
                 items.emplace_back(makeCtlItem(tr_play, iu_play, act_stop), m);
         }
 
@@ -210,11 +209,11 @@ Plugin::Plugin() : d(make_unique<Private>())
 
 Plugin::~Plugin() = default;
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
+vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
 {
     vector<RankItem> results;
     for (auto &[service, player] : d->players)
-        player.addItems(results, query->string());
+        player.addItems(results, query.string());
     return results;
 }
 

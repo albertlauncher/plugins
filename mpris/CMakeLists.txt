@@ -1,9 +1,9 @@
-if(UNIX AND NOT APPLE)
+#if(UNIX AND NOT APPLE)
 
     cmake_minimum_required(VERSION 3.16)
     find_package(Albert REQUIRED)
 
-    project(mpris VERSION 4.1)
+    project(mpris VERSION 5.0)
 
     albert_plugin(QT DBus Widgets)
 
@@ -17,4 +17,4 @@ if(UNIX AND NOT APPLE)
 
     target_sources(${PROJECT_NAME} PRIVATE mpris.xml ${DBUS_SRCS})
 
-endif()
+#endif()
