@@ -3,6 +3,7 @@
 #include "docitem.h"
 #include "docset.h"
 #include "plugin.h"
+#include <QFile>
 #include <QRegularExpression>
 #include <QSqlDatabase>
 #include <QSqlDriver>

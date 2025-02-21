@@ -3,11 +3,12 @@
 #include "docitem.h"
 #include "docset.h"
 #include "plugin.h"
+#include <QDir>
 #include <QFile>
 #include <QRegularExpression>
 #include <QTextStream>
+#include <albert/albert.h>
 #include <albert/logging.h>
-#include <albert/util.h>
 using namespace albert;
 using namespace std;
 
@@ -50,7 +51,7 @@ void DocItem::open() const
                   .arg(url);
         file.close();
 
-        openUrl("file:" + file.fileName());
+        ::open(file.fileName());
     }
     else
         WARN << "Failed to open file for writing" << file.fileName() << file.errorString();

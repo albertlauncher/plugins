@@ -12,8 +12,8 @@
 #include <QNetworkRequest>
 #include <QSqlDatabase>
 #include <QTemporaryDir>
+#include <albert/albert.h>
 #include <albert/logging.h>
-#include <albert/util.h>
 #include <archive.h>
 #include <archive_entry.h>
 ALBERT_LOGGING_CATEGORY("docs")
@@ -64,7 +64,7 @@ static QString extract(const QString &src, const QString &dst)
     return err;
 }
 
-static void saveBase64ImageToFile(const QByteArray& base64Data, const QString& filePath)
+static void saveBase64ImageToFile(const QByteArray& base64Data, const auto& filePath)
 {
     QByteArray imageData = QByteArray::fromBase64(base64Data);
     QImage image;
@@ -92,13 +92,8 @@ Plugin::Plugin()
     if(!QSqlDatabase::isDriverAvailable("QSQLITE"))
         throw "QSQLITE driver unavailable";
 
-    auto data_dir = createOrThrow(dataLocation());
-    if (!data_dir.mkpath(docsets_dir))
-        throw "Unable to create docsets dir";
-
-    auto cache_dir = createOrThrow(cacheLocation());
-    if (!cache_dir.mkpath("icons"))
-        throw "Unable to create icons dir";
+    tryCreateDirectory(dataLocation() / docsets_dir);
+    tryCreateDirectory(dataLocation() / "icons");
 
     connect(this, &Plugin::docsetsChanged, this, &Plugin::updateIndexItems);
 
@@ -137,7 +132,7 @@ void Plugin::updateDocsetList()
 
     debug(tr("Downloading docset list from '%1'").arg(url));
 
-    QNetworkReply *reply = network()->get(QNetworkRequest(QUrl{url}));
+    QNetworkReply *reply = network().get(QNetworkRequest(QUrl{url}));
     reply->setParent(this); // For the case the plugin is deleted before the reply is finished
 
     connect(reply, &QNetworkReply::finished, this, [this, reply]
@@ -213,7 +208,7 @@ void Plugin::downloadDocset(uint index)
             .arg(ds.source_id.chopped(5), ds.name)};
 
     debug(tr("Downloading docset from '%1'").arg(url.toString()));
-    download_ = network()->get(QNetworkRequest(url));
+    download_ = network().get(QNetworkRequest(url));
 
     connect(download_, &QNetworkReply::downloadProgress,
             this, [this](qint64 bytesReceived, qint64 bytesTotal)
@@ -238,10 +233,11 @@ void Plugin::downloadDocset(uint index)
                     file.close();
 
                     debug(tr("Extracting file '%1'").arg(file.fileName()));
-                    if (QString err = extract(file.fileName(), cacheLocation()); err.isEmpty())
+                    auto cache_loc = QString(cacheLocation().c_str());
+                    if (QString err = extract(file.fileName(), cache_loc); err.isEmpty())
                     {
-                        debug(tr("Searching docset in '%1'").arg(cacheLocation()));
-                        if (QDirIterator it(cacheLocation(), {"*.docset"}, QDir::Dirs, QDirIterator::Subdirectories); it.hasNext())
+                        debug(tr("Searching docset in '%1'").arg(cache_loc));
+                        if (QDirIterator it(cache_loc, {"*.docset"}, QDir::Dirs, QDirIterator::Subdirectories); it.hasNext())
                         {
                             auto src = it.next();
                             auto dst = QString("%1/%2.docset").arg(QDir(dataLocation()).filePath(docsets_dir), ds.name);
@@ -257,7 +253,7 @@ void Plugin::downloadDocset(uint index)
                                 error(tr("Failed renaming dir '%1' to '%2'.").arg(src, dst));
                         }
                         else
-                            error(tr("Failed finding extracted docset in %1").arg(cacheLocation()));
+                            error(tr("Failed finding extracted docset in %1").arg(cache_loc));
                     }
                     else
                         error(tr("Extracting docset failed: '%1' (%2)").arg(file.fileName(), err));
