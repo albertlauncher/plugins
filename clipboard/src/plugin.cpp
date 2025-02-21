@@ -13,12 +13,12 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QSpinBox>
+#include <albert/albert.h>
 #include <albert/extensionregistry.h>
 #include <albert/logging.h>
 #include <albert/matcher.h>
 #include <albert/plugin/snippets.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
 #include <shared_mutex>
 ALBERT_LOGGING_CATEGORY("clipboard")
 using namespace albert;
@@ -34,8 +34,7 @@ static const uint DEF_HISTORY_LENGTH = 100;
 
 
 Plugin::Plugin():
-    clipboard(QGuiApplication::clipboard()),
-    snippets(registry(), "snippets")
+    clipboard(QGuiApplication::clipboard())
 {
     // Load settings
 
@@ -105,11 +104,11 @@ Plugin::~Plugin()
 
 QString Plugin::defaultTrigger() const { return " "; }
 
-void Plugin::handleTriggerQuery(Query *query)
+void Plugin::handleTriggerQuery(Query &query)
 {
     QLocale loc;
     int rank = 0;
-    Matcher matcher(query->string());
+    Matcher matcher(query.string());
 
     shared_lock l(mutex);
 
@@ -152,7 +151,7 @@ void Plugin::handleTriggerQuery(Query *query)
                         snippets->addSnippet(t);
                     });
 
-            query->add(
+            query.add(
                 StandardItem::make(
                     id(),
                     entry.text,

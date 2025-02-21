@@ -33,7 +33,7 @@ public:
     ~Plugin();
 
     QString defaultTrigger() const override;
-    void handleTriggerQuery(albert::Query*) override;
+    void handleTriggerQuery(albert::Query &) override;
     QWidget *buildConfigWidget() override;
 
 private:
@@ -48,7 +48,7 @@ private:
     // explicit current, such that users can delete recent ones
     QString clipboard_text;
     
-    albert::WeakDependency<snippets::Plugin> snippets;
+    albert::WeakDependency<snippets::Plugin> snippets{"snippets"};
 };
 
 
