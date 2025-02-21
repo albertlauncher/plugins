@@ -1,8 +1,8 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
-#include <albert/util.h>
 #include "bookmarkitem.h"
 #include <QCoreApplication>
+#include <albert/albert.h>
 using namespace albert;
 using namespace std;
 

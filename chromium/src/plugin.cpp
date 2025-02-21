@@ -9,8 +9,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QStandardPaths>
+#include <albert/albert.h>
 #include <albert/logging.h>
-#include <albert/util.h>
 #include <utility>
 ALBERT_LOGGING_CATEGORY("chromium")
 using namespace albert;
