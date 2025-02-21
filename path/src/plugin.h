@@ -21,17 +21,19 @@ public:
     ~Plugin();
 
     QWidget *buildConfigWidget() override;
-    QString synopsis() const override;
+    QString synopsis(const QString &) const override;
     QString defaultTrigger() const override;
-    void handleTriggerQuery(albert::Query*) override;
+    void setTrigger(const QString &trigger) override;
+    void handleTriggerQuery(albert::Query&) override;
 
 private:
 
     std::vector<albert::Action> buildActions(const QString &commandline) const;
 
+    QString trigger_;
     QFileSystemWatcher watcher_;
     std::set<QString> index_;
     albert::BackgroundExecutor<std::set<QString>> indexer_;
-    albert::StrongDependency<applications::Plugin> apps_;
+    albert::StrongDependency<applications::Plugin> apps_{"applications"};
 
 };

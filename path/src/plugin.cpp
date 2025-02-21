@@ -5,16 +5,15 @@
 #include <QFileSystemWatcher>
 #include <QLabel>
 #include <QStringList>
+#include <albert/albert.h>
 #include <albert/extensionregistry.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
 #include <functional>
 ALBERT_LOGGING_CATEGORY("terminal")
 using namespace albert;
 using namespace std;
 
-Plugin::Plugin():
-    apps_(registry(), "applications")
+Plugin::Plugin()
 {
     indexer_.parallel = [](const bool &abort){
         set<QString> result;
@@ -36,7 +35,7 @@ Plugin::Plugin():
                     .arg(res.size()).arg(indexer_.runtime.count());
         index_ = ::move(res);
     };
-    
+
     watcher_.addPaths(QString(::getenv("PATH")).split(':', Qt::SkipEmptyParts));
     connect(&watcher_, &QFileSystemWatcher::directoryChanged, this, [this](){ indexer_.run(); });
 
@@ -59,9 +58,11 @@ QWidget *Plugin::buildConfigWidget()
     return l;
 }
 
-QString Plugin::synopsis() const { return tr("<command> [params]"); }
+QString Plugin::synopsis(const QString &) const { return tr("<command> [params]"); }
 
 QString Plugin::defaultTrigger() const { return ">"; }
+
+void Plugin::setTrigger(const QString &trigger) { trigger_ = trigger; }
 
 vector<Action> Plugin::buildActions(const QString &commandline) const
 {
@@ -79,16 +80,16 @@ vector<Action> Plugin::buildActions(const QString &commandline) const
     return a;
 }
 
-void Plugin::handleTriggerQuery(Query *query)
+void Plugin::handleTriggerQuery(Query &query)
 {
-    if (query->string().trimmed().isEmpty())
+    if (query.string().trimmed().isEmpty())
         return;
 
     vector<shared_ptr<Item>> results;
 
     // Extract data from input string: [0] program. The rest: args
-    QString potentialProgram = query->string().section(' ', 0, 0, QString::SectionSkipEmpty);
-    QString remainder = query->string().section(' ', 1, -1, QString::SectionSkipEmpty);
+    QString potentialProgram = query.string().section(' ', 0, 0, QString::SectionSkipEmpty);
+    QString remainder = query.string().section(' ', 1, -1, QString::SectionSkipEmpty);
 
     static const auto tr_rcmd = tr("Run '%1'");
     static const QStringList icon_urls{"xdg:utilities-terminal", "xdg:terminal", ":path"};
@@ -120,7 +121,7 @@ void Plugin::handleTriggerQuery(Query *query)
         }
 
         // Apply completion string to items
-        QString completion = QString("%1%2 %3").arg(query->trigger(), commonPrefix, remainder);
+        QString completion = QString("%1%2 %3").arg(trigger_, commonPrefix, remainder);
         for (auto &item: results)
             static_pointer_cast<StandardItem>(item)->setInputActionText(completion);
     }
@@ -133,12 +134,11 @@ void Plugin::handleTriggerQuery(Query *query)
         StandardItem::make(
             {},
             tr_title,
-            tr_description.arg(query->string()),
+            tr_description.arg(query.string()),
             icon_urls,
-            buildActions(query->string())
+            buildActions(query.string())
         )
     );
 
-    query->add(results);
+    query.add(results);
 }
-
