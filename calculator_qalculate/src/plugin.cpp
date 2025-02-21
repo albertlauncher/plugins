@@ -4,9 +4,9 @@
 #include "ui_configwidget.h"
 #include <QSettings>
 #include <QThread>
+#include <albert/albert.h>
 #include <albert/logging.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("qalculate")
 using namespace albert;
 using namespace std;
@@ -64,7 +64,7 @@ Plugin::Plugin()
 QString Plugin::defaultTrigger() const
 { return "="; }
 
-QString Plugin::synopsis() const
+QString Plugin::synopsis(const QString &) const
 {
     static const auto tr_me = tr("<math expression>");
     return tr_me;
@@ -149,19 +149,19 @@ shared_ptr<Item> Plugin::buildItem(const QString &query, const MathStructure &ms
 }
 
 std::variant<QStringList, MathStructure>
-Plugin::runQalculateLocked(const albert::Query *query, const EvaluationOptions &eo_)
+Plugin::runQalculateLocked(const Query &query, const EvaluationOptions &eo_)
 {
-    auto expression = qalc->unlocalizeExpression(query->string().toStdString(), eo.parse_options);
+    auto expression = qalc->unlocalizeExpression(query.string().toStdString(), eo.parse_options);
 
     qalc->startControl();
     MathStructure mstruct;
     qalc->calculate(&mstruct, expression, 0, eo_);
     for (; qalc->busy(); QThread::msleep(10))
-        if (!query->isValid())
+        if (!query.isValid())
             qalc->abort();
     qalc->stopControl();
 
-    if (!query->isValid())
+    if (!query.isValid())
         return QStringList();
 
     QStringList errors;
@@ -177,11 +177,11 @@ Plugin::runQalculateLocked(const albert::Query *query, const EvaluationOptions &
         return errors;
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
+vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
 {
     vector<RankItem> results;
 
-    auto trimmed = query->string().trimmed();
+    auto trimmed = query.string().trimmed();
     if (trimmed.isEmpty())
         return results;
 
@@ -189,7 +189,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
 
     auto ret = runQalculateLocked(query, eo);
 
-    if (!query->isValid())
+    if (!query.isValid())
         return results;
 
     try {
@@ -208,9 +208,9 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
     return results;
 }
 
-void Plugin::handleTriggerQuery(Query *query)
+void Plugin::handleTriggerQuery(Query &query)
 {
-    auto trimmed = query->string().trimmed();
+    auto trimmed = query.string().trimmed();
     if (trimmed.isEmpty())
         return;
 
@@ -223,18 +223,15 @@ void Plugin::handleTriggerQuery(Query *query)
 
     auto ret = runQalculateLocked(query, eo_);
 
-    if (!query->isValid())
-        return;
-
     try {
         auto mstruct = std::get<MathStructure>(ret);
-        query->add(buildItem(trimmed, mstruct));
+        query.add(buildItem(trimmed, mstruct));
     } catch (const std::bad_variant_access &) {
         try {
             auto errors = std::get<QStringList>(ret);
             static const auto tr_e = tr("Evaluation error.");
             static const auto tr_d = tr("Visit documentation");
-            query->add(
+            query.add(
                 StandardItem::make(
                     "qalc-err",
                     tr_e,

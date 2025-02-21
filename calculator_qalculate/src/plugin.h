@@ -17,15 +17,15 @@ public:
     Plugin();
 
     QString defaultTrigger() const override;
-    QString synopsis() const override;
-    void handleTriggerQuery(albert::Query*) override;
-    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) override;
+    QString synopsis(const QString &) const override;
+    void handleTriggerQuery(albert::Query &) override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query &) override;
     QWidget* buildConfigWidget() override;
 
 private:
 
     std::variant<QStringList, MathStructure>
-    runQalculateLocked(const albert::Query *query, const EvaluationOptions &eo) ;
+    runQalculateLocked(const albert::Query &, const EvaluationOptions &eo) ;
 
     std::shared_ptr<albert::Item> buildItem(const QString &query, const MathStructure &mstruct) const;
 
