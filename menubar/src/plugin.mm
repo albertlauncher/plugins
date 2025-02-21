@@ -399,7 +399,7 @@ bool Plugin::supportsFuzzyMatching() const { return true; }
 
 void Plugin::setFuzzyMatching(bool enabled) { d->fuzzy = enabled; }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
+vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
 {
     if (!AXIsProcessTrusted())
     {
@@ -417,7 +417,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
         __block vector<shared_ptr<MenuItem>> menu_items;
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
         dispatch_async(dispatch_get_main_queue(), ^{
-            menu_items = retrieveMenuBarItems(query->isValid());
+            menu_items = retrieveMenuBarItems(query.isValid());
             dispatch_semaphore_signal(semaphore);
         });
         dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);  // Wait for user
@@ -426,9 +426,9 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
     }
 
     vector<RankItem> results;
+    Matcher matcher(query.string(), {.fuzzy = d->fuzzy});
     for (const auto& item : d->menu_items)
-        if (auto m = Matcher(query->string(), {.fuzzy = d->fuzzy})
-                         .match(item->text(), item->pathString()); m)
+        if (auto m = matcher.match(item->text(), item->pathString()); m)
             results.emplace_back(item, m);
 
     return results;

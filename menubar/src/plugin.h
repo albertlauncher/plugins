@@ -14,7 +14,7 @@ public:
     QString defaultTrigger() const override;
     bool supportsFuzzyMatching() const override;
     void setFuzzyMatching(bool enabled) override;
-    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query *) override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query &) override;
 
     class Private;
     std::unique_ptr<Private> d;
