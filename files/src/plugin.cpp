@@ -7,10 +7,10 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSettings>
+#include <albert/albert.h>
 #include <albert/extensionregistry.h>
 #include <albert/logging.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("files")
 using namespace albert;
 using namespace std;
@@ -38,7 +38,6 @@ const char* INDEX_FILE_NAME = "file_index.json";
 applications::Plugin *apps;
 
 Plugin::Plugin():
-    apps(registry(), "applications"),
     homebrowser(fs_browsers_match_case_sensitive_,
                 fs_browsers_show_hidden_,
                 fs_browsers_sort_case_insensitive_,
@@ -54,8 +53,11 @@ Plugin::Plugin():
     connect(&fs_index_, &FsIndex::updatedFinished, this, &Plugin::updateIndexItems);
     connect(this, &Plugin::index_file_path_changed, this, &Plugin::updateIndexItems);
 
+    auto cache_path = cacheLocation();
+    tryCreateDirectory(cache_path);
+
     QJsonObject object;
-    if (QFile file(createOrThrow(cacheLocation()).filePath(INDEX_FILE_NAME)); file.open(QIODevice::ReadOnly))
+    if (QFile file(cache_path/INDEX_FILE_NAME); file.open(QIODevice::ReadOnly))
         object = QJsonDocument(QJsonDocument::fromJson(file.readAll())).object();
 
     auto s = settings();
@@ -93,16 +95,10 @@ Plugin::Plugin():
         {":app_icon"},
         {{"scan_files", tr("Scan"), [this](){ fs_index_.update(); }}}
     );
-
-    registry().registerExtension(&homebrowser);
-    registry().registerExtension(&rootbrowser);
 }
 
 Plugin::~Plugin()
 {
-    registry().deregisterExtension(&homebrowser);
-    registry().deregisterExtension(&rootbrowser);
-
     fs_index_.disconnect();
 
     auto s = settings();
@@ -130,6 +126,8 @@ Plugin::~Plugin()
     } else
         WARN << "Couldn't write to file:" << file.fileName();
 }
+
+vector<Extension*> Plugin::extensions() { return { this, &homebrowser, &rootbrowser }; }
 
 void Plugin::updateIndexItems()
 {

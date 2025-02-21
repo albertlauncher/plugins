@@ -26,6 +26,7 @@ public:
     Plugin();
     ~Plugin();
 
+    std::vector<albert::Extension*> extensions() override;
     QWidget *buildConfigWidget() override;
     void updateIndexItems() override;
 
@@ -35,7 +36,7 @@ public:
 
 private:
 
-    albert::StrongDependency<applications::Plugin> apps;
+    albert::StrongDependency<applications::Plugin> apps{"applications"};
     FsIndex fs_index_;
     std::shared_ptr<albert::Item> update_item;
     HomeBrowser homebrowser;

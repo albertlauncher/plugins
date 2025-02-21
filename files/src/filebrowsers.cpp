@@ -89,8 +89,8 @@ QString RootBrowser::description() const { return tr("Browse root directory by p
 
 QString RootBrowser::defaultTrigger() const { return "/"; }
 
-void RootBrowser::handleTriggerQuery(Query *query)
-{ return handle_(*query, QString("/%1").arg(query->string())); }
+void RootBrowser::handleTriggerQuery(Query &query)
+{ return handle_(query, QString("/%1").arg(query.string())); }
 
 
 // -------------------------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ QString HomeBrowser::description() const { return tr("Browse home directory by p
 
 QString HomeBrowser::defaultTrigger() const { return "~"; }
 
-void HomeBrowser::handleTriggerQuery(Query *query)
-{ return handle_(*query, QString("%1%2").arg(QDir::homePath(), query->string())); }
+void HomeBrowser::handleTriggerQuery(Query &query)
+{ return handle_(query, QString("%1%2").arg(QDir::homePath(), query.string())); }
 
 

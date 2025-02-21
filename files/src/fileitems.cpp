@@ -9,8 +9,8 @@
 #include <QMimeData>
 #include <QMimeDatabase>
 #include <QUrl>
+#include <albert/albert.h>
 #include <albert/plugin/applications.h>
-#include <albert/util.h>
 using namespace albert;
 using namespace std;
 
