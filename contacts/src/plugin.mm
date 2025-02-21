@@ -2,10 +2,10 @@
 
 #include "plugin.h"
 #include <Contacts/Contacts.h>
+#include <albert/albert.h>
 #include <albert/backgroundexecutor.h>
 #include <albert/item.h>
 #include <albert/logging.h>
-#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("contacts")
 using namespace albert;
 using namespace std;
