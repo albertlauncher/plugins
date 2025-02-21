@@ -4,8 +4,8 @@
 #include <QDir>
 #include <QFile>
 #include <QMessageBox>
+#include <albert/albert.h>
 #include <albert/logging.h>
-#include <albert/util.h>
 #include <pwd.h>
 #include <unistd.h>
 using namespace albert;

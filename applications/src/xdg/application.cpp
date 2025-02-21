@@ -3,7 +3,7 @@
 #include "application.h"
 #include "desktopentryparser.h"
 #include "plugin.h"
-#include <albert/util.h>
+#include <albert/albert.h>
 using namespace std;
 using namespace albert;
 
@@ -148,7 +148,7 @@ Application::Application(const QString &id, const QString &path, ParseOptions po
                         else if (exec.value().isEmpty())
                             throw runtime_error("Empty Exec value.");
                         else
-                            albert::runDetachedProcess(fieldCodesExpanded(exec.value(), QUrl()));
+                            runDetachedProcess(fieldCodesExpanded(exec.value(), QUrl()));
                     }
                 );
 
@@ -199,7 +199,7 @@ vector<Action> Application::actions() const
 
     actions.emplace_back("reveal-entry",
                          Plugin::tr("Open desktop entry"),
-                         [this](){ albert::openUrl(path_); });
+                         [this] { open(path_); });
 
     return actions;
 }
@@ -218,7 +218,7 @@ void Application::launchExec(const QStringList &exec, QUrl url, const QString &w
     if (term_)
         plugin->runTerminal(commandline, wd);
     else
-        albert::runDetachedProcess(commandline, wd);
+        runDetachedProcess(commandline, wd);
 }
 
 void Application::launch() const { launchExec(exec_, {}, {}); }

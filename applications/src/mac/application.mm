@@ -4,7 +4,7 @@
 #include <Cocoa/Cocoa.h>
 #include <QFileInfo>
 #include <albert/logging.h>
-#include <albert/util.h>
+#include <albert/albert.h>
 using namespace albert;
 using namespace std;
 #if  ! __has_feature(objc_arc)
