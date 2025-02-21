@@ -6,12 +6,12 @@
 //
 
 #include "plugin.h"
-#include <QUrl>
 #include <CoreServices/CoreServices.h>
 #include <Foundation/Foundation.h>
+#include <QUrl>
+#include <albert/albert.h>
 #include <albert/logging.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("dictionary")
 using namespace albert;
 using namespace std;
@@ -84,10 +84,10 @@ Plugin::Plugin():
 
 QString Plugin::defaultTrigger() const { return QStringLiteral("def "); }
 
-void Plugin::handleTriggerQuery(Query *query)
+void Plugin::handleTriggerQuery(Query &query)
 {
-    auto &&q_query = query->string();
-    auto ns_query = query->string().toNSString();
+    auto &&q_query = query.string();
+    auto ns_query = query.string().toNSString();
     auto cf_query = (__bridge CFStringRef)ns_query;
 
     for (NSObject *ns_object in (__bridge NSArray *)DCSGetActiveDictionaries())
@@ -108,7 +108,6 @@ void Plugin::handleTriggerQuery(Query *query)
             // }
             // auto definition = n2q((__bridge_transfer NSString *)
             //                       DCSCopyTextDefinition(dict, cf_query, range));
-
 
             if (auto *records = (__bridge_transfer NSArray *)
                 DCSCopyRecordsForSearchString(dict, cf_query, Exact, NULL); records)
@@ -153,8 +152,8 @@ void Plugin::handleTriggerQuery(Query *query)
                                              tr_.lookup_arg.arg(q_query),
                                              makeSearchFunc(q_query));
 
-                    query->add(StandardItem::make(
-                        id(), dict_name, text,icon_urls, ::move(actions)));
+                    query.add(StandardItem::make(
+                        id(), dict_name, text, icon_urls, ::move(actions)));
                 }
             }
         }
