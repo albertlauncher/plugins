@@ -43,5 +43,9 @@
         <source>Bluetooth</source>
         <translation></translation>
     </message>
+    <message>
+        <source>Open settings</source>
+        <translation></translation>
+    </message>
 </context>
 </TS>

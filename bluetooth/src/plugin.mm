@@ -7,7 +7,7 @@
 #include <albert/matcher.h>
 #include <albert/notification.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
+#include <albert/albert.h>
 ALBERT_LOGGING_CATEGORY("bluetooth")
 using namespace albert;
 using namespace std;
@@ -59,13 +59,13 @@ bool Plugin::supportsFuzzyMatching() const { return true; }
 
 void Plugin::setFuzzyMatching(bool val) { d->fuzzy = val; }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *q)
+vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
 {
     vector<RankItem> r;
 
     bool enabled = IOBluetoothPreferenceGetControllerPowerState();
 
-    Matcher matcher(q->string(), {.fuzzy = d->fuzzy});
+    Matcher matcher(query.string(), {.fuzzy = d->fuzzy});
 
     if (auto m = matcher.match(d->tr_bt))
     {
