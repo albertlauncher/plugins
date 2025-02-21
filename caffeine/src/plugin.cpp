@@ -68,8 +68,8 @@ Plugin::Plugin()
 
     timer.setSingleShot(true);
 
-    QObject::connect(&timer, &QTimer::timeout, [this]{ stop(); });
-    QObject::connect(&notification, &Notification::activated, [this]{ stop(); });
+    QObject::connect(&timer, &QTimer::timeout, this, [this]{ stop(); });
+    QObject::connect(&notification, &Notification::activated, this, [this]{ stop(); });
 
     notification.setTitle(name());
 }
@@ -92,28 +92,25 @@ QWidget* Plugin::buildConfigWidget()
     return w;
 }
 
-QString Plugin::synopsis() const { return tr("[h:]min"); }
+QString Plugin::synopsis(const QString &) const { return tr("[h:]min"); }
 
 void Plugin::setTrigger(const QString &t) { trigger = t; }
 
 QString Plugin::defaultTrigger() const { return tr("si ", "abbr of name()"); }
 
-void Plugin::handleTriggerQuery(Query *query){ query->add(makeItem(query->string())); }
+void Plugin::handleTriggerQuery(Query &query){ query.add(makeItem(query.string())); }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
+vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
 {
-    Matcher matcher(query->string());
     auto item = makeItem();
     vector<RankItem> r;
-    if (auto m = max({matcher.match(trigger),
-                      matcher.match(item->text()),  // name
-                      matcher.match(item->subtext())});  // action
-        m)
+    Matcher matcher(query.string());
+    if (auto m = matcher.match(trigger, item->text(), item->subtext()); m)
         r.emplace_back(item, m);
     return r;
 }
 
-vector<shared_ptr<Item>> Plugin::handleEmptyQuery(const Query *)
+vector<shared_ptr<Item>> Plugin::handleEmptyQuery()
 {
     vector<shared_ptr<Item>> results;
 

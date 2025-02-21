@@ -23,12 +23,12 @@ public:
 
     QWidget *buildConfigWidget() override;
 
-    QString synopsis() const override;
+    QString synopsis(const QString &) const override;
     void setTrigger(const QString&) override;
     QString defaultTrigger() const override;
-    void handleTriggerQuery(albert::Query *) override;
-    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query *) override;
-    std::vector<std::shared_ptr<albert::Item>> handleEmptyQuery(const albert::Query *) override;
+    void handleTriggerQuery(albert::Query &) override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query &) override;
+    std::vector<std::shared_ptr<albert::Item>> handleEmptyQuery() override;
 
 private:
     std::shared_ptr<albert::Item> makeItem(const QString &query_string = {});
