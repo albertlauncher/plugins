@@ -14,7 +14,7 @@ class Plugin : public albert::ExtensionPlugin,
 public:
 
     QString defaultTrigger() const override;
-    void handleTriggerQuery(albert::Query *) override;
+    void handleTriggerQuery(albert::Query &) override;
 
     QStringList icon_urls{":timezones"};
 
