@@ -1,12 +1,11 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #include "plugin.h"
-#include <QDesktopServices>
 #include <QFile>
 #include <QTextStream>
 #include <QUrl>
+#include <albert/albert.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
 using namespace albert;
 using namespace std;
 
@@ -19,10 +18,10 @@ Plugin::Plugin()
     std::sort(valid_tlds.begin(), valid_tlds.end());
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
+vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
 {
     vector<RankItem> results;
-    auto trimmed = query->string().trimmed();
+    auto trimmed = query.string().trimmed();
     auto url = QUrl::fromUserInput(trimmed);
 
     // Check syntax and TLD validity
@@ -50,7 +49,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
                 {
                     {
                         "open_url", tr("Open URL"),
-                        [url](){ openUrl(url); }
+                        [url](){ open(url); }
                     }
                 }
             ),

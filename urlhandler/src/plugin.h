@@ -12,7 +12,7 @@ class Plugin : public albert::ExtensionPlugin,
 public:
 
     Plugin();
-    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query &) override;
 
 private:
 
