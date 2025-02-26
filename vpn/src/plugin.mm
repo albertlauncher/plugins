@@ -4,10 +4,9 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <SystemConfiguration/SystemConfiguration.h>
+#include <albert/albert.h>
 #include <albert/logging.h>
-#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("vpn")
-using namespace albert::vpn;
 using namespace albert;
 using namespace std;
 

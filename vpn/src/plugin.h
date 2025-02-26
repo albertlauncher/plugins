@@ -5,9 +5,6 @@
 #include <albert/extensionplugin.h>
 #include <albert/indexqueryhandler.h>
 
-namespace albert::vpn
-{
-
 class Plugin : public albert::ExtensionPlugin,
                public albert::IndexQueryHandler
 {
@@ -15,5 +12,3 @@ class Plugin : public albert::ExtensionPlugin,
 public:
     void updateIndexItems() override;
 };
-
-}
