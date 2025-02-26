@@ -5,10 +5,10 @@
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QSettings>
+#include <albert/albert.h>
 #include <albert/extensionregistry.h>
 #include <albert/logging.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("system")
 using namespace albert;
 using namespace std;
