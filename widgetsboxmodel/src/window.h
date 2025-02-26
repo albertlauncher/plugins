@@ -7,10 +7,11 @@ namespace albert { class Query; }
 class ActionDelegate;
 class InputLine;
 class ItemDelegate;
-class QEvent;
 class Plugin;
+class QEvent;
 class QFrame;
 class ResizingList;
+class ResultItemsModel;
 class SettingsButton;
 
 class Window : public QWidget
@@ -20,6 +21,7 @@ class Window : public QWidget
 public:
 
     Window(Plugin *plugin);
+    ~Window();
 
     QString input() const;
     void setInput(const QString&);
@@ -84,6 +86,7 @@ private:
     ResizingList *actions_list;
     ItemDelegate *item_delegate;
     ActionDelegate *action_delegate;
+    std::unique_ptr<ResultItemsModel> results_model;
 
     QString theme_light_;
     QString theme_dark_;
@@ -107,6 +110,7 @@ signals:
     void visibleChanged(bool);
     void queryChanged();
     void queryMatchesAdded();
-    void queryFinished();
+    void queryStateBusy();
+    void queryStateIdle();
 };
 

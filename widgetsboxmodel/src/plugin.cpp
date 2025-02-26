@@ -2,6 +2,7 @@
 
 #include "plugin.h"
 #include "ui_configwidget.h"
+#include <albert/albert.h>
 #include <albert/extensionregistry.h>
 #include <albert/logging.h>
 ALBERT_LOGGING_CATEGORY("wbm")
@@ -13,13 +14,10 @@ Plugin::Plugin() : window(this), themes_query_handler(&window)
 {
     connect(&window, &Window::inputChanged, this, &Plugin::inputChanged);
     connect(&window, &Window::visibleChanged, this, &Plugin::visibleChanged);
-    registry().registerExtension(&themes_query_handler);
 }
 
-Plugin::~Plugin()
-{
-    registry().deregisterExtension(&themes_query_handler);
-}
+vector<Extension *> Plugin::extensions()
+{ return { &themes_query_handler }; }
 
 QString Plugin::input() const
 { return window.input(); }

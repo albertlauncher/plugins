@@ -2,11 +2,11 @@
 
 #include "themesqueryhandler.h"
 #include "window.h"
+#include <albert/albert.h>
+#include <albert/matcher.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
 using namespace albert;
 using namespace std;
-
 
 ThemesQueryHandler::ThemesQueryHandler(Window *w) : window(w) {}
 
@@ -21,40 +21,36 @@ QString ThemesQueryHandler::description() const
 
 QString ThemesQueryHandler::defaultTrigger() const { return "theme "; }
 
-void ThemesQueryHandler::handleTriggerQuery(Query *query)
+void ThemesQueryHandler::handleTriggerQuery(Query &query)
 {
-    auto trimmed = query->string().trimmed();
+    Matcher matcher(query);
+
     for (const auto &[name, path] : window->themes)
-    {
-        if (name.contains(trimmed, Qt::CaseInsensitive))
-        {
-            query->add(
+        if (auto m = matcher.match(name); m)
+            query.add(
                 StandardItem::make(
                     QString("theme_%1").arg(name),
                     name,
                     path,
-                    {":app_icon"},
+                    {QStringLiteral("gen:?&text=🎨&fontscalar=0.7")},
                     {
                         {
                             "apply", Window::tr("Apply theme"),
-                            [w=window, n=name](){ w->applyThemeFile(w->themes.at(n)); }
+                            [w=window, n=name]{ w->applyThemeFile(w->themes.at(n)); }
                         },
                         {
                             "setlight", Window::tr("Use in light mode"),
-                            [w=window, n=name](){ w->setLightTheme(n); }
+                            [w=window, n=name]{ w->setLightTheme(n); }
                         },
                         {
                             "setdark", Window::tr("Use in dark mode"),
-                            [w=window, n=name](){ w->setDarkTheme(n); }
+                            [w=window, n=name]{ w->setDarkTheme(n); }
                         },
                         {
                             "open", Window::tr("Open theme file"),
-                            [p=path](){ openUrl("file://" + p); }
+                            [p=path]{ open(p); }
                         }
                     }
                 )
             );
-        }
-    }
 }
-

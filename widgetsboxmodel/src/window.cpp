@@ -5,6 +5,7 @@
 #include "itemdelegate.h"
 #include "plugin.h"
 #include "resizinglist.h"
+#include "resultitemmodel.h"
 #include "settingsbutton.h"
 #include "window.h"
 #include <QApplication>
@@ -28,11 +29,11 @@
 #include <QStyleFactory>
 #include <QTimer>
 #include <QWindow>
+#include <albert/albert.h>
 #include <albert/logging.h>
 #include <albert/pluginloader.h>
 #include <albert/pluginmetadata.h>
 #include <albert/query.h>
-#include <albert/util.h>
 using namespace albert;
 using namespace std;
 
@@ -242,6 +243,8 @@ Window::Window(Plugin *p):
     init_statemachine();
 }
 
+Window::~Window() = default;
+
 void Window::init_statemachine()
 {
     //
@@ -328,15 +331,19 @@ void Window::init_statemachine()
     setTransition(s_settings_button_hidden, s_settings_button_shown,
                   new QSignalTransition(this, &Window::queryChanged));
 
+    setTransition(s_settings_button_hidden, s_settings_button_shown,
+                  new QSignalTransition(this, &Window::queryStateBusy));
+
 
     // settingsbutton visible ->
 
     setTransition(s_settings_button_shown, s_settings_button_hidden,
                   new ConditionalEventTransition(settings_button, QEvent::Type::Leave,
-                                                 [this]{ return !current_query || current_query->isFinished(); }));
+                                                 [this]{ return !current_query
+                                                                || !current_query->isActive(); }));
 
     setTransition(s_settings_button_shown, s_settings_button_hidden,
-                  new ConditionalSignalTransition(this, &Window::queryFinished,
+                  new ConditionalSignalTransition(this, &Window::queryStateIdle,
                                                   [this]{ return !settings_button->underMouse(); }));
 
 
@@ -358,11 +365,11 @@ void Window::init_statemachine()
 
     setTransition(s_results_hidden, s_results_fallbacks,
                   new ConditionalKeyEventTransition(input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
-                                                    [this]{ return current_query->fallbacks()->rowCount() > 0; }));
+                                                    [this]{ return current_query->fallbacks().size() > 0; }));
 
     setTransition(s_results_hidden, s_results_fallbacks,
-                  new ConditionalSignalTransition(this, &Window::queryFinished,
-                                                  [this]{ return current_query->fallbacks()->rowCount() > 0
+                  new ConditionalSignalTransition(this, &Window::queryStateIdle,
+                                                  [this]{ return current_query->fallbacks().size() > 0
                                                                  && !current_query->isTriggered(); }));
 
 
@@ -375,13 +382,13 @@ void Window::init_statemachine()
                   new QSignalTransition(display_delay_timer, &QTimer::timeout));
 
     setTransition(s_results_disabled, s_results_hidden,
-                  new ConditionalSignalTransition(this, &Window::queryFinished,
-                                                  [this]{ return current_query->fallbacks()->rowCount() == 0
+                  new ConditionalSignalTransition(this, &Window::queryStateIdle,
+                                                  [this]{ return current_query->fallbacks().size() == 0
                                                                  || current_query->isTriggered(); }));
 
     setTransition(s_results_disabled, s_results_fallbacks,
-                  new ConditionalSignalTransition(this, &Window::queryFinished,
-                                                  [this]{ return current_query->fallbacks()->rowCount() > 0
+                  new ConditionalSignalTransition(this, &Window::queryStateIdle,
+                                                  [this]{ return current_query->fallbacks().size() > 0
                                                                  && !current_query->isTriggered(); }));
 
 
@@ -394,7 +401,7 @@ void Window::init_statemachine()
 
     setTransition(s_results_matches, s_results_fallbacks,
                   new ConditionalKeyEventTransition(input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
-                                                    [this]{ return current_query->fallbacks()->rowCount() > 0; }));
+                                                    [this]{ return current_query->fallbacks().size() > 0; }));
 
 
     // fallbacks ->
@@ -406,12 +413,12 @@ void Window::init_statemachine()
 
     setTransition(s_results_fallbacks, s_results_hidden,
                   new ConditionalKeyEventTransition(input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
-                                                    [this]{ return current_query->matches()->rowCount() == 0
-                                                                   && !current_query->isFinished(); }));
+                                                    [this]{ return current_query->matches().size() == 0
+                                                                   && current_query->isActive(); }));
 
     setTransition(s_results_fallbacks, s_results_matches,
                   new ConditionalKeyEventTransition(input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
-                                                    [this]{ return current_query->matches()->rowCount() > 0; }));
+                                                    [this]{ return current_query->matches().size() > 0; }));
 
 
     // Actions
@@ -487,7 +494,9 @@ void Window::init_statemachine()
     });
 
     QObject::connect(s_results_matches, &QState::entered, this, [this]{
-        auto *m = current_query->matches();
+
+        results_model = make_unique<MatchItemsModel>(*current_query);
+        auto *m = results_model.get();
 
         auto *sm = results_list->selectionModel();
         results_list->setModel(m);
@@ -516,15 +525,12 @@ void Window::init_statemachine()
     });
 
     QObject::connect(s_results_fallbacks, &QState::entered, this, [this]{
-        // Needed because fallback model may already be set
-        if (auto *m = current_query->fallbacks();
-            m != results_list->model())
-        {
-            auto *sm = results_list->selectionModel();
-            results_list->setModel(m);
-            delete sm;
-            results_list->setCurrentIndex(m->index(0, 0)); // should be okay since this state requires rc>0
-        }
+        results_model = make_unique<FallbackItemsModel>(*current_query);
+        auto *m = results_model.get();
+        auto *sm = results_list->selectionModel();
+        results_list->setModel(m);
+        delete sm;
+        results_list->setCurrentIndex(m->index(0, 0)); // should be okay since this state requires rc>0
 
         // Eventfilters are processed in reverse order
         input_line->removeEventFilter(this);
@@ -625,11 +631,18 @@ void Window::setQuery(Query *q)
 
     if(q)
     {
+        input_line->setTriggerLength(q->trigger().length());
+        // if (q->string().isEmpty())
         if (q->isTriggered() && q->string().isEmpty())
             input_line->setInputHint(q->synopsis());
-        input_line->setTriggerLength(q->trigger().length());
-        connect(q->matches(), &QAbstractItemModel::rowsInserted, this, &Window::queryMatchesAdded);
-        connect(q, &Query::finished, this, &Window::queryFinished);
+
+        connect(current_query, &Query::matchesAdded,
+                this, &Window::queryMatchesAdded);
+
+        connect(current_query, &Query::activeChanged,
+                this, [this](bool active){
+                    active ? emit queryStateBusy() : emit queryStateIdle();
+                });
     }
 }
 

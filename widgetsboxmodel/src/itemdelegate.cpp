@@ -1,6 +1,7 @@
 // Copyright (c) 2014-2024 Manuel Schneider
 
 #include "itemdelegate.h"
+#include "resultitemmodel.h"
 #include <QPainter>
 #include <QPixmapCache>
 #include <albert/frontend.h>
@@ -50,7 +51,7 @@ void ItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options,
 
     // Get the icon
     QPixmap pm;
-    auto icon_urls = index.data(static_cast<int>(albert::ItemRoles::IconUrlsRole)).value<QStringList>();
+    auto icon_urls = index.data(static_cast<int>(ItemRoles::IconUrlsRole)).value<QStringList>();
     auto icon_size = option.decorationSize.height();
     const auto icon_cache_key = QString("albert$%1%2x%3")
                                     .arg(icon_urls.join(""))
@@ -85,7 +86,7 @@ void ItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options,
     QRect subTextRect = contentRect.adjusted(0,fontMetrics1.height()-2,0,-2);
 
     // Draw item text
-    QString text = fontMetrics1.elidedText(index.data((int)albert::ItemRoles::TextRole).toString(),
+    QString text = fontMetrics1.elidedText(index.data((int)ItemRoles::TextRole).toString(),
                                            option.textElideMode, textRect.width());
     painter->setFont(font1);
     option.widget->style()->drawItemText(painter,
@@ -97,7 +98,7 @@ void ItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options,
                                          (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::WindowText);
 
     // Draw item subtext
-    text = fontMetrics2.elidedText(index.data((int)albert::ItemRoles::SubTextRole).toString(),
+    text = fontMetrics2.elidedText(index.data((int)ItemRoles::SubTextRole).toString(),
                                    option.textElideMode, subTextRect.width());
     painter->setFont(font2);
     option.widget->style()->drawItemText(painter,
@@ -106,7 +107,7 @@ void ItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &options,
                                          option.palette,
                                          option.state & QStyle::State_Enabled,
                                          text,
-                                         (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::WindowText);
+                                         (option.state & QStyle::State_Selected) ? QPalette::HighlightedText : QPalette::PlaceholderText);
 
 
     //    // Test

@@ -16,7 +16,8 @@ class Plugin : public albert::Frontend,
 public:
 
     Plugin();
-    ~Plugin();
+
+    std::vector<albert::Extension*> extensions() override;
 
     bool isVisible() const override;
     void setVisible(bool visible) override;

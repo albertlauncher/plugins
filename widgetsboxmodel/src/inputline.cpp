@@ -4,8 +4,11 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QStyleOptionFrame>
+#include <albert/albert.h>
 
-InputLine::InputLine(QWidget *parent) : QLineEdit(parent)
+InputLine::InputLine(QWidget *parent):
+    QLineEdit(parent),
+    history_((albert::dataLocation() / "albert.history").c_str())
 {
     connect(this, &QLineEdit::textEdited, this, [this]{
         history_.resetIterator();

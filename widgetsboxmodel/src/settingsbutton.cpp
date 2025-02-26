@@ -7,7 +7,7 @@
 #include <QPropertyAnimation>
 #include <QStyleOptionButton>
 #include <QtSvg/QSvgRenderer>
-#include <albert/util.h>
+#include <albert/albert.h>
 
 
 SettingsButton::SettingsButton(QWidget *parent) : QPushButton(parent)
