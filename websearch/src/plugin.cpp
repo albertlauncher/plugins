@@ -1,19 +1,17 @@
 // Copyright (c) 2022-2023 Manuel Schneider
 
-
 #include "configwidget.h"
 #include "plugin.h"
-#include <QDesktopServices>
 #include <QDir>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QUrl>
+#include <albert/albert.h>
 #include <albert/logging.h>
 #include <albert/matcher.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
 #include <array>
 #include <vector>
 ALBERT_LOGGING_CATEGORY("websearch")
@@ -81,9 +79,10 @@ static vector<SearchEngine> deserializeEngines(const QByteArray &json)
 
 Plugin::Plugin()
 {
-    createOrThrow(dataLocation());
-    auto config_dir = createOrThrow(configLocation());
-    QFile f(config_dir.filePath(ENGINES_FILE_NAME));
+    tryCreateDirectory(dataLocation());
+    tryCreateDirectory(configLocation());
+
+    QFile f(QDir(configLocation()).filePath(ENGINES_FILE_NAME));
     if (f.open(QIODevice::ReadOnly))
         setEngines(deserializeEngines(f.readAll()));
     else
@@ -147,7 +146,7 @@ static shared_ptr<StandardItem> buildItem(const SearchEngine &se, const QString 
     );
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
+vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
 {
     vector<RankItem> results;
 
@@ -161,12 +160,12 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
         for (const auto &s : S)
         {
             auto keyword = QStringLiteral("%1 ").arg(s.toLower());
-            auto prefix = query->string().toLower().left(keyword.size());
+            auto prefix = query.string().toLower().left(keyword.size());
             Matcher matcher(prefix, {});
             Match m = matcher.match(keyword);
             if (m)
             {
-                results.emplace_back(buildItem(e, query->string().mid(prefix.size())), m);
+                results.emplace_back(buildItem(e, query.string().mid(prefix.size())), m);
                 // max one of these icons, assumption: following cant yield higher scores (*)
                 break;
             }
