@@ -2,10 +2,12 @@
 
 #pragma once
 
+#include <pybind11/stl/filesystem.h>  // for automatic path conversion
 #include "cast_specialization.hpp" // Has to be imported first
 #include "trampolineclasses.hpp" // Has to be imported first
 
 #include <QDir>
+#include <albert/albert.h>
 #include <albert/indexqueryhandler.h>
 #include <albert/logging.h>
 #include <albert/matcher.h>
@@ -13,7 +15,6 @@
 #include <albert/plugin/applications.h>
 #include <albert/plugininstance.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
 using namespace albert;
 using namespace std;
 extern applications::Plugin *apps;
@@ -77,17 +78,15 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
             PluginInstance, PyPI,
             unique_ptr<PluginInstance, TrampolineDeleter<PluginInstance, PyPI>>
             >(m, "PluginInstance")
-        .def(py::init<vector<Extension*>>(), py::arg("extensions") = vector<Extension*>{})
-        .def_property_readonly("id", [](PyPI *self){ return self->loader().metaData().id; })
-        .def_property_readonly("name", [](PyPI *self){ return self->loader().metaData().name; })
-        .def_property_readonly("description", [](PyPI *self){ return self->loader().metaData().description; })
-        .def_property_readonly("cacheLocation", [](PyPI *self){ return self->pathlibCachePath(); })
-        .def_property_readonly("configLocation", [](PyPI *self){ return self->pathlibConfigPath(); })
-        .def_property_readonly("dataLocation", [](PyPI *self){ return self->pathlibDataPath(); })
+        .def(py::init<>())
+        .def("id", [](PyPI *self){ return self->loader().metaData().id; })
+        .def("name", [](PyPI *self){ return self->loader().metaData().name; })
+        .def("description", [](PyPI *self){ return self->loader().metaData().description; })
+        .def("cacheLocation", &PluginInstance::cacheLocation)
+        .def("configLocation", &PluginInstance::configLocation)
+        .def("dataLocation", &PluginInstance::dataLocation)
         .def("readConfig", [](PyPI *self, QString key, py::object type){ return self->readConfig(key, type); })
         .def("writeConfig", [](PyPI *self, QString key, py::object value){ self->writeConfig(key, value); })
-        .def("registerExtension", [](PyPI *self, Extension *e){ self->registerExtension(e); })
-        .def("deregisterExtension", [](PyPI *self, Extension *e){ self->deregisterExtension(e); })
         ;
 
     // ------------------------------------------------------------------------
@@ -104,12 +103,12 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
 
     py::class_<Item, PyItemTrampoline, shared_ptr<Item>>(m, "Item")
         .def(py::init<>())
-        .def_property_readonly("id", &Item::id)
-        .def_property_readonly("text", &Item::text)
-        .def_property_readonly("subtext", &Item::subtext)
-        .def_property_readonly("inputActionText", &Item::inputActionText)
-        .def_property_readonly("iconUrls", &Item::iconUrls)
-        .def_property_readonly("actions", &Item::actions)
+        .def("id", &Item::id)
+        .def("text", &Item::text)
+        .def("subtext", &Item::subtext)
+        .def("inputActionText", &Item::inputActionText)
+        .def("iconUrls", &Item::iconUrls)
+        .def("actions", &Item::actions)
         ;
 
     py::class_<StandardItem, Item, shared_ptr<StandardItem>>(m, "StandardItem")
@@ -136,6 +135,38 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
         .def("add", py::overload_cast<const vector<shared_ptr<Item>> &>(&Query::add))
         ;
 
+    py::class_<MatchConfig>(m, "MatchConfig")
+        .def(py::init<>())
+        .def(py::init([](bool f, bool c, bool o, bool d, const QString &r) {
+                 return MatchConfig{
+                     .fuzzy=f,
+                     .ignore_case=c,
+                     .ignore_word_order=o,
+                     .ignore_diacritics=d,
+                     .separator_regex=r.isEmpty() ? default_separator_regex : QRegularExpression(r)
+                 };
+             }),
+            py::arg("fuzzy") = false,
+            py::arg("ignore_case") = true,
+            py::arg("ignore_word_order") = true,
+            py::arg("ignore_diacritics") = true,
+            py::arg("separator_regex") = QString())
+        .def_readwrite("fuzzy", &MatchConfig::fuzzy)
+        .def_readwrite("ignore_case", &MatchConfig::ignore_case)
+        .def_readwrite("ignore_word_order", &MatchConfig::ignore_word_order)
+        .def_readwrite("ignore_diacritics", &MatchConfig::ignore_diacritics)
+        .def_property("separator_regex",
+                      [](const MatchConfig &self){ return self.separator_regex.pattern(); },
+                      [](MatchConfig &self, const QString &pattern){ self.separator_regex.setPattern(pattern); })
+        ;
+
+    py::class_<Matcher>(m, "Matcher")
+        .def(py::init<QString, MatchConfig>(), py::arg("string"), py::arg("config") = MatchConfig())
+        .def("match", static_cast<Match(Matcher::*)(const QString&) const>(&Matcher::match))
+        .def("match", static_cast<Match(Matcher::*)(const QStringList&) const>(&Matcher::match))
+        .def("match", [](Matcher *self, py::args args){ return self->match(py::cast<QStringList>(args)); });
+        ;
+
     py::class_<Match>(m, "Match")
         .def("__bool__", &Match::operator bool)
         .def("isMatch", &Match::isMatch)
@@ -144,34 +175,12 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
         .def_property_readonly("score", &Match::score)
         ;
 
-    py::class_<Matcher>(m, "Matcher")
-        .def(py::init<const QString&>())
-        .def("match", static_cast<Match(Matcher::*)(const QString&) const>(&Matcher::match))
-        .def("match", static_cast<Match(Matcher::*)(const QStringList&) const>(&Matcher::match))
-        .def("match", [](Matcher *self, py::args args){ return self->match(py::cast<QStringList>(args)); });
-        ;
-
     // ------------------------------------------------------------------------
 
     py::class_<
             Extension, PyE<>,
             unique_ptr<Extension, py::nodelete>
             >(m, "Extension")
-        .def_property_readonly("id", &Extension::id)
-        .def_property_readonly("name", &Extension::name)
-        .def_property_readonly("description", &Extension::description)
-        ;
-
-    // ------------------------------------------------------------------------
-
-    py::class_<
-            FallbackHandler, Extension, PyFQH<>,
-            unique_ptr<FallbackHandler, TrampolineDeleter<FallbackHandler, PyFQH<>>>
-            >(m, "FallbackHandler")
-        .def(py::init_alias<const QString&, const QString&, const QString&>(),
-             py::arg("id"),
-             py::arg("name"),
-             py::arg("description"))
         ;
 
     // ------------------------------------------------------------------------
@@ -180,18 +189,7 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
             TriggerQueryHandler, Extension, PyTQH<>,
             unique_ptr<TriggerQueryHandler, TrampolineDeleter<TriggerQueryHandler, PyTQH<>>>
             >(m, "TriggerQueryHandler")
-        .def(py::init_alias<const QString&, const QString&, const QString&, const QString&, const QString&, bool, bool>(),
-             py::arg("id"),
-             py::arg("name"),
-             py::arg("description"),
-             py::arg("synopsis") = QString(),
-             py::arg("defaultTrigger") = QString(),
-             py::arg("allowTriggerRemap") = true,
-             py::arg("supportsFuzzyMatching") = false)
-        .def_property_readonly("synopsis", &TriggerQueryHandler::synopsis)
-        .def_property_readonly("defaultTrigger", &TriggerQueryHandler::defaultTrigger)
-        .def_property_readonly("allowTriggerRemap", &TriggerQueryHandler::allowTriggerRemap)
-        .def_property_readonly("supportsFuzzyMatching", &TriggerQueryHandler::supportsFuzzyMatching)
+        .def(py::init<>())
         .def("handleTriggerQuery", &TriggerQueryHandler::handleTriggerQuery, py::arg("query"))
         ;
 
@@ -207,14 +205,7 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
             GlobalQueryHandler, TriggerQueryHandler, PyGQH<>,
             unique_ptr<GlobalQueryHandler, TrampolineDeleter<GlobalQueryHandler, PyGQH<>>>
             >(m, "GlobalQueryHandler")
-        .def(py::init_alias<const QString&, const QString&, const QString&, const QString&, const QString&, bool, bool>(),
-             py::arg("id"),
-             py::arg("name"),
-             py::arg("description"),
-             py::arg("synopsis") = QString(),
-             py::arg("defaultTrigger") = QString(),
-             py::arg("allowTriggerRemap") = true,
-             py::arg("supportsFuzzyMatching") = false)
+        .def(py::init<>())
         .def("applyUsageScore", &GlobalQueryHandler::applyUsageScore)
         .def("handleGlobalQuery", &GlobalQueryHandler::handleGlobalQuery, py::arg("query"))
         ;
@@ -231,64 +222,36 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
             IndexQueryHandler, GlobalQueryHandler, PyIQH<>,
             unique_ptr<IndexQueryHandler, TrampolineDeleter<IndexQueryHandler, PyIQH<>>>
             >(m, "IndexQueryHandler")
-        .def(py::init_alias<const QString&, const QString&, const QString&, const QString&, const QString&, bool>(),
-             py::arg("id"),
-             py::arg("name"),
-             py::arg("description"),
-             py::arg("synopsis") = QString(),
-             py::arg("defaultTrigger") = QString(),
-             py::arg("allowTriggerRemap") = true)
+        .def(py::init<>())
         .def("updateIndexItems", &IndexQueryHandler::updateIndexItems)
         .def("setIndexItems", &IndexQueryHandler::setIndexItems, py::arg("indexItems"))
         ;
 
+    //------------------------------------------------------------------------
+
+    py::class_<
+            FallbackHandler, Extension, PyFQH<>,
+            unique_ptr<FallbackHandler, TrampolineDeleter<FallbackHandler, PyFQH<>>>
+            >(m, "FallbackHandler")
+        .def(py::init<>())
+        .def("fallbacks", &FallbackHandler::fallbacks)
+        ;
+
     // ------------------------------------------------------------------------
 
-    m.def("setClipboardText", &setClipboardText,
-          py::arg("text") = QString());
-
+    m.def("setClipboardText", &setClipboardText, py::arg("text"));
+    m.def("setClipboardTextAndPaste", &setClipboardTextAndPaste, py::arg("text"));
     m.def("havePasteSupport", &havePasteSupport);
 
-    m.def("setClipboardTextAndPaste", &setClipboardTextAndPaste,
-          py::arg("text") = QString());
-
-    m.def("openUrl", static_cast<void(*)(const QString &)>(&openUrl),
-          py::arg("url") = QString());
+    // open conflicsts the built-in open. Use openFile.
+    m.def("openFile", static_cast<void(*)(const QString &)>(&open), py::arg("path"));
+    m.def("openUrl", &openUrl, py::arg("url"));
 
     m.def("runDetachedProcess", &runDetachedProcess,
-          py::arg("cmdln") = QStringList(),
+          py::arg("cmdln"),
           py::arg("workdir") = QString());
 
-    auto runTerminal = [](const QString &s, const QString &w, bool c){
-
-        // TODO Remove in v3.0
-
-        QString script;
-
-        if (!w.isEmpty())
-        {
-            WARN << "Parameter `workdir` is deprecated and will be removed in v3.0."
-                 << "Prepend `cd <workdir>;` to your script";
-            script = QString("cd %1; ").arg(w);
-        }
-
-        script.append(s);
-
-        if (c)
-        {
-            WARN << "Parameter `close_on_exit` is deprecated and will be removed in v3.0."
-                 << "Append `exec $SHELL;` to your script.";
-            script.append(QString(" ; exec $SHELL"));
-        }
-
-        apps->runTerminal(script);
-
-    };
-
-    m.def("runTerminal", runTerminal,
-          py::arg("script") = QString(),
-          py::arg("workdir") = QString(),
-          py::arg("close_on_exit") = false);
+    m.def("runTerminal", [](const QString &s){ apps->runTerminal(s); }, py::arg("script"));
 
     py::class_<Notification>(m, "Notification")
         .def(py::init<const QString&, const QString&>(),

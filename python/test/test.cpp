@@ -1,252 +1,578 @@
-//// Copyright (c) 2022 Manuel Schneider
+//// Copyright (c) 2022-2024 Manuel Schneider
 
-//#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-//#define DOCTEST_CONFIG_COLORS_ANSI
-//#include "doctest/doctest.h"
-//#include "cast_specialization.h"
-//#include "../../src/pluginregistry.h"
-//#include "albert/extension/queryhandler/triggerqueryhandler.h"
-//#include "pypluginloader.h"
-//#include <QDebug>
-//#include <QFile>
-//#include <QFileInfo>
-//#include <QString>
-//#include <QTextStream>
-//#include <exception>
-//using namespace albert;
-//using namespace std;
+#include "cast_specialization.hpp"
 
-//static void writeFile(const QFileInfo& fileinfo, const QString& content) {
-//    QFile file(fileinfo.filePath());
-//    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-//        // Failed to open the file. Handle the error here.
-//        qDebug() << "Failed to open the file for writing:" << file.errorString();
-//        return;
-//    }
-//    QTextStream out(&file);
-//    out << content;
-//    file.close();
-//}
+#include "albert/query.h"
+#include "albert/indexqueryhandler.h"
+#include "albert/fallbackhandler.h"
+#include "albert/action.h"
+#include "albert/item.h"
+#include "albert/matcher.h"
+#include "test.h"
+#include <QTest>
+using namespace albert;
+using namespace std;
+QTEST_APPLESS_MAIN(PythonTests)
 
 
-////class PluginLoaderMock : public albert::PluginLoader
-////{
-////    PluginMetaData metadata;
-////public:
-////    PluginLoaderMock() :  PluginLoader("") {
-////        metadata.id = "test";
-////    }
-////    virtual const PluginProvider &provider() const;
-////    virtual const PluginMetaData &metaData() const { return metadata; }
-////    virtual PluginInstance *instance() const { return {}; }
-////    virtual QString load() { return {}; }
-////    virtual QString unload() { return {}; }
-////} pluginLoaderMock;
+// Mock a test query class
+class MockQuery : public Query
+{
+public:
+    MockQuery(Extension &handler) : handler_(handler) {}
+
+    Extension &handler_;
+    bool valid_ = true;
+    vector<ResultItem> matches_;
+    vector<ResultItem> fallbacks_;
+
+    QString synopsis() const override { return "t"; }
+    QString trigger() const override { return "t"; }
+    QString string() const override { return "x"; }
+    bool isActive() const override { return false; }
+    bool isFinished() const override { return false; }
+    const bool &isValid() const override { return valid_; }
+    bool isTriggered() const override { return true; }
+    const vector<ResultItem> &matches() override { return matches_; }
+    const vector<ResultItem> &fallbacks() override { return fallbacks_; }
+    bool activateMatch(uint, uint) override { return false; }
+    bool activateFallback(uint, uint) override { return false; }
+
+    void add(const shared_ptr<Item> &item) override
+    {
+        matches_.emplace_back(handler_, item);
+    }
+
+    void add(shared_ptr<Item> &&item) override
+    {
+        matches_.emplace_back(handler_, ::move(item));
+    }
+
+    void add(const vector<shared_ptr<Item>> &items) override
+    {
+        for (const auto &item : items)
+            matches_.emplace_back(handler_, item);
+    }
+
+    void add(vector<shared_ptr<Item>> &&items) override
+    {
+        for (auto &item : items)
+            matches_.emplace_back(handler_, ::move(item));
+    }
+};
 
 
-////class PluginProviderMock : public PluginProvider {
-////    QString id() const override  { return {}; }
-////    QString name() const override { return {}; }
-////    QString description() const override { return {}; }
-////    virtual std::vector<PluginLoader*> plugins() override { return {&pluginLoaderMock}; }
-////} pluginProviderMock;
 
-////const PluginProvider &PluginLoaderMock::provider() const { return pluginProviderMock; }
+void PythonTests::initTestCase()
+{
+    PyConfig config;
+    PyConfig_InitIsolatedConfig(&config);
+    if (auto status = Py_InitializeFromConfig(&config); PyStatus_Exception(status))
+        throw runtime_error(QString("Failed initializing the interpreter: %1 %2")
+                                .arg(status.func, status.err_msg).toStdString());
 
+    PyConfig_Clear(&config);
 
-//TEST_CASE("Plugin instance")
-//{
-//    ExtensionRegistry extension_registry;
-//    PluginRegistry plugin_registry{extension_registry};
-//    Plugin test_plugin;
+    // Dont. Registry does not exist in the test environment.
+    // new Plugin();
 
+    py::exec(R"(
+import albert
 
+class TQH(albert.TriggerQueryHandler):
 
-//    QFileInfo fileinfo("test.py");
-//    QString plugin_content = R"(
-//from albert import *
-//md_iid = '2.0'
-//md_version = "0.0"
-//md_name = "testname"
-//md_description = "testdescription"
+    def handleTriggerQuery(self, query):
+        if stripped := query.string.strip():
+            query.add(Plugin.createItem(stripped))
 
-//class Plugin(PluginInstance, TriggerQueryHandler):
-//    def __init__(self):
-//        PluginInstance.__init__(self)
-//        TriggerQueryHandler.__init__(
-//            self,
-//            id=md_id,
-//            name=md_name,
-//            description=md_description,
-//            defaultTrigger='testtrigger',
-//            synopsis='testsynopsis'
-//        )
+class GQH(albert.GlobalQueryHandler):
 
-//    def handleTriggerQuery(self, query):
-//        pass
-//)";
+    def handleGlobalQuery(self, query):
+        return []
 
-//    writeFile(fileinfo, plugin_content);
+class IQH(albert.IndexQueryHandler):
+    pass
 
-//    PyPluginLoader loader(*mock_plugin, QFileInfo("test.py"));
-//    auto err = loader.load();
-//    qCritical() << err;
-//    CHECK(err.isNull());
+class FQH(albert.FallbackHandler):
 
-//    auto &plugin = *loader.instance();
-//    CHECK(&plugin != nullptr);
-//    CHECK(plugin.id() == "test");
-//    CHECK(plugin.name() == "testname");
-//    CHECK(plugin.description() == "testdescription");
+    def fallbacks(self, s):
+        return [Plugin.createItem(s)] if s else []
 
-////    auto tqh = dynamic_cast<TriggerQueryHandler*>(plugin.extensions()[0]);
+class Plugin(albert.PluginInstance):
 
-//}
+    def __init__(self):
+        super().__init__(self)
 
-////TEST_CASE("Benchmark new levenshtein")
-////{
-//////    int test_count = 100000;
-//////
-//////    srand((unsigned)time(NULL) * getpid());
-//////
-//////    vector<QString> strings(test_count);
-//////    auto lens = {4,8,16,24};
-//////    auto divisor=4;
-//////    cout << "Randoms"<<endl;
-//////    for (int len : lens){
-//////        int k = floor(len/divisor);
-//////        cout << "len: "<< setw(2)<<len<<". k: "<<k<<" ";
-//////        for (auto &string : strings)
-//////            string = QString::fromStdString(gen_random(len));
-//////        levenshtein_compare_benchmarks_and_check_results(strings, k);
-//////    }
-//////
-//////    cout << "Equals"<<endl;
-//////    for (int len : lens) {
-//////        int k = floor(len/divisor);
-//////        cout << "len: "<< setw(2)<<len<<". k: "<<k<<" ";
-//////        for (auto &string : strings)
-//////            string = QString(len, 'a');
-//////        levenshtein_compare_benchmarks_and_check_results(strings, k);
-//////    }
-//////
-//////    cout << "Halfhalf equal random"<<endl;
-//////    for (int len : lens) {
-//////        int k = floor(len/divisor);
-//////        cout << "len: "<< setw(2)<<len<<". k: "<<k<<" ";
-//////        for (auto &string : strings)
-//////            string = QString("%1%2").arg(QString(len/2, 'a'), QString::fromStdString(gen_random(len/2)));
-//////        levenshtein_compare_benchmarks_and_check_results(strings, k);
-//////    }
-////}
+    def extensions(self):
+        return [self.tqh, self.gqh, self.iqh, self.fqh]
+)");
 
+}
 
-////TEST_CASE("Levenshtein")
-////{
-////    Levenshtein l;
+void PythonTests::testAction()
+{
+    py::exec(R"(
+import albert
 
-////    CHECK(l.computePrefixEditDistanceWithLimit("abcdefg", "ab_efghij", 0) == 1);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abcdefg", "ab_efghij", 2) == 2);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abcdefg", "ab_efgh", 2) == 2);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abcde__h", "abcdefghij", 1) == 2);
+test_action_variable = 0
 
-////    // plain
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "test", 0) == 0);
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "test", 1) == 0);
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "test", 2) == 0);
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "test_", 0) == 0);
+def test_action_callable():
+    global test_action_variable
+    test_action_variable += 1
 
-////    //fuzzy substitution
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "_est____", 1) == 1);
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "__st____", 1) == 2);
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "_est____", 2) == 1);
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "__st____", 2) == 2);
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "___t____", 2) == 3);
+test_action = albert.Action(
+    id="test_action_id",
+    text="test_action_text",
+    callable=test_action_callable
+)
+)");
 
-////    //fuzzy deletion
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "ttest____", 1) == 1);
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "tttest____", 1) == 2);
+    auto g = py::globals();
 
-////    //fuzzy insertion
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "est____", 1) == 1);
-////    CHECK(l.computePrefixEditDistanceWithLimit("test", "st____", 1) > 1);
+    QVERIFY(g.contains("test_action_variable"));
+    QVERIFY(g.contains("test_action_callable"));
+    QVERIFY(g.contains("test_action"));
 
-////    CHECK(l.computePrefixEditDistanceWithLimit("abcdefghij", "abcdefghij", 1) == 0);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abcdefghij", "abcdefghij", 2) == 0);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abcdefghij", "abcdefghij", 3) == 0);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abcdefghij", "abcdefghij", 4) == 0);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abcdefghij", "abcdefghij", 5) == 0);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abcdefghij", "abcdefghij", 6) == 0);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abcdefghij", "abcdefghij", 7) == 0);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abcdefghij", "abcdefghij", 8) == 0);
+    auto a = g["test_action"].cast<Action>();
 
-////    // Bug 2022-11-20 string is smaller than prefix
-////    CHECK(l.computePrefixEditDistanceWithLimit("abc", "abc", 1) == 0);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abc", "ab", 1) == 1);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abc", "a", 1) == 2);
-////    CHECK(l.computePrefixEditDistanceWithLimit("abc", "", 1) == 2);
-////}
+    QCOMPARE(a.id, "test_action_id");
+    QCOMPARE(a.text, "test_action_text");
+    QCOMPARE(g["test_action_variable"].cast<int>(), 0);
 
-////TEST_CASE("Index")
-////{
-////    auto match = [&](const QStringList& item_strings, const QString& search_string, bool case_sesitivity, int q, int fuzzy){
+    a.function();
 
-////        auto index = ItemIndex("[ ]+", case_sesitivity, q, fuzzy);
-////        vector<IndexItem> index_items;
-////        for (auto &string : item_strings)
-////            index_items.emplace_back(make_shared<StandardItem>(string), string);
-////        index.setItems(::move(index_items));
-////        return index.search(search_string, true);
-////    };
+    QCOMPARE(g["test_action_variable"].cast<int>(), 1);
+}
 
-////    // case sensitivity
-////    CHECK(match({"a","A"}, "a", true, 0, 0).size() == 1);
-////    CHECK(match({"a","A"}, "A", true, 0, 0).size() == 1);
+void PythonTests::testItem()
+{
+    py::exec(R"(
+import albert
 
-////    // intersection
-////    CHECK(match({"a b","b c","c d"}, "a", false, 0, 0).size() == 1);
-////    CHECK(match({"a b","b c","c d"}, "b", false, 0, 0).size() == 2);
-////    CHECK(match({"a b","b c","c d"}, "c", false, 0, 0).size() == 2);
-////    CHECK(match({"a b","b c","c d"}, "d", false, 0, 0).size() == 1);
-////    CHECK(match({"a b","b c","c d"}, "b c", false, 0, 0).size() == 1);
+class TestItem(albert.Item):
 
-////    // sequence
-////    CHECK(match({"a b","b a","a b"}, "a b", false, 0, 0).size() == 2);
-////    CHECK(match({"a b","b a","a b"}, "b a", false, 0, 0).size() == 1);
+    def id(self):
+        return "item_id"
 
-////    // fuzzy
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abc", false, 2, 3).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "ab_", false, 2, 3).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "a__", false, 2, 3).size() == 0);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abcdef", false, 2, 3).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abc_e_", false, 2, 3).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "a_c_e_", false, 2, 3).size() == 0);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abcdefghi", false, 2, 3).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abcdefg_i", false, 2, 3).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abcde_g_i", false, 2, 3).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abc_e_g_i", false, 2, 3).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "a_c_e_g_i", false, 2, 3).size() == 0);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abcd", false, 2, 4).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abc_", false, 2, 4).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "ab__", false, 2, 4).size() == 0);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abcdefgh", false, 2, 4).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abcdefg_", false, 2, 4).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abcde_g_", false, 2, 4).size() == 1);
-////    CHECK(match({"abcdefghijklmnopqrstuvwxyz"}, "abc_e_g_", false, 2, 4).size() == 0);
+    def text(self):
+        return "item_text"
 
-////    // score
-////    CHECK(qFuzzyCompare(match({"a","ab","abc"}, "a", false, 2, 3).size(), 3.0f));
-////    CHECK(qFuzzyCompare(match({"a","ab","abc"}, "a", false, 2, 3)[0].score, 1.0f/3.0f));
-////    CHECK(qFuzzyCompare(match({"a","ab","abc"}, "a", false, 2, 3)[1].score, 1.0f/2.0f));
-////    CHECK(qFuzzyCompare(match({"a","ab","abc"}, "a", false, 2, 3)[2].score, 1.0f));
-////    CHECK(qFuzzyCompare(match({"abc","abd"}, "abe", false, 2, 3)[0].score, 2.0f/3.0f));
-////    CHECK(qFuzzyCompare(match({"abc","abd"}, "abe", false, 2, 3)[1].score, 2.0f/3.0f));
+    def subtext(self):
+        return "item_subtext"
 
-////    std::vector<albert::RankItem> M = match({"abc","abd","abcdef"}, "abc", false, 2, 3);
-////    sort(M.begin(), M.end(), [](auto &a, auto &b){ return a.item->id() < b.item->id(); });
-////    CHECK(qFuzzyCompare(M[0].score, 3.0f/3.0f));
-////    CHECK(qFuzzyCompare(M[1].score, 3.0f/6.0f));
-////    CHECK(qFuzzyCompare(M[2].score, 2.0f/3.0f));
-////}
+    def inputActionText(self):
+        return "item_input_action_text"
+
+    def iconUrls(self):
+        return ["i1", "i2"]
+
+    def actions(self):
+        return [test_action]
+
+class InvalidTestItem(albert.Item):
+    pass
+
+test_item = TestItem()
+invalid_test_item = InvalidTestItem()
+)");
+
+    auto g = py::globals();
+
+    QVERIFY(g.contains("TestItem"));
+    QVERIFY(g.contains("test_item"));
+    QVERIFY(g.contains("invalid_test_item"));
+    QVERIFY(g.contains("InvalidTestItem"));
+
+    auto i = g["test_item"].cast<shared_ptr<Item>>();
+
+    QCOMPARE(i->id(), "item_id");
+    QCOMPARE(i->text(), "item_text");
+    QCOMPARE(i->subtext(), "item_subtext");
+    QCOMPARE(i->inputActionText(), "item_input_action_text");
+    QCOMPARE(i->iconUrls(), QStringList({"i1", "i2"}));
+    QCOMPARE(i->actions().size(), 1);
+
+    i = g["invalid_test_item"].cast<shared_ptr<Item>>();
+
+    QCOMPARE(i->id(), "");
+    QCOMPARE(i->text(), "");
+    QCOMPARE(i->subtext(), "");
+    QCOMPARE(i->inputActionText(), "");
+    QCOMPARE(i->iconUrls(), QStringList());
+    QCOMPARE(i->actions().size(), 0);
+}
+
+void PythonTests::testStandardItem()
+{
+    py::exec(R"(
+test_standard_item = albert.StandardItem(
+    id="item_id",
+    text="item_text",
+    subtext="item_subtext",
+    inputActionText="item_input_action_text",
+    iconUrls=["i1", "i2"],
+    actions=[test_action]
+)
+)");
+
+    auto g = py::globals();
+    QVERIFY(g.contains("test_standard_item"));
+    auto i = g["test_standard_item"].cast<shared_ptr<Item>>();
+
+    // Test C++ getter
+
+    QCOMPARE(i->id(), "item_id");
+    QCOMPARE(i->text(), "item_text");
+    QCOMPARE(i->subtext(), "item_subtext");
+    QCOMPARE(i->inputActionText(), "item_input_action_text");
+    QCOMPARE(i->iconUrls(), QStringList({"i1", "i2"}));
+    QCOMPARE(i->actions().size(), 1);
+
+    // Test Python getter
+
+    py::exec(R"(t = test_standard_item.id)");
+    QCOMPARE(g["t"].cast<QString>(), "item_id");
+
+    py::exec(R"(t = test_standard_item.text)");
+    QCOMPARE(g["t"].cast<QString>(), "item_text");
+
+    py::exec(R"(t = test_standard_item.subtext)");
+    QCOMPARE(g["t"].cast<QString>(), "item_subtext");
+
+    py::exec(R"(t = test_standard_item.inputActionText)");
+    QCOMPARE(g["t"].cast<QString>(), "item_input_action_text");
+
+    py::exec(R"(t = test_standard_item.iconUrls)");
+    QCOMPARE(g["t"].cast<QStringList>(), QStringList({"i1", "i2"}));
+
+    py::exec(R"(t = test_standard_item.actions)");
+    QCOMPARE(g["t"].cast<py::list>().size(), 1);
 
 
+    // Test Python setter
+
+    py::exec(R"(test_standard_item.id = "x_item_id")");
+    QCOMPARE(i->id(), "x_item_id");
+
+    py::exec(R"(test_standard_item.text = "x_item_text")");
+    QCOMPARE(i->text(), "x_item_text");
+
+    py::exec(R"(test_standard_item.subtext = "x_item_subtext")");
+    QCOMPARE(i->subtext(), "x_item_subtext");
+
+    py::exec(R"(test_standard_item.inputActionText = "x_item_input_action_text")");
+    QCOMPARE(i->inputActionText(), "x_item_input_action_text");
+
+    py::exec(R"(test_standard_item.iconUrls = ["x1", "x2"])");
+    QCOMPARE(i->iconUrls(), QStringList({"x1", "x2"}));
+
+    py::exec(R"(test_standard_item.actions = [])");
+    QCOMPARE(i->actions().size(), 0);
+}
+
+void PythonTests::testMatcher()
+{
+    // This merely tests the Matcher API.
+    // Thourough tests are done in the core tests.
+
+
+    auto PyMatcher = py::module::import("albert").attr("Matcher");
+    auto PyMatchConfig = py::module::import("albert").attr("MatchConfig");
+
+    auto matcher = PyMatcher("x");
+
+    using Score = Match::Score;
+    using namespace pybind11::literals;
+
+    auto m = matcher.attr("match")("x");
+    QCOMPARE(m.cast<bool>(), true);
+    QCOMPARE(m.attr("isMatch")().cast<bool>(), true);
+    QCOMPARE(m.attr("isEmptyMatch")().cast<bool>(), false);
+    QCOMPARE(m.attr("isExactMatch")().cast<bool>(), true);
+    QCOMPARE(m.attr("score").cast<Score>(), 1.0);
+    QCOMPARE(m.cast<Score>(), 1.0);
+
+    m = matcher.attr("match")(QStringList({"x y", "y z"}));
+    QCOMPARE(m.cast<bool>(), true);
+    QCOMPARE(m.attr("isMatch")().cast<bool>(), true);
+    QCOMPARE(m.attr("isEmptyMatch")().cast<bool>(), false);
+    QCOMPARE(m.attr("isExactMatch")().cast<bool>(), false);
+    QCOMPARE(m.attr("score").cast<Score>(), .5);
+    QCOMPARE(m.cast<Score>(), .5);
+
+    m = matcher.attr("match")("x y", "y z");
+    QCOMPARE(m.cast<bool>(), true);
+    QCOMPARE(m.attr("isMatch")().cast<bool>(), true);
+    QCOMPARE(m.attr("isEmptyMatch")().cast<bool>(), false);
+    QCOMPARE(m.attr("isExactMatch")().cast<bool>(), false);
+    QCOMPARE(m.attr("score").cast<Score>(), .5);
+    QCOMPARE(m.cast<Score>(), .5);
+
+    auto mc = PyMatchConfig();
+    QCOMPARE(mc.attr("fuzzy").cast<bool>(), false);
+    QCOMPARE(mc.attr("ignore_case").cast<bool>(), true);
+    QCOMPARE(mc.attr("ignore_diacritics").cast<bool>(), true);
+    QCOMPARE(mc.attr("ignore_word_order").cast<bool>(), true);
+    QCOMPARE(mc.attr("separator_regex").cast<QString>(), default_separator_regex.pattern());
+
+    mc = PyMatchConfig("fuzzy"_a=true);
+    QCOMPARE(mc.attr("fuzzy").cast<bool>(), true);
+    QCOMPARE(mc.attr("ignore_case").cast<bool>(), true);
+    QCOMPARE(mc.attr("ignore_diacritics").cast<bool>(), true);
+    QCOMPARE(mc.attr("ignore_word_order").cast<bool>(), true);
+    QCOMPARE(mc.attr("separator_regex").cast<QString>(), default_separator_regex.pattern());
+
+    // fuzzy
+    QCOMPARE(PyMatcher("tost", PyMatchConfig("fuzzy"_a=false)).attr("match")("test").cast<bool>(), false);
+    QCOMPARE(PyMatcher("tost", PyMatchConfig("fuzzy"_a=true)).attr("match")("test").cast<Score>(), 0.75);
+
+    // case
+    QCOMPARE(PyMatcher("Test", PyMatchConfig("ignore_case"_a=true)).attr("match")("test").cast<bool>(), true);
+    QCOMPARE(PyMatcher("Test", PyMatchConfig("ignore_case"_a=false)).attr("match")("test").cast<bool>(), false);
+
+    // diacritics
+    QCOMPARE(PyMatcher("tést", PyMatchConfig("ignore_diacritics"_a=true)).attr("match")("test").cast<bool>(), true);
+    QCOMPARE(PyMatcher("tést", PyMatchConfig("ignore_diacritics"_a=false)).attr("match")("test").cast<bool>(), false);
+
+    // order
+    QCOMPARE(PyMatcher("b a", PyMatchConfig("ignore_word_order"_a=true)).attr("match")("a b").cast<bool>(), true);
+    QCOMPARE(PyMatcher("b a", PyMatchConfig("ignore_word_order"_a=false)).attr("match")("a b").cast<bool>(), false);
+
+    // seps
+    QCOMPARE(PyMatcher("a_c", PyMatchConfig("separator_regex"_a="[\\s_]+")).attr("match")("a c").cast<bool>(), true);
+    QCOMPARE(PyMatcher("a_c", PyMatchConfig("separator_regex"_a="[_]+")).attr("match")("a c").cast<bool>(), false);
+}
+
+void PythonTests::testTriggerQueryHandler()
+{
+    py::exec(R"(
+class TQH(albert.TriggerQueryHandler):
+
+    def id(self):
+        return "tst_id"
+
+    def name(self):
+        return "tst_name"
+
+    def description(self):
+        return "tst_desc"
+
+    def synopsis(self, query):
+        return "tst_syn" + query
+
+    def defaultTrigger(self):
+        return "tst_trigger"
+
+    def allowTriggerRemap(self):
+        return False
+
+    def supportsFuzzyMatching(self):
+        return True
+
+    def handleTriggerQuery(self, query):
+        query.add(albert.Item())
+)");
+
+    auto py = py::globals()["TQH"]();
+    auto &cpp = py.cast<albert::TriggerQueryHandler&>();
+
+    QCOMPARE(py.attr("id")().cast<QString>(), "tst_id");
+    QCOMPARE(cpp.id(), "tst_id");
+
+    QCOMPARE(py.attr("name")().cast<QString>(), "tst_name");
+    QCOMPARE(cpp.name(), "tst_name");
+
+    QCOMPARE(py.attr("description")().cast<QString>(), "tst_desc");
+    QCOMPARE(cpp.description(), "tst_desc");
+
+    QCOMPARE(py.attr("defaultTrigger")().cast<QString>(), "tst_trigger");
+    QCOMPARE(cpp.defaultTrigger(), "tst_trigger");
+
+    QCOMPARE(py.attr("synopsis")("test").cast<QString>(), "tst_syntest");
+    QCOMPARE(cpp.synopsis("test"), "tst_syntest");
+
+    QCOMPARE(py.attr("allowTriggerRemap")().cast<bool>(), false);
+    QCOMPARE(cpp.allowTriggerRemap(), false);
+
+    QCOMPARE(py.attr("supportsFuzzyMatching")().cast<bool>(), true);
+    QCOMPARE(cpp.supportsFuzzyMatching(), true);
+
+    MockQuery query(py.cast<Extension&>());
+
+    py.attr("handleTriggerQuery")(static_cast<Query*>(&query));
+    QCOMPARE(query.matches().size(), 1);
+
+    cpp.handleTriggerQuery(query);
+    QCOMPARE(query.matches().size(), 2);
+}
+
+void PythonTests::testGlobalQueryHandler()
+{
+    py::exec(R"(
+class GQH(albert.GlobalQueryHandler):
+
+    def id(self):
+        return "tst_id"
+
+    def name(self):
+        return "tst_name"
+
+    def description(self):
+        return "tst_desc"
+
+    def synopsis(self, query):
+        return "tst_syn" + query
+
+    def defaultTrigger(self):
+        return "tst_trigger"
+
+    def allowTriggerRemap(self):
+        return False
+
+    def supportsFuzzyMatching(self):
+        return True
+
+    def handleGlobalQuery(self, query):
+        return [
+            albert.RankItem(albert.StandardItem(), 1),
+            albert.RankItem(albert.StandardItem(), 0)
+        ]
+)");
+
+    auto py = py::globals()["GQH"]();
+    auto &cpp = py.cast<albert::GlobalQueryHandler&>();
+
+    QCOMPARE(py.attr("id")().cast<QString>(), "tst_id");
+    QCOMPARE(cpp.id(), "tst_id");
+
+    QCOMPARE(py.attr("name")().cast<QString>(), "tst_name");
+    QCOMPARE(cpp.name(), "tst_name");
+
+    QCOMPARE(py.attr("description")().cast<QString>(), "tst_desc");
+    QCOMPARE(cpp.description(), "tst_desc");
+
+    QCOMPARE(py.attr("defaultTrigger")().cast<QString>(), "tst_trigger");
+    QCOMPARE(cpp.defaultTrigger(), "tst_trigger");
+
+    QCOMPARE(py.attr("synopsis")("test").cast<QString>(), "tst_syntest");
+    QCOMPARE(cpp.synopsis("test"), "tst_syntest");
+
+    QCOMPARE(py.attr("allowTriggerRemap")().cast<bool>(), false);
+    QCOMPARE(cpp.allowTriggerRemap(), false);
+
+    QCOMPARE(py.attr("supportsFuzzyMatching")().cast<bool>(), true);
+    QCOMPARE(cpp.supportsFuzzyMatching(), true);
+
+    MockQuery query(py.cast<Extension&>());
+
+    QCOMPARE(py.attr("handleGlobalQuery")(static_cast<Query*>(&query)).cast<py::list>().size(), 2);
+    QCOMPARE(cpp.handleGlobalQuery(query).size(), 2);
+
+    py.attr("handleTriggerQuery")(static_cast<Query*>(&query));
+    QCOMPARE(query.matches().size(), 2);
+
+    cpp.handleTriggerQuery(query);
+    QCOMPARE(query.matches().size(), 4);
+}
+
+void PythonTests::testIndexQueryHandler()
+{
+    py::exec(R"(
+class IQH(albert.IndexQueryHandler):
+
+    def id(self):
+        return "tst_id"
+
+    def name(self):
+        return "tst_name"
+
+    def description(self):
+        return "tst_desc"
+
+    def synopsis(self, query):
+        return "tst_syn" + query
+
+    def defaultTrigger(self):
+        return "tst_trigger"
+
+    def allowTriggerRemap(self):
+        return False
+
+    def updateIndexItems(self):
+        self.setIndexItems([
+            albert.IndexItem(albert.StandardItem("x"), "x"),
+            albert.IndexItem(albert.StandardItem("y"), "x y"),
+            albert.IndexItem(albert.StandardItem("y"), "y"),
+            albert.IndexItem(albert.StandardItem("z"), "z")
+        ])
+)");
+
+    auto py = py::globals()["IQH"]();
+    auto &cpp = py.cast<albert::IndexQueryHandler&>();
+
+    cpp.setFuzzyMatching(false);  // builds the index
+
+    QCOMPARE(py.attr("id")().cast<QString>(), "tst_id");
+    QCOMPARE(cpp.id(), "tst_id");
+
+    QCOMPARE(py.attr("name")().cast<QString>(), "tst_name");
+    QCOMPARE(cpp.name(), "tst_name");
+
+    QCOMPARE(py.attr("description")().cast<QString>(), "tst_desc");
+    QCOMPARE(cpp.description(), "tst_desc");
+
+    QCOMPARE(py.attr("defaultTrigger")().cast<QString>(), "tst_trigger");
+    QCOMPARE(cpp.defaultTrigger(), "tst_trigger");
+
+    QCOMPARE(py.attr("synopsis")("test").cast<QString>(), "tst_syntest");
+    QCOMPARE(cpp.synopsis("test"), "tst_syntest");
+
+    QCOMPARE(py.attr("allowTriggerRemap")().cast<bool>(), false);
+    QCOMPARE(cpp.allowTriggerRemap(), false);
+
+    // QCOMPARE(h.attr("supportsFuzzyMatching")().cast<bool>(), true);
+    QCOMPARE(cpp.supportsFuzzyMatching(), true);
+
+    MockQuery query(py.cast<Extension&>());
+
+    auto results = py.attr("handleGlobalQuery")(static_cast<Query*>(&query));
+    QCOMPARE(results.cast<py::list>().size(), 2);
+
+    py.attr("handleTriggerQuery")(static_cast<Query*>(&query));
+    QCOMPARE(query.matches().size(), 2);
+
+}
+
+void PythonTests::testFallbackQueryHandler()
+{
+    py::exec(R"(
+class FQH(albert.FallbackHandler):
+
+    def id(self):
+        return "tst_id"
+
+    def name(self):
+        return "tst_name"
+
+    def description(self):
+        return "tst_desc"
+
+    def fallbacks(self, query):
+        return [albert.StandardItem(query)]
+)");
+
+    auto py = py::globals()["FQH"]();
+    auto &cpp = py.cast<albert::FallbackHandler&>();
+
+    QCOMPARE(py.attr("id")().cast<QString>(), "tst_id");
+    QCOMPARE(cpp.id(), "tst_id");
+
+    QCOMPARE(py.attr("name")().cast<QString>(), "tst_name");
+    QCOMPARE(cpp.name(), "tst_name");
+
+    QCOMPARE(py.attr("description")().cast<QString>(), "tst_desc");
+    QCOMPARE(cpp.description(), "tst_desc");
+
+    QCOMPARE(py.attr("fallbacks")("test").cast<py::list>().size(), 1);
+    QCOMPARE(cpp.fallbacks("test").size(), 1);
+}

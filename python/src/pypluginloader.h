@@ -26,8 +26,8 @@ class PyPluginLoader : public albert::PluginLoader
 {
 public:
 
-    static const int MAJOR_INTERFACE_VERSION = 2;
-    static const int MINOR_INTERFACE_VERSION = 5;
+    static const int MAJOR_INTERFACE_VERSION = 3;
+    static const int MINOR_INTERFACE_VERSION = 0;
 
     PyPluginLoader(Plugin &plugin, const QString &module_path);
     ~PyPluginLoader();

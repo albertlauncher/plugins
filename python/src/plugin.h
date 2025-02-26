@@ -19,21 +19,20 @@ public:
 
     Plugin();
     ~Plugin() override;
-    bool installPackages(const QStringList &packages);
 
     QWidget* buildConfigWidget() override;
     std::vector<albert::PluginLoader*> plugins() override;
 
+    bool installPackages(const QStringList &packages) const;
+
 private:
 
-    inline QString venv() const;
-    inline QString venv_pip() const;
-    inline QString venv_python() const;
-    inline QString sitePackagesLocation() const;
-    inline QString userPluginsLocation() const;
-    inline QString stubLocation() const;
+    void updateStubFile();
+    void initPythonInterpreter();
+    void initVirtualEnvironment();
+    void scanPlugins();
 
-    albert::StrongDependency<applications::Plugin> apps;
+    albert::StrongDependency<applications::Plugin> apps{"applications"};
     std::vector<std::unique_ptr<PyPluginLoader>> plugins_;
     std::unique_ptr<pybind11::gil_scoped_release> release_;
 

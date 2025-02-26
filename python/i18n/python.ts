@@ -23,10 +23,6 @@
 <context>
     <name>Plugin</name>
     <message>
-        <source>Failed creating writeable plugin dir %1</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>Failed initializing the interpreter: %1 %2</source>
         <translation></translation>
     </message>

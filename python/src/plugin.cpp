@@ -16,106 +16,146 @@
 #include <QStandardPaths>
 #include <QTextEdit>
 #include <QUrl>
+#include <albert/albert.h>
 #include <albert/extensionregistry.h>
 #include <albert/logging.h>
-#include <albert/util.h>
 #include <chrono>
 ALBERT_LOGGING_CATEGORY("python")
 using namespace albert;
 using namespace std;
 using namespace chrono;
 namespace py = pybind11;
+#define XSTR(s) STR(s)
+#define STR(s) #s
 
-static const constexpr char *PLUGIN_DIR = "plugins";
+applications::Plugin *apps;  // used externally
+static const char *BIN = "bin";
+static const char *STUB_VERSION = "stub_version";
+static const char *LIB = "lib";
+static const char *PIP = "pip" XSTR(PY_MAJOR_VERSION) "." XSTR(PY_MINOR_VERSION);
+static const char *PLUGINS = "plugins";
+static const char *PYTHON = "python" XSTR(PY_MAJOR_VERSION) "." XSTR(PY_MINOR_VERSION);
+static const char *SITE_PACKAGES = "site-packages";
+static const char *STUB_FILE = "albert.pyi";
+static const char *VENV = "venv";
 
-applications::Plugin *apps;
-
-Plugin::Plugin():
-    apps(registry(), "applications")
+static void dumpPyConfig(PyConfig &config)
 {
-    if (Py_IsInitialized() != 0)
-        throw runtime_error("The interpreter is already running");
 
+    DEBG << "config.home" << QString::fromWCharArray(config.home);
+    DEBG << "config.base_executable" << QString::fromWCharArray(config.base_executable);
+    DEBG << "config.executable" << QString::fromWCharArray(config.executable);
+    DEBG << "config.base_exec_prefix" << QString::fromWCharArray(config.base_exec_prefix);
+    DEBG << "config.exec_prefix" << QString::fromWCharArray(config.exec_prefix);
+    DEBG << "config.base_prefix" << QString::fromWCharArray(config.base_prefix);
+    DEBG << "config.prefix" << QString::fromWCharArray(config.prefix);
+    DEBG << "config.program_name" << QString::fromWCharArray(config.program_name);
+    DEBG << "config.pythonpath_env" << QString::fromWCharArray(config.pythonpath_env);
+    DEBG << "config.platlibdir" << QString::fromWCharArray(config.platlibdir);
+    DEBG << "config.stdlib_dir" << QString::fromWCharArray(config.stdlib_dir);
+    DEBG << "config.safe_path" << config.safe_path;
+    DEBG << "config.install_signal_handlers" << config.install_signal_handlers;
+    DEBG << "config.site_import" << config.site_import;
+    DEBG << "config.user_site_directory" << config.user_site_directory;
+    DEBG << "config.verbose" << config.verbose;
+    DEBG << "config.module_search_paths_set" << config.module_search_paths_set;
+    DEBG << "config.module_search_paths:";
+    for (Py_ssize_t i = 0; i < config.module_search_paths.length; ++i)
+        DEBG << " -" << QString::fromWCharArray(config.module_search_paths.items[i]);
+}
+
+static void dumpSysAttributes(const py::module &sys)
+{
+    DEBG << "version          :" << sys.attr("version").cast<QString>();
+    DEBG << "executable       :" << sys.attr("executable").cast<QString>();
+    DEBG << "base_exec_prefix :" << sys.attr("base_exec_prefix").cast<QString>();
+    DEBG << "exec_prefix      :" << sys.attr("exec_prefix").cast<QString>();
+    DEBG << "base_prefix      :" << sys.attr("base_prefix").cast<QString>();
+    DEBG << "prefix           :" << sys.attr("prefix").cast<QString>();
+    DEBG << "path:";
+    for (const auto &path : sys.attr("path").cast<QStringList>())
+        DEBG << " -" << path;
+}
+
+Plugin::Plugin()
+{
     ::apps = apps.get();
-    auto data_dir = createOrThrow(dataLocation());
 
+    DEBG << "Python version:" << QString("%1.%2.%3")
+                                     .arg(PY_MAJOR_VERSION)
+                                     .arg(PY_MINOR_VERSION)
+                                     .arg(PY_MICRO_VERSION);
 
-    // Create writeable plugin dir containing the interface spec
-    if(QDir dir(userPluginsLocation()); dir.mkpath("."))
+    DEBG << "Pybind11 version:" << QString("%1.%2.%3")
+                                       .arg(PYBIND11_VERSION_MAJOR)
+                                       .arg(PYBIND11_VERSION_MINOR)
+                                       .arg(PYBIND11_VERSION_PATCH);
+
+    tryCreateDirectory(dataLocation() / PLUGINS);
+    updateStubFile();
+    initPythonInterpreter();
+    initVirtualEnvironment();
+    scanPlugins();
+}
+
+Plugin::~Plugin()
+{
+    release_.reset();
+    plugins_.clear();
+
+    // Causes hard to debug crashes, mem leaked, but nobody will toggle it a lot
+    // py::finalize_interpreter();
+}
+
+void Plugin::updateStubFile()
+{
+    QFile stub_rc(QString(":%1").arg(STUB_FILE));
+    QFile stub_fs(dataLocation() / PLUGINS / STUB_FILE);
+    auto interface_version = QString("%1.%2")
+                                 .arg(PyPluginLoader::MAJOR_INTERFACE_VERSION)
+                                 .arg(PyPluginLoader::MINOR_INTERFACE_VERSION);
+
+    if (interface_version != state()->value(STUB_VERSION).toString()
+        && stub_fs.exists() && !stub_fs.remove())
+        WARN << "Failed removing former stub file" << stub_fs.error();
+
+    if (!stub_fs.exists())
     {
-        QFile src(":albert.pyi");
-        QFile dst(dir.filePath("albert.pyi"));
-        const char * k_stub_ver = "stub_version";
-        auto v = QString("%1.%2")
-                .arg(PyPluginLoader::MAJOR_INTERFACE_VERSION)
-                .arg(PyPluginLoader::MINOR_INTERFACE_VERSION);
-
-        if (v != state()->value(k_stub_ver).toString() && dst.exists() && !dst.remove())
-            WARN << "Failed removing former interface spec" << dst.error();
-
-        if (!dst.exists())
-        {
-            if (src.copy(dst.fileName())){
-                state()->setValue(k_stub_ver, v);
-                INFO << "Copied interface spec to" << dst.fileName();
-            }
-            else
-                WARN << "Failed copying interface spec to" << dst.fileName() << src.error();
-        }
+        INFO << "Writing stub file to" << stub_fs.fileName();
+        if (stub_rc.copy(stub_fs.fileName()))
+            state()->setValue(STUB_VERSION, interface_version);
+        else
+            WARN << "Failed copying stub file to" << stub_fs.fileName() << stub_rc.error();
     }
-    else
-        throw tr("Failed creating writeable plugin dir %1").arg(data_dir.path());
+}
 
-
-    // Initialize the Python interpreter
-    INFO << "Python version" << QString("%1.%2.%3")
-            .arg(PY_MAJOR_VERSION).arg(PY_MINOR_VERSION).arg(PY_MICRO_VERSION);
-    PyConfig config;
-    // DEBG << "Py_GetExecPrefix()      " << QString::fromWCharArray(Py_GetExecPrefix());
-    // DEBG << "Py_GetPath()            " << QString::fromWCharArray(Py_GetPath());
-    // DEBG << "Py_GetPrefix()          " << QString::fromWCharArray(Py_GetPrefix());
-    // DEBG << "Py_GetProgramFullPath() " << QString::fromWCharArray(Py_GetProgramFullPath());
-    // DEBG << "Py_GetPythonHome()      " << QString::fromWCharArray(Py_GetPythonHome());
-    // DEBG << "Py_GetVersion():        " << QString::fromLatin1(Py_GetVersion());
-    PyConfig_InitIsolatedConfig(&config);
-    // DEBG << "config.home" << QString::fromWCharArray(config.home);
-    // DEBG << "config.base_executable" << QString::fromWCharArray(config.base_executable);
-    // DEBG << "config.executable" << QString::fromWCharArray(config.executable);
-    // DEBG << "config.base_exec_prefix" << QString::fromWCharArray(config.base_exec_prefix);
-    // DEBG << "config.exec_prefix" << QString::fromWCharArray(config.exec_prefix);
-    // DEBG << "config.base_prefix" << QString::fromWCharArray(config.base_prefix);
-    // DEBG << "config.prefix" << QString::fromWCharArray(config.prefix);
-    // DEBG << "config.program_name" << QString::fromWCharArray(config.program_name);
-    // DEBG << "config.pythonpath_env" << QString::fromWCharArray(config.pythonpath_env);
-    // DEBG << "config.platlibdir" << QString::fromWCharArray(config.platlibdir);
-    // DEBG << "config.stdlib_dir" << QString::fromWCharArray(config.stdlib_dir);
-    // DEBG << "config.safe_path" << config.safe_path;
-    // DEBG << "config.install_signal_handlers" << config.install_signal_handlers;
-    // DEBG << "config.site_import" << config.site_import;
-    // DEBG << "config.user_site_directory" << config.user_site_directory;
-    // DEBG << "config.verbose" << config.verbose;
-
-    config.site_import = 0;
-
+void Plugin::initPythonInterpreter()
+{
     DEBG << "Initializing Python interpreter";
+    PyConfig config;
+    PyConfig_InitIsolatedConfig(&config);
+    config.site_import = 0;
+    dumpPyConfig(config);
     if (auto status = Py_InitializeFromConfig(&config); PyStatus_Exception(status))
         throw runtime_error(tr("Failed initializing the interpreter: %1 %2")
                             .arg(status.func, status.err_msg).toStdString());
-    else{
-        DEBG << "Successfully initialized python interpreter";
-        // Gil is initially held. Release it forever.
-        release_.reset(new py::gil_scoped_release);
-    }
-
     PyConfig_Clear(&config);
+    dumpPyConfig(config);
+    release_.reset(new py::gil_scoped_release); // Gil is initially held.
+}
+
+void Plugin::initVirtualEnvironment()
+{
     py::gil_scoped_acquire acquire;
-    auto sys = py::module::import("sys");
 
+    auto system_python = filesystem::path(py::module::import("sys")
+                                              .attr("prefix").cast<string>()) / BIN / PYTHON;
+    auto venv_location = dataLocation() / VENV;
 
-    // Initialize the virtual environment using the system interpreter
+    // Create the venv
     QProcess p;
-    p.start(QDir(sys.attr("prefix").cast<QString>()).filePath("bin/python3"),
-            {"-m", "venv", "--upgrade", "--upgrade-deps", venv()});
+    p.start(system_python.c_str(),
+            {"-m", "venv", "--upgrade", "--upgrade-deps", venv_location.c_str()});
     DEBG << "Initializing venv using system interpreter:"
          << (QStringList() << p.program() << p.arguments()).join(QChar::Space);
     p.waitForFinished(-1);
@@ -125,35 +165,20 @@ Plugin::Plugin():
         WARN << err;
     if (p.exitCode() != 0)
         throw runtime_error(tr("Failed initializing virtual environment. Exit code: %1.")
-                            .arg(p.exitCode()).toStdString());
-
+                                .arg(p.exitCode()).toStdString());
 
     // Add venv site packages to path
-    py::module::import("site").attr("addsitedir")(sitePackagesLocation());
+    py::module::import("site")
+        .attr("addsitedir")((venv_location / LIB / PYTHON / SITE_PACKAGES).c_str());
+}
 
-
-    // Set sys.executable to the venv python
-    sys.attr("executable") = venv_python();
-
-
-    // Debug
-    DEBG << "version          :" << sys.attr("version").cast<QString>();
-    DEBG << "executable       :" << sys.attr("executable").cast<QString>();
-    DEBG << "base_exec_prefix :" << sys.attr("base_exec_prefix").cast<QString>();
-    DEBG << "exec_prefix      :" << sys.attr("exec_prefix").cast<QString>();
-    DEBG << "base_prefix      :" << sys.attr("base_prefix").cast<QString>();
-    DEBG << "prefix           :" << sys.attr("prefix").cast<QString>();
-    for (const auto &path : sys.attr("path").cast<QStringList>())
-        DEBG << "path:            :" << path;
-
-
-    // Find plugins
-
+void Plugin::scanPlugins()
+{
     QStringList plugin_dirs;
     using SP = QStandardPaths;
     auto data_dirs = SP::locateAll(SP::AppDataLocation, id(), SP::LocateDirectory);
     for (const auto &dd : data_dirs)
-        if (QDir dir{dd}; dir.cd(PLUGIN_DIR))
+        if (QDir dir{dd}; dir.cd(PLUGINS))
             plugin_dirs << dir.path();
 
     auto start = system_clock::now();
@@ -181,15 +206,6 @@ Plugin::Plugin():
                 .arg(duration_cast<milliseconds>(system_clock::now()-start).count());
 }
 
-Plugin::~Plugin()
-{
-    release_.reset();
-    plugins_.clear();
-
-    // Causes hard to debug crashes, mem leaked, but nobody will toggle it a lot
-    // py::finalize_interpreter();
-}
-
 vector<PluginLoader*> Plugin::plugins()
 {
     vector<PluginLoader*> plugins;
@@ -198,54 +214,35 @@ vector<PluginLoader*> Plugin::plugins()
     return plugins;
 }
 
-
-QString Plugin::venv() const
-{ return QDir(dataLocation()).filePath("venv"); }
-
-QString Plugin::venv_python() const
-{ return QDir(venv()).filePath("bin/python3"); }
-
-QString Plugin::venv_pip() const
-{ return QDir(venv()).filePath("bin/pip3"); }
-
-QString Plugin::sitePackagesLocation() const
-{
-    return QDir(venv()).filePath(
-        QString("lib/python%2.%3/site-packages").arg(PY_MAJOR_VERSION).arg(PY_MINOR_VERSION)
-    );
-}
-
-QString Plugin::userPluginsLocation() const
-{ return QDir(dataLocation()).filePath(PLUGIN_DIR); }
-
-QString Plugin::stubLocation() const
-{ return QDir(userPluginsLocation()).filePath("albert.pyi"); }
-
 QWidget *Plugin::buildConfigWidget()
 {
     auto *w = new QWidget;
     Ui::ConfigWidget ui;
     ui.setupUi(w);
+    
+    connect(ui.pushButton_sitePackages, &QPushButton::clicked,
+            this, [this]{ open(dataLocation() / VENV / LIB / PYTHON / SITE_PACKAGES); });
 
-    connect(ui.pushButton_sitePackages, &QPushButton::clicked, this,
-            [this](){ openUrl(QUrl::fromLocalFile(sitePackagesLocation())); });
+    connect(ui.pushButton_stubFile, &QPushButton::clicked,
+            this, [this]{ open(dataLocation() / PLUGINS / STUB_FILE); });
 
-    connect(ui.pushButton_stubFile, &QPushButton::clicked, this,
-            [this](){ openUrl(QUrl::fromLocalFile(stubLocation())); });
-
-    connect(ui.pushButton_userPluginDir, &QPushButton::clicked, this,
-            [this](){ openUrl(QUrl::fromLocalFile(userPluginsLocation())); });
+    connect(ui.pushButton_userPluginDir, &QPushButton::clicked,
+            this, [this]{ open(dataLocation() / PLUGINS); });
 
     return w;
 }
 
-bool Plugin::installPackages(const QStringList &packages)
+bool Plugin::installPackages(const QStringList &packages) const
 {
     // Install dependencies
     QProcess p;
-    p.start(venv_pip(), QStringList{"install"} << packages);
+    p.setProgram((dataLocation() / VENV / BIN / PIP).c_str());
+    p.setArguments(QStringList{"install"} << packages);
+
     DEBG << QString("Installing %1. [%2]")
-            .arg(packages.join(", "), (QStringList(p.program()) << p.arguments()).join(" "));
+                .arg(packages.join(", "), (QStringList(p.program()) << p.arguments()).join(" "));
+
+    p.start();
 
     QPointer<QTextEdit> te(new QTextEdit);
     te->setCurrentFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));

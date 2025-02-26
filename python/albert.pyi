@@ -1,284 +1,298 @@
 """
-# Albert Python interface v2.5
+.. https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html
+.. https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
+
+====================================================================================================
+Albert Python interface v3.0
+====================================================================================================
+
+To be a valid Python plugin a Python module has to contain at least the mandatory metadata fields
+and a class named ``Plugin`` that inherits the :class:`PluginInstance` class.
+
+See Also:
+    `Albert C++ Reference <https://albertlauncher.github.io/reference/namespacealbert.html>`_
+
+----------------------------------------------------------------------------------------------------
+Mandatory metadata variables
+----------------------------------------------------------------------------------------------------
+
+``md_iid`` : *str*
+    Python interface version (<major>.<minor>)
+
+``md_version`` : *str*
+    Plugin version (<major>.<minor>)
+
+``md_name`` : *str*
+    Human readable name
+
+``md_description`` : *str*
+    A brief, imperative description. (Like "Launch apps" or "Open files")
 
 
-The Python interface is a subset of the internal C++ interface exposed to Python with some minor adjustments. A Python
-plugin is required to contain the mandatory metadata and a plugin class, both described below. To get started read the
-top level classes and function names in this file. Most of them are self explanatory. In case of questions see the C++
-documentation at https://albertlauncher.github.io/reference/namespacealbert.html
+----------------------------------------------------------------------------------------------------
+Optional metadata variables
+----------------------------------------------------------------------------------------------------
+
+``md_license`` : *str*
+    Short form e.g. MIT or BSD-2
+
+``md_url`` : *str*
+    Browsable source, issues etc
+
+``md_authors`` : *List(str)*
+    The authors. Preferably using mentionable Github usernames.
+
+``md_bin_dependencies`` : *List(str)*
+    Required executable(s). Have to match the name of the executable in $PATH.
+
+``md_lib_dependencies`` : *List(str)*
+    Required Python package(s). Have to match the PyPI package name.
+
+``md_credits`` : *List(str)*
+    Third party credit(s) and license notes
 
 
-## Mandatory metadata variables
-
-md_iid: str         | Interface version (<major>.<minor>)
-md_version: str     | Plugin version (<major>.<minor>)
-md_name: str        | Human readable name
-md_description: str | A brief, imperative description. (Like "Launch apps" or "Open files")
+====================================================================================================
+Changelog
+====================================================================================================
 
 
-## Optional metadata variables:
+- ``v3.0``
 
-[Deprecated] md_id                   | Identifier overwrite. [a-zA-Z0-9_]. Note: This variable is attached at runtime
-                                     | if it is unset and defaults to the module name.
-md_license: str                      | Short form e.g. MIT or BSD-2
-md_url: str                          | Browsable source, issues etc
-md_authors: [str|List(str)]          | The authors. Preferably using mentionable Github usernames.
-md_bin_dependencies: [str|List(str)] | Required executable(s). Have to match the name of the executable in $PATH.
-md_lib_dependencies: [str|List(str)] | Required Python package(s). Have to match the PyPI package name.
-md_credits: [str|List(str)]          | Third party credit(s) and license notes
+  - Drop metadata field ``md_id``.
+  - ``PluginInstance``
 
+    - Add ``extensions(…)``.
+    - Drop ``__init__(…)`` parameter ``extensions``. Use ``extensions(…)``.
+    - Drop ``de``-/``registerExtension(…)``. Use ``extensions(…)``.
+    - Drop ``initialize(…)``/``finalize(…)``. Use ``__init__(…)``/``__del__(…)``.
+    - Make property a method:
 
-## The Plugin class
+      - ``id``
+      - ``name``
+      - ``description``
+      - ``cacheLocation``
+      - ``configLocation``
+      - ``dataLocation``
 
-The plugin class is the entry point for a Python plugin. It is instantiated on plugin initialization and has to subclass
-PluginInstance. Implement extensions by subclassing _one_ extension class (TriggerQueryHandler etc…) provided by the
-built-in `albert` module and pass the list of your extensions to the PluginInstance init function. Due to the
-differences in type systems multiple inheritance of extensions is not supported. (Python does not support virtual
-inheritance, which is used in the C++ space to inherit from 'Extension').
+    - Do not implicitly create the directory in:
 
-Changes in 2.1
+      - ``cacheLocation``
+      - ``configLocation``
+      - ``dataLocation``
 
- - Add PluginInstance.readConfig
- - Add PluginInstance.writeConfig
- - Add PluginInstance.configWidget
+  - Revert the property based approach of the extenision hierarchy. I.e. drop all properties and
+    constructors in relevant classes:
 
-Changes in 2.2:
+    - ``Extension``
+    - ``TriggerQueryHandler``
+    - ``GlobalQueryHandler``
+    - ``IndexQueryHandler``
+    - ``FallbackHandler``
 
- - PluginInstance.configWidget supports 'label'
- - __doc__ is not used anymore, since 0.23 drops long_description metadata
- - md_maintainers not used anymore
- - md_authors new optional field
+  - ``Item``: Make all readonly properties methods.
+  - ``RankItem.__init__(…)`` add overload that takes a ``Match``.
+  - ``MatchConfig``: Add new class.
+  - ``Matcher.__init__(…)``: Add optional parameter ``config`` of type ``MatchConfig``.
+  - ``runTerminal(…)``:
 
-Changes in 2.3:
+      - Drop parameter ``workdir``. Prepend ``cd <workdir>;`` to the script.
+      - Drop parameter ``close_on_exit``. Append ``exec $SHELL;`` to the script.
 
-- Module:
-    - Deprecate md_id. Use PluginInstance.id.
-- PluginInstance:
-    - Add read only property id.
-    - Add read only property name.
-    - Add read only property description.
-    - Add instance method registerExtension(…).
-    - Add instance method deregisterExtension(…).
-    - Deprecate initialize(…). Use __init__(…).
-    - Deprecate finalize(…). Use __del__(…).
-    - Deprecate __init__ extensions parameter. Use (de)registerExtension(…).
-    - Auto(de)register plugin extension (if isinstance(Plugin, Extension)).
-- Use Query instead of TriggerQuery and GlobalQuery.
+  - Add ``openFile(…)``.
+
+- ``v2.5``
+
+  - Matcher now not considered experimental anymore.
+  - Add ``Matcher.match(strings: List[str])``.
+  - Add ``Matcher.match(*args: str)``.
+
+- ``v2.4``
+
+  - Deprecate parameter ``workdir`` of runTerminal. Prepend ``cd <workdir>;`` to your script.
+  - Deprecate parameter ``close_on_exit`` of runTerminal. Append ``exec $SHELL;`` to your script.
+
+- ``v2.3``
+
+  - Module
+
+    - Deprecate ``md_id``. Use ``PluginInstance.id``.
+
+  - PluginInstance:
+
+    - Add read only property ``id``.
+    - Add read only property ``name``.
+    - Add read only property ``description``.
+    - Add instance method ``registerExtension(…)``.
+    - Add instance method ``deregisterExtension(…)``.
+    - Deprecate ``initialize(…)``. Use ``__init__(…)``.
+    - Deprecate ``finalize(…)``. Use ``__del__(…)``.
+    - Deprecate ``__init__`` extensions parameter. Use ``(de)``-/``registerExtension(…)``.
+    - Auto(de)register plugin extension if ``Plugin`` is instance of ``Extension``.
+
+  - Use ``Query`` instead of ``TriggerQuery`` and ``GlobalQuery``.
+
     - The interface is backward compatible, however type hints may break.
-- Add Matcher and Match convenience classes.
-- Notification:
-    - Add property title.
-    - Add property text.
-    - Add instance method send().
-    - Add instance method dismiss().
-    - Note: Notification does not display unless send(…) has been called.
 
-Changes in 2.4:
+  - Add ``Matcher`` and ``Match`` convenience classes.
+  - Notification:
 
-- Deprecate parameter `workdir` of runTerminal. Prepend `cd <workdir>;` to your script.
-- Deprecate parameter `close_on_exit` of runTerminal. Append `exec $SHELL;` to your script.
+    - Add property ``title``.
+    - Add property ``text``.
+    - Add instance method ``send()``.
+    - Add instance method ``dismiss()``.
+    - Note: Notification does not display unless ``send(…)`` has been called.
 
-Changes in 2.5:
-- Matcher now not considered experimental anymore.
-- Add `Matcher.match(strings: List[str])`.
-- Add `Matcher.match(*args: str)`.
+- ``v2.2``
 
+  - ``PluginInstance.configWidget`` supports ``'label'``
+  - ``__doc__`` is not used anymore, since 0.23 drops ``long_description`` metadata
+  - Deprecate ``md_maintainers`` not used anymore
+  - Add optional variable ``md_authors``
 
-## List of things 3.0 will break
+- ``v2.1``
 
-- Drop PluginInstance.initialize. Use PluginInstance.__init__(…).
-- Drop PluginInstance.finalize. Use PluginInstance.__del__(…).
-- Drop PluginInstance.__init__ extensions parameter. Use PluginInstance.(de)registerExtension(…).
-- Drop implicit directory creation in cacheLocation.
-- Drop implicit directory creation in configLocation.
-- Drop implicit directory creation in dataLocation.
-- Drop md_id.
-- Drop parameter `workdir` in runTerminal.
-- Drop parameter `close_on_exit` in runTerminal.
+  - Add ``PluginInstance.readConfig``
+  - Add ``PluginInstance.writeConfig``
+  - Add ``PluginInstance.configWidget``
 
 """
 
 from abc import abstractmethod, ABC
-from enum import Enum
 from typing import Any
 from typing import Callable
 from typing import List
 from typing import Optional
-from typing import Union
 from typing import overload
 from pathlib import Path
 
 class PluginInstance(ABC):
     """
-    https://albertlauncher.github.io/reference/classalbert_1_1PluginInstance.html
+    See also:
+        `PluginInstance C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1PluginInstance.html>`_
     """
 
-    @property
     def id(self) -> str:
         """
-        The id of the plugin. Taken from the metadata.
-
-        Since 2.3
+        Returns the id from the plugin metadata.
         """
-        ...
 
-    @property
     def name(self) -> str:
         """
-        The name of the plugin. Taken from the metadata.
-
-        Since 2.3
+        Returns the name from the plugin metadata.
         """
 
-    @property
     def description(self) -> str:
         """
-        The description of the plugin. Taken from the metadata.
-
-        Since 2.3
+        Returns the description from the plugin metadata.
         """
 
-    @property
     def cacheLocation(self) -> Path:
         """
-        The recommended location for cache files of the plugin.
-
-        Note:
-            Will not be implicitly created anymore from v3.0 on.
+        Returns the recommended cache location for this plugin.
         """
 
-    @property
     def configLocation(self) -> Path:
         """
-        The recommended location for config files of the plugin.
-
-        Note:
-            Will not be implicitly created anymore from v3.0 on.
+        Returns the recommended config location for this plugin.
         """
 
-    @property
     def dataLocation(self) -> Path:
         """
-        The recommended location for data files of the plugin.
-
-        Note:
-            Will not be implicitly created anymore from v3.0 on.
+        Returns the recommended data location for this plugin.
         """
 
-    def registerExtension(self, extension: Extension):
+    def extensions(self) -> List[Extension]:
         """
-        Register an additional extension.
-
-        Note:
-            Internally holds a C++ weak reference. You are responsible to keep the extension alive for the time it is
-            registered as well as unregistering it whenever desired, but especially before plugin destruction. If you
-            dont the app will crash on next query.
-
-        Args:
-            extension: The extension to be registered
-
-        Since 2.3
-        """
-
-    def deregisterExtension(self, extension: Extension):
-        """
-        Deregister an additional extension.
-
-        Args:
-            extension: The extension to be deregistered
-
-        Since 2.3
+        Returns the extensions of this plugin. You are responsible to keep the extensions alive for
+        the lifetime of this plugin. The base class implementation returns ``self`` if the plugin
+        is an instance of ``Extension``, otherwise an empty list.
         """
 
     def readConfig(self, key: str, type: type[str|int|float|bool]) -> str|int|float|bool|None:
         """
-        Read a config value from the Albert settings.
-        Note: Due to limitations of QSettings on some platforms the type may be lost, therefore the type expected has to
-        be passed.
-
-        Returns:
-             The requested value or None if the value does not exist or errors occurred.
+        Returns the config value for ``key`` from the Albert settings or ``None`` if the value does
+        notexist or errors occurred. Due to limitations of QSettings on some platforms the type may
+        be lost, therefore the ``type`` has to be passed.
         """
 
     def writeConfig(self, key: str, value: str|int|float|bool):
         """
-        Write a config value to the Albert settings.
-
-        Args:
-            key: The key of the config value
-            value: The value to be stored
+        Writes ``value`` to ``key`` in the Albert settings.
         """
 
     def configWidget(self) -> List[dict]:
         """
+        Returns a list of dicts, describing a form layout as described below.
+
         **Descriptive config widget factory.**
 
-        Define a static config widget using a list of dicts, each defining a row in the resulting form layout. Each dict
-        must contain key 'type' having one of the supported types specified below. Each type may define further
-        keys.
+        Define a static config widget using a list of dicts, each defining a row in the resulting
+        form layout. Each dict must contain key ``type`` having one of the supported types specified
+        below. Each type may define further keys.
 
-        **A note on 'widget_properties'**
+        **A note on widget properties**
 
-        This is a dict setting the widget properties of a QWidget or one of its derived classes. See Qt documentation
-        for a particular class. Note that due to the restricted type conversion only properties of type
-        str|int|float|bool are settable.
+        This is a dict setting the properties of a widget. Note that due to the restricted type
+        conversion only properties of type ``str``, ``int``, ``float, ``bool`` are settable.
 
-        **Supported row 'type's**
+        **Supported row types**
 
-        * 'label' (since 2.2)
+        * ``label``
 
           Display text spanning both columns. Additional keys:
 
-          - 'text': The text to display
-          - 'widget_properties': https://doc.qt.io/qt-6/qlabel.html.
+          - ``text``: The text to display
+          - ``widget_properties``: `QLabel properties <https://doc.qt.io/qt-6/qlabel.html#properties>`_
 
-        * 'checkbox'
+        * ``checkbox``
 
           A form layout item to edit boolean properties. Additional keys:
 
-          - 'label': The text displayed in front of the the editor widget.
-          - 'property': The name of the property that will be set on changes.
-          - 'widget_properties': https://doc.qt.io/qt-6/qcheckbox.html
+          - ``label``: The text displayed in front of the the editor widget.
+          - ``property``: The name of the property that will be set on changes.
+          - ``widget_properties``: `QCheckBox properties <https://doc.qt.io/qt-6/qcheckbox.html#properties>`_
 
-        * 'lineedit'
+        * ``lineedit``
 
           A form layout item to edit string properties. Additional keys:
 
-          - 'label': The text displayed in front of the the editor widget.
-          - 'property': The name of the property that will be set on changes.
-          - 'widget_properties': https://doc.qt.io/qt-6/qlineedit.html
+          - ``label``: The text displayed in front of the the editor widget.
+          - ``property``: The name of the property that will be set on changes.
+          - ``widget_properties``: `QLineEdit properties <https://doc.qt.io/qt-6/qlineedit.html#properties>`_
 
-        * 'combobox'
+        * ``combobox``
 
           A form layout item to set string properties using a list of options. Additional keys:
 
-          - 'label': The text displayed in front of the the editor widget.
-          - 'property': The name of the property that will be set on changes.
-          - 'items': The list of strings used to populate the combobox.
-          - 'widget_properties': https://doc.qt.io/qt-6/qcombobox.html
+          - ``label``: The text displayed in front of the the editor widget.
+          - ``property``: The name of the property that will be set on changes.
+          - ``items``: The list of strings used to populate the combobox.
+          - ``widget_properties``: `QComboBox properties <https://doc.qt.io/qt-6/qcombobox.html#properties>`_
 
-        * 'spinbox'
+        * ``spinbox``
 
           A form layout item to edit integer properties. Additional keys:
 
-          - 'label': The text displayed in front of the the editor widget.
-          - 'property': The name of the property that will be set on changes.
-          - 'widget_properties': https://doc.qt.io/qt-6/qspinbox.html
+          - ``label``: The text displayed in front of the the editor widget.
+          - ``property``: The name of the property that will be set on changes.
+          - ``widget_properties``: `QSpinBox properties <https://doc.qt.io/qt-6/qspinbox.html#properties>`_
 
-        * 'doublespinbox'
+        * ``doublespinbox``
 
           A form layout item to edit float properties. Additional keys:
 
-          - 'label': The text displayed in front of the the editor widget.
-          - 'property': The name of the property that will be set on changes.
-          - 'widget_properties': https://doc.qt.io/qt-6/qdoublespinbox.html
-
-        Returns:
-            A list of dicts, describing a form layout as defined above.
+          - ``label``: The text displayed in front of the the editor widget.
+          - ``property``: The name of the property that will be set on changes.
+          - ``widget_properties``: `QDoubleSpinBox properties <https://doc.qt.io/qt-6/qdoublespinbox.html#properties>`_
         """
 
+
 class Action:
-    """https://albertlauncher.github.io/reference/classalbert_1_1Action.html"""
+    """
+    See also:
+        `Action C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1Action.html>`_
+    """
 
     def __init__(self,
                  id: str,
@@ -288,167 +302,337 @@ class Action:
 
 
 class Item(ABC):
-    """https://albertlauncher.github.io/reference/classalbert_1_1Item.html"""
+    """
+    See also:
+        `Item C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1Item.html>`_
+    """
 
     @abstractmethod
     def id(self) -> str:
-        ...
+        """
+        Returns the item identifier.
+        """
 
     @abstractmethod
     def text(self) -> str:
-        ...
+        """
+        Returns the item text.
+        """
 
     @abstractmethod
     def subtext(self) -> str:
-        ...
+        """
+        Returns the item subtext.
+        """
 
     @abstractmethod
     def inputActionText(self) -> str:
-        ...
+        """
+        Returns the item input action text.
+        """
 
     @abstractmethod
     def iconUrls(self) -> List[str]:
         """
-        See https://albertlauncher.github.io/reference/classalbert_1_1IconProvider.html
+        Returns the item icon URLs.
+
+        See also:
+             `pixmapFromUrl() C++ Reference <https://albertlauncher.github.io/reference/namespacealbert.html#ab33e1e7fab94ddf6b1b7f4683577602c>`_
         """
 
     @abstractmethod
     def actions(self) -> List[Action]:
-        ...
+        """
+        Returns the item actions.
+        """
 
 
 class StandardItem(Item):
-    """https://albertlauncher.github.io/reference/structalbert_1_1StandardItem.html"""
+    """
+    A property based implementation of the ``Item`` interface.
+
+    See also:
+        `StandardItem C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1StandardItem.html>`_
+    """
 
     def __init__(self,
                  id: str = '',
                  text: str = '',
                  subtext: str = '',
+                 inputActionText: Optional[str] = '',
                  iconUrls: List[str] = [],
-                 actions: List[Action] = [],
-                 inputActionText: Optional[str] = ''):
+                 actions: List[Action] = []):
         ...
 
     id: str
+    """
+    The item identifier.
+    """
+
     text: str
+    """
+    The item text.
+    """
+
     subtext: str
-    iconUrls: List[str]
-    actions: List[Action]
+    """
+    The item subtext.
+    """
+
     inputActionText: str
+    """
+    The item input action text.
+    """
+
+    iconUrls: List[str]
+    """
+    The item icon URLs.
+
+    See also:
+         `pixmapFromUrl() C++ Reference <https://albertlauncher.github.io/reference/namespacealbert.html#ab33e1e7fab94ddf6b1b7f4683577602c>`_
+    """
+
+    actions: List[Action]
+    """
+    The item actions.
+    """
 
 
-class Extension(ABC):
-    """https://albertlauncher.github.io/reference/classalbert_1_1Extension.html"""
-
-    def __init__(self,
-                 id: str,
-                 name: str,
-                 description: str):
-        ...
-
-    @property
-    def id(self) -> str:
-        """
-        The id of the extension.
-        """
-
-    @property
-    def name(self) -> str:
-        """
-        The name of the extension.
-        """
-
-    @property
-    def description(self) -> str:
-        """
-        The description of the extension.
-        """
-
-
-class FallbackHandler(Extension):
-    """https://albertlauncher.github.io/reference/classalbert_1_1FallbackHandler.html"""
-
-    def __init__(self,
-                 id: str,
-                 name: str,
-                 description: str):
-        ...
-
-    @abstractmethod
-    def fallbacks(self, query: str ) ->List[Item]:
-        ...
-
-
-class Query():
-    """https://albertlauncher.github.io/reference/classalbert_1_1Query.html"""
+class Query:
+    """
+    See also:
+        `Query C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1Query.html>`_
+    """
 
     @property
     def trigger(self) -> str:
-        ...
+        """
+        Returns the trigger of this query.
+        """
 
     @property
     def string(self) -> str:
-        ...
+        """
+        Returns the query string.
+        """
 
     @property
     def isValid(self) -> bool:
-        ...
+        """
+        Returns ``False`` if the query has been cancelled or invalidated, otherwise returns ``True``.
+        """
 
     @overload
     def add(self, item: Item):
-        ...
+        """
+        Adds ``item`` to the query results.
+
+        Use list add if you can to avoid expensive locking and UI flicker.
+        """
 
     @overload
     def add(self, item: List[Item]):
-        ...
+        """
+        Adds ``items`` to the query results.
+        """
+
+
+class MatchConfig:
+    """
+    See also:
+        `MatchConfig C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1MatchConfig.html>`_
+    """
+
+    def __init__(self,
+                 fuzzy: bool = False,
+                 ignore_case: bool = True,
+                 ignore_word_order: bool = True,
+                 ignore_diacritics: bool = True,
+                 separator_regex: str = "[\s\\\/\-\[\](){}#!?<>\"'=+*.:,;_]+"):
+        """
+        Constructs a ``MatchConfig`` initialized with the values of ``fuzzy``, ``ignore_case``,
+        ``ignore_diacritics``, ``ignore_word_order`` and ``separator_regex``. All parameters are
+        optional.
+        """
+
+    fuzzy: bool
+    """
+    Match strings error tolerant.
+    """
+
+    ignore_case: bool
+    """
+    Match strings case insensitive.
+    """
+
+    ignore_word_order: bool
+    """
+    Match strings independent of their order.
+    """
+
+    ignore_diacritics: bool
+    """
+    Match strings normalized.
+    """
+
+    separator_regex: str
+    """
+    The separator regex used to tokenize the strings.
+    """
+
+
+class Matcher:
+    """
+    See also:
+        `Matcher C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1Matcher.html>`_
+    """
+
+    def __init__(self,
+                 string: str,
+                 config: MatchConfig = MatchConfig()):
+        """
+        Constructs a ``Matcher`` for the given ``string`` and ``config``.
+        """
+
+    @overload
+    def match(self, string: str) -> Match:
+        """
+        Returns a ``Match`` for the ``string``.
+        """
+
+    @overload
+    def match(self, strings: List[str]) -> Match:
+        """
+        Returns the best ``Match`` for the ``strings``.
+        """
+
+    @overload
+    def match(self, *args: str) -> Match:
+        """
+        Returns the best ``Match`` for the ``args``.
+        """
+
+
+class Match:
+    """
+    See also:
+        `Match C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1Match.html>`_
+    """
+
+    def score(self) -> float:
+        """
+        The score of this match.
+        """
+
+    def isMatch(self) -> bool:
+        """
+        Returns ``True`` if this is a match, otherwise returns ``False``.
+        """
+
+    def isEmptyMatch(self) -> bool:
+        """
+        Returns ``True`` if this is a zero score match, otherwise returns ``False``.
+        """
+
+    def isExactMatch(self) -> bool:
+        """
+        Returns ``True`` if this is a perfect match, otherwise returns ``False``.
+        """
+
+    def __bool__(self) -> bool:
+        """
+        Converts the match to ``bool`` using ``isMatch()``.
+        """
+
+class Extension(ABC):
+    """
+    See also:
+        `Extension C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1Extension.html>`_
+    """
+
+    @abstractmethod
+    def id(self) -> str:
+        """
+        Returns the extension identifier.
+        """
+
+    @abstractmethod
+    def name(self) -> str:
+        """
+        Returns the pretty, human readable extension name.
+        """
+
+    @abstractmethod
+    def description(self) -> str:
+        """
+        Returns the brief extension description.
+        """
 
 
 class TriggerQueryHandler(Extension):
-    """https://albertlauncher.github.io/reference/classalbert_1_1TriggerQueryHandler.html"""
+    """
+    See also:
+        `TriggerQueryHandler C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1TriggerQueryHandler.html>`_
+    """
 
-    def __init__(self,
-                 id: str,
-                 name: str,
-                 description: str,
-                 synopsis: str = '',
-                 defaultTrigger: str = f'{id} ',
-                 allowTriggerRemap: str = True,
-                 supportsFuzzyMatching: bool = False):
-        ...
+    def synopsis(self, query: str) -> str:
+        """
+        Returns the input hint to be displayed on empty query.
 
-    @property
-    def synopsis(self) -> str:
-        ...
+        The base class implementation returns an empty string.
+        """
 
-    @property
-    def trigger(self) -> str:
-        ...
-
-    @property
-    def defaultTrigger(self) -> str:
-        ...
-
-    @property
     def allowTriggerRemap(self) -> bool:
-        ...
+        """
+        Returns ``True`` if the user is allowed to set a custom trigger, otherwise returns ``False``.
 
-    @property
+        The base class implementation returns ``True``.
+        """
+
+    def defaultTrigger(self) -> str:
+        """
+        Returns the default trigger.
+
+        The base class implementation returns an empty string.
+        """
+
     def supportsFuzzyMatching(self) -> bool:
-        ...
+        """
+        Returns ``True`` if the handler supports error tolerant matching, otherwise returns ``False``.
 
-    @fuzzyMatching.setter
+        The base class implementation returns ``False``.
+        """
+
+    def setTrigger(self, trigger: str):
+        """
+        Notifies about changes to the user defined ``trigger`` used to call the handler.
+
+        The base class implementation does nothing.
+        """
+
     def setFuzzyMatching(self, enabled: bool):
-        ...
+        """
+        Sets the fuzzy matching mode to ``enabled``.
+
+        The base class implementation does nothing.
+        """
 
     @abstractmethod
     def handleTriggerQuery(self, query: Query):
-        ...
+        """
+        Handles the triggered ``query``.
+        """
 
 
 class RankItem:
-    """https://albertlauncher.github.io/reference/classalbert_1_1RankItem.html"""
+    """
+    See also:
+        `RankItem C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1RankItem.html>`_
+    """
 
-    def __init__(self, item: Item, score: float):
+    def __init__(self,
+                 item: Item,
+                 score: float | Match):
         ...
 
     item: Item
@@ -456,36 +640,39 @@ class RankItem:
 
 
 class GlobalQueryHandler(TriggerQueryHandler):
-    """https://albertlauncher.github.io/reference/classalbert_1_1GlobalQueryHandler.html"""
+    """
+    See also:
+        `GlobalQueryHandler C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1GlobalQueryHandler.html>`_
+    """
 
-    def __init__(self,
-                 id: str,
-                 name: str,
-                 description: str,
-                 synopsis: str = '',
-                 defaultTrigger: str = f'{id} ',
-                 allowTriggerRemap: str = True,
-                 supportsFuzzyMatching: bool = False):
-        ...
+    def handleTriggerQuery(self, query: Query) -> List[RankItem]:
+        """
+        Implements ``TriggerQueryHandler.handleTriggerQuery()``.
+
+        Runs ``GlobalQueryHandler.handleGlobalQuery()``, applies usage scores, sorts and adds items to ``query``.
+        """
+
+    def applyUsageScore(self, rank_items: List[RankItem]):
+        """
+        Modifies the score of ``items`` according to the users usage in place.
+        """
 
     @abstractmethod
     def handleGlobalQuery(self, query: Query) -> List[RankItem]:
         """
-        Note that underlying C++ type of query is `const Query`.
-        Behavior on non const access (e.g. add) is undefined.
+        Returns items that match ``query``.
         """
-
-    def applyUsageScore(self, rank_items:  List[RankItem]):
-        ...
-
-    def handleTriggerQuery(self, query: TriggerQuery):
-        ...
 
 
 class IndexItem:
-    """https://albertlauncher.github.io/reference/classalbert_1_1IndexItem.html"""
+    """
+    See also:
+        `IndexItem C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1IndexItem.html>`_
+    """
 
-    def __init__(self, item: Item, string: str):
+    def __init__(self,
+                 item: Item,
+                 string: str):
         ...
 
     item: Item
@@ -493,146 +680,158 @@ class IndexItem:
 
 
 class IndexQueryHandler(GlobalQueryHandler):
-    """https://albertlauncher.github.io/reference/classalbert_1_1IndexQueryHandler.html"""
+    """
+    See also:
+        `IndexQueryHandler C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1IndexQueryHandler.html>`_
+    """
+
+    def handleGlobalQuery(self, query: Query) -> List[RankItem]:
+        """
+        Implements ``GlobalQueryHandler.handleGlobalQuery()``.
+
+        Returns items that match ``query`` using the index.
+        """
+
+    def setIndexItems(self, indexItems: List[IndexItem]):
+        """
+        Sets the items of the index.
+
+        Meant to be called in ``updateIndexItems()``.
+        """
 
     @abstractmethod
     def updateIndexItems(self):
-        ...
+        """
+        Updates the index.
 
-    def setIndexItems(self, indexItems: List[IndexItem]):
-        ...
+        Called when the index needs to be updated, i.e. for initialization, on user changes to the
+        index config (fuzzy, etc…) and probably by the client itself if the items changed. This
+        function should call setIndexItems(std::vector<IndexItem>&&) to update the index.
 
-    def handleGlobalQuery(self, query: GlobalQuery) -> List[RankItem]:
-        ...
+        Do not call this method in the constructor. It will be called on plugin initialization.
+        """
+
+
+class FallbackHandler(Extension):
+    """
+    See also:
+        `FallbackHandler C++ Reference <https://albertlauncher.github.io/reference/classalbert_1_1FallbackHandler.html>`_
+    """
+
+    @abstractmethod
+    def fallbacks(self, query: str) -> List[Item]:
+        """
+        Returns fallback items for ``query``.
+        """
 
 
 class Notification:
-    """https://albertlauncher.github.io/reference/classalbert_1_1Notification.html"""
+    """
+    See also:
+        `Notification C++ Reference <See https://albertlauncher.github.io/reference/classalbert_1_1Notification.html>`_
+    """
 
-    def __init__(self, title: str = '', text: str = ''):
+    def __init__(self,
+                 title: str = '',
+                 text: str = ''):
         ...
 
-    @property
-    def title(self) -> str:
-        """Since 2.3"""
+    title: str
 
-    @title.setter
-    def title(self, value : str):
-        """Since 2.3"""
-
-    @property
-    def text(self) -> str:
-        """Since 2.3"""
-
-    @text.setter
-    def text(self, value : str):
-        """Since 2.3"""
+    text: str
 
     def send(self):
-        """Since 2.3"""
-
-    def dismiss(self):
-        """Since 2.3"""
-
-
-class Match:
-    """Since 2.3"""
-
-    @property
-    def score(self) -> float:
-        """Since 2.3"""
-
-    def isMatch(self) -> bool:
-        """Since 2.3"""
-
-    def __bool__(self) -> bool:
-        """Since 2.3"""
-
-
-class Matcher:
-    """Since 2.3"""
-
-    def __init__(self, query: str):
         ...
 
-    @overload
-    def match(self, string: str) -> Match:
-        """Since 2.3"""
+    def dismiss(self):
+        ...
 
-    @overload
-    def match(self, strings: List[str]) -> Match:
-        """Since 2.5"""
-
-    @overload
-    def match(self, *args: str) -> Match:
-        """Since 2.5"""
 
 
 def debug(arg: Any):
-    """Module attached attribute"""
+    """
+    Logs ``str(arg)`` as debug message in the logging category of this plugin.
+
+    Note:
+        This function is not part of the albert module and here for reference only.
+        The attribute is attached to the module at load time.
+    """
 
 
 def info(arg: Any):
-    """Module attached attribute"""
+    """
+    Logs ``str(arg)`` as info message in the logging category of this plugin.
 
+    Note:
+        This function is not part of the albert module and here for reference only.
+        The attribute is attached to the module at load time.
+    """
 
 def warning(arg: Any):
-    """Module attached attribute"""
+    """
+    Logs ``str(arg)`` as warning message in the logging category of this plugin.
+
+    Note:
+        This function is not part of the albert module and here for reference only.
+        The attribute is attached to the module at load time.
+    """
 
 
 def critical(arg: Any):
-    """Module attached attribute"""
-
-
-def setClipboardText(text: str=''):
     """
-    Set the system clipboard text.
-    Args:
-        text: The text used to set the clipboard
+    Logs ``str(arg)`` as critical message in the logging category of this plugin.
+
+    Note:
+        This function is not part of the albert module and here for reference only.
+        The attribute is attached to the module at load time.
+    """
+
+
+def setClipboardText(text: str):
+    """
+    Sets the system clipboard to ``text``.
+    """
+
+
+def setClipboardTextAndPaste(text: str):
+    """
+    Sets the system clipboard to ``text`` and paste the content to the front-most window.
+
+    Note:
+        Requires paste support. Check ``havePasteSupport()`` before using this function.
     """
 
 
 def havePasteSupport() -> bool:
     """
-    Check paste support of the platform.
-    Returns:
-        True if requirements for setClipboardTextAndPaste(…) are met.
-    Since:
-        2.3
+    Returns ``True`` if the platform supports pasting, otherwise returns ``False``.
+
+    Note:
+        This is a requirement for ``setClipboardTextAndPaste(…)`` to work.
     """
 
 
-def setClipboardTextAndPaste(text: str=''):
+def openUrl(url: str):
     """
-    Set the system clipboard text and paste to the front-most window.
-    Check for support using havePasteSupport()
-    Args:
-        text: The text used to set the clipboard
+    Opens the URL ``url`` with the default URL handler.
     """
 
 
-def openUrl(url: str = ''):
+def openFile(path: str):
     """
-    Open an URL using QDesktopServices::openUrl.
-    Args:
-        url: The URL to open
+    Opens the file at ``path`` with the default application.
     """
 
 
-def runDetachedProcess(cmdln: List[str] = [], workdir: str = ''):
+def runDetachedProcess(cmdln: List[str], workdir: str = '') -> int:
     """
-    Run a detached process.
-    Args:
-        cmdln: The commandline to run in the terminal (argv)
-        workdir: The working directory used to run the terminal
+    Starts the ``commandline`` in a new process, and detaches from it. Returns the PID on success;
+    otherwise returns 0. The process will be started in the directory ``working_dir``. If
+    ``working_dir`` is empty, the working directory is the users home directory.
     """
 
 
-def runTerminal(script: str = '', workdir: str = '', close_on_exit: bool = False):
+def runTerminal(script: str):
     """
-    Run a script in the users shell and terminal.
-    Args:
-        script: The script to be executed.
-        workdir: The working directory used to run the process
-        close_on_exit: Close the terminal on exit. Otherwise exec $SHELL.
+    Runs a ``script`` in the users shell and terminal.
     """

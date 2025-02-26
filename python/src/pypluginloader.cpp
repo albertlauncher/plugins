@@ -202,6 +202,17 @@ const albert::PluginMetaData &PyPluginLoader::metaData() const { return metadata
 
 void PyPluginLoader::load()
 {
+    if (instance_)
+    {
+        WARN << metadata_.id << "Plugin already loaded.";
+        return;
+    }
+
+    // Check binary dependencies
+    for (const auto& exec : metadata_.binary_dependencies)
+        if (QStandardPaths::findExecutable(exec).isNull())
+            throw runtime_error(Plugin::tr("No '%1' in $PATH.").arg(exec).toStdString());
+
     try {
         QFutureWatcher<void> watcher;
         watcher.setFuture(QtConcurrent::run([this]() {
@@ -253,11 +264,6 @@ void PyPluginLoader::load()
 
 void PyPluginLoader::load_()
 {
-    // Check binary dependencies
-    for (const auto& exec : metadata_.binary_dependencies)
-        if (QStandardPaths::findExecutable(exec).isNull())
-            throw runtime_error(Plugin::tr("No '%1' in $PATH.").arg(exec).toStdString());
-
     py::gil_scoped_acquire acquire;
 
     try {
@@ -265,10 +271,6 @@ void PyPluginLoader::load_()
         py::module importlib_util = py::module::import("importlib.util");
         py::object pyspec = importlib_util.attr("spec_from_file_location")(QString("albert.%1").arg(metadata_.id), source_path_); // Prefix to avoid conflicts
         module_ = importlib_util.attr("module_from_spec")(pyspec);
-
-        // Set default md_id TODO: Remove as of 3.0
-        if (!py::hasattr(module_, ATTR_MD_ID))
-            module_.attr("md_id") = metadata_.id;
 
         // Attach logcat functions
         // https://bugreports.qt.io/browse/QTBUG-117153
@@ -306,28 +308,6 @@ void PyPluginLoader::unload()
 {
     py::gil_scoped_acquire acquire;
 
-    // >>>>>>>> TODO: Remove as of 3.0
-
-    instance_.cast<PyPI*>()->backwardCompatibileFini();
-
-    try {
-        if (py::hasattr(instance_, "finalize"))
-        {
-            WARN << metadata_.id << "Deprecated: PluginInstance.finalize(), use __del__.";
-            instance_.attr("finalize")();
-        }
-    } catch (const std::exception &e) {
-        CRIT << e.what();
-    }
-
-    // <<<<<<<<<<
-
-    if (py::isinstance<Extension>(instance_))
-    {
-        auto *root_extension = instance_.cast<Extension*>();
-        plugin_.registry().deregisterExtension(root_extension);
-    }
-
     instance_ = py::object();
     module_ = py::object();
 
@@ -346,29 +326,11 @@ PluginInstance *PyPluginLoader::createInstance()
             if (!py::isinstance<PyPI>(instance_))
                 throw runtime_error("Python Plugin class is not of type PluginInstance.");
 
-            // >>>>>>>> TODO: Remove as of 3.0
-
-            if (hasattr(instance_, "initialize"))
-            {
-                WARN << metadata_.id << "Deprecated: PluginInstance.initialize(), use __init__.";
-                instance_.attr("initialize")();
-            }
-
-            instance_.cast<PyPI*>()->backwardCompatibileInit();
-
-            // <<<<<<<<<<
-
-            if (py::isinstance<Extension>(instance_))
-            {
-                auto *root_extension = instance_.cast<Extension*>();
-                plugin_.registry().registerExtension(root_extension);
-            }
-
         } catch (const std::exception &e) {
             instance_ = py::object();
             module_ = py::object();
             throw;
         }
     }
-    return instance_.cast<PyPI*>();
+    return instance_.cast<PluginInstance*>();
 }

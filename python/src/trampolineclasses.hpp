@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "cast_specialization.hpp" // Has to be imported first
+#include "cast_specialization.hpp"  // Has to be imported first
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -33,55 +33,45 @@ catch (const std::exception &e) { CRIT << typeid(base).name() << #func << e.what
 try { PYBIND11_OVERRIDE(ret, base, func, __VA_ARGS__ ); } \
 catch (const std::exception &e) { CRIT << typeid(base).name() << #func << e.what(); }
 
+// Workaround dysfunctional mixin behavior.
+// See https://github.com/pybind/pybind11/issues/5405
+#define WORKAROUND_PYBIND_5405(name) \
+QString name() const override { \
+    try { \
+        py::gil_scoped_acquire gil; \
+        if (auto py_instance = py::cast(this); py::isinstance<PluginInstance>(py_instance)) \
+            return py::cast<PluginInstance*>(py_instance)->loader().metaData().name; \
+        PYBIND11_OVERRIDE_PURE(QString, Base, name, ); \
+    } \
+    catch (const std::runtime_error &e) { \
+        CRIT << __PRETTY_FUNCTION__ << e.what(); \
+    } \
+    return {}; \
+}
 
 class PyPI : public PluginInstance
 {
 public:
 
-    PyPI(const vector<Extension*> &e = {})
-        : additionalExtensions_(e.begin(), e.end())
+    vector<Extension *> extensions() override
     {
-        if (!e.empty())
-            WARN << loader().metaData().id
-                 << "Using the 'extensions' argument in the constructor is deprecated and will be "
-                    "dropped in interface v3.0. Use the registerExtension and deregisterExtension "
-                    "methods instead.";
-    }
-
-    /// Lock GIL before!
-    /// Remove in 3.0
-    void backwardCompatibileInit()
-    {
-        // To not break compat with 2.x. register ctor-passed extensions.
-        // Exclude the root extension which will be autoloaded by the plugin loader
-
-        if (auto self = py::cast(this); py::isinstance<Extension>(self))
+        py::gil_scoped_acquire gil;
+        try
         {
-            auto *root_extension = self.cast<Extension*>();
-            additionalExtensions_.erase(root_extension);
+            PYBIND11_OVERRIDE_PURE(vector<Extension *>, PluginInstance, extensions, );
+        }
+        catch (const std::exception &e)
+        {
+            if (auto py_instance = py::cast(this); py::isinstance<Extension>(py_instance))
+                return {py::cast<Extension *>(py_instance)};
+
+            pybind11::pybind11_fail(
+                "Tried to call pure virtual function \""
+                PYBIND11_STRINGIFY(Base) "::" "id" "\"");
         }
 
-        for (auto *e : additionalExtensions_)
-            registry().registerExtension(e);
+        return {};
     }
-
-    /// Lock GIL before!
-    /// Remove in 3.0
-    void backwardCompatibileFini()
-    {
-        for (auto *e : additionalExtensions_)
-            registry().deregisterExtension(e);
-    }
-
-    void registerExtension(Extension *e) { registry().registerExtension(e); }
-
-    void deregisterExtension(Extension *e) { registry().deregisterExtension(e); }
-
-    py::object pathlibCachePath() const { return createPath(cacheLocation()); }
-
-    py::object pathlibConfigPath() const { return createPath(configLocation()); }
-
-    py::object pathlibDataPath() const { return createPath(dataLocation()); }
 
     void writeConfig(QString key, const py::object &value) const
     {
@@ -266,23 +256,6 @@ public:
 
 private:
 
-    py::object createPath(const QString &path) const
-    {
-        py::gil_scoped_acquire a;
-
-        if (QDir dir(path); !dir.exists())
-        {
-            WARN << loader().metaData().id
-                 << ": Implicit directory creation is a deprecated feature and will be dropped in "
-                    "interace version 3.0!";
-
-            if (!dir.mkpath("."))
-                CRIT << "Failed to create path" << path;
-        }
-
-        return py::module_::import("pathlib").attr("Path")(path);  // should cache the module
-    }
-
     /// Get a property of this Python instance
     /// DOES NOT LOCK THE GIL!
     template <class T>
@@ -322,36 +295,47 @@ private:
             }
         }
     }
-
-protected:
-
-    // Todo: Remove with 3.0
-    set<Extension*> additionalExtensions_;
-
 };
 
 
 class PyItemTrampoline : Item
 {
 public:
-
     QString id() const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, id); return {}; }
+    {
+        CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, id);
+        return {};
+    }
 
     QString text() const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, text); return {}; }
+    {
+        CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, text);
+        return {};
+    }
 
     QString subtext() const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, subtext, ); return {}; }
+    {
+        CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, subtext);
+        return {};
+    }
 
     QStringList iconUrls() const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(QStringList, Item, iconUrls, ); return {}; }
+    {
+        CATCH_PYBIND11_OVERRIDE_PURE(QStringList, Item, iconUrls);
+        return {};
+    }
 
     QString inputActionText() const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, inputActionText, ); return {}; }
+    {
+        CATCH_PYBIND11_OVERRIDE_PURE(QString, Item, inputActionText);
+        return {};
+    }
 
     vector<Action> actions() const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(vector<Action>, Item, actions, ); return {}; }
+    {
+        CATCH_PYBIND11_OVERRIDE_PURE(vector<Action>, Item, actions);
+        return {};
+    }
 };
 
 
@@ -359,117 +343,50 @@ template <class Base = Extension>
 class PyE : public Base
 {
 public:
-    // using Base::Base;  // Inherit the constructors, pybind requirement
-
-    PyE(const QString &id, const QString &name, const QString &description)
-        : id_(id), name_(name), description_(description)
-    {
-        // INFO << "PyE" << id_;
-        // No way to cast to PI here to get the metadata
-    }
-
-    // template <typename T = Base, typename = std::enable_if_t<std::is_base_of<PluginInstance, T>::value>>
-    // PyE():
-    //     id_(PluginInstance::loader().metaData().id),
-    //     name_(PluginInstance::loader().metaData().name),
-    //     description_(PluginInstance::loader().metaData().description)
-    // {
-    //     // INFO << "PyE" << id_;
-    // }
-
-    QString id() const override { return id_; }
-    QString name() const override { return name_; }
-    QString description() const override { return description_; }
-
-protected:
-
-    const QString id_;
-    const QString name_;
-    const QString description_;
-
+    WORKAROUND_PYBIND_5405(id)
+    WORKAROUND_PYBIND_5405(name)
+    WORKAROUND_PYBIND_5405(description)
 };
-
-
-template <class Base = FallbackHandler>
-class PyFQH : public PyE<Base>
-{
-public:
-
-    using PyE<Base>::PyE; // Inherit constructors
-
-    PyFQH(const QString &id, const QString &name, const QString &description)
-        : PyE<Base>(id, name, description)
-    {
-        // INFO << "PyFQH" << id;
-    }
-
-    vector<shared_ptr<Item>> fallbacks(const QString &query) const override
-    { CATCH_PYBIND11_OVERRIDE_PURE(vector<shared_ptr<Item>>, FallbackHandler, fallbacks, query); return {}; }
-
-};
-
 
 template <class Base = TriggerQueryHandler>
 class PyTQH : public PyE<Base>
 {
 public:
-
-    using PyE<Base>::PyE; // Inherit constructors
-
-    PyTQH(const QString &id,
-          const QString &name,
-          const QString &description,
-          const QString &synopsis,
-          const QString &defaultTrigger,
-          bool allowTriggerRemap,
-          bool supportsFuzzyMatching):
-        PyE<Base>(id, name, description),
-        synopsis_(synopsis),
-        defaultTrigger_(defaultTrigger.isEmpty() ? QString("%1 ").arg(id) : defaultTrigger),
-        allowTriggerRemap_(allowTriggerRemap),
-        supportsFuzzyMatching_(supportsFuzzyMatching)
+    QString synopsis(const QString &query) const override
     {
-        // INFO << "PyTQH" << id;
+        CATCH_PYBIND11_OVERRIDE(QString, Base, synopsis, query);
+        return {};
     }
-
-    PyTQH(const QString &synopsis,
-          const QString &defaultTrigger,
-          bool allowTriggerRemap,
-          bool supportsFuzzyMatching):
-        PyE<Base>(),
-        synopsis_(synopsis),
-        defaultTrigger_(defaultTrigger.isEmpty() ? QString("%1 ").arg(PyE<Base>::id_) : defaultTrigger),
-        allowTriggerRemap_(allowTriggerRemap),
-        supportsFuzzyMatching_(supportsFuzzyMatching)
-    {
-        // INFO << "PyTQH" << PyE<Base>::id_;
-    }
-
-    QString synopsis() const override
-    { return synopsis_; }
-
-    QString defaultTrigger() const override
-    { return defaultTrigger_; }
 
     bool allowTriggerRemap() const override
-    { return allowTriggerRemap_; }
+    {
+        CATCH_PYBIND11_OVERRIDE(bool, Base, allowTriggerRemap);
+        return {};
+    }
+
+    QString defaultTrigger() const override
+    {
+        CATCH_PYBIND11_OVERRIDE(QString, Base, defaultTrigger);
+        return {};
+    }
 
     bool supportsFuzzyMatching() const override
-    { return supportsFuzzyMatching_; }
+    {
+        CATCH_PYBIND11_OVERRIDE(bool, Base, supportsFuzzyMatching);
+        return {};
+    }
 
     void setFuzzyMatching(bool enabled) override
-    { CATCH_PYBIND11_OVERRIDE(void, Base, setFuzzyMatching, enabled); }
+    {
+        CATCH_PYBIND11_OVERRIDE(void, Base, setFuzzyMatching, enabled);
+    }
 
-    void handleTriggerQuery(albert::Query *query) override
-    { CATCH_PYBIND11_OVERRIDE_PURE(void, Base, handleTriggerQuery, query); }
-
-protected:
-
-    const QString synopsis_;
-    const QString defaultTrigger_;
-    const bool allowTriggerRemap_;
-    const bool supportsFuzzyMatching_;
-
+    // No type mismatch workaround required since base class is not called.
+    void handleTriggerQuery(albert::Query &query) override
+    {
+        albert::Query * query_ptr = &query;
+        CATCH_PYBIND11_OVERRIDE_PURE(void, Base, handleTriggerQuery, query_ptr);
+    }
 };
 
 
@@ -477,34 +394,27 @@ template <class Base = GlobalQueryHandler>
 class PyGQH : public PyTQH<Base>
 {
 public:
-
-    using PyTQH<Base>::PyTQH; // Inherit constructors
-
-    PyGQH(const QString &id,
-          const QString &name,
-          const QString &description,
-          const QString &synopsis,
-          const QString &defaultTrigger,
-          bool allowTriggerRemap,
-          bool supportsFuzzyMatching):
-        PyTQH<Base>(id, name, description, synopsis, defaultTrigger,
-                    allowTriggerRemap, supportsFuzzyMatching)
-    {
-        // INFO << "PyGQH" << id;
-    }
-
     // This is required due to the "final" quirks of the pybind trampoline chain
     // E < TQH < GQH < PyE < PyTQH < PyGQH
     //           ^(1)        ^(2)    ^(3)
     // (1) overrides handleTriggerQuery "final"
     // (2) overrides "pure" on python side
-    // (3) has to override none pure otherwise calls will throw "call to pure" error
-    void handleTriggerQuery(albert::Query *query) override
-    { CATCH_PYBIND11_OVERRIDE(void, Base, handleTriggerQuery, query); }
+    // (3) has to override non-pure otherwise calls will throw "call to pure" error
+    void handleTriggerQuery(albert::Query &query) override
+    {
+        // PyBind does not suport passing reference, but instead tries to copy. Workaround
+        // converting to pointer. Needed because PYBIND11_OVERRIDE_PURE introduces type mismatch.
+        albert::Query * query_ptr = &query;
+        PYBIND11_OVERRIDE_IMPL(void, Base, "handleTriggerQuery", query_ptr);  // returns on success
+        return Base::handleTriggerQuery(query);  // otherwise call base class
+    }
 
-    vector<RankItem> handleGlobalQuery(const albert::Query *query) override
-    { CATCH_PYBIND11_OVERRIDE_PURE(vector<RankItem>, Base, handleGlobalQuery, query); return {}; }
-
+    // No type mismatch workaround required since base class is not called.
+    vector<RankItem> handleGlobalQuery(const albert::Query &query) override
+    {
+        CATCH_PYBIND11_OVERRIDE_PURE(vector<RankItem>, Base, handleGlobalQuery, &query);
+        return {};
+    }
 };
 
 
@@ -512,34 +422,33 @@ template <class Base = IndexQueryHandler>
 class PyIQH : public PyGQH<Base>
 {
 public:
-
-    using PyGQH<Base>::PyGQH; // Inherit constructors
-
-    PyIQH(const QString &id, const QString &name, const QString &description,
-          const QString &synopsis, const QString &defaultTrigger,
-          bool allowTriggerRemap)
-        : PyGQH<Base>(id, name, description, synopsis, defaultTrigger,
-                      allowTriggerRemap, true)
-    {
-        // INFO << "PyIQH" << id;
-    }
-
-    PyIQH(const QString &synopsis, const QString &defaultTrigger, bool allowTriggerRemap)
-        : PyGQH<Base>(synopsis, defaultTrigger, allowTriggerRemap, true)
-    {
-        // INFO << "PyIQH" << PyE<Base>::id_;
-    }
-
     // This is required due to the "final" quirks of the pybind trampoline chain
     // E < TQH < GQH < IQH < PyE < PyTQH < PyGQH < PyIQH
     //                 ^(1)                ^(2)    ^(3)
     // (1) overrides handleGlobalQuery "final"
     // (2) overrides "pure" on python side
     // (3) has to override non-pure otherwise calls will throw "call to pure" error
-    vector<RankItem> handleGlobalQuery(const Query *query) override
-    { CATCH_PYBIND11_OVERRIDE(vector<RankItem>, Base, handleGlobalQuery, query); return {}; }
+    vector<RankItem> handleGlobalQuery(const albert::Query &query) override
+    {
+        // PyBind does not suport passing reference, but instead tries to copy. Workaround
+        // converting to pointer. Needed because PYBIND11_OVERRIDE_PURE introduces type mismatch.
+        const albert::Query * query_ptr = &query;
+        PYBIND11_OVERRIDE_IMPL(vector<RankItem>, Base, "handleGlobalQuery", query_ptr);  // returns on success
+        return Base::handleGlobalQuery(query);  // otherwise call base class
+    }
 
     void updateIndexItems() override
-    { CATCH_PYBIND11_OVERRIDE_PURE(void, Base, updateIndexItems, ); }
+    { CATCH_PYBIND11_OVERRIDE_PURE(void, Base, updateIndexItems); }
+};
 
+
+template <class Base = FallbackHandler>
+class PyFQH : public PyE<Base>
+{
+public:
+    vector<shared_ptr<Item>> fallbacks(const QString &query) const override
+    {
+        CATCH_PYBIND11_OVERRIDE_PURE(vector<shared_ptr<Item>>, FallbackHandler, fallbacks, query);
+        return {};
+    }
 };

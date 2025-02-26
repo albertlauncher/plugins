@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(python VERSION 4.12)
+project(python VERSION 5.0)
 
 set(PYBIND11_FINDPYTHON ON)
 #find_package(Python 3.8 COMPONENTS Interpreter Development REQUIRED)
@@ -23,17 +23,33 @@ install(
     PATTERN "*.md" EXCLUDE
 )
 
+if (BUILD_TESTS)
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+
+    get_target_property(SRC_TST ${PROJECT_NAME} SOURCES)
+    get_target_property(INC_TST ${PROJECT_NAME} INCLUDE_DIRECTORIES)
+    get_target_property(LIBS_TST ${PROJECT_NAME} LINK_LIBRARIES)
+    get_target_property(CXX_STD_TST ${PROJECT_NAME} CXX_STANDARD)
+
+    set(TARGET_TST ${PROJECT_NAME}_test)
+    add_executable(${TARGET_TST} ${SRC_TST} test/test.cpp)
+    target_include_directories(${TARGET_TST} PRIVATE ${INC_TST} test src)
+    target_link_libraries(${TARGET_TST} PRIVATE ${LIBS_TST} Qt6::Test libalbert)
+    set_target_properties(${TARGET_TST}
+        PROPERTIES
+            CXX_STANDARD ${CXX_STD_TST}
+            AUTOMOC ON
+            AUTOUIC ON
+            AUTORCC ON
+    )
+    set_property(TARGET ${TARGET_TST}
+        APPEND PROPERTY AUTOMOC_MACRO_NAMES "ALBERT_PLUGIN")
+    add_test(NAME ${TARGET_TST} COMMAND ${TARGET_TST})
+
+endif()
 
 
-
-
-## – –
-
-
-
-
-
-
+## – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – – –
 
 # find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
@@ -59,55 +75,3 @@ install(
 #     message(FATAL_ERROR "Python3 not found")
 # else()
 # endif()
-
-
-
-
-
-
-
-#find_program(
-#    Python3_EXECUTABLE python3
-#    HINTS /opt/homebrew/bin
-#)
-
-#message(STATUS ${Python3_EXECUTABLE})
-
-#option(BUILD_PY_TESTS "Build ${PROJECT_NAME} tests (Reqiures doctest)" OFF)
-#if (BUILD_PY_TESTS)
-#    set(TARGET_TST ${PROJECT_NAME}_test)
-#    find_package(doctest)
-
-
-#    include(GenerateExportHeader)
-#    generate_export_header(${TARGET_LIB}
-#        BASE_NAME "ALBERT"
-#        EXPORT_FILE_NAME "${PROJECT_BINARY_DIR}/include/albert/export.h"
-#    )
-
-
-#    add_executable(${TARGET_TST}
-#        test/test.cpp
-#        "${PROJECT_BINARY_DIR}/include/albert/export.h"
-#        ../../src/plugininstanceprivate.h
-#        ../../src/plugininstanceprivate.cpp
-#        ../../src/pluginloaderprivate.h
-#        ../../include/albert/extension/pluginprovider/pluginloader.h
-#        ../../src/pluginloader.cpp
-#    )
-
-#    target_include_directories(${TARGET_TST} PRIVATE
-#        ${PROJECT_BINARY_DIR}/include
-#        include
-#        src
-#        ../../include
-#        ../../src
-#    )
-
-#    target_link_libraries(${TARGET_TST}
-#        PRIVATE
-#        pybind11::embed
-#        doctest::doctestQt6::Core
-##        albert::albert
-#    )
-#endif()
