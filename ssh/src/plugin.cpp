@@ -8,9 +8,9 @@
 #include <QString>
 #include <QTextStream>
 #include <QWidget>
+#include <albert/albert.h>
 #include <albert/logging.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
 ALBERT_LOGGING_CATEGORY("ssh")
 using namespace albert;
 using namespace std;
@@ -46,7 +46,6 @@ static QSet<QString> parseConfigFile(const QString &path)
 }
 
 Plugin::Plugin():
-    apps(registry(), "applications"),
     tr_desc(tr("Configured SSH host – %1")),
     tr_conn(tr("Connect"))
 {
@@ -55,7 +54,7 @@ Plugin::Plugin():
     INFO << QStringLiteral("Found %1 ssh hosts.").arg(hosts.size());
 }
 
-QString Plugin::synopsis() const
+QString Plugin::synopsis(const QString &) const
 { return tr("[user@]<host> [params…]"); }
 
 bool Plugin::allowTriggerRemap() const
@@ -99,18 +98,17 @@ std::vector<RankItem> Plugin::getItems(const QString &query, bool allowParams) c
     return r;
 }
 
-
-void Plugin::handleTriggerQuery(albert::Query *query)
+void Plugin::handleTriggerQuery(Query &query)
 {
-    auto r = getItems(query->string(), true);
+    auto r = getItems(query.string(), true);
     applyUsageScore(&r);
     for (const auto &[i, s] : r)
-        query->add(i);
+        query.add(i);
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
+vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
 {
-    return getItems(query->string(), false);
+    return getItems(query.string(), false);
 }
 
 QWidget *Plugin::buildConfigWidget()

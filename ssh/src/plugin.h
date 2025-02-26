@@ -17,17 +17,17 @@ class Plugin : public albert::ExtensionPlugin,
 public:
 
     Plugin();
-    QString synopsis() const override;
+    QString synopsis(const QString&) const override;
     bool allowTriggerRemap() const override;
-    void handleTriggerQuery(albert::Query *) override;
-    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query*) override;
+    void handleTriggerQuery(albert::Query&) override;
+    std::vector<albert::RankItem> handleGlobalQuery(const albert::Query&) override;
     QWidget* buildConfigWidget() override;
 
 private:
 
     std::vector<albert::RankItem> getItems(const QString &query, bool allowParams) const;
 
-    albert::StrongDependency<applications::Plugin> apps;
+    albert::StrongDependency<applications::Plugin> apps{"applications"};
     QSet<QString> hosts;
     const QString tr_desc;
     const QString tr_conn;
