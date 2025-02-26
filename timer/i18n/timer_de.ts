@@ -2,11 +2,15 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="de_DE">
 <context>
-    <name>albert::timer::Plugin</name>
+    <name>Plugin</name>
     <message>
         <source>timer </source>
         <comment>The trigger. Lowercase.</comment>
         <translation></translation>
+    </message>
+    <message>
+        <source>&lt;duration&gt; [name]</source>
+        <translation>&lt;Dauer&gt; [Name]</translation>
     </message>
     <message>
         <source>Set timer: %1</source>
@@ -34,13 +38,9 @@
         <comment>Action verb form</comment>
         <translation>Entfernen</translation>
     </message>
-    <message>
-        <source>&lt;duration&gt; [name]</source>
-        <translation>&lt;Dauer&gt; [Name]</translation>
-    </message>
 </context>
 <context>
-    <name>albert::timer::Timer</name>
+    <name>Timer</name>
     <message>
         <source>Timer %1</source>
         <translation></translation>

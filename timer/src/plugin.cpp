@@ -3,10 +3,9 @@
 #include "plugin.h"
 #include <QDateTime>
 #include <QLocale>
+#include <albert/albert.h>
 #include <albert/matcher.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
-using namespace albert::timer;
 using namespace albert;
 using namespace std;
 
@@ -29,7 +28,7 @@ void Timer::onTimeout()
 
 QString Plugin::defaultTrigger() const { return tr("timer ", "The trigger. Lowercase."); }
 
-QString Plugin::synopsis() const { return tr("<duration> [name]"); }
+QString Plugin::synopsis(const QString &) const { return tr("<duration> [name]"); }
 
 static QString durationString(uint seconds)
 {
@@ -85,12 +84,12 @@ static uint parseDurationString(const QString &s)
     return 0;
 }
 
-vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
+vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
 {
-    if (!query->isValid())
+    if (!query.isValid())
         return {};
 
-    Matcher matcher(query->string());
+    Matcher matcher(query.string());
     vector<RankItem> r;
 
     // List matching timers
@@ -99,10 +98,10 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
             r.emplace_back(makeTimerItem(timer), m);
 
     // Add new timer item
-    auto dur = parseDurationString(query->string().section(' ', 0, 0, QString::SectionSkipEmpty));
+    auto dur = parseDurationString(query.string().section(' ', 0, 0, QString::SectionSkipEmpty));
     if (dur > 0)
     {
-        auto name = query->string().section(' ', 1, -1, QString::SectionSkipEmpty);
+        auto name = query.string().section(' ', 1, -1, QString::SectionSkipEmpty);
         if (name.isEmpty())
             name = QString("#%1").arg(timer_counter_);
 
@@ -112,7 +111,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query *query)
     return r;
 }
 
-vector<shared_ptr<Item>> Plugin::handleEmptyQuery(const Query *)
+vector<shared_ptr<Item>> Plugin::handleEmptyQuery()
 {
     vector<shared_ptr<Item>> results;
     for (auto &timer: timers_)
