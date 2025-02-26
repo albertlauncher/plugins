@@ -25,8 +25,8 @@ private:
     QString defaultTrigger() const override;
     QWidget* buildConfigWidget() override;
     void updateIndexItems() override;
-    QString synopsis() const override;
-    void handleTriggerQuery(albert::Query*) override;
+    QString synopsis(const QString &) const override;
+    void handleTriggerQuery(albert::Query &) override;
 
     QFileSystemWatcher fs_watcher;
     albert::BackgroundExecutor<std::vector<albert::IndexItem>> indexer;

@@ -6,8 +6,8 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QTextStream>
+#include <albert/albert.h>
 #include <albert/standarditem.h>
-#include <albert/util.h>
 #include <memory>
 ALBERT_LOGGING_CATEGORY("snippets")
 using namespace albert;
@@ -75,7 +75,7 @@ struct SnippetItem : Item
             }
         );
 
-        actions.emplace_back("o", tr_e, [this]{ openUrl(QUrl::fromLocalFile(path())); });
+        actions.emplace_back("o", tr_e, [this]{ open(path()); });
 
         actions.emplace_back("r", tr_r, [this]{ plugin_->removeSnippet(file_base_name_+".txt"); });
 
@@ -95,10 +95,13 @@ private:
 
 Plugin::Plugin()
 {
-    createOrThrow(configLocation());
+    const auto conf_path = configLocation();
 
-    fs_watcher.addPath(configLocation());
-    connect(&fs_watcher, &QFileSystemWatcher::directoryChanged, this, [this](){updateIndexItems();});
+    tryCreateDirectory(conf_path);
+
+    fs_watcher.addPath(conf_path.c_str());
+    connect(&fs_watcher, &QFileSystemWatcher::directoryChanged,
+            this, [this]{ updateIndexItems(); });
 
     indexer.parallel = [this](const bool &abort){
         vector<IndexItem> r;
@@ -116,7 +119,7 @@ Plugin::Plugin()
 QString Plugin::defaultTrigger() const
 { return "snip "; }
 
-QString Plugin::synopsis() const
+QString Plugin::synopsis(const QString &) const
 {
     static const auto tr_s = tr("<filter>|+");
     return tr_s;
@@ -125,10 +128,10 @@ QString Plugin::synopsis() const
 void Plugin::updateIndexItems()
 { indexer.run(); }
 
-void Plugin::handleTriggerQuery(Query *query)
+void Plugin::handleTriggerQuery(Query &query)
 {
-    if (query->string() == QStringLiteral("+"))
-        query->add(
+    if (query.string() == QStringLiteral("+"))
+        query.add(
             StandardItem::make(
                 "+",
                 tr("Create new snippet"),
@@ -174,7 +177,7 @@ void Plugin::addSnippet(const QString &text, QWidget *parent) const
         if(file.open(QIODevice::WriteOnly))
         {
             if (text.isEmpty())
-                openUrl(QUrl::fromLocalFile(file.fileName()));
+                open(file.fileName());
             else
                 QTextStream(&file) << text;
             file.close();
@@ -222,16 +225,16 @@ QWidget *Plugin::buildConfigWidget()
     auto *model = new RedIfNotTxtFileSystemModel(ui.listView);
     model->setFilter(QDir::Files);
     model->setReadOnly(false);
-    model->setRootPath(configLocation());
+    model->setRootPath(configLocation().c_str());
 
     ui.listView->setModel(model);
-    ui.listView->setRootIndex(model->index(configLocation()));
+    ui.listView->setRootIndex(model->index(model->rootPath()));
 
     connect(ui.listView, &QListView::activated, this,
-            [model](const QModelIndex &index){ openUrl(QUrl::fromLocalFile(model->filePath(index))); });
+            [model](const QModelIndex &index){ open(model->filePath(index)); });
 
     connect(ui.pushButton_opendir, &QPushButton::clicked, this,
-            [this](){ openUrl(QUrl::fromLocalFile(configLocation())); });
+            [this](){ open(configLocation()); });
 
     connect(ui.pushButton_add, &QPushButton::clicked,
             this, [this, w=w](){ addSnippet({}, w); });
