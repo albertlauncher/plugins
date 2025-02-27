@@ -2,7 +2,7 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="de_DE">
 <context>
-    <name>albert::vpn::Plugin</name>
+    <name>Plugin</name>
     <message>
         <source>Invalid</source>
         <translation>Ungültig</translation>
@@ -42,49 +42,6 @@
     <message>
         <source>Connect</source>
         <translation>Verbindung herstellen</translation>
-    </message>
-</context>
-<context>
-    <name>vpn::Plugin</name>
-    <message>
-        <source>Invalid</source>
-        <translation type="vanished">Ungültig</translation>
-    </message>
-    <message>
-        <source>Disconnected</source>
-        <translation type="vanished">Verbindung getrennt</translation>
-    </message>
-    <message>
-        <source>Connecting…</source>
-        <translation type="vanished">Verbindung wird hergestellt…</translation>
-    </message>
-    <message>
-        <source>Connected</source>
-        <translation type="vanished">Verbunden</translation>
-    </message>
-    <message>
-        <source>Disconnecting…</source>
-        <translation type="vanished">Verbindung wird getrennt…</translation>
-    </message>
-    <message>
-        <source>Unknown</source>
-        <translation type="vanished">Unbekannt</translation>
-    </message>
-    <message>
-        <source>Failed connecting &apos;%1&apos;: %2.</source>
-        <translation type="vanished">Fehler beim Verbinden mit &apos;%1&apos;: %2.</translation>
-    </message>
-    <message>
-        <source>Failed disconnecting &apos;%1&apos;: %2.</source>
-        <translation type="vanished">Fehler beim Trennen von &apos;%1&apos;: %2.</translation>
-    </message>
-    <message>
-        <source>Disconnect</source>
-        <translation type="vanished">Verbindung trennen</translation>
-    </message>
-    <message>
-        <source>Connect</source>
-        <translation type="vanished">Verbindung herstellen</translation>
     </message>
 </context>
 </TS>

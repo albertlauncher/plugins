@@ -90,18 +90,14 @@ public:
 
     QStringList iconUrls() const override {
         switch (status()) {
-        case kSCNetworkConnectionInvalid:
-            return {QStringLiteral("gen:?&text=VPN&background=#D00000&foreground=#ffffff&fontscalar=0.4")};
-        case kSCNetworkConnectionDisconnected:
-            return {QStringLiteral("gen:?&text=VPN&background=#808080&foreground=#ffffff&fontscalar=0.4")};
-        case kSCNetworkConnectionConnecting:
-            return {QStringLiteral("gen:?&text=VPN&background=#00D0D0&foreground=#ffffff&fontscalar=0.4")};
         case kSCNetworkConnectionConnected:
-            return {QStringLiteral("gen:?&text=VPN&background=#00D000&foreground=#ffffff&fontscalar=0.4")};
+            return {QStringLiteral("gen:?&text=🔐")};
+        case kSCNetworkConnectionInvalid:
+        case kSCNetworkConnectionDisconnected:
+        case kSCNetworkConnectionConnecting:
         case kSCNetworkConnectionDisconnecting:
-            return {QStringLiteral("gen:?&text=VPN&background=#D0D000&foreground=#ffffff&fontscalar=0.4")};
         default:
-            return {":unknown"};
+            return {QStringLiteral("gen:?&text=🔓")};
         }
     }
     QString inputActionText() const override { return service_name; }
