@@ -27,10 +27,17 @@ public:
 
 private:
 
-    void updateStubFile();
-    void initPythonInterpreter();
-    void initVirtualEnvironment();
-    void scanPlugins();
+    void updateStubFile() const;
+    void initPythonInterpreter() const;
+    void initVirtualEnvironment() const;
+
+    std::filesystem::path venvPath() const;
+    std::filesystem::path siteDirPath() const;
+    std::filesystem::path userPluginDirectoryPath() const;
+    std::filesystem::path stubFilePath() const;
+
+    QStringList pluginDirs() const;
+    std::vector<std::unique_ptr<PyPluginLoader>> scanPlugins() const;
 
     albert::StrongDependency<applications::Plugin> apps{"applications"};
     std::vector<std::unique_ptr<PyPluginLoader>> plugins_;

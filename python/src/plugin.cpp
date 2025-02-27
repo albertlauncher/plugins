@@ -9,6 +9,7 @@
 #include "ui_configwidget.h"
 #include <QDir>
 #include <QFontDatabase>
+#include <QMessageBox>
 #include <QPointer>
 #include <QProcess>
 #include <QRegularExpression>
@@ -24,6 +25,7 @@ ALBERT_LOGGING_CATEGORY("python")
 using namespace albert;
 using namespace std;
 using namespace chrono;
+using std::filesystem::path;
 namespace py = pybind11;
 #define XSTR(s) STR(s)
 #define STR(s) #s
@@ -64,18 +66,18 @@ static void dumpPyConfig(PyConfig &config)
         DEBG << " -" << QString::fromWCharArray(config.module_search_paths.items[i]);
 }
 
-static void dumpSysAttributes(const py::module &sys)
-{
-    DEBG << "version          :" << sys.attr("version").cast<QString>();
-    DEBG << "executable       :" << sys.attr("executable").cast<QString>();
-    DEBG << "base_exec_prefix :" << sys.attr("base_exec_prefix").cast<QString>();
-    DEBG << "exec_prefix      :" << sys.attr("exec_prefix").cast<QString>();
-    DEBG << "base_prefix      :" << sys.attr("base_prefix").cast<QString>();
-    DEBG << "prefix           :" << sys.attr("prefix").cast<QString>();
-    DEBG << "path:";
-    for (const auto &path : sys.attr("path").cast<QStringList>())
-        DEBG << " -" << path;
-}
+// static void dumpSysAttributes(const py::module &sys)
+// {
+//     DEBG << "version          :" << sys.attr("version").cast<QString>();
+//     DEBG << "executable       :" << sys.attr("executable").cast<QString>();
+//     DEBG << "base_exec_prefix :" << sys.attr("base_exec_prefix").cast<QString>();
+//     DEBG << "exec_prefix      :" << sys.attr("exec_prefix").cast<QString>();
+//     DEBG << "base_prefix      :" << sys.attr("base_prefix").cast<QString>();
+//     DEBG << "prefix           :" << sys.attr("prefix").cast<QString>();
+//     DEBG << "path:";
+//     for (const auto &path : sys.attr("path").cast<QStringList>())
+//         DEBG << " -" << path;
+// }
 
 Plugin::Plugin()
 {
@@ -92,10 +94,19 @@ Plugin::Plugin()
                                        .arg(PYBIND11_VERSION_PATCH);
 
     tryCreateDirectory(dataLocation() / PLUGINS);
+
     updateStubFile();
+
     initPythonInterpreter();
+
+    // Add venv site packages to path
+    py::module::import("site").attr("addsitedir")(siteDirPath().c_str());
+
+    release_.reset(new py::gil_scoped_release);  // Gil is initially held.
+
     initVirtualEnvironment();
-    scanPlugins();
+
+    plugins_ = scanPlugins();
 }
 
 Plugin::~Plugin()
@@ -107,10 +118,10 @@ Plugin::~Plugin()
     // py::finalize_interpreter();
 }
 
-void Plugin::updateStubFile()
+void Plugin::updateStubFile() const
 {
     QFile stub_rc(QString(":%1").arg(STUB_FILE));
-    QFile stub_fs(dataLocation() / PLUGINS / STUB_FILE);
+    QFile stub_fs(stubFilePath());
     auto interface_version = QString("%1.%2")
                                  .arg(PyPluginLoader::MAJOR_INTERFACE_VERSION)
                                  .arg(PyPluginLoader::MINOR_INTERFACE_VERSION);
@@ -129,7 +140,7 @@ void Plugin::updateStubFile()
     }
 }
 
-void Plugin::initPythonInterpreter()
+void Plugin::initPythonInterpreter() const
 {
     DEBG << "Initializing Python interpreter";
     PyConfig config;
@@ -137,25 +148,29 @@ void Plugin::initPythonInterpreter()
     config.site_import = 0;
     dumpPyConfig(config);
     if (auto status = Py_InitializeFromConfig(&config); PyStatus_Exception(status))
-        throw runtime_error(tr("Failed initializing the interpreter: %1 %2")
+        throw runtime_error(Plugin::tr("Failed initializing the interpreter: %1 %2")
                             .arg(status.func, status.err_msg).toStdString());
     PyConfig_Clear(&config);
     dumpPyConfig(config);
-    release_.reset(new py::gil_scoped_release); // Gil is initially held.
 }
 
-void Plugin::initVirtualEnvironment()
+void Plugin::initVirtualEnvironment() const
 {
+    if (is_directory(venvPath()))
+        return;
+
     py::gil_scoped_acquire acquire;
 
-    auto system_python = filesystem::path(py::module::import("sys")
-                                              .attr("prefix").cast<string>()) / BIN / PYTHON;
-    auto venv_location = dataLocation() / VENV;
+    auto system_python =
+        path(py::module::import("sys").attr("prefix").cast<string>()) / BIN / PYTHON;
 
     // Create the venv
     QProcess p;
-    p.start(system_python.c_str(),
-            {"-m", "venv", "--upgrade", "--upgrade-deps", venv_location.c_str()});
+    p.start(system_python.c_str(), {"-m",
+                                    "venv",
+                                    //"--upgrade",
+                                    //"--upgrade-deps",
+                                    venvPath().c_str()});
     DEBG << "Initializing venv using system interpreter:"
          << (QStringList() << p.program() << p.arguments()).join(QChar::Space);
     p.waitForFinished(-1);
@@ -166,32 +181,46 @@ void Plugin::initVirtualEnvironment()
     if (p.exitCode() != 0)
         throw runtime_error(tr("Failed initializing virtual environment. Exit code: %1.")
                                 .arg(p.exitCode()).toStdString());
-
-    // Add venv site packages to path
-    py::module::import("site")
-        .attr("addsitedir")((venv_location / LIB / PYTHON / SITE_PACKAGES).c_str());
 }
 
-void Plugin::scanPlugins()
-{
-    QStringList plugin_dirs;
-    using SP = QStandardPaths;
-    auto data_dirs = SP::locateAll(SP::AppDataLocation, id(), SP::LocateDirectory);
-    for (const auto &dd : data_dirs)
-        if (QDir dir{dd}; dir.cd(PLUGINS))
-            plugin_dirs << dir.path();
+path Plugin::venvPath() const { return dataLocation() / VENV; }
 
+path Plugin::siteDirPath() const { return venvPath() / LIB / PYTHON / SITE_PACKAGES; }
+
+path Plugin::userPluginDirectoryPath() const { return dataLocation() / PLUGINS; }
+
+path Plugin::stubFilePath() const { return userPluginDirectoryPath() / STUB_FILE; }
+
+QStringList Plugin::pluginDirs() const
+{
+    using QSP = QStandardPaths;
+
+    QStringList plugin_dirs;
+    for (const auto &d : QSP::locateAll(QSP::AppDataLocation, id(), QSP::LocateDirectory))
+        if (QDir data_dir{d}; data_dir.cd(PLUGINS))
+            plugin_dirs << data_dir.path();
+
+    return plugin_dirs;
+}
+
+vector<unique_ptr<PyPluginLoader>> Plugin::scanPlugins() const
+{
     auto start = system_clock::now();
-    for (const QString &plugin_dir : plugin_dirs)
+
+    vector<unique_ptr<PyPluginLoader>> plugins;
+    for (const QString &plugin_dir : pluginDirs())
     {
         if (QDir dir{plugin_dir}; dir.exists())
         {
             DEBG << "Searching Python plugins in" << dir.absolutePath();
-            for (const QFileInfo &file_info : dir.entryInfoList(QDir::Files|QDir::Dirs|QDir::NoDotAndDotDot))
+            for (const QFileInfo &file_info : dir.entryInfoList(QDir::Files
+                                                                | QDir::Dirs
+                                                                | QDir::NoDotAndDotDot))
             {
                 try {
-                    auto &loader = plugins_.emplace_back(make_unique<PyPluginLoader>(*this, file_info.absoluteFilePath()));
+                    auto loader = make_unique<PyPluginLoader>(*this, file_info.absoluteFilePath());
                     DEBG << "Found valid Python plugin" << loader->path();
+                    plugins.emplace_back(::move(loader));
                 }
                 catch (const NoPluginException &e) {
                     DEBG << QString("Invalid plugin (%1): %2").arg(e.what(), file_info.filePath());
@@ -202,8 +231,11 @@ void Plugin::scanPlugins()
             }
         }
     }
+
     INFO << QStringLiteral("[%1 ms] Python plugin scan")
                 .arg(duration_cast<milliseconds>(system_clock::now()-start).count());
+
+    return plugins;
 }
 
 vector<PluginLoader*> Plugin::plugins()
@@ -219,15 +251,40 @@ QWidget *Plugin::buildConfigWidget()
     auto *w = new QWidget;
     Ui::ConfigWidget ui;
     ui.setupUi(w);
-    
-    connect(ui.pushButton_sitePackages, &QPushButton::clicked,
-            this, [this]{ open(dataLocation() / VENV / LIB / PYTHON / SITE_PACKAGES); });
 
-    connect(ui.pushButton_stubFile, &QPushButton::clicked,
-            this, [this]{ open(dataLocation() / PLUGINS / STUB_FILE); });
+    ui.label_api_version->setText(QString("<a href=\"file://%1\">v%2.%3</a>")
+                                  .arg(stubFilePath().c_str())
+                                  .arg(PyPluginLoader::MAJOR_INTERFACE_VERSION)
+                                  .arg(PyPluginLoader::MINOR_INTERFACE_VERSION));
+
+    ui.label_python_version->setText(QString("%1.%2.%3")
+                                     .arg(PY_MAJOR_VERSION)
+                                     .arg(PY_MINOR_VERSION)
+                                     .arg(PY_MICRO_VERSION));
+
+    ui.label_pybind_version->setText(QString("%1.%2.%3")
+                                     .arg(PYBIND11_VERSION_MAJOR)
+                                     .arg(PYBIND11_VERSION_MINOR)
+                                     .arg(PYBIND11_VERSION_PATCH));
+
+    connect(ui.pushButton_venv_open, &QPushButton::clicked,
+            this, [this]{ open(venvPath()); });
+
+    connect(ui.pushButton_venv_reset, &QPushButton::clicked, this, [this]
+    {
+        auto text = tr("Resetting the virtual environment requires a restart.");
+
+        using MB = QMessageBox;
+        if (MB::question(nullptr, qApp->applicationDisplayName(), text, MB::Cancel | MB::Ok, MB::Ok)
+            == QMessageBox::Ok)
+        {
+            QFile::moveToTrash(venvPath());
+            restart();
+        }
+    });
 
     connect(ui.pushButton_userPluginDir, &QPushButton::clicked,
-            this, [this]{ open(dataLocation() / PLUGINS); });
+            this, [this]{ open(userPluginDirectoryPath()); });
 
     return w;
 }
@@ -236,8 +293,8 @@ bool Plugin::installPackages(const QStringList &packages) const
 {
     // Install dependencies
     QProcess p;
-    p.setProgram((dataLocation() / VENV / BIN / PIP).c_str());
-    p.setArguments(QStringList{"install"} << packages);
+    p.setProgram((venvPath() / BIN / PIP).c_str());
+    p.setArguments(QStringList{"install", "--disable-pip-version-check"} << packages);
 
     DEBG << QString("Installing %1. [%2]")
                 .arg(packages.join(", "), (QStringList(p.program()) << p.arguments()).join(" "));

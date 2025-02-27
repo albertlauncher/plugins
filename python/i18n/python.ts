@@ -4,19 +4,31 @@
 <context>
     <name>ConfigWidget</name>
     <message>
-        <source>The Python plugin makes the app extendable by Python modules. The built-in albert module exposes several functions and classes for use with Albert. The Python plugins are loaded from `&amp;lt;APPDATADIR&amp;gt;/python/plugins`.</source>
+        <source>Python version</source>
         <translation></translation>
     </message>
     <message>
-        <source>Open user plugin dir</source>
+        <source>PyBind version</source>
         <translation></translation>
     </message>
     <message>
-        <source>Open stub file</source>
+        <source>API version</source>
         <translation></translation>
     </message>
     <message>
-        <source>Open site-packages</source>
+        <source>Virtual environment</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>User plugin directory</source>
         <translation></translation>
     </message>
 </context>
@@ -38,6 +50,10 @@ Install dependencies into the virtual environment?</source>
     </message>
     <message>
         <source>No &apos;%1&apos; in $PATH.</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Resetting the virtual environment requires a restart.</source>
         <translation></translation>
     </message>
 </context>

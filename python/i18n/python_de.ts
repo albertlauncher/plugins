@@ -4,20 +4,32 @@
 <context>
     <name>ConfigWidget</name>
     <message>
-        <source>The Python plugin makes the app extendable by Python modules. The built-in albert module exposes several functions and classes for use with Albert. The Python plugins are loaded from `&amp;lt;APPDATADIR&amp;gt;/python/plugins`.</source>
-        <translation>Das Python-Plugin ermöglicht die Erweiterung der App durch Python-Module. Das integrierte Albert-Modul stellt mehrere Funktionen und Klassen für die Verwendung mit Albert bereit. Die Python-Plugins werden aus `&amp;lt;APPDATADIR&amp;gt;/python/plugins` geladen.</translation>
+        <source>Python version</source>
+        <translation>Python-Version</translation>
     </message>
     <message>
-        <source>Open user plugin dir</source>
-        <translation>Benutzerplugin-Verzeichnis öffnen</translation>
+        <source>PyBind version</source>
+        <translation>PyBind-Version</translation>
     </message>
     <message>
-        <source>Open stub file</source>
-        <translation>Stub-Datei öffnen</translation>
+        <source>API version</source>
+        <translation>API-Version</translation>
     </message>
     <message>
-        <source>Open site-packages</source>
-        <translation>Site-packages öffnen</translation>
+        <source>Virtual environment</source>
+        <translation>Virtuelle Umgebung</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Öffnen</translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation>Zurücksetzen</translation>
+    </message>
+    <message>
+        <source>User plugin directory</source>
+        <translation>Benutzerplugin-Verzeichnis</translation>
     </message>
 </context>
 <context>
@@ -41,6 +53,10 @@ Abhängigkeiten in die virtuelle Umgebung installieren?</translation>
     <message>
         <source>No &apos;%1&apos; in $PATH.</source>
         <translation>Kein &apos;%1&apos; in $PATH.</translation>
+    </message>
+    <message>
+        <source>Resetting the virtual environment requires a restart.</source>
+        <translation>Das Zurücksetzen der virtuellen Umgebung erfordert einen Neustart.</translation>
     </message>
 </context>
 </TS>

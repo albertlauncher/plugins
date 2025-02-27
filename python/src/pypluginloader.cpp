@@ -32,9 +32,9 @@ static const char *ATTR_MD_CREDITS     = "md_credits";
 static const char *ATTR_MD_PLATFORMS   = "md_platforms";
 //static const char *ATTR_MD_MINPY     = "md_min_python";
 
-
-PyPluginLoader::PyPluginLoader(Plugin &plugin, const QString &module_path)
-    : plugin_(plugin), module_path_(module_path)
+PyPluginLoader::PyPluginLoader(const Plugin &plugin, const QString &module_path) :
+    plugin_(plugin),
+    module_path_(module_path)
 {
     const QFileInfo file_info(module_path);
     if(!file_info.exists())
