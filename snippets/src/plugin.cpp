@@ -2,6 +2,7 @@
 
 #include "plugin.h"
 #include "ui_configwidget.h"
+#include <QFile>
 #include <QFileSystemModel>
 #include <QInputDialog>
 #include <QMessageBox>
