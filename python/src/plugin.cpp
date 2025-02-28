@@ -8,6 +8,7 @@
 #include "pypluginloader.h"
 #include "ui_configwidget.h"
 #include <QDir>
+#include <QFile>
 #include <QFontDatabase>
 #include <QMessageBox>
 #include <QPointer>
