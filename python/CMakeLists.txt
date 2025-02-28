@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 find_package(Albert REQUIRED)
 
-project(python VERSION 6.2)
+project(python VERSION 6.3)
 
 set(PYBIND11_FINDPYTHON ON)
 #find_package(Python 3.8 COMPONENTS Interpreter Development REQUIRED)

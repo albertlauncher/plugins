@@ -55,8 +55,8 @@ static void dumpPyConfig(PyConfig &config)
     DEBG << "config.program_name" << QString::fromWCharArray(config.program_name);
     DEBG << "config.pythonpath_env" << QString::fromWCharArray(config.pythonpath_env);
     DEBG << "config.platlibdir" << QString::fromWCharArray(config.platlibdir);
-    DEBG << "config.stdlib_dir" << QString::fromWCharArray(config.stdlib_dir);
-    DEBG << "config.safe_path" << config.safe_path;
+    // DEBG << "config.stdlib_dir" << QString::fromWCharArray(config.stdlib_dir);  // Added in version 3.11
+    // ^DEBG << "config.safe_path" << config.safe_path;  // Added in version 3.11
     DEBG << "config.install_signal_handlers" << config.install_signal_handlers;
     DEBG << "config.site_import" << config.site_import;
     DEBG << "config.user_site_directory" << config.user_site_directory;
@@ -197,9 +197,9 @@ QStringList Plugin::pluginDirs() const
     using QSP = QStandardPaths;
 
     QStringList plugin_dirs;
-    for (const auto &d : QSP::locateAll(QSP::AppDataLocation, id(), QSP::LocateDirectory))
-        if (QDir data_dir{d}; data_dir.cd(PLUGINS))
-            plugin_dirs << data_dir.path();
+    for (const auto &d_dir : QSP::locateAll(QSP::AppDataLocation, id(), QSP::LocateDirectory))
+        if (QDir p_dir{d_dir}; p_dir.cd(PLUGINS))
+            plugin_dirs << p_dir.path();
 
     return plugin_dirs;
 }
@@ -279,7 +279,7 @@ QWidget *Plugin::buildConfigWidget()
         if (MB::question(nullptr, qApp->applicationDisplayName(), text, MB::Cancel | MB::Ok, MB::Ok)
             == QMessageBox::Ok)
         {
-            QFile::moveToTrash(venvPath());
+            QFile::moveToTrash(venvPath().c_str());
             restart();
         }
     });
