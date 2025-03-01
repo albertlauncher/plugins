@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<node>
+    <interface name="org.freedesktop.DBus.Properties">
+        <signal name="PropertiesChanged">
+            <arg type="s" name="interface_name"/>
+            <arg type="a{sv}" name="changed_properties"/>
+            <arg type="as" name="invalidated_properties"/>
+            <annotation name="org.qtproject.QtDBus.QtTypeName.Out1" value="QVariantMap" />
+        </signal>
+    </interface>
+
+    <interface name="org.freedesktop.NetworkManager">
+        <property name="ActiveConnections" type="ao" access="read"/>
+        <method name="ActivateConnection">
+             <arg name="connection" type="o" direction="in"/>
+             <arg name="device" type="o" direction="in"/>
+             <arg name="specific_object" type="o" direction="in"/>
+             <arg name="active_connection" type="o" direction="out"/>
+        </method>
+        <method name="DeactivateConnection">
+            <arg name="active_connection" type="o" direction="in"/>
+        </method>
+    </interface>
+
+    <interface name="org.freedesktop.NetworkManager.Settings">
+       <method name="ListConnections">
+           <arg name="connections" type="ao" direction="out"/>
+       </method>
+    </interface>
+
+    <interface name="org.freedesktop.NetworkManager.Settings.Connection">
+        <method name="GetSettings">
+            <arg name="settings" type="a{sa{sv}}" direction="out"/>
+            <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NestedVariantMap"/>
+        </method>
+    </interface>
+
+    <interface name="org.freedesktop.NetworkManager.Connection.Active">
+        <property name="Connection" type="o" access="read"/>
+        <property name="Uuid" type="s" access="read"/>
+        <property name="State" type="u" access="read"/>
+        <signal name="StateChanged">
+          <arg name="state" type="u"/>
+          <arg name="reason" type="u"/>
+        </signal>
+    </interface>
+
+</node>
+
+

@@ -4,30 +4,6 @@
 <context>
     <name>Plugin</name>
     <message>
-        <source>Invalid</source>
-        <translation>Ungültig</translation>
-    </message>
-    <message>
-        <source>Disconnected</source>
-        <translation>Verbindung getrennt</translation>
-    </message>
-    <message>
-        <source>Connecting…</source>
-        <translation>Verbindung wird hergestellt…</translation>
-    </message>
-    <message>
-        <source>Connected</source>
-        <translation>Verbunden</translation>
-    </message>
-    <message>
-        <source>Disconnecting…</source>
-        <translation>Verbindung wird getrennt…</translation>
-    </message>
-    <message>
-        <source>Unknown</source>
-        <translation>Unbekannt</translation>
-    </message>
-    <message>
         <source>Failed connecting &apos;%1&apos;: %2.</source>
         <translation>Fehler beim Verbinden mit &apos;%1&apos;: %2.</translation>
     </message>
@@ -42,6 +18,33 @@
     <message>
         <source>Connect</source>
         <translation>Verbindung herstellen</translation>
+    </message>
+</context>
+<context>
+    <name>VpnConnectionItem</name>
+    <message>
+        <source>Invalid</source>
+        <translation>Ungültig</translation>
+    </message>
+    <message>
+        <source>Disconnected</source>
+        <translation>Getrennt</translation>
+    </message>
+    <message>
+        <source>Connecting…</source>
+        <translation>Wird verbunden…</translation>
+    </message>
+    <message>
+        <source>Connected</source>
+        <translation>Verbunden</translation>
+    </message>
+    <message>
+        <source>Disconnecting…</source>
+        <translation>Wird getrennt…</translation>
+    </message>
+    <message>
+        <source>VPN connection: %1</source>
+        <translation>VPN Verbindung: %1</translation>
     </message>
 </context>
 </TS>
