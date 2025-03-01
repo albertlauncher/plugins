@@ -1,0 +1,9 @@
+{
+    "authors": ["@manuelschneid3r"],
+    "description": "VPN connections",
+    "description[de]": "VPN-Verbindungen",
+    "license": "MIT",
+    "name": "VPNlimux",
+    "name[de]": "VPN",
+    "url": "https://github.com/albertlauncher/plugins/tree/main/vpn",
+}
