@@ -111,12 +111,12 @@ public:
         for (const auto &conn_path : manager.activeConnections())
             WARN << conn_path.path();
 
-
         QDBusConnection::systemBus().connect(
             service, object_path_manager,
             "org.freedesktop.DBus.Properties", // Interface name
             "PropertiesChanged",               // Signal name
-            this, SLOT(onPropertiesChanged(QString, QVariantMap, QStringList))
+            this,
+            SLOT(onPropertiesChanged(QString,QVariantMap,QStringList))  // missing spaces intended
             );
     }
 
@@ -124,9 +124,9 @@ public:
     void onPropertiesChanged(const QString &interface,
                              const QVariantMap &changedProperties,
                              const QStringList &invalidatedProperties) {
-        qDebug() << "Interface:" << interface;
-        qDebug() << "Changed Properties:" << changedProperties;
-        qDebug() << "Invalidated Properties:" << invalidatedProperties;
+        CRIT << "Interface:" << interface;
+        CRIT << "Changed Properties:" << changedProperties;
+        CRIT << "Invalidated Properties:" << invalidatedProperties;
     }
 
 
