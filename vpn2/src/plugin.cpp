@@ -15,6 +15,10 @@ using IManager    = OrgFreedesktopNetworkManagerInterface;
 using ISettings   = OrgFreedesktopNetworkManagerSettingsInterface;
 using IConnection = OrgFreedesktopNetworkManagerSettingsConnectionInterface;
 
+static constexpr const char *service = "org.freedesktop.NetworkManager";
+static constexpr const char *object_path_manager  = "/org/freedesktop/NetworkManager";
+static constexpr const char *object_path_settings = "/org/freedesktop/NetworkManager/Settings";
+
 enum class NMActiveConnectionState {
     NM_ACTIVE_CONNECTION_STATE_UNKNOWN,
     NM_ACTIVE_CONNECTION_STATE_ACTIVATING,
@@ -75,14 +79,34 @@ public:
 };
 
 
-class NetworkManagerApi : public QObject
+class NMManager
 {
 public:
-    static constexpr const char *service = "org.freedesktop.NetworkManager";
-    static constexpr const char *object_path_manager = "/org/freedesktop/NetworkManager";
-    static constexpr const char *object_path_settings = "/org/freedesktop/NetworkManager/Settings";
 
     IManager manager;
+    IProperties properties;
+
+public:
+
+    NMManager():
+        manager(service, object_path_manager, QDBusConnection::systemBus()),
+        properties(service, object_path_manager, QDBusConnection::systemBus())
+    {
+        for (const auto &conn_path : manager.activeConnections())
+            WARN << conn_path.path();
+
+        // connect properties changed signal to lambda
+        QObject::connect(&properties, &IProperties::PropertiesChanged, &properties,
+                [](const QString &interface, const QVariantMap &changed, const QStringList &invalidated)
+        {
+            CRIT << interface << changed << invalidated;
+        });
+    }
+};
+
+
+class NMSettings
+{
     ISettings settings;
 
     template<typename T>
@@ -104,32 +128,10 @@ public:
 
 public:
 
-    NetworkManagerApi():
-        manager(service, object_path_manager, QDBusConnection::systemBus()),
-        settings(service, object_path_settings, QDBusConnection::systemBus())
+    NMSettings() : settings(service, object_path_settings, QDBusConnection::systemBus())
     {
-        for (const auto &conn_path : manager.activeConnections())
-            WARN << conn_path.path();
 
-        QDBusConnection::systemBus().connect(
-            service, object_path_manager,
-            "org.freedesktop.DBus.Properties", // Interface name
-            "PropertiesChanged",               // Signal name
-            this,
-            SLOT(onPropertiesChanged(QString,QVariantMap,QStringList))  // missing spaces intended
-            );
     }
-
-
-    void onPropertiesChanged(const QString &interface,
-                             const QVariantMap &changedProperties,
-                             const QStringList &invalidatedProperties) {
-        CRIT << "Interface:" << interface;
-        CRIT << "Changed Properties:" << changedProperties;
-        CRIT << "Invalidated Properties:" << invalidatedProperties;
-    }
-
-
 
     vector<shared_ptr<VpnItem>> createVpnItems()
     {
@@ -168,8 +170,8 @@ public:
 
         return items;
     }
-};
 
+};
 
 
 
@@ -177,16 +179,19 @@ public:
 class Plugin::Private
 {
 public:
-    NetworkManagerApi nm;
+    Private()
+    {
+        qRegisterMetaType<NestedVariantMap>("NestedVariantMap");
+        qDBusRegisterMetaType<NestedVariantMap>();
+    }
+
+    NMManager nm;
     vector<shared_ptr<VpnItem>> items;
 };
 
 Plugin::Plugin() : d(make_unique<Private>())
 {
-    qRegisterMetaType<NestedVariantMap>("NestedVariantMap");
-    qDBusRegisterMetaType<NestedVariantMap>();
-
-    d->items = d->nm.createVpnItems();
+    d->items = NMSettings().createVpnItems();
 }
 
 Plugin::~Plugin() = default;
