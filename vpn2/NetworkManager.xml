@@ -1,37 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<node name="/org/freedesktop/NetworkManager">
+<node>
+    <interface name="org.freedesktop.DBus.Properties">
+        <signal name="PropertiesChanged">
+            <arg type="s" name="interface_name"/>
+            <arg type="a{sv}" name="changed_properties"/>
+            <arg type="as" name="invalidated_properties"/>
+            <annotation name="org.qtproject.QtDBus.QtTypeName.Out1" value="QVariantMap" />
+        </signal>
+    </interface>
 
     <interface name="org.freedesktop.NetworkManager">
         <property name="ActiveConnections" type="ao" access="read"/>
+        <method name="ActivateConnection">
+             <arg name="connection" type="o" direction="in"/>
+             <arg name="device" type="o" direction="in"/>
+             <arg name="specific_object" type="o" direction="in"/>
+             <arg name="active_connection" type="o" direction="out"/>
+        </method>
+        <method name="DeactivateConnection">
+            <arg name="active_connection" type="o" direction="in"/>
+        </method>
     </interface>
 
     <interface name="org.freedesktop.NetworkManager.Settings">
-
        <method name="ListConnections">
-         <arg name="connections" type="ao" direction="out"/>
+           <arg name="connections" type="ao" direction="out"/>
        </method>
-
     </interface>
 
     <interface name="org.freedesktop.NetworkManager.Settings.Connection">
-
-        <!--
-            GetSettings:
-            @settings: The nested settings maps describing this object.
-
-            Get the settings maps describing this network configuration. This will
-            never include any secrets required for connection to the network, as those
-            are often protected. Secrets must be requested separately using the
-            GetSecrets() call.
-        -->
         <method name="GetSettings">
-          <arg name="settings" type="a{sa{sv}}" direction="out"/>
-          <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NestedVariantMap"/>
+            <arg name="settings" type="a{sa{sv}}" direction="out"/>
+            <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NestedVariantMap"/>
         </method>
-
     </interface>
-
-
 
 </node>
 
