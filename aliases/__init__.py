@@ -4,8 +4,8 @@ import subprocess
 
 from albert import *
 
-md_iid = "2.3"
-md_version = "1.0"
+md_iid = "3.0"
+md_version = "1.1"
 md_name = "Bash Aliases"
 md_description = "Run bash command line aliases"
 md_license = "MIT"
@@ -17,11 +17,13 @@ md_bin_dependencies = "/bin/bash"
 class Plugin(PluginInstance, TriggerQueryHandler):
     def __init__(self):
         PluginInstance.__init__(self)
-        TriggerQueryHandler.__init__(
-            self, self.id, self.name, self.description,
-            defaultTrigger='a ',
-            synopsis='<alias name>'
-        )
+        TriggerQueryHandler.__init__(self)
+    
+    def synopsis(self, query):
+        return '<alias name>'
+
+    def defaultTrigger(self):
+        return 'a '
 
     def handleTriggerQuery(self, query):
         items = []
