@@ -107,9 +107,9 @@ struct ConditionalSignalTransition : public QSignalTransition {
     function<bool()> test_;
 };
 
-static bool haveDarkPalette()
+static bool haveDarkSystemPalette()
 {
-    const QPalette pal;
+    auto pal = QApplication::style()->standardPalette();
     return pal.color(QPalette::WindowText).lightness()
            > pal.color(QPalette::Window).lightness();
 }
@@ -237,7 +237,7 @@ Window::Window(Plugin *p):
             QMessageBox::critical(nullptr, qApp->applicationDisplayName(), tr_message.arg(theme_dark_));
             setDarkTheme(themes.contains(DEF_THEME) ? QString(DEF_THEME) : themes.begin()->first);
         }
-        applyThemeFile(themes.at((dark_mode_ = haveDarkPalette()) ? theme_dark_ : theme_light_));
+        applyThemeFile(themes.at((dark_mode_ = haveDarkSystemPalette()) ? theme_dark_ : theme_light_));
     }
 
     init_statemachine();
@@ -715,11 +715,19 @@ bool Window::event(QEvent *event)
         emit visibleChanged(false);
     }
 
-    else if (event->type() == QEvent::ApplicationPaletteChange)
+    else if (event->type() == QEvent::ThemeChange)
     {
-        // at(): no catch, theme_dark_ theme_light_ should exist
-        applyThemeFile(themes.at((dark_mode_ = haveDarkPalette()) ? theme_dark_ : theme_light_));
-        return true;
+
+        if (auto have_dark_system_palette = haveDarkSystemPalette();
+            dark_mode_ != have_dark_system_palette)
+        {
+#ifdef Q_OS_LINUX
+            QApplication::setPalette(QApplication::style()->standardPalette());
+#endif
+            // at(): no catch, theme_dark_ theme_light_ should exist
+            dark_mode_ = have_dark_system_palette;
+            applyThemeFile(themes.at((dark_mode_) ? theme_dark_ : theme_light_));
+        }
     }
 
     else if (event->type() == QEvent::Close)
