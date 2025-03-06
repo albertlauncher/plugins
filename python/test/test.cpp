@@ -341,6 +341,14 @@ void PythonTests::testMatcher()
     // seps
     QCOMPARE(PyMatcher("a_c", PyMatchConfig("separator_regex"_a="[\\s_]+")).attr("match")("a c").cast<bool>(), true);
     QCOMPARE(PyMatcher("a_c", PyMatchConfig("separator_regex"_a="[_]+")).attr("match")("a c").cast<bool>(), false);
+
+    // contextual conversion in rank item
+    auto PyRankItem = py::module::import("albert").attr("RankItem");
+    auto PyStdItem = py::module::import("albert").attr("StandardItem");
+    m = PyMatcher("x").attr("match")("x y");
+    auto ri = PyRankItem(PyStdItem("x"), m);
+    QCOMPARE(ri.attr("score").cast<Score>(), .5);
+
 }
 
 void PythonTests::testTriggerQueryHandler()

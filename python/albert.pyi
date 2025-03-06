@@ -544,6 +544,11 @@ class Match:
         Converts the match to ``bool`` using ``isMatch()``.
         """
 
+    def __float__(self) -> float:
+        """
+        Converts the match to ``float`` using ``score()``.
+        """
+
 class Extension(ABC):
     """
     See also:
@@ -632,7 +637,7 @@ class RankItem:
 
     def __init__(self,
                  item: Item,
-                 score: float | Match):
+                 score: float):
         ...
 
     item: Item

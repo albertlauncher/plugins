@@ -169,6 +169,7 @@ PYBIND11_EMBEDDED_MODULE(albert, m)
 
     py::class_<Match>(m, "Match")
         .def("__bool__", &Match::operator bool)
+        .def("__float__", &Match::operator Match::Score)
         .def("isMatch", &Match::isMatch)
         .def("isEmptyMatch", &Match::isEmptyMatch)
         .def("isExactMatch", &Match::isExactMatch)
