@@ -8,6 +8,7 @@ class Query;
 class PluginInstance;
 }
 class ActionDelegate;
+class DebugOverlay;
 class InputLine;
 class ItemDelegate;
 class Plugin;
@@ -49,6 +50,7 @@ private:
     ItemDelegate *item_delegate;
     ActionDelegate *action_delegate;
     std::unique_ptr<ResultItemsModel> results_model;
+    std::unique_ptr<DebugOverlay> debug_overlay_;
     bool dark_mode;
 
     albert::Query *current_query;
@@ -136,6 +138,7 @@ signals:
     void maxResultsChanged(uint);
     void quitOnCloseChanged(bool);
     void showCenteredChanged(bool);
+    void showDebugOverlayChanged(bool);
     void themeDarkChanged(QString);
     void themeLightChanged(QString);
 

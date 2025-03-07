@@ -1,6 +1,7 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #include "actiondelegate.h"
+#include "debugoverlay.h"
 #include "inputline.h"
 #include "itemdelegate.h"
 #include "resizinglist.h"
@@ -38,6 +39,7 @@ using namespace albert;
 using namespace std;
 
 
+
 namespace  {
 
 const uint    DEF_SHADOW_SIZE = 32;  // TODO user
@@ -46,6 +48,7 @@ const char*   STATE_WND_POS  = "windowPosition";
 static const bool  DEF_ALWAYS_ON_TOP      = true;
 static const bool  DEF_CENTERED           = true;
 static const bool  DEF_CLEAR_ON_HIDE      = true;
+static const bool  DEF_DEBUG_OVERLAY      = false;
 static const bool  DEF_DISPLAY_SCROLLBAR  = false;
 static const bool  DEF_FOLLOW_CURSOR      = true;
 static const bool  DEF_HIDE_ON_FOCUS_LOSS = true;
@@ -60,6 +63,7 @@ static const uint  DEF_MAX_RESULTS        = 5;
 static const char *CFG_ALWAYS_ON_TOP      = "alwaysOnTop";
 static const char *CFG_CENTERED           = "showCentered";
 static const char *CFG_CLEAR_ON_HIDE      = "clearOnHide";
+static const char *CFG_DEBUG_OVERLAY      = "debugOverlay";
 static const char *CFG_DISPLAY_SCROLLBAR  = "displayScrollbar";
 static const char *CFG_FOLLOW_CURSOR      = "followCursor";
 static const char *CFG_HIDE_ON_FOCUS_LOSS = "hideOnFocusLoss";
@@ -212,6 +216,7 @@ Window::Window(PluginInstance *p):
         setMaxResults(s->value(CFG_MAX_RESULTS, DEF_MAX_RESULTS).toUInt());
         setQuitOnClose(s->value(CFG_QUIT_ON_CLOSE, DEF_QUIT_ON_CLOSE).toBool());
         setShowCentered(s->value(CFG_CENTERED, DEF_CENTERED).toBool());
+        setShowDebugOverlay(s->value(CFG_DEBUG_OVERLAY, DEF_DEBUG_OVERLAY).toBool());
     }
 
     // State
@@ -1015,4 +1020,23 @@ void Window::setShowCentered(bool val)
     showCentered_ = val;
     plugin->settings()->setValue(CFG_CENTERED, val);
     emit showCenteredChanged(val);
+}
+
+bool Window::showDebugOverlay() const { return debug_overlay_.get(); }
+void Window::setShowDebugOverlay(bool val)
+{
+    if (showDebugOverlay() == val)
+        return;
+
+    if (val)
+    {
+        debug_overlay_ = make_unique<DebugOverlay>();
+        debug_overlay_->recursiveInstallEventFilter(this);
+    }
+    else
+        debug_overlay_.reset();
+
+    plugin->settings()->setValue(CFG_DEBUG_OVERLAY, val);
+    update();
+    emit showDebugOverlayChanged(val);
 }

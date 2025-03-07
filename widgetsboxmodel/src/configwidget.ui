@@ -18,6 +18,12 @@
    </item>
    <item row="0" column="1">
     <widget class="QCheckBox" name="checkBox_history_search">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>Use the current input text to filter the input history.</string>
      </property>
@@ -38,6 +44,12 @@
    </item>
    <item row="1" column="1">
     <widget class="QCheckBox" name="checkBox_clearOnHide">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>Clear the input line when the window is hidden.</string>
      </property>
@@ -64,6 +76,12 @@
    </item>
    <item row="2" column="1">
     <widget class="QCheckBox" name="checkBox_onTop">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>Let Albert stay on top of all top level windows.</string>
      </property>
@@ -87,6 +105,12 @@
    </item>
    <item row="3" column="1">
     <widget class="QCheckBox" name="checkBox_quit_on_close">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string notr="true">Quit the application when closing Albert. Default behavior is to hide the window.</string>
      </property>
@@ -104,6 +128,12 @@
    </item>
    <item row="4" column="1">
     <widget class="QCheckBox" name="checkBox_hideOnFocusOut">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>Hide Albert if the window lost focus.</string>
      </property>
@@ -127,6 +157,12 @@
    </item>
    <item row="5" column="1">
     <widget class="QCheckBox" name="checkBox_center">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>Position the window centered on the screen. See also &quot;Center on active screen&quot;.</string>
      </property>
@@ -141,6 +177,12 @@
    </item>
    <item row="6" column="1">
     <widget class="QCheckBox" name="checkBox_followCursor">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>Show the window on the active screen (the one containing the mouse cursor) rather than the primary one. This option applies when &quot;Show centered&quot; is activated, but also if the window has to be centered on another screen (e.g. because a display has been disconnected).</string>
      </property>
@@ -216,7 +258,7 @@
       <string>&lt;span style=&quot; font-size:9pt; color:#808080;&quot;&gt;See the &lt;a href=&quot;https://github.com/albertlauncher/plugins/blob/master/widgetsboxmodel/README.md&quot;&gt;readme&lt;/a&gt; for instructions on how to create your own theme. If you created a nice theme please &lt;a href=&quot;https://github.com/orgs/albertlauncher/discussions/1147&quot;&gt;share it&lt;/a&gt;.&lt;/span&gt;</string>
      </property>
      <property name="textFormat">
-      <enum>Qt::AutoText</enum>
+      <enum>Qt::TextFormat::AutoText</enum>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -273,6 +315,12 @@
    </item>
    <item row="11" column="1">
     <widget class="QCheckBox" name="checkBox_system_shadow">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>Tell the system to draw a shadow around the window. Note that on some systems this may look pretty ugly. Use the client shadow in this case.</string>
      </property>
@@ -293,6 +341,12 @@
    </item>
    <item row="12" column="1">
     <widget class="QCheckBox" name="checkBox_client_shadow">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>Draw a shadow on the client side.</string>
      </property>
@@ -316,8 +370,34 @@
    </item>
    <item row="13" column="1">
     <widget class="QCheckBox" name="checkBox_scrollbar">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>Displays a scrollbar in the results list.</string>
+     </property>
+    </widget>
+   </item>
+   <item row="14" column="0">
+    <widget class="QLabel" name="label_debugOverlay">
+     <property name="text">
+      <string>Show debug overlay</string>
+     </property>
+    </widget>
+   </item>
+   <item row="14" column="1">
+    <widget class="QCheckBox" name="checkBox_debugOverlay">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string/>
      </property>
     </widget>
    </item>
