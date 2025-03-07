@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Manuel Schneider
+// Copyright (c) 2023-2025 Manuel Schneider
 
 #include "primitives.h"
 #include "QtWidgets/qtwidgetsexports.h"

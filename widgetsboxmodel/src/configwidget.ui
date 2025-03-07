@@ -382,14 +382,14 @@
     </widget>
    </item>
    <item row="14" column="0">
-    <widget class="QLabel" name="label_debugOverlay">
+    <widget class="QLabel" name="label_debug">
      <property name="text">
-      <string>Show debug overlay</string>
+      <string>Debug mode</string>
      </property>
     </widget>
    </item>
    <item row="14" column="1">
-    <widget class="QCheckBox" name="checkBox_debugOverlay">
+    <widget class="QCheckBox" name="checkBox_debug">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
        <horstretch>0</horstretch>

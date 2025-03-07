@@ -20,7 +20,8 @@ bool DebugOverlay::eventFilter(QObject *object, QEvent *event)
     if (QEvent::Resize == event->type())
     {
         if (auto *w = dynamic_cast<QWidget*>(object); w)
-            INFO << objectName()
+            DEBG << event->type()
+                 << w->objectName()
                  << "geometry" << w->geometry()
                  << "sizeHint" << w->sizeHint()
                  << "minimumSizeHint" << w->minimumSizeHint()
@@ -28,10 +29,26 @@ bool DebugOverlay::eventFilter(QObject *object, QEvent *event)
                  << "maximumSize" << w->maximumSize();
     }
 
+    if (QEvent::Show == event->type())
+    {
+        if (auto *w = dynamic_cast<QWidget*>(object); w)
+            DEBG << event->type()
+                 << w->objectName()
+                 << "geometry" << w->geometry()
+                 << "sizeHint" << w->sizeHint()
+                 << "minimumSizeHint" << w->minimumSizeHint()
+                 << "minimumSize" << w->minimumSize()
+                 << "maximumSize" << w->maximumSize();
+    }
+
+    if (QEvent::Hide == event->type())
+    {
+        if (auto *w = dynamic_cast<QWidget*>(object); w)
+            DEBG << event->type() << w->objectName();
+    }
+
     else if (event->type() == QEvent::Paint)
     {
-        auto *pe = static_cast<QPaintEvent*>(event);
-        CRIT<< "Paint event on " << object << pe->rect();
         if (auto *w = dynamic_cast<QWidget*>(object); w)
             drawOverlay(w);
     }
@@ -41,7 +58,7 @@ bool DebugOverlay::eventFilter(QObject *object, QEvent *event)
 
 void DebugOverlay::drawOverlay(QWidget *widget)
 {
-    INFO << "Drawing overlay on " << widget << widget->rect();
+    // DEBG << "Drawing overlay on " << widget << widget->rect();
 
     QPainter painter(widget);
 

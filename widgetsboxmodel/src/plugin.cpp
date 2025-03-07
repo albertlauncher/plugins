@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2024 Manuel Schneider
+// Copyright (c) 2022-2025 Manuel Schneider
 
 #include "plugin.h"
 #include "ui_configwidget.h"
@@ -135,10 +135,10 @@ QWidget* Plugin::createFrontendConfigWidget()
            &Window::setShowCentered,
            &Window::showCenteredChanged);
 
-    ::bind(&window, ui.checkBox_debugOverlay,
-           &Window::showDebugOverlay,
-           &Window::setShowDebugOverlay,
-           &Window::showDebugOverlayChanged);
+    ::bind(&window, ui.checkBox_debug,
+           &Window::debugMode,
+           &Window::setDebugMode,
+           &Window::debugModeChanged);
 
     return widget;
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2024 Manuel Schneider
+// Copyright (c) 2022-2025 Manuel Schneider
 
 #pragma once
 #include <QPoint>
@@ -114,8 +114,8 @@ public:
     bool showCentered() const;
     void setShowCentered(bool b = true);
 
-    bool showDebugOverlay() const;
-    void setShowDebugOverlay(bool b = true);
+    bool debugMode() const;
+    void setDebugMode(bool b = true);
 
 private:
 
@@ -140,7 +140,7 @@ signals:
     void maxResultsChanged(uint);
     void quitOnCloseChanged(bool);
     void showCenteredChanged(bool);
-    void showDebugOverlayChanged(bool);
+    void debugModeChanged(bool);
     void themeDarkChanged(QString);
     void themeLightChanged(QString);
 

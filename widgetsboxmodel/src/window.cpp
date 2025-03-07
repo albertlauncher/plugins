@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2024 Manuel Schneider
+// Copyright (c) 2022-2025 Manuel Schneider
 
 #include "actiondelegate.h"
 #include "debugoverlay.h"
@@ -49,7 +49,7 @@ const char*   STATE_WND_POS  = "windowPosition";
 static const bool  DEF_ALWAYS_ON_TOP      = true;
 static const bool  DEF_CENTERED           = true;
 static const bool  DEF_CLEAR_ON_HIDE      = true;
-static const bool  DEF_DEBUG_OVERLAY      = false;
+static const bool  DEF_DEBUG              = false;
 static const bool  DEF_DISPLAY_SCROLLBAR  = false;
 static const bool  DEF_FOLLOW_CURSOR      = true;
 static const bool  DEF_HIDE_ON_FOCUS_LOSS = true;
@@ -64,7 +64,7 @@ static const uint  DEF_MAX_RESULTS        = 5;
 static const char *CFG_ALWAYS_ON_TOP      = "alwaysOnTop";
 static const char *CFG_CENTERED           = "showCentered";
 static const char *CFG_CLEAR_ON_HIDE      = "clearOnHide";
-static const char *CFG_DEBUG_OVERLAY      = "debugOverlay";
+static const char *CFG_DEBUG              = "debug";
 static const char *CFG_DISPLAY_SCROLLBAR  = "displayScrollbar";
 static const char *CFG_FOLLOW_CURSOR      = "followCursor";
 static const char *CFG_HIDE_ON_FOCUS_LOSS = "hideOnFocusLoss";
@@ -216,7 +216,7 @@ Window::Window(PluginInstance *p):
         setMaxResults(s->value(CFG_MAX_RESULTS, DEF_MAX_RESULTS).toUInt());
         setQuitOnClose(s->value(CFG_QUIT_ON_CLOSE, DEF_QUIT_ON_CLOSE).toBool());
         setShowCentered(s->value(CFG_CENTERED, DEF_CENTERED).toBool());
-        setShowDebugOverlay(s->value(CFG_DEBUG_OVERLAY, DEF_DEBUG_OVERLAY).toBool());
+        setDebugMode(s->value(CFG_DEBUG, DEF_DEBUG).toBool());
 
         try {
             setThemeLight(s->value(CFG_THEME_LIGHT, DEF_THEME_LIGHT).toString());
@@ -270,10 +270,10 @@ Window::Window(PluginInstance *p):
         a->setShortcuts({QKeySequence("Meta+d")});
         a->setShortcutVisibleInContextMenu(true);
         a->setCheckable(true);
-        a->setChecked(showDebugOverlay());
+        a->setChecked(debugMode());
         addAction(a);
-        connect(a, &QAction::toggled, this, &Window::setShowDebugOverlay);
-        connect(this, &Window::showDebugOverlayChanged, a, &QAction::setChecked);
+        connect(a, &QAction::toggled, this, &Window::setDebugMode);
+        connect(this, &Window::debugModeChanged, a, &QAction::setChecked);
 
         // mouse clicks
         connect(settings_button, &SettingsButton::clicked, this, [this](Qt::MouseButton b){
@@ -1075,10 +1075,10 @@ void Window::setShowCentered(bool val)
     emit showCenteredChanged(val);
 }
 
-bool Window::showDebugOverlay() const { return debug_overlay_.get(); }
-void Window::setShowDebugOverlay(bool val)
+bool Window::debugMode() const { return debug_overlay_.get(); }
+void Window::setDebugMode(bool val)
 {
-    if (showDebugOverlay() == val)
+    if (debugMode() == val)
         return;
 
     if (val)
@@ -1089,7 +1089,7 @@ void Window::setShowDebugOverlay(bool val)
     else
         debug_overlay_.reset();
 
-    plugin->settings()->setValue(CFG_DEBUG_OVERLAY, val);
+    plugin->settings()->setValue(CFG_DEBUG, val);
     update();
-    emit showDebugOverlayChanged(val);
+    emit debugModeChanged(val);
 }
