@@ -129,157 +129,159 @@ Window::Window(PluginInstance *p):
     dark_mode(haveDarkSystemPalette()),
     current_query{nullptr}
 {
-    // Setup UI
-    {
+    initializeUi();
+    initializeProperties();
+    initializeWindowActions();
+    initializeStatemachine();
 
-        results_list->setItemDelegate(item_delegate);
-        actions_list->setItemDelegate(action_delegate);
+    connect(input_line, &InputLine::textChanged,
+            this, &Window::inputChanged);
 
-        auto *window_layout = new QVBoxLayout(this);
-        window_layout->addWidget(frame);
-
-        auto *frame_layout = new QVBoxLayout(frame);
-        frame_layout->addWidget(input_line,0); //, 0, Qt::AlignTop);
-        frame_layout->addWidget(results_list,0); //, 0, Qt::AlignTop);
-        frame_layout->addWidget(actions_list,0); //, 1, Qt::AlignTop);
-        frame_layout->addStretch(1);
-
-        // Identifiers for stylesheets
-        frame->setObjectName("frame");
-        settings_button->setObjectName("settingsButton");
-        input_line->setObjectName("inputLine");
-        results_list->setObjectName("resultsList");
-        actions_list->setObjectName("actionList");
-
-        window_layout->setContentsMargins(0,0,0,0);
-        frame_layout->setContentsMargins(0,0,0,0);
-
-        window_layout->setSizeConstraint(QLayout::SetFixedSize);
-
-        input_line->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
-        results_list->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
-        actions_list->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
-
-        settings_button->setFocusPolicy(Qt::NoFocus);
-        results_list->setFocusPolicy(Qt::NoFocus);
-        actions_list->setFocusPolicy(Qt::NoFocus);
-        actions_list->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
-        results_list->hide();
-        actions_list->hide();
-
-        setWindowFlags(Qt::Tool|Qt::FramelessWindowHint);
-        setAttribute(Qt::WA_TranslucentBackground);
-
-        input_line->installEventFilter(this);
-
-        // reproducible UX
-        setStyle(QStyleFactory::create("Fusion"));
-
-        connect(input_line, &InputLine::textChanged, this, &Window::inputChanged);
-    }
-
-    // Settings
-    {
-        auto s = plugin->settings();
-        setAlwaysOnTop(s->value(CFG_ALWAYS_ON_TOP, DEF_ALWAYS_ON_TOP).toBool());
-        setClearOnHide(s->value(CFG_CLEAR_ON_HIDE, DEF_CLEAR_ON_HIDE).toBool());
-        setDisplayClientShadow(s->value(CFG_SHADOW_CLIENT, DEF_SHADOW_CLIENT).toBool());
-        setDisplayScrollbar(s->value(CFG_DISPLAY_SCROLLBAR, DEF_DISPLAY_SCROLLBAR).toBool());
-        setDisplaySystemShadow(s->value(CFG_SHADOW_SYSTEM, DEF_SHADOW_SYSTEM).toBool());
-        setFollowCursor(s->value(CFG_FOLLOW_CURSOR, DEF_FOLLOW_CURSOR).toBool());
-        setHideOnFocusLoss(s->value(CFG_HIDE_ON_FOCUS_LOSS, DEF_HIDE_ON_FOCUS_LOSS).toBool());
-        setHistorySearchEnabled(s->value(CFG_HISTORY_SEARCH, DEF_HISTORY_SEARCH).toBool());
-        setMaxResults(s->value(CFG_MAX_RESULTS, DEF_MAX_RESULTS).toUInt());
-        setQuitOnClose(s->value(CFG_QUIT_ON_CLOSE, DEF_QUIT_ON_CLOSE).toBool());
-        setShowCentered(s->value(CFG_CENTERED, DEF_CENTERED).toBool());
-        setDebugMode(s->value(CFG_DEBUG, DEF_DEBUG).toBool());
-
-        try {
-            setThemeLight(s->value(CFG_THEME_LIGHT, DEF_THEME_LIGHT).toString());
-        } catch (const out_of_range &) {
-            setThemeLight(themes.begin()->first);  // okay, we know there is at least one theme
-        }
-
-        try {
-            setThemeDark(s->value(CFG_THEME_DARK, DEF_THEME_DARK).toString());
-        } catch (const out_of_range &) {
-            setThemeDark(themes.begin()->first);  // okay, we know there is at least one theme
-        }
-    }
-
-    // Actions
-    {
-        auto *a = new QAction(tr("Settings"), this);
-        a->setShortcuts({QKeySequence("Ctrl+,")});
-        a->setShortcutVisibleInContextMenu(true);
-        addAction(a);
-        connect(a, &QAction::triggered, this, [] { albert::showSettings(); });
-
-        a = new QAction(tr("Hide on focus out"), this);
-        a->setShortcuts({QKeySequence("Meta+h")});
-        a->setShortcutVisibleInContextMenu(true);
-        a->setCheckable(true);
-        a->setChecked(hideOnFocusLoss());
-        addAction(a);
-        connect(a, &QAction::toggled, this, &Window::setHideOnFocusLoss);
-        connect(this, &Window::hideOnFocusLossChanged, a, &QAction::setChecked);
-
-        a = new QAction(tr("Show centered"), this);
-        a->setShortcuts({QKeySequence("Meta+c")});
-        a->setShortcutVisibleInContextMenu(true);
-        a->setCheckable(true);
-        a->setChecked(showCentered());
-        addAction(a);
-        connect(a, &QAction::toggled, this, &Window::setShowCentered);
-        connect(this, &Window::showCenteredChanged, a, &QAction::setChecked);
-
-        a = new QAction(tr("Clear on hide"), this);
-        a->setShortcuts({QKeySequence("Meta+Alt+c")});
-        a->setShortcutVisibleInContextMenu(true);
-        a->setCheckable(true);
-        a->setChecked(clearOnHide());
-        addAction(a);
-        connect(a, &QAction::toggled, this, &Window::setClearOnHide);
-        connect(this, &Window::clearOnHideChanged, a, &QAction::setChecked);
-
-        a = new QAction(tr("Debug mode"), this);
-        a->setShortcuts({QKeySequence("Meta+d")});
-        a->setShortcutVisibleInContextMenu(true);
-        a->setCheckable(true);
-        a->setChecked(debugMode());
-        addAction(a);
-        connect(a, &QAction::toggled, this, &Window::setDebugMode);
-        connect(this, &Window::debugModeChanged, a, &QAction::setChecked);
-
-        // mouse clicks
-        connect(settings_button, &SettingsButton::clicked, this, [this](Qt::MouseButton b){
-            if (b == Qt::LeftButton)
-                albert::showSettings();
-            else if (b == Qt::RightButton){
-                auto *menu = new QMenu(this);
-                menu->addActions(actions());
-                menu->setAttribute(Qt::WA_DeleteOnClose);
-                menu->popup(QCursor::pos());
-            }
-        });
-    }
-
-    // State
-    {
-        auto s = plugin->state();
-        if (!showCentered()
-            && s->contains(STATE_WND_POS)
-            && s->value(STATE_WND_POS).canConvert(QMetaType(QMetaType::QPoint)))
-           move(s->value(STATE_WND_POS).toPoint());
-    }
-
-    init_statemachine();
+    connect(settings_button, &SettingsButton::clicked,
+            this, &Window::onSettingsButtonClicked);
 }
 
 Window::~Window() = default;
 
-void Window::init_statemachine()
+void Window::initializeUi()
+{
+    // Identifiers
+
+    setObjectName("window");
+    frame->setObjectName("frame");
+    settings_button->setObjectName("settingsButton");
+    input_line->setObjectName("inputLine");
+    results_list->setObjectName("resultsList");
+    actions_list->setObjectName("actionList");
+
+    // Structure
+
+    auto *window_layout = new QVBoxLayout(this);
+    window_layout->addWidget(frame, 0, Qt::AlignTop);
+
+    auto *frame_layout = new QVBoxLayout(frame);
+    frame_layout->addWidget(input_line);
+    frame_layout->addWidget(results_list);
+    frame_layout->addWidget(actions_list);
+    frame_layout->addStretch(0);
+
+    // Properties
+
+    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);
+    setAttribute(Qt::WA_TranslucentBackground);
+    setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Fixed);
+
+    window_layout->setContentsMargins(0,0,0,0);
+    window_layout->setSizeConstraint(QLayout::SetFixedSize);
+
+    frame->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Fixed);
+
+    frame_layout->setContentsMargins(0,0,0,0);
+
+    input_line->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
+
+    settings_button->setFocusPolicy(Qt::NoFocus);
+
+    results_list->setFocusPolicy(Qt::NoFocus);
+    results_list->setItemDelegate(item_delegate);
+    results_list->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
+
+    actions_list->setFocusPolicy(Qt::NoFocus);
+    actions_list->setItemDelegate(action_delegate);
+    actions_list->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
+
+    frame->setMouseTracking(true); //leave/enter events
+
+    // Initialize
+
+    input_line->installEventFilter(this);
+    results_list->hide();
+    actions_list->hide();
+
+    setStyle(QStyleFactory::create("Fusion"));  // reproducible UX
+}
+
+void Window::initializeProperties()
+{
+    auto s = plugin->settings();
+    setAlwaysOnTop(s->value(CFG_ALWAYS_ON_TOP, DEF_ALWAYS_ON_TOP).toBool());
+    setClearOnHide(s->value(CFG_CLEAR_ON_HIDE, DEF_CLEAR_ON_HIDE).toBool());
+    setDisplayClientShadow(s->value(CFG_SHADOW_CLIENT, DEF_SHADOW_CLIENT).toBool());
+    setDisplayScrollbar(s->value(CFG_DISPLAY_SCROLLBAR, DEF_DISPLAY_SCROLLBAR).toBool());
+    setDisplaySystemShadow(s->value(CFG_SHADOW_SYSTEM, DEF_SHADOW_SYSTEM).toBool());
+    setFollowCursor(s->value(CFG_FOLLOW_CURSOR, DEF_FOLLOW_CURSOR).toBool());
+    setHideOnFocusLoss(s->value(CFG_HIDE_ON_FOCUS_LOSS, DEF_HIDE_ON_FOCUS_LOSS).toBool());
+    setHistorySearchEnabled(s->value(CFG_HISTORY_SEARCH, DEF_HISTORY_SEARCH).toBool());
+    setMaxResults(s->value(CFG_MAX_RESULTS, DEF_MAX_RESULTS).toUInt());
+    setQuitOnClose(s->value(CFG_QUIT_ON_CLOSE, DEF_QUIT_ON_CLOSE).toBool());
+    setShowCentered(s->value(CFG_CENTERED, DEF_CENTERED).toBool());
+    setDebugMode(s->value(CFG_DEBUG, DEF_DEBUG).toBool());
+
+    try {
+        setThemeLight(s->value(CFG_THEME_LIGHT, DEF_THEME_LIGHT).toString());
+    } catch (const out_of_range &) {
+        setThemeLight(themes.begin()->first);  // okay, we know there is at least one theme
+    }
+
+    try {
+        setThemeDark(s->value(CFG_THEME_DARK, DEF_THEME_DARK).toString());
+    } catch (const out_of_range &) {
+        setThemeDark(themes.begin()->first);  // okay, we know there is at least one theme
+    }
+
+    s = plugin->state();
+    if (!showCentered()
+        && s->contains(STATE_WND_POS)
+        && s->value(STATE_WND_POS).canConvert(QMetaType(QMetaType::QPoint)))
+        move(s->value(STATE_WND_POS).toPoint());
+}
+
+void Window::initializeWindowActions()
+{
+    auto *a = new QAction(tr("Settings"), this);
+    a->setShortcuts({QKeySequence("Ctrl+,")});
+    a->setShortcutVisibleInContextMenu(true);
+    connect(a, &QAction::triggered, this, [] { albert::showSettings(); });
+    addAction(a);
+
+    a = new QAction(tr("Hide on focus out"), this);
+    a->setShortcuts({QKeySequence("Meta+h")});
+    a->setShortcutVisibleInContextMenu(true);
+    a->setCheckable(true);
+    a->setChecked(hideOnFocusLoss());
+    connect(a, &QAction::toggled, this, &Window::setHideOnFocusLoss);
+    connect(this, &Window::hideOnFocusLossChanged, a, &QAction::setChecked);
+    addAction(a);
+
+    a = new QAction(tr("Show centered"), this);
+    a->setShortcuts({QKeySequence("Meta+c")});
+    a->setShortcutVisibleInContextMenu(true);
+    a->setCheckable(true);
+    a->setChecked(showCentered());
+    connect(a, &QAction::toggled, this, &Window::setShowCentered);
+    connect(this, &Window::showCenteredChanged, a, &QAction::setChecked);
+    addAction(a);
+
+    a = new QAction(tr("Clear on hide"), this);
+    a->setShortcuts({QKeySequence("Meta+i")});
+    a->setShortcutVisibleInContextMenu(true);
+    a->setCheckable(true);
+    a->setChecked(clearOnHide());
+    connect(a, &QAction::toggled, this, &Window::setClearOnHide);
+    connect(this, &Window::clearOnHideChanged, a, &QAction::setChecked);
+    addAction(a);
+
+    a = new QAction(tr("Debug mode"), this);
+    a->setShortcuts({QKeySequence("Meta+d")});
+    a->setShortcutVisibleInContextMenu(true);
+    a->setCheckable(true);
+    a->setChecked(debugMode());
+    connect(a, &QAction::toggled, this, &Window::setDebugMode);
+    connect(this, &Window::debugModeChanged, a, &QAction::setChecked);
+    addAction(a);
+}
+
+void Window::initializeStatemachine()
 {
     //
     // States
@@ -635,11 +637,23 @@ void Window::init_statemachine()
     machine->start();
 }
 
-QString Window::input() const
-{ return input_line->text(); }
+void Window::onSettingsButtonClicked(Qt::MouseButton button)
+{
+    if (button == Qt::LeftButton)
+        albert::showSettings();
 
-void Window::setInput(const QString &text)
-{ input_line->setText(text); }
+    else if (button == Qt::RightButton)
+    {
+        auto *menu = new QMenu(this);
+        menu->addActions(actions());
+        menu->setAttribute(Qt::WA_DeleteOnClose);
+        menu->popup(QCursor::pos());
+    }
+}
+
+QString Window::input() const { return input_line->text(); }
+
+void Window::setInput(const QString &text) { input_line->setText(text); }
 
 void Window::setQuery(Query *q)
 {

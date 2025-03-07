@@ -38,7 +38,12 @@ public:
 
 private:
 
-    void init_statemachine();
+    void initializeUi();
+    void initializeProperties();
+    void initializeWindowActions();
+    void initializeStatemachine();
+
+    void onSettingsButtonClicked(Qt::MouseButton button);
     bool event(QEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
 
