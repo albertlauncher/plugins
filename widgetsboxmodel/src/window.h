@@ -34,6 +34,8 @@ public:
 
     const std::map<QString, QString> themes;
 
+    bool darkMode() const;
+
 private:
 
     void init_statemachine();

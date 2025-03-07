@@ -720,6 +720,8 @@ void Window::applyThemeFile(const QString& path)
     }
 }
 
+bool Window::darkMode() const { return dark_mode; }
+
 bool Window::event(QEvent *event)
 {
     if (event->type() == QEvent::Resize)  // Let settingsbutton stay in top right corner of frame
