@@ -10,7 +10,7 @@
 #include <albert/albert.h>
 
 
-SettingsButton::SettingsButton(QWidget *parent) : QPushButton(parent)
+SettingsButton::SettingsButton(QWidget *parent) : QWidget(parent)
 {
     rotation_animation = std::make_unique<QPropertyAnimation>(this, "angle");
     rotation_animation->setDuration(4000);
@@ -23,11 +23,6 @@ SettingsButton::SettingsButton(QWidget *parent) : QPushButton(parent)
     svgRenderer_ = std::make_unique<QSvgRenderer>(QString(":gear"));
 
     setCursor(Qt::PointingHandCursor);
-
-    auto *action = new QAction("Settings", this);
-    action->setShortcuts({QKeySequence("Ctrl+,"), QKeySequence("Alt+,")});
-    connect(action, &QAction::triggered, this, [](){ albert::showSettings(); });
-    connect(this, &QPushButton::clicked, action, &QAction::trigger);
 }
 
 SettingsButton::~SettingsButton() = default;
@@ -37,7 +32,7 @@ bool SettingsButton::event(QEvent *event)
     if (event->type() == QEvent::Paint)
     {
         auto *paint_event = static_cast<QPaintEvent*>(event);
-        QPushButton::paintEvent(paint_event);
+        QWidget::paintEvent(paint_event);
 
         QStyleOptionButton option;
         option.initFrom(this);
@@ -69,6 +64,12 @@ bool SettingsButton::event(QEvent *event)
     else if (event->type() == QEvent::Hide)
         rotation_animation->stop();
 
-    return QPushButton::event(event);
+    else if (event->type() == QEvent::MouseButtonPress)
+    {
+        emit clicked(static_cast<QMouseEvent*>(event)->button());
+        return true;
+    }
+
+    return QWidget::event(event);
 }
 

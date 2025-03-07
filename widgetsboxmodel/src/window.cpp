@@ -16,6 +16,7 @@
 #include <QGraphicsEffect>
 #include <QKeyEvent>
 #include <QKeyEventTransition>
+#include <QMenu>
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QPixmapCache>
@@ -217,6 +218,63 @@ Window::Window(PluginInstance *p):
         setQuitOnClose(s->value(CFG_QUIT_ON_CLOSE, DEF_QUIT_ON_CLOSE).toBool());
         setShowCentered(s->value(CFG_CENTERED, DEF_CENTERED).toBool());
         setShowDebugOverlay(s->value(CFG_DEBUG_OVERLAY, DEF_DEBUG_OVERLAY).toBool());
+    }
+
+    // Actions
+    {
+        auto *a = new QAction(tr("Settings"), this);
+        a->setShortcuts({QKeySequence("Ctrl+,")});
+        a->setShortcutVisibleInContextMenu(true);
+        addAction(a);
+        connect(a, &QAction::triggered, this, [] { albert::showSettings(); });
+
+        a = new QAction(tr("Hide on focus out"), this);
+        a->setShortcuts({QKeySequence("Meta+h")});
+        a->setShortcutVisibleInContextMenu(true);
+        a->setCheckable(true);
+        a->setChecked(hideOnFocusLoss());
+        addAction(a);
+        connect(a, &QAction::toggled, this, &Window::setHideOnFocusLoss);
+        connect(this, &Window::hideOnFocusLossChanged, a, &QAction::setChecked);
+
+        a = new QAction(tr("Show centered"), this);
+        a->setShortcuts({QKeySequence("Meta+c")});
+        a->setShortcutVisibleInContextMenu(true);
+        a->setCheckable(true);
+        a->setChecked(showCentered());
+        addAction(a);
+        connect(a, &QAction::toggled, this, &Window::setShowCentered);
+        connect(this, &Window::showCenteredChanged, a, &QAction::setChecked);
+
+        a = new QAction(tr("Clear on hide"), this);
+        a->setShortcuts({QKeySequence("Meta+Alt+c")});
+        a->setShortcutVisibleInContextMenu(true);
+        a->setCheckable(true);
+        a->setChecked(clearOnHide());
+        addAction(a);
+        connect(a, &QAction::toggled, this, &Window::setClearOnHide);
+        connect(this, &Window::clearOnHideChanged, a, &QAction::setChecked);
+
+        a = new QAction(tr("Debug mode"), this);
+        a->setShortcuts({QKeySequence("Meta+d")});
+        a->setShortcutVisibleInContextMenu(true);
+        a->setCheckable(true);
+        a->setChecked(showDebugOverlay());
+        addAction(a);
+        connect(a, &QAction::toggled, this, &Window::setShowDebugOverlay);
+        connect(this, &Window::showDebugOverlayChanged, a, &QAction::setChecked);
+
+        // mouse clicks
+        connect(settings_button, &SettingsButton::clicked, this, [this](Qt::MouseButton b){
+            if (b == Qt::LeftButton)
+                albert::showSettings();
+            else if (b == Qt::RightButton){
+                auto *menu = new QMenu(this);
+                menu->addActions(actions());
+                menu->setAttribute(Qt::WA_DeleteOnClose);
+                menu->popup(QCursor::pos());
+            }
+        });
     }
 
     // State
