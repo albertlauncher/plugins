@@ -107,16 +107,16 @@
         <source>Dark theme</source>
         <translation>Dunkles Thema</translation>
     </message>
+    <message>
+        <source>Debug mode</source>
+        <translation>Debug-Modus</translation>
+    </message>
 </context>
 <context>
     <name>Window</name>
     <message>
         <source>Switch themes</source>
         <translation>Wechsle Themen</translation>
-    </message>
-    <message>
-        <source>Apply theme</source>
-        <translation>Thema anwenden</translation>
     </message>
     <message>
         <source>Use in light mode</source>
@@ -131,12 +131,28 @@
         <translation>Themendatei öffnen</translation>
     </message>
     <message>
-        <source>Theme &apos;%1&apos; does not exist. Check your config!</source>
-        <translation>Thema &apos;%1&apos; existiert nicht. Prüfen Sie ihre Konfiguration!</translation>
-    </message>
-    <message>
         <source>The theme file could not be opened</source>
         <translation>Die Themendatei konnte nicht geöffnet werden</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Einstellungen</translation>
+    </message>
+    <message>
+        <source>Hide on focus out</source>
+        <translation>Beim Fokusverlust verbergen</translation>
+    </message>
+    <message>
+        <source>Show centered</source>
+        <translation>Zentriert anzeigen</translation>
+    </message>
+    <message>
+        <source>Clear on hide</source>
+        <translation>Eingabezeile beim Ausblenden leeren</translation>
+    </message>
+    <message>
+        <source>Debug mode</source>
+        <translation>Debug-Modus</translation>
     </message>
 </context>
 </TS>

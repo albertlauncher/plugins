@@ -107,15 +107,15 @@
         <source>Displays a scrollbar in the results list.</source>
         <translation></translation>
     </message>
+    <message>
+        <source>Debug mode</source>
+        <translation></translation>
+    </message>
 </context>
 <context>
     <name>Window</name>
     <message>
         <source>Switch themes</source>
-        <translation></translation>
-    </message>
-    <message>
-        <source>Apply theme</source>
         <translation></translation>
     </message>
     <message>
@@ -131,11 +131,27 @@
         <translation></translation>
     </message>
     <message>
-        <source>Theme &apos;%1&apos; does not exist. Check your config!</source>
+        <source>The theme file could not be opened</source>
         <translation></translation>
     </message>
     <message>
-        <source>The theme file could not be opened</source>
+        <source>Settings</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Hide on focus out</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Show centered</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Clear on hide</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Debug mode</source>
         <translation></translation>
     </message>
 </context>
