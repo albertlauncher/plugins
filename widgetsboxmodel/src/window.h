@@ -3,7 +3,10 @@
 #pragma once
 #include <QPoint>
 #include <QWidget>
-namespace albert { class Query; }
+namespace albert {
+class Query;
+class PluginInstance;
+}
 class ActionDelegate;
 class InputLine;
 class ItemDelegate;
@@ -20,7 +23,7 @@ class Window : public QWidget
 
 public:
 
-    Window(Plugin *plugin);
+    Window(albert::PluginInstance *plugin);
     ~Window();
 
     QString input() const;
@@ -28,15 +31,51 @@ public:
     void setQuery(albert::Query *query);
     void applyThemeFile(const QString& path);
 
-    // Properties
-
     const std::map<QString, QString> themes;
 
-    const QString &lightTheme() const;
-    void setLightTheme(const QString& theme);
+private:
 
-    const QString &darkTheme() const;
-    void setDarkTheme(const QString& theme);
+    void init_statemachine();
+    bool event(QEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
+    albert::PluginInstance const * const plugin;
+
+    QFrame *frame;
+    InputLine *input_line;
+    SettingsButton *settings_button;
+    ResizingList *results_list;
+    ResizingList *actions_list;
+    ItemDelegate *item_delegate;
+    ActionDelegate *action_delegate;
+    std::unique_ptr<ResultItemsModel> results_model;
+    bool dark_mode;
+
+    albert::Query *current_query;
+
+    enum class Mod {Shift, Meta, Contol, Alt};
+    Mod mod_command = Mod::Contol;
+    Mod mod_actions = Mod::Alt;
+    Mod mod_fallback = Mod::Meta;
+
+signals:
+
+    void inputChanged(QString);
+    void visibleChanged(bool);
+    void queryChanged();
+    void queryMatchesAdded();
+    void queryStateBusy();
+    void queryStateIdle();
+
+    // Properties
+
+public:
+
+    const QString &themeLight() const;
+    void setThemeLight(const QString& theme);
+
+    const QString &themeDark() const;
+    void setThemeDark(const QString& theme);
 
     bool alwaysOnTop() const;
     void setAlwaysOnTop(bool alwaysOnTop);
@@ -71,46 +110,34 @@ public:
     bool showCentered() const;
     void setShowCentered(bool b = true);
 
+    bool showDebugOverlay() const;
+    void setShowDebugOverlay(bool b = true);
+
 private:
-
-    void init_statemachine();
-    bool event(QEvent *event) override;
-    bool eventFilter(QObject *watched, QEvent *event) override;
-
-    Plugin const * const plugin;
-
-    QFrame *frame;
-    InputLine *input_line;
-    SettingsButton *settings_button;
-    ResizingList *results_list;
-    ResizingList *actions_list;
-    ItemDelegate *item_delegate;
-    ActionDelegate *action_delegate;
-    std::unique_ptr<ResultItemsModel> results_model;
 
     QString theme_light_;
     QString theme_dark_;
-    bool dark_mode_;
-    bool hideOnFocusLoss_{};
-    bool showCentered_{};
-    bool followCursor_{};
-    bool quitOnClose_{};
-    bool history_search_{};
-
-    albert::Query *current_query;
-
-    enum class Mod {Shift, Meta, Contol, Alt};
-    Mod mod_command = Mod::Contol;
-    Mod mod_actions = Mod::Alt;
-    Mod mod_fallback = Mod::Meta;
+    bool hideOnFocusLoss_;
+    bool showCentered_;
+    bool followCursor_;
+    bool quitOnClose_;
+    bool history_search_;
 
 signals:
 
-    void inputChanged(QString);
-    void visibleChanged(bool);
-    void queryChanged();
-    void queryMatchesAdded();
-    void queryStateBusy();
-    void queryStateIdle();
+    void alwaysOnTopChanged(bool);
+    void clearOnHideChanged(bool);
+    void displayClientShadowChanged(bool);
+    void displayScrollbarChanged(bool);
+    void displaySystemShadowChanged(bool);
+    void followCursorChanged(bool);
+    void hideOnFocusLossChanged(bool);
+    void historySearchEnabledChanged(bool);
+    void maxResultsChanged(uint);
+    void quitOnCloseChanged(bool);
+    void showCenteredChanged(bool);
+    void themeDarkChanged(QString);
+    void themeLightChanged(QString);
+
 };
 

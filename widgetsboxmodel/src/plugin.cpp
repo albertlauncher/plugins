@@ -40,24 +40,24 @@ QWidget* Plugin::createFrontendConfigWidget()
     for (const auto&[name, path] : window.themes)
     {
         ui.comboBox_theme_light->addItem(name, path);
-        if (name == window.lightTheme())
+        if (name == window.themeLight())
             ui.comboBox_theme_light->setCurrentIndex(ui.comboBox_theme_light->count()-1);
     }
     connect(ui.comboBox_theme_light,
             static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, [this, comboBox_themes=ui.comboBox_theme_light](int i)
-            { window.setLightTheme(comboBox_themes->itemText(i)); });
+            { window.setThemeLight(comboBox_themes->itemText(i)); });
 
     for (const auto&[name, path] : window.themes)
     {
         ui.comboBox_theme_dark->addItem(name, path);
-        if (name == window.darkTheme())
+        if (name == window.themeDark())
             ui.comboBox_theme_dark->setCurrentIndex(ui.comboBox_theme_dark->count()-1);
     }
     connect(ui.comboBox_theme_dark,
             static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, [this, comboBox_themes=ui.comboBox_theme_dark](int i)
-            { window.setDarkTheme(comboBox_themes->itemText(i)); });
+            { window.setThemeDark(comboBox_themes->itemText(i)); });
 
     ui.checkBox_onTop->setChecked(window.alwaysOnTop());
     connect(ui.checkBox_onTop, &QCheckBox::toggled,

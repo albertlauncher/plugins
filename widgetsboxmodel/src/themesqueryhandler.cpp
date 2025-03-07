@@ -40,11 +40,11 @@ void ThemesQueryHandler::handleTriggerQuery(Query &query)
                         },
                         {
                             "setlight", Window::tr("Use in light mode"),
-                            [w=window, n=name]{ w->setLightTheme(n); }
+                            [w=window, n=name]{ w->setThemeLight(n); }
                         },
                         {
                             "setdark", Window::tr("Use in dark mode"),
-                            [w=window, n=name]{ w->setDarkTheme(n); }
+                            [w=window, n=name]{ w->setThemeDark(n); }
                         },
                         {
                             "open", Window::tr("Open theme file"),

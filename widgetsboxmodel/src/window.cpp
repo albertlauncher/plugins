@@ -3,7 +3,6 @@
 #include "actiondelegate.h"
 #include "inputline.h"
 #include "itemdelegate.h"
-#include "plugin.h"
 #include "resizinglist.h"
 #include "resultitemmodel.h"
 #include "settingsbutton.h"
@@ -31,6 +30,7 @@
 #include <QWindow>
 #include <albert/albert.h>
 #include <albert/logging.h>
+#include <albert/plugininstance.h>
 #include <albert/pluginloader.h>
 #include <albert/pluginmetadata.h>
 #include <albert/query.h>
@@ -43,32 +43,33 @@ namespace  {
 const uint    DEF_SHADOW_SIZE = 32;  // TODO user
 const char*   STATE_WND_POS  = "windowPosition";
 
-const char*   CFG_CENTERED = "showCentered";
-const bool    DEF_CENTERED = true;
-const char*   CFG_FOLLOW_CURSOR = "followCursor";
-const bool    DEF_FOLLOW_CURSOR = true;
-const char*   CFG_THEME = "lightTheme";
-const char*   DEF_THEME = "Default System Palette";
-const char*   CFG_THEME_DARK = "darkTheme";
-const char*   DEF_THEME_DARK = DEF_THEME;
-const char*   CFG_HIDE_ON_FOCUS_LOSS = "hideOnFocusLoss";
-const bool    DEF_HIDE_ON_FOCUS_LOSS = true;
-const char*   CFG_QUIT_ON_CLOSE = "quitOnClose";
-const bool    DEF_QUIT_ON_CLOSE = false;
-const char*   CFG_CLEAR_ON_HIDE = "clearOnHide";
-const bool    DEF_CLEAR_ON_HIDE = false;
-const char*   CFG_ALWAYS_ON_TOP = "alwaysOnTop";
-const bool    DEF_ALWAYS_ON_TOP = true;
-const char*   CFG_HISTORY_SEARCH = "historySearch";
-const bool    DEF_HISTORY_SEARCH = true;
-const char*   CFG_MAX_RESULTS = "itemCount";
-const uint    DEF_MAX_RESULTS = 5;
-const char*   CFG_DISPLAY_SCROLLBAR = "displayScrollbar";
-const bool    DEF_DISPLAY_SCROLLBAR = false;
-const char*   CFG_CLIENT_SHADOW = "clientShadow";
-const bool    DEF_CLIENT_SHADOW = true;
-const char*   CFG_SYSTEM_SHADOW = "systemShadow";
-const bool    DEF_SYSTEM_SHADOW = true;
+static const bool  DEF_ALWAYS_ON_TOP      = true;
+static const bool  DEF_CENTERED           = true;
+static const bool  DEF_CLEAR_ON_HIDE      = true;
+static const bool  DEF_DISPLAY_SCROLLBAR  = false;
+static const bool  DEF_FOLLOW_CURSOR      = true;
+static const bool  DEF_HIDE_ON_FOCUS_LOSS = true;
+static const bool  DEF_HISTORY_SEARCH     = true;
+static const bool  DEF_QUIT_ON_CLOSE      = false;
+static const bool  DEF_SHADOW_CLIENT      = true;
+static const bool  DEF_SHADOW_SYSTEM      = false;
+static const char* DEF_THEME_DARK         = "Default System Palette";
+static const char* DEF_THEME_LIGHT        = "Default System Palette";
+static const uint  DEF_MAX_RESULTS        = 5;
+
+static const char *CFG_ALWAYS_ON_TOP      = "alwaysOnTop";
+static const char *CFG_CENTERED           = "showCentered";
+static const char *CFG_CLEAR_ON_HIDE      = "clearOnHide";
+static const char *CFG_DISPLAY_SCROLLBAR  = "displayScrollbar";
+static const char *CFG_FOLLOW_CURSOR      = "followCursor";
+static const char *CFG_HIDE_ON_FOCUS_LOSS = "hideOnFocusLoss";
+static const char *CFG_HISTORY_SEARCH     = "historySearch";
+static const char *CFG_MAX_RESULTS        = "itemCount";
+static const char *CFG_QUIT_ON_CLOSE      = "quitOnClose";
+static const char *CFG_SHADOW_CLIENT      = "clientShadow";
+static const char *CFG_SHADOW_SYSTEM      = "systemShadow";
+static const char *CFG_THEME_DARK         = "darkTheme";
+static const char *CFG_THEME_LIGHT        = "lightTheme";
 
 //constexpr Qt::KeyboardModifier mods_mod[] = {
 //    Qt::ShiftModifier,
@@ -133,7 +134,7 @@ static map<QString, QString> findThemes(const QString &plugin_id)
 
 }
 
-Window::Window(Plugin *p):
+Window::Window(PluginInstance *p):
     themes(findThemes(p->loader().metaData().id)),
     plugin(p),
     frame(new QFrame(this)),
@@ -199,12 +200,12 @@ Window::Window(Plugin *p):
     {
         auto s = plugin->settings();
         theme_dark_ = s->value(CFG_THEME_DARK, DEF_THEME_DARK).toString();
-        theme_light_ = s->value(CFG_THEME, DEF_THEME).toString();
+        theme_light_ = s->value(CFG_THEME_LIGHT, DEF_THEME_LIGHT).toString();
         setAlwaysOnTop(s->value(CFG_ALWAYS_ON_TOP, DEF_ALWAYS_ON_TOP).toBool());
         setClearOnHide(s->value(CFG_CLEAR_ON_HIDE, DEF_CLEAR_ON_HIDE).toBool());
-        setDisplayClientShadow(s->value(CFG_CLIENT_SHADOW, DEF_CLIENT_SHADOW).toBool());
+        setDisplayClientShadow(s->value(CFG_SHADOW_CLIENT, DEF_SHADOW_CLIENT).toBool());
         setDisplayScrollbar(s->value(CFG_DISPLAY_SCROLLBAR, DEF_DISPLAY_SCROLLBAR).toBool());
-        setDisplaySystemShadow(s->value(CFG_SYSTEM_SHADOW, DEF_SYSTEM_SHADOW).toBool());
+        setDisplaySystemShadow(s->value(CFG_SHADOW_SYSTEM, DEF_SHADOW_SYSTEM).toBool());
         setFollowCursor(s->value(CFG_FOLLOW_CURSOR, DEF_FOLLOW_CURSOR).toBool());
         setHideOnFocusLoss(s->value(CFG_HIDE_ON_FOCUS_LOSS, DEF_HIDE_ON_FOCUS_LOSS).toBool());
         setHistorySearchEnabled(s->value(CFG_HISTORY_SEARCH, DEF_HISTORY_SEARCH).toBool());
@@ -229,15 +230,15 @@ Window::Window(Plugin *p):
         {
             CRIT << tr_message.arg(theme_light_);
             QMessageBox::critical(nullptr, qApp->applicationDisplayName(), tr_message.arg(theme_light_));
-            setLightTheme(themes.contains(DEF_THEME) ? QString(DEF_THEME) : themes.begin()->first);
+            setThemeLight(themes.contains(CFG_THEME_LIGHT) ? QString(DEF_THEME_LIGHT) : themes.begin()->first);
         }
         if (!themes.contains(theme_dark_))
         {
             CRIT << tr_message.arg(theme_dark_);
             QMessageBox::critical(nullptr, qApp->applicationDisplayName(), tr_message.arg(theme_dark_));
-            setDarkTheme(themes.contains(DEF_THEME) ? QString(DEF_THEME) : themes.begin()->first);
+            setThemeDark(themes.contains(CFG_THEME_DARK) ? QString(DEF_THEME_DARK) : themes.begin()->first);
         }
-        applyThemeFile(themes.at((dark_mode_ = haveDarkSystemPalette()) ? theme_dark_ : theme_light_));
+        applyThemeFile(themes.at((dark_mode = haveDarkSystemPalette()) ? theme_dark_ : theme_light_));
     }
 
     init_statemachine();
@@ -717,16 +718,16 @@ bool Window::event(QEvent *event)
 
     else if (event->type() == QEvent::ThemeChange)
     {
+        auto have_dark_system_palette = haveDarkSystemPalette();
 
-        if (auto have_dark_system_palette = haveDarkSystemPalette();
-            dark_mode_ != have_dark_system_palette)
+        if (dark_mode != have_dark_system_palette)
         {
 #ifdef Q_OS_LINUX
             QApplication::setPalette(QApplication::style()->standardPalette());
 #endif
             // at(): no catch, theme_dark_ theme_light_ should exist
-            dark_mode_ = have_dark_system_palette;
-            applyThemeFile(themes.at((dark_mode_) ? theme_dark_ : theme_light_));
+            dark_mode = have_dark_system_palette;
+            applyThemeFile(themes.at((dark_mode) ? theme_dark_ : theme_light_));
         }
     }
 
@@ -845,52 +846,68 @@ bool Window::eventFilter(QObject *watched, QEvent *event)
 //  PROPERTIES
 //
 
-const QString &Window::lightTheme() const { return theme_light_; }
-
-void Window::setLightTheme(const QString &theme)
+const QString &Window::themeLight() const { return theme_light_; }
+void Window::setThemeLight(const QString &val)
 {
+    if (themeLight() == val)
+        return;
+
     // intended implicit test for existance
-    auto theme_file = themes.at(theme);
-    if (!dark_mode_)
+    auto theme_file = themes.at(val);
+    if (!dark_mode)
         applyThemeFile(theme_file);
-    plugin->settings()->setValue(CFG_THEME, theme_light_ = theme);
+
+    theme_light_ = val;
+    plugin->settings()->setValue(CFG_THEME_LIGHT, val);
+    emit themeLightChanged(val);
 }
 
-const QString &Window::darkTheme() const { return theme_dark_; }
-
-void Window::setDarkTheme(const QString &theme_name)
+const QString &Window::themeDark() const { return theme_dark_; }
+void Window::setThemeDark(const QString &val)
 {
+    if (themeDark() == val)
+        return;
+
     // intended implicit test for existance
-    auto theme_file = themes.at(theme_name);
-    if (dark_mode_)
+    auto theme_file = themes.at(val);
+    if (dark_mode)
         applyThemeFile(theme_file);
-    plugin->settings()->setValue(CFG_THEME_DARK, theme_dark_ = theme_name);
+
+    theme_dark_ = val;theme_dark_ = val;
+    plugin->settings()->setValue(CFG_THEME_DARK, val);
+    emit themeDarkChanged(val);
 }
 
-bool Window::alwaysOnTop() const
-{ return windowFlags() & Qt::WindowStaysOnTopHint; }
-
-void Window::setAlwaysOnTop(bool value)
+bool Window::alwaysOnTop() const { return windowFlags() & Qt::WindowStaysOnTopHint; }
+void Window::setAlwaysOnTop(bool val)
 {
-    plugin->settings()->setValue(CFG_ALWAYS_ON_TOP, value);
-    setWindowFlags(windowFlags().setFlag(Qt::WindowStaysOnTopHint, value));
+    if (alwaysOnTop() == val)
+        return;
+
+    setWindowFlags(windowFlags().setFlag(Qt::WindowStaysOnTopHint, val));
+    plugin->settings()->setValue(CFG_ALWAYS_ON_TOP, val);
+    emit clearOnHideChanged(val);
 }
 
-bool Window::clearOnHide() const
-{ return input_line->clear_on_hide; }
-
-void Window::setClearOnHide(bool b)
-{ plugin->settings()->setValue(CFG_CLEAR_ON_HIDE, input_line->clear_on_hide = b); }
-
-bool Window::displayClientShadow() const
-{ return graphicsEffect() != nullptr; }
-
-void Window::setDisplayClientShadow(bool value)
+bool Window::clearOnHide() const { return input_line->clear_on_hide; }
+void Window::setClearOnHide(bool val)
 {
-    if (graphicsEffect() && !value)
-        setGraphicsEffect(nullptr);
+    if (clearOnHide() == val)
+        return;
 
-    if (!graphicsEffect() && value){
+    input_line->clear_on_hide = val;
+    plugin->settings()->setValue(CFG_CLEAR_ON_HIDE, val);
+    emit clearOnHideChanged(val);
+}
+
+bool Window::displayClientShadow() const { return graphicsEffect() != nullptr; }
+void Window::setDisplayClientShadow(bool val)
+{
+    if (displayClientShadow() == val)
+        return;
+
+    if (val)
+    {
         // Properties
         auto* effect = new QGraphicsDropShadowEffect(this);
         effect->setBlurRadius(DEF_SHADOW_SIZE);
@@ -898,67 +915,104 @@ void Window::setDisplayClientShadow(bool value)
         effect->setXOffset(0.0);
         effect->setYOffset(2.0);
         setGraphicsEffect(effect);  // takes ownership
+        setContentsMargins(DEF_SHADOW_SIZE,DEF_SHADOW_SIZE,DEF_SHADOW_SIZE,DEF_SHADOW_SIZE);
     }
-    value
-        ? setContentsMargins(DEF_SHADOW_SIZE,DEF_SHADOW_SIZE,DEF_SHADOW_SIZE,DEF_SHADOW_SIZE)
-        : setContentsMargins(0,0,0,0);
-    plugin->settings()->setValue(CFG_CLIENT_SHADOW, value);
+    else
+    {
+        setGraphicsEffect(nullptr);
+        setContentsMargins(0,0,0,0);
+    }
+
+    plugin->settings()->setValue(CFG_SHADOW_CLIENT, val);
+    emit displayClientShadowChanged(val);
 }
 
 bool Window::displayScrollbar() const
 { return results_list->verticalScrollBarPolicy() != Qt::ScrollBarAlwaysOff; }
-
-void Window::setDisplayScrollbar(bool value)
+void Window::setDisplayScrollbar(bool val)
 {
-    plugin->settings()->setValue(CFG_DISPLAY_SCROLLBAR, value);
-    results_list->setVerticalScrollBarPolicy(
-        value ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff);
+    if (displayScrollbar() == val)
+        return;
+
+    results_list->setVerticalScrollBarPolicy(val ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff);
+    plugin->settings()->setValue(CFG_DISPLAY_SCROLLBAR, val);
+    emit displayScrollbarChanged(val);
 }
 
 bool Window::displaySystemShadow() const
 { return !windowFlags().testFlag(Qt::NoDropShadowWindowHint); }
-
-void Window::setDisplaySystemShadow(bool value)
+void Window::setDisplaySystemShadow(bool val)
 {
-    plugin->settings()->setValue(CFG_SYSTEM_SHADOW, value);
-    setWindowFlags(windowFlags().setFlag(Qt::NoDropShadowWindowHint, !value));
+    if (displaySystemShadow() == val)
+        return;
+
+    setWindowFlags(windowFlags().setFlag(Qt::NoDropShadowWindowHint, !val));
+    plugin->settings()->setValue(CFG_SHADOW_SYSTEM, val);
+    emit displaySystemShadowChanged(val);
 }
 
-bool Window::followCursor() const
-{ return followCursor_; }
-
-void Window::setFollowCursor(bool b)
-{ plugin->settings()->setValue(CFG_FOLLOW_CURSOR, followCursor_ = b); }
-
-bool Window::hideOnFocusLoss() const
-{ return hideOnFocusLoss_; }
-
-void Window::setHideOnFocusLoss(bool b)
-{ plugin->settings()->setValue(CFG_HIDE_ON_FOCUS_LOSS, hideOnFocusLoss_ = b); }
-
-bool Window::historySearchEnabled() const
-{ return history_search_; }
-
-void Window::setHistorySearchEnabled(bool b)
-{ plugin->settings()->setValue(CFG_HISTORY_SEARCH, history_search_ = b); }
-
-uint Window::maxResults() const
-{ return results_list->maxItems(); }
-
-void Window::setMaxResults(uint maxItems)
+bool Window::followCursor() const { return followCursor_; }
+void Window::setFollowCursor(bool val)
 {
-    plugin->settings()->setValue(CFG_MAX_RESULTS, maxItems);
-    results_list->setMaxItems(maxItems);
+    if (followCursor() == val)
+        return;
+
+    followCursor_ = val;
+    plugin->settings()->setValue(CFG_FOLLOW_CURSOR, val);
+    emit hideOnFocusLossChanged(val);
 }
 
-bool Window::showCentered() const
-{ return showCentered_; }
+bool Window::hideOnFocusLoss() const { return hideOnFocusLoss_; }
+void Window::setHideOnFocusLoss(bool val)
+{
+    if (hideOnFocusLoss() == val)
+        return;
 
-void Window::setShowCentered(bool b)
-{ plugin->settings()->setValue(CFG_CENTERED, showCentered_ = b); }
+    hideOnFocusLoss_ = val;
+    plugin->settings()->setValue(CFG_HIDE_ON_FOCUS_LOSS, val);
+    emit hideOnFocusLossChanged(val);
+}
 
-bool Window::quitOnClose() const
-{ return quitOnClose_; }
+bool Window::historySearchEnabled() const { return history_search_; }
+void Window::setHistorySearchEnabled(bool val)
+{
+    if (historySearchEnabled() == val)
+        return;
 
-void Window::setQuitOnClose(bool b)
-{ plugin->settings()->setValue(CFG_QUIT_ON_CLOSE, quitOnClose_ = b); }
+    history_search_ = val;
+    plugin->settings()->setValue(CFG_HISTORY_SEARCH, val);
+    emit maxResultsChanged(val);
+}
+
+uint Window::maxResults() const { return results_list->maxItems(); }
+void Window::setMaxResults(uint val)
+{
+    if (maxResults() == val)
+        return;
+
+    results_list->setMaxItems(val);
+    plugin->settings()->setValue(CFG_MAX_RESULTS, val);
+    emit maxResultsChanged(val);
+}
+
+bool Window::quitOnClose() const { return quitOnClose_; }
+void Window::setQuitOnClose(bool val)
+{
+    if (quitOnClose() == val)
+        return;
+
+    quitOnClose_ = val;
+    plugin->settings()->setValue(CFG_QUIT_ON_CLOSE, val);
+    emit quitOnCloseChanged(val);
+}
+
+bool Window::showCentered() const { return showCentered_; }
+void Window::setShowCentered(bool val)
+{
+    if (showCentered() == val)
+        return;
+
+    showCentered_ = val;
+    plugin->settings()->setValue(CFG_CENTERED, val);
+    emit showCenteredChanged(val);
+}
