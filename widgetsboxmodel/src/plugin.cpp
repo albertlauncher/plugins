@@ -31,9 +31,21 @@ bool Plugin::isVisible() const
 void Plugin::setVisible(bool visible)
 { window.setVisible(visible); }
 
+template<typename T>
+static void bind(T *t,
+             QCheckBox *check_box,
+             bool (T::*get)() const,
+             void (T::*set)(bool),
+             void (T::*sig)(bool))
+{
+    check_box->setChecked((t->*get)());
+    QObject::connect(t, sig, check_box, &QCheckBox::setChecked);
+    QObject::connect(check_box, &QCheckBox::toggled, t, set);
+}
+
 QWidget* Plugin::createFrontendConfigWidget()
 {
-    auto widget = new QWidget;
+    auto *widget = new QWidget;
     Ui::ConfigWidget ui;
     ui.setupUi(widget);
 
@@ -47,6 +59,10 @@ QWidget* Plugin::createFrontendConfigWidget()
             static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, [this, comboBox_themes=ui.comboBox_theme_light](int i)
             { window.setThemeLight(comboBox_themes->itemText(i)); });
+    connect(&window, &Window::themeLightChanged, widget, [cb=ui.comboBox_theme_light](QString theme){
+        if (auto i = cb->findText(theme); i != -1)
+            cb->setCurrentIndex(i);
+    });
 
     for (const auto&[name, path] : window.themes)
     {
@@ -58,50 +74,71 @@ QWidget* Plugin::createFrontendConfigWidget()
             static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, [this, comboBox_themes=ui.comboBox_theme_dark](int i)
             { window.setThemeDark(comboBox_themes->itemText(i)); });
+    connect(&window, &Window::themeDarkChanged, widget, [cb=ui.comboBox_theme_dark](QString theme){
+        if (auto i = cb->findText(theme); i != -1)
+            cb->setCurrentIndex(i);
+    });
 
-    ui.checkBox_onTop->setChecked(window.alwaysOnTop());
-    connect(ui.checkBox_onTop, &QCheckBox::toggled,
-            &window, &Window::setAlwaysOnTop);
+    ::bind(&window, ui.checkBox_onTop,
+           &Window::alwaysOnTop,
+           &Window::setAlwaysOnTop,
+           &Window::alwaysOnTopChanged);
 
-    ui.checkBox_clearOnHide->setChecked(window.clearOnHide());
-    connect(ui.checkBox_clearOnHide, &QCheckBox::toggled,
-            &window, &Window::setClearOnHide);
+    ::bind(&window, ui.checkBox_clearOnHide,
+           &Window::clearOnHide,
+           &Window::setClearOnHide,
+           &Window::clearOnHideChanged);
 
-    ui.checkBox_client_shadow->setChecked(window.displayClientShadow());
-    connect(ui.checkBox_client_shadow, &QCheckBox::toggled,
-            &window, &Window::setDisplayClientShadow);
+    ::bind(&window, ui.checkBox_client_shadow,
+           &Window::displayClientShadow,
+           &Window::setDisplayClientShadow,
+           &Window::displayClientShadowChanged);
 
-    ui.checkBox_scrollbar->setChecked(window.displayScrollbar());
-    connect(ui.checkBox_scrollbar, &QCheckBox::toggled,
-            &window, &Window::setDisplayScrollbar);
+    ::bind(&window, ui.checkBox_scrollbar,
+           &Window::displayScrollbar,
+           &Window::setDisplayScrollbar,
+           &Window::displayScrollbarChanged);
 
-    ui.checkBox_system_shadow->setChecked(window.displaySystemShadow());
-    connect(ui.checkBox_system_shadow, &QCheckBox::toggled,
-            &window, &Window::setDisplaySystemShadow);
+    ::bind(&window, ui.checkBox_system_shadow,
+           &Window::displaySystemShadow,
+           &Window::setDisplaySystemShadow,
+           &Window::displaySystemShadowChanged);
 
-    ui.checkBox_followCursor->setChecked(window.followCursor());
-    connect(ui.checkBox_followCursor, &QCheckBox::toggled,
-            &window, &Window::setFollowCursor);
+    ::bind(&window, ui.checkBox_followCursor,
+           &Window::followCursor,
+           &Window::setFollowCursor,
+           &Window::followCursorChanged);
 
-    ui.checkBox_hideOnFocusOut->setChecked(window.hideOnFocusLoss());
-    connect(ui.checkBox_hideOnFocusOut, &QCheckBox::toggled,
-            &window, &Window::setHideOnFocusLoss);
+    ::bind(&window, ui.checkBox_hideOnFocusOut,
+           &Window::hideOnFocusLoss,
+           &Window::setHideOnFocusLoss,
+           &Window::hideOnFocusLossChanged);
 
-    ui.checkBox_history_search->setChecked(window.historySearchEnabled());
-    connect(ui.checkBox_history_search, &QCheckBox::toggled,
-            &window, &Window::setHistorySearchEnabled);
+    ::bind(&window, ui.checkBox_history_search,
+           &Window::historySearchEnabled,
+           &Window::setHistorySearchEnabled,
+           &Window::historySearchEnabledChanged);
 
     ui.spinBox_results->setValue((int)window.maxResults());
     connect(ui.spinBox_results, static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             &window, &Window::setMaxResults);
+    connect(&window, &Window::maxResultsChanged,
+            ui.spinBox_results, &QSpinBox::setValue);
 
-    ui.checkBox_quit_on_close->setChecked(window.quitOnClose());
-    connect(ui.checkBox_quit_on_close, &QCheckBox::toggled,
-            &window, &Window::setQuitOnClose);
+    ::bind(&window, ui.checkBox_quit_on_close,
+           &Window::quitOnClose,
+           &Window::setQuitOnClose,
+           &Window::quitOnCloseChanged);
 
-    ui.checkBox_center->setChecked(window.showCentered());
-    connect(ui.checkBox_center, &QCheckBox::toggled,
-            &window, &Window::setShowCentered);
+    ::bind(&window, ui.checkBox_center,
+           &Window::showCentered,
+           &Window::setShowCentered,
+           &Window::showCenteredChanged);
+
+    ::bind(&window, ui.checkBox_debugOverlay,
+           &Window::showDebugOverlay,
+           &Window::setShowDebugOverlay,
+           &Window::showDebugOverlayChanged);
 
     return widget;
 }
