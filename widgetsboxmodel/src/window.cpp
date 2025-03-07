@@ -732,6 +732,24 @@ bool Window::event(QEvent *event)
     {
         plugin->state()->setValue(STATE_WND_POS, pos());
 
+        /*
+         * Prevent the flicker when the window is shown
+         *
+         * Qt sends a resize event when the window is shown.
+         *
+         * When the window was expanded on hide the resize happens on show which introduces ugly
+         * flicker. Force the resize to happen before the window is hidden.
+         *
+         * This may be removed when the frontend does not use the input changed > set query smell
+         * anymore.
+         */
+        setQuery(nullptr);
+        // Setting the query seems not to be sufficient. Hide the lists manually.
+        results_list->hide();
+        actions_list->hide();
+        // looks like the layoutsystem is not synchronous
+        QCoreApplication::processEvents();
+
         QPixmapCache::clear();
 
         emit visibleChanged(false);
