@@ -149,6 +149,7 @@ Window::Window(PluginInstance *p):
     actions_list(new ResizingList(frame)),
     item_delegate(new ItemDelegate(results_list)),
     action_delegate(new ActionDelegate(actions_list)),
+    dark_mode(haveDarkSystemPalette()),
     current_query{nullptr}
 {
     // Setup UI
@@ -204,8 +205,6 @@ Window::Window(PluginInstance *p):
     // Settings
     {
         auto s = plugin->settings();
-        theme_dark_ = s->value(CFG_THEME_DARK, DEF_THEME_DARK).toString();
-        theme_light_ = s->value(CFG_THEME_LIGHT, DEF_THEME_LIGHT).toString();
         setAlwaysOnTop(s->value(CFG_ALWAYS_ON_TOP, DEF_ALWAYS_ON_TOP).toBool());
         setClearOnHide(s->value(CFG_CLEAR_ON_HIDE, DEF_CLEAR_ON_HIDE).toBool());
         setDisplayClientShadow(s->value(CFG_SHADOW_CLIENT, DEF_SHADOW_CLIENT).toBool());
@@ -218,6 +217,18 @@ Window::Window(PluginInstance *p):
         setQuitOnClose(s->value(CFG_QUIT_ON_CLOSE, DEF_QUIT_ON_CLOSE).toBool());
         setShowCentered(s->value(CFG_CENTERED, DEF_CENTERED).toBool());
         setShowDebugOverlay(s->value(CFG_DEBUG_OVERLAY, DEF_DEBUG_OVERLAY).toBool());
+
+        try {
+            setThemeLight(s->value(CFG_THEME_LIGHT, DEF_THEME_LIGHT).toString());
+        } catch (const out_of_range &) {
+            setThemeLight(themes.begin()->first);  // okay, we know there is at least one theme
+        }
+
+        try {
+            setThemeDark(s->value(CFG_THEME_DARK, DEF_THEME_DARK).toString());
+        } catch (const out_of_range &) {
+            setThemeDark(themes.begin()->first);  // okay, we know there is at least one theme
+        }
     }
 
     // Actions
@@ -284,24 +295,6 @@ Window::Window(PluginInstance *p):
             && s->contains(STATE_WND_POS)
             && s->value(STATE_WND_POS).canConvert(QMetaType(QMetaType::QPoint)))
            move(s->value(STATE_WND_POS).toPoint());
-    }
-
-    // Check if themes exist and apply current
-    {
-        auto tr_message = tr("Theme '%1' does not exist. Check your config!");
-        if (!themes.contains(theme_light_))
-        {
-            CRIT << tr_message.arg(theme_light_);
-            QMessageBox::critical(nullptr, qApp->applicationDisplayName(), tr_message.arg(theme_light_));
-            setThemeLight(themes.contains(CFG_THEME_LIGHT) ? QString(DEF_THEME_LIGHT) : themes.begin()->first);
-        }
-        if (!themes.contains(theme_dark_))
-        {
-            CRIT << tr_message.arg(theme_dark_);
-            QMessageBox::critical(nullptr, qApp->applicationDisplayName(), tr_message.arg(theme_dark_));
-            setThemeDark(themes.contains(CFG_THEME_DARK) ? QString(DEF_THEME_DARK) : themes.begin()->first);
-        }
-        applyThemeFile(themes.at((dark_mode = haveDarkSystemPalette()) ? theme_dark_ : theme_light_));
     }
 
     init_statemachine();
