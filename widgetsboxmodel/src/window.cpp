@@ -7,15 +7,14 @@
 #include "resizinglist.h"
 #include "resultitemmodel.h"
 #include "settingsbutton.h"
+#include "statetransitions.h"
 #include "window.h"
 #include <QApplication>
 #include <QBoxLayout>
 #include <QDir>
-#include <QEventTransition>
 #include <QFrame>
 #include <QGraphicsEffect>
 #include <QKeyEvent>
-#include <QKeyEventTransition>
 #include <QMenu>
 #include <QMessageBox>
 #include <QMouseEvent>
@@ -23,7 +22,6 @@
 #include <QPropertyAnimation>
 #include <QSettings>
 #include <QSignalBlocker>
-#include <QSignalTransition>
 #include <QStandardPaths>
 #include <QStateMachine>
 #include <QStringListModel>
@@ -90,28 +88,7 @@ constexpr Qt::Key mods_keys[] = {
     Qt::Key_Alt
 };
 
-struct ConditionalEventTransition : public QEventTransition {
-    ConditionalEventTransition(QObject *object, QEvent::Type type, function<bool()> test):
-        QEventTransition(object, type), test_(::move(test)){}
-    bool eventTest(QEvent *e) override { return QEventTransition::eventTest(e) && test_(); }
-    function<bool()> test_;
-};
 
-struct ConditionalKeyEventTransition : public QKeyEventTransition {
-    ConditionalKeyEventTransition(QObject *object, QEvent::Type type, int key, function<bool()> test):
-        QKeyEventTransition(object, type, key), test_(::move(test)){}
-    bool eventTest(QEvent *e) override { return QKeyEventTransition::eventTest(e) && test_(); }
-    function<bool()> test_;
-};
-
-struct ConditionalSignalTransition : public QSignalTransition {
-    template <typename Func>
-    ConditionalSignalTransition(const typename QtPrivate::FunctionPointer<Func>::Object *sender,
-                                Func sig, function<bool()> test):
-        QSignalTransition(sender, sig), test_(::move(test)){}
-    bool eventTest(QEvent *e) override { return QSignalTransition::eventTest(e) && test_(); }
-    function<bool()> test_;
-};
 
 static bool haveDarkSystemPalette()
 {
@@ -368,129 +345,115 @@ void Window::init_statemachine()
     // connect(this, &Window::queryChanged, [](){ CRIT << "Window::queryChanged";});
     // connect(this, &Window::queryFinished, [](){ CRIT << "Window::queryFinished";});
 
-
     //
     // Transitions
     //
 
-    auto setTransition = [](QState *src, QState *dst, QAbstractTransition *transition){
-        transition->setTargetState(dst);
-        src->addTransition(transition);
-        return transition;
-    };
-
-
     // settingsbutton hidden ->
 
-    setTransition(s_settings_button_hidden, s_settings_button_shown,
-                  new QEventTransition(settings_button, QEvent::Type::Enter));
+    addTransition(s_settings_button_hidden, s_settings_button_shown,
+                  settings_button, QEvent::Type::Enter);
 
-    setTransition(s_settings_button_hidden, s_settings_button_shown,
-                  new QSignalTransition(this, &Window::queryChanged));
+    addTransition(s_settings_button_hidden, s_settings_button_shown,
+                  this, &Window::queryChanged);
 
-    setTransition(s_settings_button_hidden, s_settings_button_shown,
-                  new QSignalTransition(this, &Window::queryStateBusy));
+    addTransition(s_settings_button_hidden, s_settings_button_shown,
+                  this, &Window::queryStateBusy);
 
 
     // settingsbutton visible ->
 
-    setTransition(s_settings_button_shown, s_settings_button_hidden,
-                  new ConditionalEventTransition(settings_button, QEvent::Type::Leave,
-                                                 [this]{ return !current_query
-                                                                || !current_query->isActive(); }));
+    addTransition(s_settings_button_shown, s_settings_button_hidden,
+                  settings_button, QEvent::Type::Leave,
+                  [this]{ return !current_query || !current_query->isActive(); });
 
-    setTransition(s_settings_button_shown, s_settings_button_hidden,
-                  new ConditionalSignalTransition(this, &Window::queryStateIdle,
-                                                  [this]{ return !settings_button->underMouse(); }));
+    addTransition(s_settings_button_shown, s_settings_button_hidden,
+                  this, &Window::queryStateIdle,
+                  [this]{ return !settings_button->underMouse(); });
 
 
     // Query
 
-    setTransition(s_results_query_unset, s_results_query_set,
-                  new ConditionalSignalTransition(this, &Window::queryChanged,
-                                                  [this]{ return current_query != nullptr; }));
+    addTransition(s_results_query_unset, s_results_query_set,
+                  this, &Window::queryChanged,
+                  [this]{ return current_query != nullptr; });
 
-    setTransition(s_results_query_set, s_results_query_unset,
-                  new ConditionalSignalTransition(this, &Window::queryChanged,
-                                                  [this]{ return current_query == nullptr; }));
+    addTransition(s_results_query_set, s_results_query_unset,
+                  this, &Window::queryChanged,
+                  [this]{ return current_query == nullptr; });
 
 
     // hidden ->
 
-    setTransition(s_results_hidden, s_results_matches,
-                  new QSignalTransition(this, &Window::queryMatchesAdded));
+    addTransition(s_results_hidden, s_results_matches,
+                  this, &Window::queryMatchesAdded);
 
-    setTransition(s_results_hidden, s_results_fallbacks,
-                  new ConditionalKeyEventTransition(input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
-                                                    [this]{ return current_query->fallbacks().size() > 0; }));
+    addTransition(s_results_hidden, s_results_fallbacks,
+                  input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
+                  [this]{ return current_query->fallbacks().size() > 0; });
 
-    setTransition(s_results_hidden, s_results_fallbacks,
-                  new ConditionalSignalTransition(this, &Window::queryStateIdle,
-                                                  [this]{ return current_query->fallbacks().size() > 0
-                                                                 && !current_query->isTriggered(); }));
+    addTransition(s_results_hidden, s_results_fallbacks,
+                  this, &Window::queryStateIdle,
+                  [this]{ return current_query->fallbacks().size() > 0 && !current_query->isTriggered(); });
 
 
     // disabled ->
 
-    setTransition(s_results_disabled, s_results_matches,
-                  new QSignalTransition(this, &Window::queryMatchesAdded));
+    addTransition(s_results_disabled, s_results_matches,
+                  this, &Window::queryMatchesAdded);
 
-    setTransition(s_results_disabled, s_results_hidden,
-                  new QSignalTransition(display_delay_timer, &QTimer::timeout));
+    addTransition(s_results_disabled, s_results_hidden,
+                  display_delay_timer, &QTimer::timeout);
 
-    setTransition(s_results_disabled, s_results_hidden,
-                  new ConditionalSignalTransition(this, &Window::queryStateIdle,
-                                                  [this]{ return current_query->fallbacks().size() == 0
-                                                                 || current_query->isTriggered(); }));
+    addTransition(s_results_disabled, s_results_hidden,
+                  this, &Window::queryStateIdle,
+                  [this]{ return current_query->fallbacks().size() == 0 || current_query->isTriggered(); });
 
-    setTransition(s_results_disabled, s_results_fallbacks,
-                  new ConditionalSignalTransition(this, &Window::queryStateIdle,
-                                                  [this]{ return current_query->fallbacks().size() > 0
-                                                                 && !current_query->isTriggered(); }));
+    addTransition(s_results_disabled, s_results_fallbacks,
+                  this, &Window::queryStateIdle,
+                  [this]{ return current_query->fallbacks().size() > 0 && !current_query->isTriggered(); });
 
 
     // matches ->
 
-    setTransition(s_results_matches, s_results_disabled,
-                  new ConditionalSignalTransition(this, &Window::queryChanged,
-                                                  [this]{ return current_query != nullptr; }));
+    addTransition(s_results_matches, s_results_disabled,
+                  this, &Window::queryChanged,
+                  [this]{ return current_query != nullptr; });
 
-
-    setTransition(s_results_matches, s_results_fallbacks,
-                  new ConditionalKeyEventTransition(input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
-                                                    [this]{ return current_query->fallbacks().size() > 0; }));
+    addTransition(s_results_matches, s_results_fallbacks,
+                  input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
+                  [this]{ return current_query->fallbacks().size() > 0; });
 
 
     // fallbacks ->
 
-    setTransition(s_results_fallbacks, s_results_disabled,
-                  new ConditionalSignalTransition(this, &Window::queryChanged,
-                                                  [this]{ return current_query != nullptr; }));
+    addTransition(s_results_fallbacks, s_results_disabled,
+                  this, &Window::queryChanged,
+                  [this]{ return current_query != nullptr; });
 
 
-    setTransition(s_results_fallbacks, s_results_hidden,
-                  new ConditionalKeyEventTransition(input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
-                                                    [this]{ return current_query->matches().size() == 0
-                                                                   && current_query->isActive(); }));
+    addTransition(s_results_fallbacks, s_results_hidden,
+                  input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
+                  [this]{ return current_query->matches().size() == 0 && current_query->isActive(); });
 
-    setTransition(s_results_fallbacks, s_results_matches,
-                  new ConditionalKeyEventTransition(input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
-                                                    [this]{ return current_query->matches().size() > 0; }));
+    addTransition(s_results_fallbacks, s_results_matches,
+                  input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
+                  [this]{ return current_query->matches().size() > 0; });
 
 
     // Actions
 
-    setTransition(s_results_match_items, s_results_match_actions,
-                  new QKeyEventTransition(input_line, QEvent::KeyPress, mods_keys[(int)mod_actions]));
+    addTransition(s_results_match_items, s_results_match_actions,
+                  input_line, QEvent::KeyPress, mods_keys[(int)mod_actions]);
 
-    setTransition(s_results_match_actions, s_results_match_items,
-                  new QKeyEventTransition(input_line, QEvent::KeyRelease, mods_keys[(int)mod_actions]));
+    addTransition(s_results_match_actions, s_results_match_items,
+                  input_line, QEvent::KeyRelease, mods_keys[(int)mod_actions]);
 
-    setTransition(s_results_fallback_items, s_results_fallback_actions,
-                  new QKeyEventTransition(input_line, QEvent::KeyPress, mods_keys[(int)mod_actions]));
+    addTransition(s_results_fallback_items, s_results_fallback_actions,
+                  input_line, QEvent::KeyPress, mods_keys[(int)mod_actions]);
 
-    setTransition(s_results_fallback_actions, s_results_fallback_items,
-                  new QKeyEventTransition(input_line, QEvent::KeyRelease, mods_keys[(int)mod_actions]));
+    addTransition(s_results_fallback_actions, s_results_fallback_items,
+                  input_line, QEvent::KeyRelease, mods_keys[(int)mod_actions]);
 
 
     //
