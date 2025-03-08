@@ -813,8 +813,8 @@ bool Window::eventFilter(QObject *watched, QEvent *event)
     {
         if (event->type() == QEvent::KeyPress)
         {
-            auto *keyEvent = static_cast<QKeyEvent *>(event);
-            switch (keyEvent->key()) {
+            auto *ke = static_cast<QKeyEvent *>(event);
+            switch (ke->key()) {
 
             case Qt::Key_Tab:
                 // Toggle insert completion string
@@ -827,9 +827,9 @@ bool Window::eventFilter(QObject *watched, QEvent *event)
             case Qt::Key_Up:
                 // Move up in the history
                 if (!results_list->currentIndex().isValid()
-                    || keyEvent->modifiers().testFlag(Qt::ShiftModifier)
+                    || ke->modifiers().testFlag(Qt::ShiftModifier)
                     || (results_list->currentIndex().row() == 0
-                        && !keyEvent->isAutoRepeat()))  // ... and first row (non repeat)
+                        && !ke->isAutoRepeat()))  // ... and first row (non repeat)
                 {
                     input_line->next(history_search_);
                     return true;
@@ -838,7 +838,7 @@ bool Window::eventFilter(QObject *watched, QEvent *event)
 
             case Qt::Key_Down:
                 // Move down in the history
-                if (keyEvent->modifiers().testFlag(Qt::ShiftModifier))
+                if (ke->modifiers().testFlag(Qt::ShiftModifier))
                 {
                     input_line->previous(history_search_);
                     return true;
@@ -847,36 +847,48 @@ bool Window::eventFilter(QObject *watched, QEvent *event)
 
             case Qt::Key_P:
             case Qt::Key_K:
-                if (keyEvent->modifiers().testFlag(Qt::ControlModifier)){
-                    QKeyEvent e(QEvent::KeyPress, Qt::Key_Up, keyEvent->modifiers().setFlag(Qt::ControlModifier, false));
-                    QApplication::sendEvent(input_line, &e);
+                if (ke->modifiers().testFlag(Qt::ControlModifier)) {
+                    QKeyEvent syn(
+                        QEvent::KeyPress, Qt::Key_Up,
+                        ke->modifiers().setFlag(Qt::ControlModifier, false),
+                        ke->text(), ke->isAutoRepeat());
+                    QApplication::sendEvent(input_line, &syn);
                 }
                 break;
 
             case Qt::Key_N:
             case Qt::Key_J:
-                if (keyEvent->modifiers().testFlag(Qt::ControlModifier)){
-                    QKeyEvent e(QEvent::KeyPress, Qt::Key_Down, keyEvent->modifiers().setFlag(Qt::ControlModifier, false));
-                    QApplication::sendEvent(input_line, &e);
+                if (ke->modifiers().testFlag(Qt::ControlModifier)) {
+                    QKeyEvent syn(
+                        QEvent::KeyPress, Qt::Key_Down,
+                        ke->modifiers().setFlag(Qt::ControlModifier, false),
+                        ke->text(), ke->isAutoRepeat());
+                    QApplication::sendEvent(input_line, &syn);
                 }
                 break;
 
             case Qt::Key_H:
-                if (keyEvent->modifiers().testFlag(Qt::ControlModifier)){
-                    QKeyEvent e(QEvent::KeyPress, Qt::Key_Left, keyEvent->modifiers().setFlag(Qt::ControlModifier, false));
-                    QApplication::sendEvent(input_line, &e);
+                if (ke->modifiers().testFlag(Qt::ControlModifier)) {
+                    QKeyEvent syn(
+                        QEvent::KeyPress, Qt::Key_Left,
+                        ke->modifiers().setFlag(Qt::ControlModifier, false),
+                        ke->text(), ke->isAutoRepeat());
+                    QApplication::sendEvent(input_line, &syn);
                 }
                 break;
 
             case Qt::Key_L:
-                if (keyEvent->modifiers().testFlag(Qt::ControlModifier)){
-                    QKeyEvent e(QEvent::KeyPress, Qt::Key_Right, keyEvent->modifiers().setFlag(Qt::ControlModifier, false));
-                    QApplication::sendEvent(input_line, &e);
+                if (ke->modifiers().testFlag(Qt::ControlModifier)) {
+                    QKeyEvent syn(
+                        QEvent::KeyPress, Qt::Key_Right,
+                        ke->modifiers().setFlag(Qt::ControlModifier, false),
+                        ke->text(), ke->isAutoRepeat());
+                    QApplication::sendEvent(input_line, &syn);
                 }
                 break;
 
             case Qt::Key_Comma:{
-                if (keyEvent->modifiers() == Qt::ControlModifier || keyEvent->modifiers() == Qt::AltModifier){
+                if (ke->modifiers() == Qt::ControlModifier || ke->modifiers() == Qt::AltModifier){
                     showSettings();
                     setVisible(false);
                     return true;
