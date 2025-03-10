@@ -771,16 +771,16 @@ bool Window::event(QEvent *event)
 
     else if (event->type() == QEvent::ThemeChange)
     {
-        auto have_dark_system_palette = haveDarkSystemPalette();
-
-        if (dark_mode != have_dark_system_palette)
-        {
 #ifdef Q_OS_LINUX
-            QApplication::setPalette(QApplication::style()->standardPalette());
+        // No automatic palette update on GNOME
+        QApplication::setPalette(QApplication::style()->standardPalette());
 #endif
-            // at(): no catch, theme_dark_ theme_light_ should exist
-            dark_mode = have_dark_system_palette;
-            applyThemeFile(themes.at((dark_mode) ? theme_dark_ : theme_light_));
+        dark_mode = haveDarkSystemPalette();
+        auto theme_name = (dark_mode) ? theme_dark_ : theme_light_;
+        try {
+            applyThemeFile(themes.at(theme_name));
+        } catch (const out_of_range&) {
+            CRIT << "Set theme does not exist:" << theme_name;
         }
     }
 
