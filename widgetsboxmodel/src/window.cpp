@@ -17,9 +17,7 @@
 #include <QKeyEvent>
 #include <QMenu>
 #include <QMessageBox>
-#include <QMouseEvent>
 #include <QPixmapCache>
-#include <QPropertyAnimation>
 #include <QSettings>
 #include <QSignalBlocker>
 #include <QStandardPaths>
@@ -88,7 +86,15 @@ constexpr Qt::Key mods_keys[] = {
     Qt::Key_Alt
 };
 
-
+static bool isUnderMouse(QWidget *widget)
+{
+    /*
+     * Hiding/Showing a window does not generate a Leave/Enter event. As such QWidget does not
+     * update the internal underMouse property on show if the window is has been hidden and the
+     * mouse pointer moved outside the widget.
+     */
+    return widget->geometry().contains(widget->mapFromGlobal(QCursor::pos()));
+}
 
 static bool haveDarkSystemPalette()
 {
@@ -120,8 +126,9 @@ Window::Window(PluginInstance *p):
     themes(findThemes(p->loader().metaData().id)),
     plugin(p),
     frame(new QFrame(this)),
-    input_line(new InputLine(frame)),
-    settings_button(new SettingsButton(this)),
+    input_frame(new QFrame(frame)),
+    input_line(new InputLine(input_frame)),
+    settings_button(new SettingsButton(input_frame)),
     results_list(new ResizingList(frame)),
     actions_list(new ResizingList(frame)),
     item_delegate(new ItemDelegate(results_list)),
@@ -149,6 +156,7 @@ void Window::initializeUi()
 
     setObjectName("window");
     frame->setObjectName("frame");
+    input_frame->setObjectName("inputFrame");
     settings_button->setObjectName("settingsButton");
     input_line->setObjectName("inputLine");
     results_list->setObjectName("resultsList");
@@ -159,8 +167,12 @@ void Window::initializeUi()
     auto *window_layout = new QVBoxLayout(this);
     window_layout->addWidget(frame, 0, Qt::AlignTop);
 
+    auto *input_layout = new QHBoxLayout(input_frame);
+    input_layout->addWidget(input_line);
+    input_layout->addWidget(settings_button, 0, Qt::AlignTop);
+
     auto *frame_layout = new QVBoxLayout(frame);
-    frame_layout->addWidget(input_line);
+    frame_layout->addWidget(input_frame);
     frame_layout->addWidget(results_list);
     frame_layout->addWidget(actions_list);
     frame_layout->addStretch(0);
@@ -177,10 +189,14 @@ void Window::initializeUi()
     frame->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Fixed);
 
     frame_layout->setContentsMargins(0,0,0,0);
+    frame_layout->setSpacing(0);
 
     input_line->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
 
+    input_layout->setContentsMargins(0,0,0,0);
+
     settings_button->setFocusPolicy(Qt::NoFocus);
+    settings_button->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Fixed);
 
     results_list->setFocusPolicy(Qt::NoFocus);
     results_list->setItemDelegate(item_delegate);
@@ -190,7 +206,7 @@ void Window::initializeUi()
     actions_list->setItemDelegate(action_delegate);
     actions_list->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
 
-    frame->setMouseTracking(true); //leave/enter events
+    input_frame->setMouseTracking(true); //leave/enter events
 
     // Initialize
 
@@ -291,7 +307,8 @@ void Window::initializeStatemachine()
 
     auto *s_settings_button = new QState(s_root);
     auto *s_settings_button_hidden = new QState(s_settings_button);
-    auto *s_settings_button_shown = new QState(s_settings_button);
+    auto *s_settings_button_visible = new QState(s_settings_button);
+    auto *s_settings_button_highlight = new QState(s_settings_button);
     s_settings_button->setInitialState(s_settings_button_hidden);
 
     auto *s_results = new QState(s_root);
@@ -323,29 +340,32 @@ void Window::initializeStatemachine()
     //
 
     // QObject::connect(s_settings_button_hidden, &QState::entered,
-    //                  this, [](){ CRIT << "s_settings_button_hidden::enter"; });
-    // QObject::connect(s_settings_button_shown, &QState::entered,
-    //                  this, [](){ CRIT << "s_settings_button_shown::enter"; });
+    //                  this, []{ CRIT << "s_settings_button_hidden::enter"; });
+    // QObject::connect(s_settings_button_visible, &QState::entered,
+    //                  this, []{ CRIT << "s_settings_button_visible::enter"; });
+    // QObject::connect(s_settings_button_highlight, &QState::entered,
+    //                  this, []{ CRIT << "s_settings_button_highlight::enter"; });
     // QObject::connect(s_results_query_unset, &QState::entered,
-    //                  this, [](){ CRIT << "s_results_query_unset::enter"; });
+    //                  this, []{ CRIT << "s_results_query_unset::enter"; });
     // QObject::connect(s_results_query_set, &QState::entered,
-    //                  this, [](){ CRIT << "s_results_query_set::enter"; });
+    //                  this, []{ CRIT << "s_results_query_set::enter"; });
     // QObject::connect(s_results_hidden, &QState::entered,
-    //                  this, [](){ CRIT << "s_results_hidden::enter"; });
+    //                  this, []{ CRIT << "s_results_hidden::enter"; });
     // QObject::connect(s_results_disabled, &QState::entered,
-    //                  this, [](){ CRIT << "s_results_disabled::enter"; });
+    //                  this, []{ CRIT << "s_results_disabled::enter"; });
     // QObject::connect(s_results_match_items, &QState::entered,
-    //                  this, [](){ CRIT << "s_results_match_items::enter"; });
+    //                  this, []{ CRIT << "s_results_match_items::enter"; });
     // QObject::connect(s_results_match_actions, &QState::entered,
-    //                  this, [](){ CRIT << "s_results_match_actions::enter"; });
+    //                  this, []{ CRIT << "s_results_match_actions::enter"; });
     // QObject::connect(s_results_fallback_items, &QState::entered,
-    //                  this, [](){ CRIT << "s_results_fallback_items::enter"; });
+    //                  this, []{ CRIT << "s_results_fallback_items::enter"; });
     // QObject::connect(s_results_fallback_actions, &QState::entered,
-    //                  this, [](){ CRIT << "s_results_fallback_actions::enter"; });
+    //                  this, []{ CRIT << "s_results_fallback_actions::enter"; });
 
-    // connect(input_line, &InputLine::textChanged, [](){ CRIT << "InputLine::textChanged";});
-    // connect(this, &Window::queryChanged, [](){ CRIT << "Window::queryChanged";});
-    // connect(this, &Window::queryFinished, [](){ CRIT << "Window::queryFinished";});
+    // connect(input_line, &InputLine::textChanged, []{ CRIT << "InputLine::textChanged";});
+    // connect(this, &Window::queryChanged, []{ CRIT << "Window::queryChanged";});
+    // connect(this, &Window::queryStateBusy, []{ CRIT << "Window::queryStateBusy";});
+    // connect(this, &Window::queryStateIdle, []{ CRIT << "Window::queryStateIdle";});
 
     //
     // Transitions
@@ -353,109 +373,190 @@ void Window::initializeStatemachine()
 
     // settingsbutton hidden ->
 
-    addTransition(s_settings_button_hidden, s_settings_button_shown,
-                  settings_button, QEvent::Type::Enter);
+    addTransition(
+        s_settings_button_hidden, s_settings_button_visible,
+        input_frame, QEvent::Type::Enter);
 
-    addTransition(s_settings_button_hidden, s_settings_button_shown,
-                  this, &Window::queryChanged);
+    addTransition(
+        s_settings_button_hidden, s_settings_button_highlight,
+        this, &Window::queryChanged,
+        [this] { return current_query != nullptr; });
 
-    addTransition(s_settings_button_hidden, s_settings_button_shown,
-                  this, &Window::queryStateBusy);
+    addTransition(
+        s_settings_button_hidden, s_settings_button_highlight,
+        settings_button, QEvent::Enter);
+
+    addTransition(
+        s_settings_button_hidden, s_settings_button_visible,
+        this, QEvent::WindowActivate,
+        [this]{ return isUnderMouse(input_frame); });
 
 
     // settingsbutton visible ->
 
-    addTransition(s_settings_button_shown, s_settings_button_hidden,
-                  settings_button, QEvent::Type::Leave,
-                  [this]{ return !current_query || !current_query->isActive(); });
+    addTransition(
+        s_settings_button_visible, s_settings_button_hidden,
+        input_frame, QEvent::Leave);
 
-    addTransition(s_settings_button_shown, s_settings_button_hidden,
-                  this, &Window::queryStateIdle,
-                  [this]{ return !settings_button->underMouse(); });
+    addTransition(
+        s_settings_button_visible, s_settings_button_hidden,
+        this, QEvent::WindowDeactivate);
+
+    addTransition(
+        s_settings_button_visible, s_settings_button_highlight,
+        this, &Window::queryChanged,
+        [this] { return current_query != nullptr; });
+
+    addTransition(
+        s_settings_button_visible, s_settings_button_highlight,
+        settings_button, QEvent::Enter);
+
+    // addTransition(
+    //     s_settings_button_visible, s_settings_button_hidden,
+    //     settings_button, QEvent::Type::Leave,
+    //     [this]{ return !current_query || !current_query->isActive(); });
+
+    // addTransition(s_settings_button_visible, s_settings_button_hidden,
+    //               this, &Window::queryStateIdle,
+    //               [this]{ return !isUnderMouse(settings_button); });
+
+
+    // settingsbutton highlight -> visible (frame under mouse)
+
+    addTransition(
+        s_settings_button_highlight, s_settings_button_visible,
+        settings_button, QEvent::Leave,
+        [this] { return isUnderMouse(input_frame) && (current_query == nullptr || current_query->isFinished()); });
+
+    addTransition(
+        s_settings_button_highlight, s_settings_button_visible,
+        this, &Window::queryChanged,
+        [this] { return isUnderMouse(input_frame) && current_query == nullptr && !isUnderMouse(settings_button); });
+
+    addTransition(
+        s_settings_button_highlight, s_settings_button_visible,
+        this, &Window::queryStateIdle,
+        [this] { return isUnderMouse(input_frame) && !isUnderMouse(settings_button); });
+
+
+    // settingsbutton highlight -> hidden (not frame under mouse)
+
+    addTransition(
+        s_settings_button_highlight, s_settings_button_hidden,
+        settings_button, QEvent::Leave,
+        [this] { return !isUnderMouse(input_frame) && (current_query == nullptr || current_query->isFinished()); });
+
+    addTransition(
+        s_settings_button_highlight, s_settings_button_hidden,
+        this, &Window::queryChanged,
+        [this] { return !isUnderMouse(input_frame) && current_query == nullptr && !isUnderMouse(settings_button); });
+
+    addTransition(
+        s_settings_button_highlight, s_settings_button_hidden,
+        this, &Window::queryStateIdle,
+        [this] { return !isUnderMouse(input_frame) && !isUnderMouse(settings_button); });
 
 
     // Query
 
-    addTransition(s_results_query_unset, s_results_query_set,
-                  this, &Window::queryChanged,
-                  [this]{ return current_query != nullptr; });
+    addTransition(
+        s_results_query_unset, s_results_query_set,
+        this, &Window::queryChanged,
+        [this]{ return current_query != nullptr; });
 
-    addTransition(s_results_query_set, s_results_query_unset,
-                  this, &Window::queryChanged,
-                  [this]{ return current_query == nullptr; });
+    addTransition(
+        s_results_query_set, s_results_query_unset,
+        this, &Window::queryChanged,
+        [this]{ return current_query == nullptr; });
 
 
     // hidden ->
 
-    addTransition(s_results_hidden, s_results_matches,
-                  this, &Window::queryMatchesAdded);
+    addTransition(
+        s_results_hidden, s_results_matches,
+        this, &Window::queryMatchesAdded);
 
-    addTransition(s_results_hidden, s_results_fallbacks,
-                  input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
-                  [this]{ return current_query->fallbacks().size() > 0; });
+    addTransition(
+        s_results_hidden, s_results_fallbacks,
+        input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
+        [this]{ return current_query->fallbacks().size() > 0; });
 
-    addTransition(s_results_hidden, s_results_fallbacks,
-                  this, &Window::queryStateIdle,
-                  [this]{ return current_query->fallbacks().size() > 0 && !current_query->isTriggered(); });
+    addTransition(
+        s_results_hidden, s_results_fallbacks,
+        this, &Window::queryStateIdle,
+        [this]{ return current_query->fallbacks().size() > 0 && !current_query->isTriggered(); });
 
 
     // disabled ->
 
-    addTransition(s_results_disabled, s_results_matches,
-                  this, &Window::queryMatchesAdded);
+    addTransition(
+        s_results_disabled, s_results_hidden,
+        display_delay_timer, &QTimer::timeout);
 
-    addTransition(s_results_disabled, s_results_hidden,
-                  display_delay_timer, &QTimer::timeout);
+    addTransition(
+        s_results_disabled, s_results_matches,
+        this, &Window::queryMatchesAdded);
 
-    addTransition(s_results_disabled, s_results_hidden,
-                  this, &Window::queryStateIdle,
-                  [this]{ return current_query->fallbacks().size() == 0 || current_query->isTriggered(); });
+    addTransition(
+        s_results_disabled, s_results_hidden,
+        this, &Window::queryStateIdle,
+        [this]{ return current_query->fallbacks().size() == 0 || current_query->isTriggered(); });
 
-    addTransition(s_results_disabled, s_results_fallbacks,
-                  this, &Window::queryStateIdle,
-                  [this]{ return current_query->fallbacks().size() > 0 && !current_query->isTriggered(); });
+    addTransition(
+        s_results_disabled, s_results_fallbacks,
+        this, &Window::queryStateIdle,
+        [this]{ return current_query->fallbacks().size() > 0 && !current_query->isTriggered(); });
 
 
     // matches ->
 
-    addTransition(s_results_matches, s_results_disabled,
-                  this, &Window::queryChanged,
-                  [this]{ return current_query != nullptr; });
+    addTransition(
+        s_results_matches, s_results_disabled,
+        this, &Window::queryChanged,
+        [this]{ return current_query != nullptr; });
 
-    addTransition(s_results_matches, s_results_fallbacks,
-                  input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
-                  [this]{ return current_query->fallbacks().size() > 0; });
+    addTransition(
+        s_results_matches, s_results_fallbacks,
+        input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
+        [this]{ return current_query->fallbacks().size() > 0; });
 
 
     // fallbacks ->
 
-    addTransition(s_results_fallbacks, s_results_disabled,
-                  this, &Window::queryChanged,
-                  [this]{ return current_query != nullptr; });
+    addTransition(
+        s_results_fallbacks, s_results_disabled,
+        this, &Window::queryChanged,
+        [this]{ return current_query != nullptr; });
 
 
-    addTransition(s_results_fallbacks, s_results_hidden,
-                  input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
-                  [this]{ return current_query->matches().size() == 0 && current_query->isActive(); });
+    addTransition(
+        s_results_fallbacks, s_results_hidden,
+        input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
+        [this]{ return current_query->matches().size() == 0 && current_query->isActive(); });
 
-    addTransition(s_results_fallbacks, s_results_matches,
-                  input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
-                  [this]{ return current_query->matches().size() > 0; });
+    addTransition(
+        s_results_fallbacks, s_results_matches,
+        input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
+        [this]{ return current_query->matches().size() > 0; });
 
 
     // Actions
 
-    addTransition(s_results_match_items, s_results_match_actions,
-                  input_line, QEvent::KeyPress, mods_keys[(int)mod_actions]);
+    addTransition(
+        s_results_match_items, s_results_match_actions,
+        input_line, QEvent::KeyPress, mods_keys[(int)mod_actions]);
 
-    addTransition(s_results_match_actions, s_results_match_items,
-                  input_line, QEvent::KeyRelease, mods_keys[(int)mod_actions]);
+    addTransition(
+        s_results_match_actions, s_results_match_items,
+        input_line, QEvent::KeyRelease, mods_keys[(int)mod_actions]);
 
-    addTransition(s_results_fallback_items, s_results_fallback_actions,
-                  input_line, QEvent::KeyPress, mods_keys[(int)mod_actions]);
+    addTransition(
+        s_results_fallback_items, s_results_fallback_actions,
+        input_line, QEvent::KeyPress, mods_keys[(int)mod_actions]);
 
-    addTransition(s_results_fallback_actions, s_results_fallback_items,
-                  input_line, QEvent::KeyRelease, mods_keys[(int)mod_actions]);
+    addTransition(
+        s_results_fallback_actions, s_results_fallback_items,
+        input_line, QEvent::KeyRelease, mods_keys[(int)mod_actions]);
 
 
     //
@@ -464,23 +565,14 @@ void Window::initializeStatemachine()
 
     // BUTTON
 
-    auto *graphics_effect = new QGraphicsOpacityEffect(settings_button);
-    settings_button->setGraphicsEffect(graphics_effect);  // QWidget takes ownership of effect.
+    connect(s_settings_button_hidden, &QState::entered, this,
+            [this]{ settings_button->setState(SettingsButton::Hidden); });
 
-    auto *opacity_animation = new QPropertyAnimation(graphics_effect, "opacity");
-    connect(this, &QWidget::destroyed, opacity_animation, &QObject::deleteLater);
+    connect(s_settings_button_visible, &QState::entered, this,
+            [this]{ settings_button->setState(SettingsButton::Visible); });
 
-    QObject::connect(s_settings_button_shown, &QState::entered, this, [opacity_animation](){
-        opacity_animation->stop();
-        opacity_animation->setEndValue(0.999);  // Rounding issues on linux
-        opacity_animation->start();
-    });
-
-    QObject::connect(s_settings_button_hidden, &QState::entered, this, [opacity_animation](){
-        opacity_animation->stop();
-        opacity_animation->setEndValue(0.0);
-        opacity_animation->start();
-    });
+    connect(s_settings_button_highlight, &QState::entered, this,
+            [this]{ settings_button->setState(SettingsButton::Highlight); });
 
 
     // RESULTS
@@ -701,10 +793,7 @@ bool Window::darkMode() const { return dark_mode; }
 
 bool Window::event(QEvent *event)
 {
-    if (event->type() == QEvent::Resize)  // Let settingsbutton stay in top right corner of frame
-        settings_button->move(frame->geometry().topRight() - QPoint(settings_button->width()-1,0));
-
-    else if (event->type() == QEvent::MouseButtonPress)
+    if (event->type() == QEvent::MouseButtonPress)
         windowHandle()->startSystemMove();
 
     else if (event->type() == QEvent::Show)
@@ -802,9 +891,9 @@ bool Window::event(QEvent *event)
     else if (event->type() == QEvent::WindowDeactivate && hideOnFocusLoss_)
         setVisible(false);
 
-    else return QWidget::event(event);
+    // DEBG << event->type();
 
-    return true;
+    return QWidget::event(event);
 }
 
 bool Window::eventFilter(QObject *watched, QEvent *event)
@@ -905,7 +994,6 @@ bool Window::eventFilter(QObject *watched, QEvent *event)
     }
     return false;
 }
-
 
 //
 //  PROPERTIES

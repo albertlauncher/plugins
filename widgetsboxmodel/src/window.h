@@ -50,6 +50,7 @@ private:
     albert::PluginInstance const * const plugin;
 
     QFrame *frame;
+    QFrame *input_frame;
     InputLine *input_line;
     SettingsButton *settings_button;
     ResizingList *results_list;
