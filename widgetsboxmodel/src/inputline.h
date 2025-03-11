@@ -1,33 +1,52 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #pragma once
-
-#include <QLineEdit>
+#include <QPlainTextEdit>
 #include <albert/inputhistory.h>
 
-// Input method problems: https://bugreports.qt.io/browse/QTBUG-106516
-class InputLine : public QLineEdit
+class InputLine : public QPlainTextEdit
 {
+    Q_OBJECT
+
 public:
 
-    InputLine(QWidget *parent);
+    InputLine(QWidget *parent = nullptr);
 
-    void setInputHint(const QString &text);
-    void setTriggerLength(uint len);
-
-    void next(bool search);
-    void previous(bool search);
+    void setInputHint(const QString&);
+    void setCompletion(const QString&);
+    void setTriggerLength(uint);
 
     bool clear_on_hide;
+    bool history_search;
+
+    QString text() const;
+    void setText(QString);
+
+    uint fontSize() const;
+    void setFontSize(uint);
+
+    void next();
+    void previous();
 
 private:
 
     void paintEvent(QPaintEvent *event) override;
     void hideEvent(QHideEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
 
-    QString input_hint_;
     albert::InputHistory history_;
-    QString user_text_; // used for history search
+    QString input_hint_;
+    QString completion_;
+    QString user_text_;
+    QString text_;
     uint trigger_length_;
+    class TriggerHighlighter;
+    TriggerHighlighter *highlighter_;
+
+signals:
+
+    void textChanged(const QString&);
 
 };
+
+

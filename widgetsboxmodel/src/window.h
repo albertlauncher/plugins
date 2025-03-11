@@ -8,14 +8,17 @@ class Query;
 class PluginInstance;
 }
 class ActionDelegate;
+class ActionsList;
 class DebugOverlay;
+class Frame;
 class InputLine;
 class ItemDelegate;
 class Plugin;
 class QEvent;
 class QFrame;
-class ResizingList;
+class QStateMachine;
 class ResultItemsModel;
+class ResultsList;
 class SettingsButton;
 
 class Window : public QWidget
@@ -29,10 +32,14 @@ public:
 
     QString input() const;
     void setInput(const QString&);
+
     void setQuery(albert::Query *query);
-    void applyThemeFile(const QString& path);
 
     const std::map<QString, QString> themes;
+    void applyThemeFile(const QString& path);
+
+    std::map<QString, QString> findPalettes() const;
+    void applyPalette(const QString& palette_name);  // throws
 
     bool darkMode() const;
 
@@ -49,14 +56,12 @@ private:
 
     albert::PluginInstance const * const plugin;
 
-    QFrame *frame;
-    QFrame *input_frame;
+    Frame *frame;
+    Frame *input_frame;
     InputLine *input_line;
     SettingsButton *settings_button;
-    ResizingList *results_list;
-    ResizingList *actions_list;
-    ItemDelegate *item_delegate;
-    ActionDelegate *action_delegate;
+    ResultsList *results_list;
+    ActionsList *actions_list;
     std::unique_ptr<ResultItemsModel> results_model;
     std::unique_ptr<DebugOverlay> debug_overlay_;
     bool dark_mode;
@@ -76,8 +81,6 @@ signals:
     void queryMatchesAdded();
     void queryStateBusy();
     void queryStateIdle();
-
-    // Properties
 
 public:
 
@@ -123,6 +126,117 @@ public:
     bool debugMode() const;
     void setDebugMode(bool b = true);
 
+
+    QBrush windowBackgroundBrush() const;
+    void setWindowBackgroundBrush(QBrush);
+
+    uint windowWidth() const;
+    void setWindowWidth(uint);
+
+    uint windowPadding() const;
+    void setWindowPadding(uint);
+
+    uint windowSpacing() const;
+    void setWindowSpacing(uint);
+
+    double windowBorderRadius() const;
+    void setWindowBorderRadius(double);
+
+    double windowBorderWidth() const;
+    void setWindowBorderWidth(double);
+
+    QBrush windowBorderBrush() const;
+    void setWindowBorderBrush(QBrush);
+
+
+    QBrush inputBackgroundBrush() const;
+    void setInputBackgroundBrush(QBrush);
+
+    QBrush inputBorderBrush() const;
+    void setInputBorderBrush(QBrush);
+
+    uint inputPadding() const;
+    void setInputPadding(uint);
+
+    double inputBorderRadius() const;
+    void setInputBorderRadius(double);
+
+    double inputBorderWidth() const;
+    void setInputBorderWidth(double);
+
+
+    uint inputFontSize() const;
+    void setInputFontSize(uint);
+
+
+    QColor settingsButtonColor() const;
+    void setSettingsButtonColor(QColor);
+
+    QColor settingsButtonHightlightColor() const;
+    void setSettingsButtonHightlightColor(QColor);
+
+    uint settingsButtonSize() const;
+    void setSettingsButtonSize(uint);
+
+
+    QBrush resultItemSelectionBackgroundBrush() const;
+    void setResultItemSelectionBackgroundBrush(QBrush val);
+
+    QBrush resultItemSelectionBorderBrush() const;
+    void setResultItemSelectionBorderBrush(QBrush val);
+
+    double resultItemSelectionBorderRadius() const;
+    void setResultItemSelectionBorderRadius(double);
+
+    double resultItemSelectionBorderWidth() const;
+    void setResultItemSelectionBorderWidth(double);
+
+    QColor resultItemTextColor() const;
+    void setResultItemTextColor(QColor);
+
+    QColor resultItemSubTextColor() const;
+    void setResultItemSubTextColor(QColor);
+
+    uint resultItemIconSize() const;
+    void setResultItemIconSize(uint);
+
+    uint resultItemTextFontSize() const;
+    void setResultItemTextFontSize(uint);
+
+    uint resultItemSubtextFontSize() const;
+    void setResultItemSubtextFontSize(uint);
+
+    uint resultItemHorizontalSpace() const;
+    void setResultItemHorizontalSpace(uint);
+
+    uint resultItemVerticalSpace() const;
+    void setResultItemVerticalSpace(uint);
+
+    uint resultItemPadding() const;
+    void setResultItemPadding(uint);
+
+
+    QBrush actionItemSelectionBackgroundBrush() const;
+    void setActionItemSelectionBackgroundBrush(QBrush val);
+
+    QBrush actionItemSelectionBorderBrush() const;
+    void setActionItemSelectionBorderBrush(QBrush val);
+
+    double actionItemSelectionBorderRadius() const;
+    void setActionItemSelectionBorderRadius(double);
+
+    double actionItemSelectionBorderWidth() const;
+    void setActionItemSelectionBorderWidth(double);
+
+    QColor actionItemTextColor() const;
+    void setActionItemTextColor(QColor);
+
+    uint actionItemFontSize() const;
+    void setActionItemFontSize(uint);
+
+    uint actionItemPadding() const;
+    void setActionItemPadding(uint);
+
 private:
 
     QString theme_light_;
@@ -131,7 +245,8 @@ private:
     bool showCentered_;
     bool followCursor_;
     bool quitOnClose_;
-    bool history_search_;
+    bool shadow_size_;
+    bool shadow_offset_;
 
 signals:
 
@@ -149,6 +264,4 @@ signals:
     void debugModeChanged(bool);
     void themeDarkChanged(QString);
     void themeLightChanged(QString);
-
 };
-

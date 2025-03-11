@@ -33,7 +33,6 @@ SettingsButton::SettingsButton(QWidget *parent) : QFrame(parent)
     setCursor(Qt::PointingHandCursor);
 
     setMinimumSize(0,0);
-
 }
 
 SettingsButton::~SettingsButton() = default;
@@ -42,21 +41,20 @@ void SettingsButton::setState(State s)
 {
     switch (s) {
     case Hidden:{
-        auto c = palette().placeholderText().color();
-        c.setAlpha(0);
         auto a = make_unique<QPropertyAnimation>(this, "color");
+        auto c = color.visible;
+        c.setAlpha(0);
         a->setEndValue(c);
-        connect(a.get(), &QAbstractAnimation::finished,
-                this, &SettingsButton::hide);
+        connect(a.get(), &QAbstractAnimation::finished, this, &SettingsButton::hide);
         animation_ = ::move(a);
         break;
     }
 
     case Visible:{
         show();
-        speed_ = 2;
         auto a = make_unique<QPropertyAnimation>(this, "color");
-        a->setEndValue(palette().placeholderText().color());
+        a->setEndValue(color.visible);
+        connect(a.get(), &QAbstractAnimation::finished, this, [this]{ speed_ = 2; });
         animation_ = ::move(a);
         break;
     }
@@ -66,11 +64,7 @@ void SettingsButton::setState(State s)
         speed_ = 3;
         auto a = make_unique<QPropertyAnimation>(this, "color");
         // if qt versio higher 6.0.0
-// #if QT_VERSION < QT_VERSION_CHECK(6, 6, 0)
-        a->setEndValue(palette().highlight().color());
-// #else
-        // a->setEndValue(palette().accent().color());
-// #endif
+        a->setEndValue(color.highlight);
         animation_ = ::move(a);
         break;
     }
@@ -99,7 +93,7 @@ void SettingsButton::paintEvent(QPaintEvent *)
 {
     auto pad = 0;//  rect().height() / 10;
     auto gear_rect = contentsRect().adjusted(pad,pad,-pad,-pad);
-    DEBG << contentsRect() << minimumSize() << rect();
+    // DEBG << contentsRect() << minimumSize() << rect();
 
     QPixmap pm = QPixmap(gear_rect.size() * devicePixelRatioF());
     pm.fill(Qt::transparent);

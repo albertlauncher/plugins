@@ -1,17 +1,46 @@
 // Copyright (c) 2022-2024 Manuel Schneider
 
 #include "resizinglist.h"
+#include "itemdelegatebase.h"
 #include <QKeyEvent>
 
-ResizingList::ResizingList(QWidget *parent) : QListView(parent), maxItems_(5)
+ResizingList::ResizingList(QWidget *parent) : QListView(parent)
 {
+    connect(this, &ResizingList::clicked, this, &ResizingList::activated, Qt::QueuedConnection);
+
     setFrameShape(QFrame::NoFrame);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 //    setLayoutMode(LayoutMode::Batched);
     setUniformItemSizes(true);
-    connect(this, &ResizingList::clicked, this, &ResizingList::activated, Qt::QueuedConnection);
+    viewport()->setAutoFillBackground(false);
     hide();
 }
+
+void ResizingList::relayout()
+{
+    updateGeometry();
+    reset(); // needed to relayout items
+}
+
+QBrush ResizingList::selectionBackgroundBrush() const { return delegate()->selection_background_brush; }
+
+void ResizingList::setSelectionBackgroundBrush(QBrush val) { delegate()->selection_background_brush = val; update(); }
+
+QBrush ResizingList::selectionBorderBrush() const { return delegate()->selection_border_brush; }
+
+void ResizingList::setSelectionBorderBrush(QBrush val) { delegate()->selection_border_brush = val; update(); }
+
+double ResizingList::borderRadius() const { return delegate()->selection_border_radius; }
+
+void ResizingList::setBorderRadius(double val) { delegate()->selection_border_radius = val; update(); }
+
+double ResizingList::borderWidth() const { return delegate()->selection_border_width; }
+
+void ResizingList::setBorderWidth(double val) { delegate()->selection_border_width = val; update(); }
+
+uint ResizingList::padding() const { return delegate()->padding; }
+
+void ResizingList::setPadding(uint val) { delegate()->padding = val; relayout(); }
 
 uint ResizingList::maxItems() const { return maxItems_; }
 
@@ -75,12 +104,3 @@ bool ResizingList::eventFilter(QObject*, QEvent *event)
     }
     return false;
 }
-
-// bool ResizingList::event(QEvent *event)
-// {
-//     if (event->type() == QEvent::Show)
-//         CRIT << "Show";
-//     if (event->type() == QEvent::Hide)
-//         CRIT << "Hide";
-//     return QListView::event(event);
-// }

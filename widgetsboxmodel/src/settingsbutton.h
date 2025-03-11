@@ -22,6 +22,11 @@ public:
     enum State { Hidden, Visible, Highlight };
     void setState(State state);
 
+    struct {
+        QColor visible;
+        QColor highlight;
+    } color;
+
 private:
 
     void paintEvent(QPaintEvent *event) override;

@@ -33,14 +33,73 @@ void Plugin::setVisible(bool visible)
 
 template<typename T>
 static void bind(T *t,
-             QCheckBox *check_box,
-             bool (T::*get)() const,
-             void (T::*set)(bool),
-             void (T::*sig)(bool))
+                 QCheckBox *check_box,
+                 bool (T::*get)() const,
+                 void (T::*set)(bool),
+                 void (T::*sig)(bool))
 {
     check_box->setChecked((t->*get)());
     QObject::connect(t, sig, check_box, &QCheckBox::setChecked);
     QObject::connect(check_box, &QCheckBox::toggled, t, set);
+}
+
+template<typename T>
+static QSpinBox *createSpinBox(QFormLayout *form_layout,
+                               QString label,
+                               T *t,
+                               uint (T::*get)() const,
+                               void (T::*set)(uint))
+{
+    auto *spin_box = new QSpinBox;
+    spin_box->setValue((t->*get)());
+    QObject::connect(spin_box, QOverload<int>::of(&QSpinBox::valueChanged), t, set);
+    spin_box->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    form_layout->addRow(label, spin_box);
+    return spin_box;
+}
+
+template<typename T>
+static auto addFontSpinBox(QFormLayout *form_layout,
+                           QString label,
+                           T *t,
+                           uint (T::*get)() const,
+                           void (T::*set)(uint))
+{
+    auto *spin_box = createSpinBox(form_layout, label, t, get, set);
+    spin_box->setMinimum(6);
+    spin_box->setSuffix(QStringLiteral(" pt"));
+    return spin_box;
+}
+
+template<typename T>
+static auto addPixelMetricSpinBox(QFormLayout *form_layout,
+                                  QString label,
+                                  T *t,
+                                  uint (T::*get)() const,
+                                  void (T::*set)(uint))
+{
+    auto *spin_box = createSpinBox(form_layout, label, t, get, set);
+    spin_box->setSuffix(QStringLiteral(" px"));
+    return spin_box;
+}
+
+template<typename T>
+static auto addPixelMetricSpinBox(QFormLayout *form_layout,
+                                 QString label,
+                                 T *t,
+                                 double (T::*get)() const,
+                                 void (T::*set)(double))
+{
+
+    auto *spin_box = new QDoubleSpinBox;
+    spin_box->setValue((t->*get)());
+    spin_box->setSingleStep(0.5);
+    spin_box->setDecimals(1);
+    spin_box->setSuffix(QStringLiteral(" px"));
+    spin_box->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    QObject::connect(spin_box, QOverload<double>::of(&QDoubleSpinBox::valueChanged), t, set);
+    form_layout->addRow(label, spin_box);
+    return spin_box;
 }
 
 QWidget* Plugin::createFrontendConfigWidget()
@@ -139,6 +198,85 @@ QWidget* Plugin::createFrontendConfigWidget()
            &Window::debugMode,
            &Window::setDebugMode,
            &Window::debugModeChanged);
+
+    auto *fl = ui.formLayout;
+    QSpinBox *sb;
+
+    addFontSpinBox(fl, tr("Input font size"), &window,
+                   &Window::inputFontSize, &Window::setInputFontSize);
+
+    addFontSpinBox(fl, tr("Result title font size"), &window,
+                   &Window::resultItemTextFontSize, &Window::setResultItemTextFontSize);
+
+    addFontSpinBox(fl, tr("Result description font size"), &window,
+                   &Window::resultItemSubtextFontSize, &Window::setResultItemSubtextFontSize);
+
+    addFontSpinBox(fl, tr("Action font size"), &window,
+                   &Window::actionItemFontSize, &Window::setActionItemFontSize);
+
+
+    sb = addPixelMetricSpinBox(fl, tr("Window width"), &window,
+                               &Window::windowWidth, &Window::setWindowWidth);
+    sb->setSingleStep(10);
+    QSignalBlocker b(sb);  // setRange emits value change
+    sb->setRange(100, 9999);
+
+    addPixelMetricSpinBox(fl, tr("Window border radius"), &window,
+                          &Window::windowBorderRadius, &Window::setWindowBorderRadius);
+
+    addPixelMetricSpinBox(fl, tr("Window border width"), &window,
+                          &Window::windowBorderWidth, &Window::setWindowBorderWidth);
+
+    addPixelMetricSpinBox(fl, tr("Window padding"), &window,
+                          &Window::windowPadding, &Window::setWindowPadding);
+
+    addPixelMetricSpinBox(fl, tr("Window spacing"), &window,
+                          &Window::windowSpacing, &Window::setWindowSpacing);
+
+
+    addPixelMetricSpinBox(fl, tr("Input frame border radius"), &window,
+                          &Window::inputBorderRadius, &Window::setInputBorderRadius);
+
+    addPixelMetricSpinBox(fl, tr("Input frame border width"), &window,
+                          &Window::inputBorderWidth, &Window::setInputBorderWidth);
+
+    addPixelMetricSpinBox(fl, tr("Input frame padding"), &window,
+                          &Window::inputPadding, &Window::setInputPadding);
+
+    addPixelMetricSpinBox(fl, tr("Settings button size"), &window,
+                          &Window::settingsButtonSize, &Window::setSettingsButtonSize);
+
+
+    addPixelMetricSpinBox(fl, tr("Result item selection border radius"), &window,
+                          &Window::resultItemSelectionBorderRadius, &Window::setResultItemSelectionBorderRadius);
+
+    addPixelMetricSpinBox(fl, tr("Result item selection border width"), &window,
+                          &Window::resultItemSelectionBorderWidth, &Window::setResultItemSelectionBorderWidth);
+
+    addPixelMetricSpinBox(fl, tr("Result item padding"), &window,
+                          &Window::resultItemPadding, &Window::setResultItemPadding);
+
+    addPixelMetricSpinBox(fl, tr("Result item icon size"), &window,
+                          &Window::resultItemIconSize, &Window::setResultItemIconSize);
+
+    addPixelMetricSpinBox(fl, tr("Result item horizontal spacing"), &window,
+                          &Window::resultItemHorizontalSpace, &Window::setResultItemHorizontalSpace);
+
+    addPixelMetricSpinBox(fl, tr("Result item vertical spacing"), &window,
+                          &Window::resultItemVerticalSpace, &Window::setResultItemVerticalSpace);
+
+
+    addPixelMetricSpinBox(fl, tr("Action item selection border radius"), &window,
+                          &Window::actionItemSelectionBorderRadius, &Window::setActionItemSelectionBorderRadius);
+
+    addPixelMetricSpinBox(fl, tr("Action item selection border width"), &window,
+                          &Window::actionItemSelectionBorderWidth, &Window::setActionItemSelectionBorderWidth);
+
+    addPixelMetricSpinBox(fl, tr("Action item padding"), &window,
+                          &Window::actionItemPadding, &Window::setActionItemPadding);
+
+
+
 
     return widget;
 }

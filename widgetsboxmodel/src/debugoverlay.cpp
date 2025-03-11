@@ -72,7 +72,7 @@ void DebugOverlay::drawOverlay(QWidget *widget)
                   QString("%1 contentsRect").arg(widget->objectName()),
                   Qt::red, Qt::green);
 
-    drawDebugRect(painter, widget->childrenRect(),
-                  QString("%1 childrenRect").arg(widget->objectName()),
-                  Qt::red, Qt::blue);
+    // drawDebugRect(painter, widget->childrenRect(),
+    //               QString("%1 childrenRect").arg(widget->objectName()),
+    //               Qt::red, Qt::blue);
 }
