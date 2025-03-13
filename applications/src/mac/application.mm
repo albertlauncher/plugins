@@ -113,6 +113,10 @@ Application::Application(const QString &path, bool use_non_localized_name)
         if (names_.isEmpty() || use_non_localized_name)
             if (auto name = path_.section("/", -1).chopped(4); !names_.contains(name))// remove .app
                 names_ << name;
+
+        // Remove soft hyphens
+        for(auto &name : names_)
+            name.remove(QChar(0x00AD));
     }
 }
 
