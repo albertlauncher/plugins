@@ -71,7 +71,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
     {
         auto desc = enabled ? tr("Enabled") : tr("Disabled");
         r.emplace_back(StandardItem::make(
-            id(), d->tr_bt, desc, d->icon_urls,
+            id(), d->tr_bt, desc, d->tr_bt, d->icon_urls,
             {
                 {
                     QStringLiteral("pow"), enabled ? tr("Disable") : tr("Enable"),
@@ -123,7 +123,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
 
             r.emplace_back(
                 StandardItem::make(
-                    id(), device_name, desc, d->icon_urls,
+                    id(), device_name, desc, device_name, d->icon_urls,
                     {{
                         QStringLiteral("toogle"),
                         device.isConnected ? tr("Disconnect") : tr("Connect"),
