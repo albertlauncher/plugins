@@ -3,6 +3,7 @@
 #pragma once
 #include <QPoint>
 #include <QWidget>
+#include <QTimer>
 namespace albert {
 class Query;
 class PluginInstance;
@@ -16,6 +17,8 @@ class ItemDelegate;
 class Plugin;
 class QEvent;
 class QFrame;
+class QKeyCombination;
+class QPropertyAnimation;
 class QStateMachine;
 class ResultItemsModel;
 class ResultsList;
@@ -50,11 +53,16 @@ private:
     void initializeWindowActions();
     void initializeStatemachine();
 
+    bool haveMatches() const;
+    bool haveFallbacks() const;
+
     void onSettingsButtonClicked(Qt::MouseButton button);
     bool event(QEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
 
     albert::PluginInstance const * const plugin;
+
+    QStateMachine *state_machine;
 
     Frame *frame;
     Frame *input_frame;
@@ -64,14 +72,27 @@ private:
     ActionsList *actions_list;
     std::unique_ptr<ResultItemsModel> results_model;
     std::unique_ptr<DebugOverlay> debug_overlay_;
+    std::unique_ptr<QPropertyAnimation> color_animation_;
+    std::unique_ptr<QPropertyAnimation> speed_animation_;
     bool dark_mode;
 
     albert::Query *current_query;
 
-    enum class Mod {Shift, Meta, Contol, Alt};
+    enum Mod {Shift, Meta, Contol, Alt};
     Mod mod_command = Mod::Contol;
     Mod mod_actions = Mod::Alt;
     Mod mod_fallback = Mod::Meta;
+
+    QString theme_light_;
+    QString theme_dark_;
+    bool hideOnFocusLoss_;
+    bool showCentered_;
+    bool followCursor_;
+    bool quitOnClose_;
+    bool shadow_size_;
+    bool shadow_offset_;
+    QColor settings_button_color_;
+    QColor settings_button_color_highlight_;
 
 signals:
 
@@ -236,17 +257,6 @@ public:
 
     uint actionItemPadding() const;
     void setActionItemPadding(uint);
-
-private:
-
-    QString theme_light_;
-    QString theme_dark_;
-    bool hideOnFocusLoss_;
-    bool showCentered_;
-    bool followCursor_;
-    bool quitOnClose_;
-    bool shadow_size_;
-    bool shadow_offset_;
 
 signals:
 

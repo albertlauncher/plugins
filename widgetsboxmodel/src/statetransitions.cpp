@@ -1,65 +1,129 @@
-// Copyright (c) 2024 Manuel Schneider
+// Copyright (c) 2024-2025 Manuel Schneider
 
 #include "statetransitions.h"
+#include <QEventTransition>
+#include <QKeyEvent>
+#include <QKeyEventTransition>
+#include <QStateMachine>
+using namespace std;
 
-
-CustomEventTransition::CustomEventTransition(QEvent::Type type, QState *source) :
-    QAbstractTransition(source),
-    type(type)
-{}
-
-void CustomEventTransition::onTransition(QEvent *) {}
-
-bool CustomEventTransition::eventTest(QEvent *e) { return type == e->type(); }
-
-void addTransition(QState *source, QState *target,
-                   QAbstractTransition *transition)
+struct EventTransition : public QAbstractTransition
 {
-    transition->setTargetState(target);
-    source->addTransition(transition);
-}
+    const QEvent::Type type;
 
-void addTransition(QState *source, QState *target,
-                   QEvent::Type type)
+    EventTransition(QEvent::Type type, QState *source) :
+        QAbstractTransition(source),
+        type(type)
+    {}
+
+    void onTransition(QEvent *) override {}
+
+    bool eventTest(QEvent *e) override { return type == e->type(); }
+
+};
+
+QAbstractTransition *addTransition(QState *source, QState *target,
+                                   QEvent::Type type)
 {
-    auto *t = new CustomEventTransition(type, source);
+    auto *t = new EventTransition(type, source);
     t->setTargetState(target);
+    return t;
 }
 
-void addTransition(QState *source, QState *target,
-                   QEvent::Type type,
-                   std::function<bool()> guard)
+QAbstractTransition *addTransition(QState *source, QState *target,
+                                   QEvent::Type type,
+                   function<bool()> guard)
 {
-    auto *t = new GuardedTransition<CustomEventTransition>(guard, type, source);
+    auto *t = new GuardedTransition<EventTransition>(guard, type, source);
     t->setTargetState(target);
+    return t;
 }
 
-void addTransition(QState *source, QState *target,
-                   QObject *object, QEvent::Type type, int key)
+QAbstractTransition *addTransition(QState *source, QState *target,
+                                   QObject *object, QEvent::Type type, int key)
 {
     auto *t = new QKeyEventTransition(object, type, key, source);
     t->setTargetState(target);
+    return t;
 }
 
-void addTransition(QState *source, QState *target, QObject *object,
-                   QEvent::Type type, int key,
-                   std::function<bool()> guard)
+QAbstractTransition *addTransition(QState *source, QState *target, QObject *object,
+                                   QEvent::Type type, int key,
+                                   function<bool()> guard)
 {
     auto *t = new GuardedTransition<QKeyEventTransition>(guard, object, type, key, source);
     t->setTargetState(target);
+    return t;
 }
 
-void addTransition(QState *source, QState *target,
-                   QObject *object, QEvent::Type type)
+QAbstractTransition *addTransition(QState *source, QState *target,
+                                   QObject *object, QEvent::Type type)
 {
     auto *t = new QEventTransition(object, type, source);
     t->setTargetState(target);
+    return t;
 }
 
-void addTransition(QState *source, QState *target,
-                   QObject *object, QEvent::Type type,
-                   std::function<bool()> guard)
+QAbstractTransition *addTransition(QState *source, QState *target,
+                                   QObject *object, QEvent::Type type,
+                                   function<bool()> guard)
 {
     auto *t = new GuardedTransition<QEventTransition>(guard, object, type, source);
     t->setTargetState(target);
+    return t;
+}
+
+QAbstractTransition *addTransition(QState *source, QState *target,
+                                   QObject *object, QEvent::Type type,
+                                   function<bool(QEvent*)> guard)
+{
+    struct GuardedEventTransition : public QEventTransition
+    {
+        function<bool(QEvent*)> guard;
+
+        GuardedEventTransition(QObject *object, QEvent::Type type, function<bool(QEvent*)> guard, QState *source)
+            : QEventTransition(object, type, source), guard(guard) {}
+
+        bool eventTest(QEvent *event) override
+        {
+            if (event->type() != QEvent::StateMachineWrapped)
+                if (static_cast<QStateMachine::WrappedEvent*>(event)->event()->type() != eventType())
+                    return guard(static_cast<QStateMachine::WrappedEvent*>(event)->event());
+            return false;
+        }
+    };
+
+    auto *t = new GuardedEventTransition(object, type, guard, source);
+    t->setTargetState(target);
+    return t;
+}
+
+QAbstractTransition *addTransition(QState *source, QState *target,
+                                   QObject *object, QEvent::Type type,
+                                   function<bool(QKeyEvent *)> guard)
+{
+    struct GuardedEventTransition : public QEventTransition
+    {
+        function<bool(QKeyEvent*)> guard;
+
+        GuardedEventTransition(QObject *object, QEvent::Type type, function<bool(QKeyEvent*)> guard, QState *source)
+            : QEventTransition(object, type, source), guard(guard)
+        {
+            assert(type == QEvent::KeyPress || type == QEvent::KeyRelease);
+        }
+
+        bool eventTest(QEvent *event) override
+        {
+            if (event->type() == QEvent::StateMachineWrapped)
+                if (static_cast<QStateMachine::WrappedEvent*>(event)->event()->type() != eventType())
+                    return guard(
+                        static_cast<QKeyEvent*>(
+                            static_cast<QStateMachine::WrappedEvent*>(event)->event()));
+            return false;
+        }
+    };
+
+    auto *t = new GuardedEventTransition(object, type, guard, source);
+    t->setTargetState(target);
+    return t;
 }

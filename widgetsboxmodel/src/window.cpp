@@ -3,6 +3,7 @@
 #include "actionslist.h"
 #include "debugoverlay.h"
 #include "frame.h"
+#include "util.h"
 #include "inputline.h"
 #include "palettereader.h"
 #include "resizinglist.h"
@@ -20,6 +21,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QPixmapCache>
+#include <QPropertyAnimation>
 #include <QSettings>
 #include <QSignalBlocker>
 #include <QStandardPaths>
@@ -42,6 +44,9 @@ namespace  {
 static const struct {
 
     using ColorRole = QPalette::ColorRole;
+
+    const double    settings_button_rps_idle = 0.2;
+    const double    settings_button_rps_busy = 1;
 
     const bool      always_on_top                               = true;
     const bool      centered                                    = true;
@@ -67,11 +72,11 @@ static const struct {
     const double    input_border_radius                         = general_spacing + input_padding;
 
     const ColorRole window_background_brush                     = ColorRole::Window;
-    const ColorRole window_border_brush                         = ColorRole::Text;
+    const ColorRole window_border_brush                         = ColorRole::Highlight;
     const uint      window_shadow_size                          = 64;
     const double    window_shadow_offset                        = 4;
     const QColor    window_shadow_color                         = QColor(0, 0, 0, 192);
-    const double    window_border_width                         = 0.5;
+    const double    window_border_width                         = 1;
     const int       window_padding                              = general_spacing + (int)window_border_width;
     const double    window_border_radius                        = window_padding + input_border_radius;
     const int       window_spacing                              = window_padding;
@@ -168,12 +173,12 @@ static const struct {
 
 } keys;
 
-//constexpr Qt::KeyboardModifier mods_mod[] = {
-//    Qt::ShiftModifier,
-//    Qt::MetaModifier,
-//    Qt::ControlModifier,
-//    Qt::AltModifier
-//};
+constexpr Qt::KeyboardModifier mods_mod[] = {
+   Qt::ShiftModifier,
+   Qt::MetaModifier,
+   Qt::ControlModifier,
+   Qt::AltModifier
+};
 
 constexpr Qt::Key mods_keys[] = {
     Qt::Key_Shift,
@@ -182,29 +187,16 @@ constexpr Qt::Key mods_keys[] = {
     Qt::Key_Alt
 };
 
-static bool isUnderMouse(QWidget *widget)
-{
-    /*
-     * Hiding/Showing a window does not generate a Leave/Enter event. As such QWidget does not
-     * update the internal underMouse property on show if the window is has been hidden and the
-     * mouse pointer moved outside the widget.
-     */
-    return widget->geometry().contains(widget->mapFromGlobal(QCursor::pos()));
-}
+enum EventType {
+    ShowActionsRequest = QEvent::User,
+    HideActionsRequest,
+    ToggleActionsRequest,
+    ShowFallbacksRequest,
+    HideFallbacksRequest,
+};
 
-static bool haveDarkSystemPalette()
-{
-    auto pal = QApplication::style()->standardPalette();
-    return pal.color(QPalette::WindowText).lightness()
-           > pal.color(QPalette::Window).lightness();
-}
-
-static void setStyleRecursive(QWidget *widget, QStyle *style)
-{
-    widget->setStyle(style);
-    for (auto child : widget->findChildren<QWidget*>())
-        setStyleRecursive(child, style);
-}
+static void postCustomEvent(QStateMachine *state_machine, EventType type)
+{ state_machine->postEvent(new QEvent((QEvent::Type)type)); } // takes ownership
 
 static map<QString, QString> findThemes(const QString &plugin_id)
 {
@@ -276,8 +268,8 @@ void Window::initializeUi()
 
     auto *frame_layout = new QVBoxLayout(frame);
     frame_layout->addWidget(input_frame);
-    frame_layout->addWidget(actions_list);
     frame_layout->addWidget(results_list);
+    frame_layout->addWidget(actions_list);
     frame_layout->addStretch(0);
 
     // Properties
@@ -304,7 +296,7 @@ void Window::initializeUi()
     input_line->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
 
     settings_button->setFocusPolicy(Qt::NoFocus);
-    settings_button->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Fixed);
+    settings_button->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
 
     results_list->setFocusPolicy(Qt::NoFocus);
     results_list->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
@@ -318,6 +310,7 @@ void Window::initializeUi()
     input_line->installEventFilter(this);
     results_list->hide();
     actions_list->hide();
+    settings_button->hide();
 
     // Reproducible UX
     auto *style = QStyleFactory::create("Fusion");
@@ -579,33 +572,44 @@ void Window::initializeStatemachine()
     // States
     //
 
-    auto *s_root = new QState(QState::ParallelStates);
+    auto s_root = new QState(QState::ParallelStates);
 
-    auto *s_settings_button = new QState(s_root);
-    auto *s_settings_button_hidden = new QState(s_settings_button);
-    auto *s_settings_button_visible = new QState(s_settings_button);
-    auto *s_settings_button_highlight = new QState(s_settings_button);
-    s_settings_button->setInitialState(s_settings_button_hidden);
+    auto s_settings_button_appearance = new QState(s_root);
+    auto s_settings_button_appearance_hidden = new QState(s_settings_button_appearance);
+    auto s_settings_button_appearance_visible = new QState(s_settings_button_appearance);
+    auto s_settings_button_appearance_highlight = new QState(s_settings_button_appearance);
+    s_settings_button_appearance->setInitialState(s_settings_button_appearance_hidden);
 
-    auto *s_results = new QState(s_root);
+    auto s_settings_button_spin = new QState(s_root);
+    auto s_settings_button_spin_slow = new QState(s_settings_button_spin);
+    auto s_settings_button_spin_fast = new QState(s_settings_button_spin);
+    s_settings_button_spin->setInitialState(s_settings_button_spin_slow);
 
-    auto *s_results_query_unset = new QState(s_results);
-    auto *s_results_query_set = new QState(s_results);
+    auto s_results = new QState(s_root);
+    auto s_results_query_unset = new QState(s_results);
+    auto s_results_query_set = new QState(s_results);
     s_results->setInitialState(s_results_query_unset);
 
-    auto *s_results_hidden = new QState(s_results_query_set);
-    auto *s_results_disabled = new QState(s_results_query_set);
-    auto *s_results_matches = new QState(s_results_query_set);
-    auto *s_results_fallbacks = new QState(s_results_query_set);
+    auto s_results_hidden = new QState(s_results_query_set);
+    auto s_results_disabled = new QState(s_results_query_set);
+    auto s_results_matches = new QState(s_results_query_set);
+    auto s_results_fallbacks = new QState(s_results_query_set);
     s_results_query_set->setInitialState(s_results_hidden);
 
-    auto *s_results_match_items = new QState(s_results_matches);
-    auto *s_results_match_actions = new QState(s_results_matches);
+    auto s_results_match_items = new QState(s_results_matches);
+    auto s_results_match_actions = new QState(s_results_matches);
     s_results_matches->setInitialState(s_results_match_items);
 
-    auto *s_results_fallback_items = new QState(s_results_fallbacks);
-    auto *s_results_fallback_actions = new QState(s_results_fallbacks);
+    auto s_results_fallback_items = new QState(s_results_fallbacks);
+    auto s_results_fallback_actions = new QState(s_results_fallbacks);
     s_results_fallbacks->setInitialState(s_results_fallback_items);
+
+    // auto busy_delay_timer = new QTimer(this);
+    // busy_delay_timer->setInterval(250);
+    // busy_delay_timer->setSingleShot(true);
+
+    // connect(busy_delay_timer, &QTimer::timeout,
+    //         this, [this]{ settings_button->setMode(SettingsButton::Busy); });
 
     auto display_delay_timer = new QTimer(this);
     display_delay_timer->setInterval(250);
@@ -650,87 +654,89 @@ void Window::initializeStatemachine()
     // settingsbutton hidden ->
 
     addTransition(
-        s_settings_button_hidden, s_settings_button_visible,
+        s_settings_button_appearance_hidden, s_settings_button_appearance_visible,
         input_frame, QEvent::Type::Enter);
+    addTransition(
+        s_settings_button_appearance_hidden, s_settings_button_appearance_visible,
+        this, QEvent::WindowActivate,
+        [this] { return isUnderMouse(input_frame); });
 
     addTransition(
-        s_settings_button_hidden, s_settings_button_highlight,
+        s_settings_button_appearance_hidden, s_settings_button_appearance_highlight,
+        settings_button, QEvent::Enter);
+    addTransition(
+        s_settings_button_appearance_hidden, s_settings_button_appearance_highlight,
+        this, QEvent::WindowActivate,
+        [this] { return isUnderMouse(settings_button); });
+
+    addTransition(
+        s_settings_button_appearance_hidden, s_settings_button_appearance_highlight,
         this, &Window::queryChanged,
         [this] { return current_query != nullptr; });
-
-    addTransition(
-        s_settings_button_hidden, s_settings_button_highlight,
-        settings_button, QEvent::Enter);
-
-    addTransition(
-        s_settings_button_hidden, s_settings_button_visible,
-        this, QEvent::WindowActivate,
-        [this]{ return isUnderMouse(input_frame); });
 
 
     // settingsbutton visible ->
 
     addTransition(
-        s_settings_button_visible, s_settings_button_hidden,
-        input_frame, QEvent::Leave);
+        s_settings_button_appearance_visible, s_settings_button_appearance_hidden,
+        input_frame, QEvent::Leave,
+        [this]{ return !isUnderMouse(settings_button); });
 
     addTransition(
-        s_settings_button_visible, s_settings_button_hidden,
-        this, QEvent::WindowDeactivate);
+        s_settings_button_appearance_visible, s_settings_button_appearance_highlight,
+        settings_button, QEvent::Enter);
 
     addTransition(
-        s_settings_button_visible, s_settings_button_highlight,
+        s_settings_button_appearance_visible, s_settings_button_appearance_highlight,
         this, &Window::queryChanged,
         [this] { return current_query != nullptr; });
 
-    addTransition(
-        s_settings_button_visible, s_settings_button_highlight,
-        settings_button, QEvent::Enter);
 
-    // addTransition(
-    //     s_settings_button_visible, s_settings_button_hidden,
-    //     settings_button, QEvent::Type::Leave,
-    //     [this]{ return !current_query || !current_query->isActive(); });
-
-    // addTransition(s_settings_button_visible, s_settings_button_hidden,
-    //               this, &Window::queryStateIdle,
-    //               [this]{ return !isUnderMouse(settings_button); });
-
-
-    // settingsbutton highlight -> visible (frame under mouse)
+    // settingsbutton highlight ->
 
     addTransition(
-        s_settings_button_highlight, s_settings_button_visible,
+        s_settings_button_appearance_highlight, s_settings_button_appearance_hidden,
         settings_button, QEvent::Leave,
-        [this] { return isUnderMouse(input_frame) && (current_query == nullptr || current_query->isFinished()); });
+        [this] { return !isUnderMouse(input_frame); });
 
     addTransition(
-        s_settings_button_highlight, s_settings_button_visible,
+        s_settings_button_appearance_highlight, s_settings_button_appearance_hidden,
         this, &Window::queryChanged,
-        [this] { return isUnderMouse(input_frame) && current_query == nullptr && !isUnderMouse(settings_button); });
+        [this] { return current_query == nullptr && !isUnderMouse(input_frame) && !isUnderMouse(settings_button); });
+    addTransition(
+        s_settings_button_appearance_highlight, s_settings_button_appearance_hidden,
+        this, &Window::queryStateIdle,
+        [this] { return !isUnderMouse(input_frame) && !isUnderMouse(settings_button); });
 
     addTransition(
-        s_settings_button_highlight, s_settings_button_visible,
+        s_settings_button_appearance_highlight, s_settings_button_appearance_visible,
+        settings_button, QEvent::Leave,
+        [this] { return isUnderMouse(input_frame); });
+
+    addTransition(
+        s_settings_button_appearance_highlight, s_settings_button_appearance_visible,
+        this, &Window::queryChanged,
+        [this] { return current_query == nullptr && isUnderMouse(input_frame) && !isUnderMouse(settings_button); });
+    addTransition(
+        s_settings_button_appearance_highlight, s_settings_button_appearance_visible,
         this, &Window::queryStateIdle,
         [this] { return isUnderMouse(input_frame) && !isUnderMouse(settings_button); });
 
 
-    // settingsbutton highlight -> hidden (not frame under mouse)
+    // settingsbutton spin
 
     addTransition(
-        s_settings_button_highlight, s_settings_button_hidden,
-        settings_button, QEvent::Leave,
-        [this] { return !isUnderMouse(input_frame) && (current_query == nullptr || current_query->isFinished()); });
-
-    addTransition(
-        s_settings_button_highlight, s_settings_button_hidden,
+        s_settings_button_spin_slow, s_settings_button_spin_fast,
         this, &Window::queryChanged,
-        [this] { return !isUnderMouse(input_frame) && current_query == nullptr && !isUnderMouse(settings_button); });
+        [this] { return current_query != nullptr; });
 
     addTransition(
-        s_settings_button_highlight, s_settings_button_hidden,
-        this, &Window::queryStateIdle,
-        [this] { return !isUnderMouse(input_frame) && !isUnderMouse(settings_button); });
+        s_settings_button_spin_fast, s_settings_button_spin_slow,
+        this, &Window::queryChanged,
+        [this] { return current_query == nullptr; });
+    addTransition(
+        s_settings_button_spin_fast, s_settings_button_spin_slow,
+        this, &Window::queryStateIdle);
 
 
     // Query
@@ -754,13 +760,14 @@ void Window::initializeStatemachine()
 
     addTransition(
         s_results_hidden, s_results_fallbacks,
-        input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
-        [this]{ return current_query->fallbacks().size() > 0; });
+        (QEvent::Type)ShowFallbacksRequest,
+        [this]{ return haveFallbacks(); });
+
 
     addTransition(
         s_results_hidden, s_results_fallbacks,
         this, &Window::queryStateIdle,
-        [this]{ return current_query->fallbacks().size() > 0 && !current_query->isTriggered(); });
+        [this]{ return haveFallbacks() && !current_query->isTriggered(); });
 
 
     // disabled ->
@@ -776,12 +783,12 @@ void Window::initializeStatemachine()
     addTransition(
         s_results_disabled, s_results_hidden,
         this, &Window::queryStateIdle,
-        [this]{ return current_query->fallbacks().size() == 0 || current_query->isTriggered(); });
+        [this]{ return !haveFallbacks() || current_query->isTriggered(); });
 
     addTransition(
         s_results_disabled, s_results_fallbacks,
         this, &Window::queryStateIdle,
-        [this]{ return current_query->fallbacks().size() > 0 && !current_query->isTriggered(); });
+        [this]{ return haveFallbacks() && !current_query->isTriggered(); });
 
 
     // matches ->
@@ -793,8 +800,19 @@ void Window::initializeStatemachine()
 
     addTransition(
         s_results_matches, s_results_fallbacks,
-        input_line, QEvent::KeyPress, mods_keys[(int)mod_fallback],
-        [this]{ return current_query->fallbacks().size() > 0; });
+        (QEvent::Type)ShowFallbacksRequest,
+        [this]{ return haveFallbacks(); });
+
+
+    // match actions <->
+
+    addTransition(
+        s_results_match_items, s_results_match_actions,
+        (QEvent::Type)ShowActionsRequest);
+
+    addTransition(
+        s_results_match_actions, s_results_match_items,
+        (QEvent::Type)HideActionsRequest);
 
 
     // fallbacks ->
@@ -804,35 +822,26 @@ void Window::initializeStatemachine()
         this, &Window::queryChanged,
         [this]{ return current_query != nullptr; });
 
-
     addTransition(
         s_results_fallbacks, s_results_hidden,
-        input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
-        [this]{ return current_query->matches().size() == 0 && current_query->isActive(); });
+        (QEvent::Type)HideFallbacksRequest,
+        [this]{ return !haveMatches() && current_query->isActive(); });
 
     addTransition(
         s_results_fallbacks, s_results_matches,
-        input_line, QEvent::KeyRelease, mods_keys[(int)mod_fallback],
-        [this]{ return current_query->matches().size() > 0; });
+        (QEvent::Type)HideFallbacksRequest,
+        [this]{ return haveMatches(); });
 
 
-    // Actions
-
-    addTransition(
-        s_results_match_items, s_results_match_actions,
-        input_line, QEvent::KeyPress, mods_keys[(int)mod_actions]);
-
-    addTransition(
-        s_results_match_actions, s_results_match_items,
-        input_line, QEvent::KeyRelease, mods_keys[(int)mod_actions]);
+    // fallback actions <->
 
     addTransition(
         s_results_fallback_items, s_results_fallback_actions,
-        input_line, QEvent::KeyPress, mods_keys[(int)mod_actions]);
+        (QEvent::Type)ShowActionsRequest);
 
     addTransition(
         s_results_fallback_actions, s_results_fallback_items,
-        input_line, QEvent::KeyRelease, mods_keys[(int)mod_actions]);
+        (QEvent::Type)HideActionsRequest);
 
 
     //
@@ -841,14 +850,51 @@ void Window::initializeStatemachine()
 
     // BUTTON
 
-    connect(s_settings_button_hidden, &QState::entered, this,
-            [this]{ settings_button->setState(SettingsButton::Hidden); });
+    QObject::connect(s_settings_button_appearance_hidden, &QState::entered, this, [this]{
+        auto c = settings_button->color;
+        c.setAlpha(0);
+        color_animation_ = make_unique<QPropertyAnimation>(settings_button, "color");
+        color_animation_->setEndValue(c);
+        color_animation_->setEasingCurve(QEasingCurve::OutQuad);
+        color_animation_->setDuration(500);
+        connect(color_animation_.get(), &QPropertyAnimation::finished,
+                settings_button, &SettingsButton::hide);
+        color_animation_->start();
+    });
 
-    connect(s_settings_button_visible, &QState::entered, this,
-            [this]{ settings_button->setState(SettingsButton::Visible); });
+    QObject::connect(s_settings_button_appearance_visible, &QState::entered, this, [this]{
+        settings_button->show();
+        color_animation_ = make_unique<QPropertyAnimation>(settings_button, "color");
+        color_animation_->setEndValue(settings_button_color_);
+        color_animation_->setEasingCurve(QEasingCurve::OutQuad);
+        color_animation_->setDuration(500);
+        color_animation_->start();
+    });
 
-    connect(s_settings_button_highlight, &QState::entered, this,
-            [this]{ settings_button->setState(SettingsButton::Highlight); });
+    QObject::connect(s_settings_button_appearance_highlight, &QState::entered, this, [this]{
+        settings_button->show();
+        color_animation_ = make_unique<QPropertyAnimation>(settings_button, "color");
+        color_animation_->setEndValue(settings_button_color_highlight_);
+        color_animation_->setEasingCurve(QEasingCurve::OutQuad);
+        color_animation_->setDuration(500);
+        color_animation_->start();
+    });
+
+    QObject::connect(s_settings_button_spin_slow, &QState::entered, this, [this]{
+        speed_animation_ = make_unique<QPropertyAnimation>(settings_button, "speed");
+        speed_animation_->setEndValue(defaults.settings_button_rps_idle);
+        speed_animation_->setEasingCurve(QEasingCurve::OutQuad);
+        speed_animation_->setDuration(3000);
+        speed_animation_->start();
+    });
+
+    QObject::connect(s_settings_button_spin_fast, &QState::entered, this, [this]{
+        speed_animation_ = make_unique<QPropertyAnimation>(settings_button, "speed");
+        speed_animation_->setEndValue(defaults.settings_button_rps_busy);
+        speed_animation_->setEasingCurve(QEasingCurve::InOutQuad);
+        speed_animation_->setDuration(1000);
+        speed_animation_->start();
+    });
 
 
     // RESULTS
@@ -999,11 +1045,15 @@ void Window::initializeStatemachine()
                                                                     index.row());});
 
 
-    auto *machine = new QStateMachine(this);
-    machine->addState(s_root);
-    machine->setInitialState(s_root);
-    machine->start();
+    state_machine = new QStateMachine(this);
+    state_machine->addState(s_root);
+    state_machine->setInitialState(s_root);
+    state_machine->start();
 }
+
+bool Window::haveMatches() const { return current_query->matches().size() > 0; }
+
+bool Window::haveFallbacks() const { return current_query->fallbacks().size() > 0; }
 
 void Window::onSettingsButtonClicked(Qt::MouseButton button)
 {
@@ -1279,10 +1329,46 @@ bool Window::eventFilter(QObject *watched, QEvent *event)
                 break;
             }
 
-            case Qt::Key_Escape:{
+            case Qt::Key_Escape:
                 setVisible(false);
                 break;
             }
+
+            if ((ke->key() == Qt::Key_Return || ke->key() == Qt::Key_Enter)
+                && ke->modifiers() == mods_mod[mod_command])
+            {
+                postCustomEvent(state_machine, ToggleActionsRequest);
+                return true;
+            }
+
+            if (ke->key() == mods_keys[mod_actions])
+            {
+                postCustomEvent(state_machine, ShowActionsRequest);
+                return true;
+            }
+
+            if (ke->key() == mods_keys[mod_fallback])
+            {
+                postCustomEvent(state_machine, ShowFallbacksRequest);
+                return true;
+            }
+        }
+
+
+        if (event->type() == QEvent::KeyRelease)
+        {
+            auto *ke = static_cast<QKeyEvent *>(event);
+
+            if (ke->key() == mods_keys[mod_actions])
+            {
+                postCustomEvent(state_machine, HideActionsRequest);
+                return true;
+            }
+
+            else if (ke->key() == mods_keys[mod_fallback])
+            {
+                postCustomEvent(state_machine, HideFallbacksRequest);
+                return true;
             }
         }
     }
@@ -1528,11 +1614,16 @@ uint Window::inputFontSize() const { return input_line->fontSize(); }
 void Window::setInputFontSize(uint val) { input_line->setFontSize(val); }
 
 
-QColor Window::settingsButtonColor() const { return settings_button->color.visible; }
-void Window::setSettingsButtonColor(QColor val) { settings_button->color.visible = val; }
+QColor Window::settingsButtonColor() const { return settings_button_color_; }
+void Window::setSettingsButtonColor(QColor val)
+{
+    settings_button_color_ = val;
+    val.setAlpha(0);
+    settings_button->color = val;
+}
 
-QColor Window::settingsButtonHightlightColor() const { return settings_button->color.highlight; }
-void Window::setSettingsButtonHightlightColor(QColor val) { settings_button->color.highlight = val; }
+QColor Window::settingsButtonHightlightColor() const { return settings_button_color_highlight_; }
+void Window::setSettingsButtonHightlightColor(QColor val) { settings_button_color_highlight_ = val; }
 
 uint Window::settingsButtonSize() const { return settings_button->width(); }
 void Window::setSettingsButtonSize(uint val) { settings_button->setFixedSize(val,val); }
