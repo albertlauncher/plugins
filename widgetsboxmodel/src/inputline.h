@@ -38,14 +38,13 @@ private:
     QString input_hint_;
     QString completion_;
     QString user_text_;
-    QString text_;
     uint trigger_length_;
     class TriggerHighlighter;
     TriggerHighlighter *highlighter_;
 
 signals:
 
-    void textChanged(const QString&);
+    void textEdited();
 
 };
 

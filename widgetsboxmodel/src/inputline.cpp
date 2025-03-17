@@ -40,20 +40,17 @@ InputLine::InputLine(QWidget *parent):
     setWordWrapMode(QTextOption::NoWrap);
     viewport()->setAutoFillBackground(false);
 
-    // connect(this, &QLineEdit::textEdited, this, [this]{
-    //     history_.resetIterator();
-    //     user_text_ = text();
-    // });
+    connect(this, &QPlainTextEdit::textChanged, this, [this]{
+        input_hint_.clear();
+    });
 
-    // // Clear input hint on text change
-    // connect(this, &QTextEdit::textChanged, this, [this]{
-    //     // auto c = textCursor();
-    //     // c.po
-    //     // horizontal_advance_ = fontMetrics().horizontalAdvance(t);
-    //     // synopsis_ = {};
-    //     // completion_ = {};
-    //     // updateTooltip();
-    // });
+    connect(this, &QPlainTextEdit::textChanged,
+            this, &InputLine::textEdited);
+
+    connect(this, &InputLine::textEdited, this, [this]{
+        history_.resetIterator();
+        user_text_ = text();
+    });
 
     // auto fixHeight = [this]{
     //     INFO << "INPUTLINE fm lineSpacing" << fontMetrics().lineSpacing();
@@ -64,30 +61,12 @@ InputLine::InputLine(QWidget *parent):
     //     setFixedHeight(height);
     // };
 
-    // connect(this, &QTextEdit::textChanged, this, fixHeight);
-    // fixHeight();
-
-
-    connect(document()->documentLayout(), &QAbstractTextDocumentLayout::documentSizeChanged,
-            this, [this](const QSizeF &newSize){
-        CRIT << newSize;
-        // setFixedHeight((int)newSize.height());
-        setFixedHeight((int)newSize.height()*fontMetrics().lineSpacing() + 2 * (int)document()->documentMargin());
-
-    });
-
-    connect(this, &QPlainTextEdit::textChanged, this, [this]
-    {
-        // Save and emit plainTextChanged if necessary
-        auto t = toPlainText();
-        if (t != text_)
-        {
-            text_ = t;
-            emit textChanged(text_);
-        }
-
-        input_hint_.clear();
-    });
+    connect(document()->documentLayout(),
+            &QAbstractTextDocumentLayout::documentSizeChanged,
+            this,
+            [this](const QSizeF &newSize){
+                setFixedHeight((int)newSize.height() * fontMetrics().lineSpacing()
+                               + 2 * (int)document()->documentMargin()); });
 }
 
 void InputLine::setInputHint(const QString &t)
@@ -105,7 +84,8 @@ void InputLine::setCompletion(const QString &t)
 void InputLine::setTriggerLength(uint len)
 {
     trigger_length_ = len;
-    highlighter_->rehighlight();
+    QSignalBlocker b(this);  // see below
+    highlighter_->rehighlight();  // triggers QPlainTextEdit::textChanged!
 }
 
 QString InputLine::text() const { return toPlainText(); }
@@ -114,6 +94,8 @@ void InputLine::setText(QString t)
 {
     // setPlainText(t);  // Dont. Clears undo stack.
 
+    disconnect(this, &QPlainTextEdit::textChanged, this, &InputLine::textEdited);
+
     QTextCursor c{document()};
     c.beginEditBlock();
     c.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
@@ -121,6 +103,8 @@ void InputLine::setText(QString t)
     c.insertText(t);
     c.endEditBlock();
     setTextCursor(c);
+
+    connect(this, &QPlainTextEdit::textChanged, this, &InputLine::textEdited);
 }
 
 uint InputLine::fontSize() const { return font().pointSize(); }
@@ -143,13 +127,14 @@ void InputLine::next()
     if (t == text())
         t = history_.next(history_search ? user_text_ : QString());
 
-    setText(t);
+    if (!t.isNull())
+        setText(t);
 }
 
 void InputLine::previous()
 {
-    auto t = history_.prev(history_search ? user_text_ : QString());
-    if (!t.isEmpty())
+    if (auto t = history_.prev(history_search ? user_text_ : QString());
+        !t.isNull())
         setText(t);
 }
 
@@ -246,135 +231,3 @@ void InputLine::keyPressEvent(QKeyEvent *event)
 
     QPlainTextEdit::keyPressEvent(event);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// QLineEdit::paintEvent(event);
-// QStyleOptionFrame o;
-// initStyleOption(&o);
-
-//     QRect content_rect = style()->subElementRect(QStyle::SE_LineEditContents, &o, this);
-//     content_rect = content_rect.marginsRemoved(textMargins());
-//     content_rect.adjust(2,1,-2,-1); // https://codebrowser.dev/qt5/qtbase/src/widgets/widgets/qlineedit_p.cpp.html#QLineEditPrivate::verticalMargin
-
-//     QPainter p(this);
-//     p.setPen(o.palette.placeholderText().color());
-
-//     if (!completion_.isNull() && !synopsis_.isNull())
-//     {
-//         QFont font = p.font();
-//         font.setPixelSize(font.pixelSize()/2);
-//         p.setFont(font);
-
-//         auto r = content_rect.adjusted(horizontal_advance_ + 5, content_rect.height()/2, 0, 0);
-//         p.drawText(r, Qt::TextSingleLine, p.fontMetrics().elidedText(completion_, Qt::ElideMiddle, r.width()));
-
-//         font.setItalic(true);
-//         p.setFont(font);
-
-//         r = content_rect.adjusted(horizontal_advance_ + 5, 0, 0, -content_rect.height()/2);
-//         p.drawText(r, Qt::TextSingleLine, p.fontMetrics().elidedText(synopsis_, Qt::ElideMiddle, r.width()));
-//     }
-//     else
-//     {
-//         if (!completion_.isNull())
-//         {
-//             if (completion_.startsWith(text(), Qt::CaseInsensitive))
-//             {
-//                 auto t = completion_.mid(text().length());
-//                 auto r = content_rect.adjusted(horizontal_advance_, 0, 0, 0);
-//                 p.drawText(r, Qt::TextSingleLine, o.fontMetrics.elidedText(t, Qt::ElideMiddle, r.width()));
-//             }
-//             else
-//             {
-//                 auto r = content_rect.adjusted(horizontal_advance_ + 5, 0, 0, 0);
-//                 p.drawText(r, Qt::TextSingleLine, o.fontMetrics.elidedText(completion_, Qt::ElideMiddle, r.width()));
-//             }
-//         }
-//         else // synopsis_
-//         {
-//             QFont font = p.font();
-//             font.setItalic(true);
-//             p.setFont(font);
-
-//             auto r = content_rect.adjusted(horizontal_advance_ + 5, 0, 0, 0);
-//             p.drawText(r, Qt::TextSingleLine, o.fontMetrics.elidedText(synopsis_, Qt::ElideRight, r.width()));
-//         }
-//     }
-//     // TODO glitches when line is overflowing, need something better than QLineEdit, maybe QTextEdit
-//     // if (trigger_length_)
-//     // {
-//     //     auto f = p.font();
-//     //     f.setUnderline(true);
-//     //     p.setFont(f);
-//     //     p.drawText(content_rect, Qt::TextSingleLine, text().left(trigger_length_));
-//     // }
-
-
-
-
-
-
-
-
-
-
-// QSize InputLine::sizeHint() const
-// {
-//     QSize sizehint = QTextEdit::sizeHint();
-//     // sizehint.setHeight(fitted_height);
-//     INFO << "QTextEdit::sizeHint()" << sizehint;
-//     INFO << "viewportSizeHint()" << viewportSizeHint();
-//     INFO << "viewport()->size()"<< viewport()->size();
-//     INFO << "InputLine::size()" << size();
-//     return sizehint;
-//     return {10,10};
-// }
-
-// QSize InputLine::viewportSizeHint() const
-// {
-//     return {10,10};
-// }
-
-// bool InputLine::event(QEvent *event)
-// {
-//     if (event->type() == QEvent::Polish)
-//     if (event->type() == QEvent::Polish)
-//         CRIT << "POLISH";
-//     if (event->type() == QEvent::FontChange
-//         ||event->type() == QEvent::Show)
-//     {
-//         CRIT << "FONT CCHANFGED";
-//         // document()->adjustSize();
-
-//         INFO << "InputLine::size()" << size();
-//         INFO << "viewport()->contentsMargins()"<< viewport()->contentsMargins();
-//         INFO << "viewport()->contentsRect() "<< viewport()->contentsRect();
-//         INFO << "viewport()->frameSize() "<< viewport()->frameSize();
-//         INFO << "viewport()->size()"<< viewport()->size();
-//         INFO << "viewportMargins()"<< viewportMargins();
-//         INFO << "viewportSizeHint()" << viewportSizeHint();
-//         INFO << "INPUTLINE fm lineSpacing" << fontMetrics().lineSpacing();
-//         INFO << "INPUTLINE doc height" << document()->size().height();
-//         INFO << "INPUTLINE doc margin" << document()->documentMargin();
-//         int height = fontMetrics().lineSpacing() + 2 * document()->documentMargin();
-//         INFO << "Final height" << height;
-//         INFO << "cursorRect(textCursor()).height()"<< cursorRect(textCursor()).height();
-//         INFO << "font.pointSize()" << font().pointSize();
-//         setFixedHeight(height);
-//     }
-//     return QTextEdit::event(event);

@@ -238,7 +238,7 @@ Window::Window(PluginInstance *p):
     setStyleRecursive(this, style);
 
     connect(input_line, &InputLine::textChanged,
-            this, &Window::inputChanged);
+            this, [this]{ inputChanged(input_line->text()); });
 
     connect(settings_button, &SettingsButton::clicked,
             this, &Window::onSettingsButtonClicked);
