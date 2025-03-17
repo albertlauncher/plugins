@@ -5,11 +5,6 @@
 #include <QApplication>
 #include <QStyle>
 
-bool isUnderMouse(QWidget *widget)
-{
-    return widget->geometry().contains(widget->mapFromGlobal(QCursor::pos()));
-}
-
 bool haveDarkSystemPalette()
 {
     auto pal = QApplication::style()->standardPalette();
@@ -22,4 +17,15 @@ void setStyleRecursive(QWidget *widget, QStyle *style)
     widget->setStyle(style);
     for (auto child : widget->findChildren<QWidget*>())
         setStyleRecursive(child, style);
+}
+
+QList<QWidget *> getParents(QWidget *widget)
+{
+    QList<QWidget*> parents;
+    while (widget->parentWidget())
+    {
+        widget = widget->parentWidget();
+        parents.append(widget);
+    }
+    return parents;
 }

@@ -1,9 +1,10 @@
 // Copyright (c) 2022-2025 Manuel Schneider
 
 #pragma once
+#include <QEvent>
 #include <QPoint>
-#include <QWidget>
 #include <QTimer>
+#include <QWidget>
 namespace albert {
 class Query;
 class PluginInstance;
@@ -94,14 +95,33 @@ private:
     QColor settings_button_color_;
     QColor settings_button_color_highlight_;
 
+    enum EventType {
+        ShowActions = QEvent::User,
+        HideActions,
+        ToggleActions,
+        ShowFallbacks,
+        HideFallbacks,
+        SettingsButtonEnter,
+        SettingsButtonLeave,
+        InputFrameEnter,
+        InputFrameLeave,
+        QueryUnset,
+        QuerySet,
+        QueryBusy,
+        QueryIdle,
+        QueryHaveMatches
+    };
+
+    struct Event : public QEvent {
+        Event(EventType eventType) : QEvent((QEvent::Type)eventType) {}
+    };
+
+    void postCustomEvent(EventType type);
+
 signals:
 
     void inputChanged(QString);
     void visibleChanged(bool);
-    void queryChanged();
-    void queryMatchesAdded();
-    void queryStateBusy();
-    void queryStateIdle();
 
 public:
 

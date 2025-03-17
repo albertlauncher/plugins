@@ -9,32 +9,32 @@ using namespace std;
 
 struct EventTransition : public QAbstractTransition
 {
-    const QEvent::Type type;
+    const int type;
 
-    EventTransition(QEvent::Type type, QState *source) :
+    EventTransition(int type, QState *source) :
         QAbstractTransition(source),
         type(type)
     {}
 
     void onTransition(QEvent *) override {}
 
-    bool eventTest(QEvent *e) override { return type == e->type(); }
+    bool eventTest(QEvent *e) override { return static_cast<QEvent::Type>(type) == e->type(); }
 
 };
 
 QAbstractTransition *addTransition(QState *source, QState *target,
-                                   QEvent::Type type)
+                                   int event_type)
 {
-    auto *t = new EventTransition(type, source);
+    auto *t = new EventTransition(event_type, source);
     t->setTargetState(target);
     return t;
 }
 
 QAbstractTransition *addTransition(QState *source, QState *target,
-                                   QEvent::Type type,
-                   function<bool()> guard)
+                                   int event_type,
+                                   function<bool()> guard)
 {
-    auto *t = new GuardedTransition<EventTransition>(guard, type, source);
+    auto *t = new GuardedTransition<EventTransition>(guard, event_type, source);
     t->setTargetState(target);
     return t;
 }

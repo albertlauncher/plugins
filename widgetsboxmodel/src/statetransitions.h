@@ -9,9 +9,9 @@ class QKeyEvent;
 
 // Event transitions -------------------------------------------------------------------------------
 
-QAbstractTransition *addTransition(QState *source, QState *target, QEvent::Type type);
+QAbstractTransition *addTransition(QState *source, QState *target, int event_type);
 
-QAbstractTransition *addTransition(QState *source, QState *target, QEvent::Type type, std::function<bool()> guard);
+QAbstractTransition *addTransition(QState *source, QState *target, int event_type, std::function<bool()> guard);
 
 QAbstractTransition *addTransition(QState *source, QState *target, QObject *object, QEvent::Type type);
 
