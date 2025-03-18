@@ -9,8 +9,12 @@
         <translation> Min</translation>
     </message>
     <message>
-        <source>Default interval (Indefinitely if zero)</source>
-        <translation>Standardinterval (Unbegrenzt wenn Null)</translation>
+        <source>Default interval</source>
+        <translation>Standardinterval</translation>
+    </message>
+    <message>
+        <source>∞ min</source>
+        <translation>∞ Min</translation>
     </message>
 </context>
 <context>

@@ -9,7 +9,11 @@
         <translation></translation>
     </message>
     <message>
-        <source>Default interval (Indefinitely if zero)</source>
+        <source>Default interval</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>∞ min</source>
         <translation></translation>
     </message>
 </context>
