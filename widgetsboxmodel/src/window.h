@@ -238,6 +238,12 @@ public:
     QColor resultItemSubTextColor() const;
     void setResultItemSubTextColor(QColor);
 
+    QColor resultItemSelectionTextColor() const;
+    void setResultItemSelectionTextColor(QColor);
+
+    QColor resultItemSelectionSubTextColor() const;
+    void setResultItemSelectionSubTextColor(QColor);
+
     uint resultItemIconSize() const;
     void setResultItemIconSize(uint);
 
@@ -268,6 +274,9 @@ public:
 
     double actionItemSelectionBorderWidth() const;
     void setActionItemSelectionBorderWidth(double);
+
+    void setActionItemSelectionTextColor(QColor val);
+    QColor actionItemSelectionTextColor() const;
 
     QColor actionItemTextColor() const;
     void setActionItemTextColor(QColor);

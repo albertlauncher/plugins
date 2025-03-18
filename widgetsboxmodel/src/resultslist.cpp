@@ -1,6 +1,5 @@
 // Copyright (c) 2014-2025 Manuel Schneider
 
-#include "itemdelegatebase.h"
 #include "primitives.h"
 #include "resultitemmodel.h"
 #include "resultslist.h"
@@ -17,13 +16,9 @@ class ResultsListDelegate : public ItemDelegateBase
 public:
     ResultsListDelegate();
 
-    QFont text_font;
     QFont subtext_font;
-
-    QColor text_color;
     QColor subtext_color;
-
-    QFontMetrics text_font_metrics;
+    QColor selection_subtext_color;
     QFontMetrics subtext_font_metrics;
 
     int icon_size;
@@ -47,63 +42,44 @@ ResultsList::ResultsList(QWidget *parent):
     setItemDelegate(delegate_);
 }
 
-ResultsList::~ResultsList()
-{
-    delete delegate_;
-}
+ResultsList::~ResultsList() { delete delegate_; }
 
 ItemDelegateBase *ResultsList::delegate() const { return delegate_; }
 
-uint ResultsList::textFontSize() const { return delegate_->text_font.pointSize(); }
-
-void ResultsList::setTextFontSize(uint val)
-{
-    delegate_->text_font.setPointSize(val);
-    delegate_->text_font_metrics = QFontMetrics(delegate_->text_font);
-    relayout();
-}
-
 uint ResultsList::subtextFontSize() const { return delegate_->subtext_font.pointSize(); }
 
-void ResultsList::setSubextFontSize(uint val)
+void ResultsList::setSubextFontSize(uint v)
 {
-    delegate_->subtext_font.setPointSize(val);
+    delegate_->subtext_font.setPointSize(v);
     delegate_->subtext_font_metrics = QFontMetrics(delegate_->subtext_font);
     relayout();
 }
 
-QColor ResultsList::textColor() const { return delegate_->text_color; }
-
-void ResultsList::setTextColor(QColor val) { delegate_->text_color = val; update(); }
-
 QColor ResultsList::subtextColor() const { return delegate_->subtext_color; }
 
-void ResultsList::setSubextColor(QColor val) { delegate_->subtext_color = val; update(); }
+void ResultsList::setSubtextColor(QColor v) { delegate_->subtext_color = v; update(); }
+
+QColor ResultsList::selectionSubtextColor() const { return delegate_->selection_subtext_color; }
+
+void ResultsList::setSelectionSubextColor(QColor v) { delegate_->selection_subtext_color = v; update(); }
 
 uint ResultsList::horizonzalSpacing() const { return delegate_->horizontal_spacing; }
 
-void ResultsList::setHorizonzalSpacing(uint val) { delegate_->horizontal_spacing = val; relayout(); }
+void ResultsList::setHorizonzalSpacing(uint v) { delegate_->horizontal_spacing = v; relayout(); }
 
 uint ResultsList::verticalSpacing() const { return delegate_->vertical_spacing; }
 
-void ResultsList::setVerticalSpacing(uint val) { delegate_->vertical_spacing = val; relayout(); }
+void ResultsList::setVerticalSpacing(uint v) { delegate_->vertical_spacing = v; relayout(); }
 
 uint ResultsList::iconSize() const { return delegate_->icon_size; }
 
-void ResultsList::setIconSite(uint val) { delegate_->icon_size = val; relayout(); }
-
-bool ResultsList::debugMode() const { return delegate_->draw_debug_overlays; }
-
-void ResultsList::setDebugMode(bool val) { delegate_->draw_debug_overlays = val; update(); }
+void ResultsList::setIconSite(uint v) { delegate_->icon_size = v; relayout(); }
 
 //--------------------------------------------------------------------------------------------------
 
 ResultsListDelegate::ResultsListDelegate():
-    text_font(QApplication::font()),
     subtext_font(QApplication::font()),
-    text_font_metrics(text_font),
-    subtext_font_metrics(subtext_font),
-    draw_debug_overlays(false)
+    subtext_font_metrics(subtext_font)
 {
 
 }
@@ -167,7 +143,6 @@ void ResultsListDelegate::paint(QPainter *p,
     const auto icon_urls = i.data((int) ItemRoles::IconUrlsRole).value<QStringList>();
     const auto dpr = o.widget->devicePixelRatioF();
     auto selected = o.state.testFlag(QStyle::State_Selected);
-    auto highlight_text_color = o.widget->palette().highlightedText();
 
     QPixmap pm;
     const auto cache_key = QString("$%1%2result_icon").arg(icon_size * dpr).arg(icon_urls.join(""));
@@ -195,14 +170,14 @@ void ResultsListDelegate::paint(QPainter *p,
 
     // Draw text
     p->setFont(text_font);
-    p->setPen(QPen(selected ? highlight_text_color : text_color, 0));
+    p->setPen(QPen(selected ? selection_text_color : text_color, 0));
     // Clips. Adjust by descent sice origin seems to be the baseline
     // p->drawText(text_rect, text);
     p->drawText(text_rect.bottomLeft() - QPoint(0, text_font_metrics.descent() - 1), text);
 
     // Draw subtext
     p->setFont(subtext_font);
-    p->setPen(QPen(selected ? highlight_text_color : subtext_color, 0));
+    p->setPen(QPen(selected ? selection_subtext_color : subtext_color, 0));
     // Clips. Adjust by descent sice origin seems to be the baseline
     // p->drawText(subtext_rect, subtext);
     p->drawText(subtext_rect.bottomLeft() - QPoint(0, subtext_font_metrics.descent() - 1), subtext);

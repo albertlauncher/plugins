@@ -1,8 +1,42 @@
-// Copyright (c) 2022-2024 Manuel Schneider
+// Copyright (c) 2022-2025 Manuel Schneider
 
+#include "primitives.h"
 #include "resizinglist.h"
-#include "itemdelegatebase.h"
+#include <QApplication>
 #include <QKeyEvent>
+#include <QPainter>
+#include <QPixmapCache>
+using namespace std;
+
+ItemDelegateBase::ItemDelegateBase():
+    text_font(QApplication::font()),
+    text_font_metrics(text_font),
+    draw_debug_overlays(false)
+{
+
+}
+
+void ItemDelegateBase::paint(QPainter *p, const QStyleOptionViewItem &opt, const QModelIndex &) const
+{
+    if(opt.state.testFlag(QStyle::State_Selected))
+    {
+        QPixmap pm;
+        if (const auto cache_key = QString("_ItemViewSelection_%1x%2")
+                                       .arg(opt.rect.width()).arg(opt.rect.height());
+            !QPixmapCache::find(cache_key, &pm))
+        {
+            auto dpr = opt.widget->devicePixelRatioF();
+            pm = pixelPerfectRoundedRect(opt.rect.size() * dpr,
+                                         selection_background_brush,
+                                         (int)(selection_border_radius * dpr),
+                                         selection_border_brush,
+                                         (int)(selection_border_width * dpr));
+            pm.setDevicePixelRatio(dpr);
+            QPixmapCache::insert(cache_key, pm);
+        }
+        p->drawPixmap(opt.rect, pm);
+    }
+}
 
 ResizingList::ResizingList(QWidget *parent) : QListView(parent)
 {
@@ -21,6 +55,27 @@ void ResizingList::relayout()
     updateGeometry();
     reset(); // needed to relayout items
 }
+
+bool ResizingList::debugMode() const { return delegate()->draw_debug_overlays; }
+
+void ResizingList::setDebugMode(bool val) { delegate()->draw_debug_overlays = val; update(); }
+
+uint ResizingList::textFontSize() const { return delegate()->text_font.pointSize(); }
+
+void ResizingList::setTextFontSize(uint v)
+{
+    delegate()->text_font.setPointSize(v);
+    delegate()->text_font_metrics = QFontMetrics(delegate()->text_font);
+    relayout();
+}
+
+QColor ResizingList::textColor() const { return delegate()->text_color; }
+
+void ResizingList::setTextColor(QColor v) { delegate()->text_color = v; update(); }
+
+QColor ResizingList::selectionTextColor() const { return delegate()->selection_text_color; }
+
+void ResizingList::setSelectionTextColor(QColor v) { delegate()->selection_text_color = v; update(); }
 
 QBrush ResizingList::selectionBackgroundBrush() const { return delegate()->selection_background_brush; }
 
@@ -54,7 +109,9 @@ QSize ResizingList::sizeHint() const
 {
     if (model() == nullptr)
         return {};
-    return {width(), contentsMargins().bottom() + contentsMargins().top() + sizeHintForRow(0) * std::min(static_cast<int>(maxItems_), model()->rowCount(rootIndex()))};
+    return {width(),
+            contentsMargins().bottom() + contentsMargins().top()
+                + sizeHintForRow(0) * min(static_cast<int>(maxItems_), model()->rowCount(rootIndex()))};
 }
 
 QSize ResizingList::minimumSizeHint() const { return {0,0}; }

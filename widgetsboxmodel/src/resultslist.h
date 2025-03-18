@@ -11,17 +11,14 @@ public:
     ResultsList(QWidget *parent = nullptr);
     ~ResultsList();
 
-    QColor textColor() const;
-    void setTextColor(QColor);
-
     QColor subtextColor() const;
-    void setSubextColor(QColor);
+    void setSubtextColor(QColor);
+
+    QColor selectionSubtextColor() const;
+    void setSelectionSubextColor(QColor);
 
     uint iconSize() const;
     void setIconSite(uint);
-
-    uint textFontSize() const;
-    void setTextFontSize(uint);
 
     uint subtextFontSize() const;
     void setSubextFontSize(uint);
@@ -31,9 +28,6 @@ public:
 
     uint verticalSpacing() const;
     void setVerticalSpacing(uint);
-
-    bool debugMode() const;
-    void setDebugMode(bool);
 
 private:
 

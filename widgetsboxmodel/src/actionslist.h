@@ -11,15 +11,6 @@ public:
     ActionsList(QWidget *parent = nullptr);
     ~ActionsList();
 
-    QColor textColor() const;
-    void setTextColor(QColor);
-
-    uint fontSize() const;
-    void setFontSize(uint);
-
-    bool debugMode() const;
-    void setDebugMode(bool);
-
 private:
 
     ItemDelegateBase *delegate() const override;

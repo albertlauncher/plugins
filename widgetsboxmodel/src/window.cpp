@@ -92,6 +92,8 @@ static const struct {
     const ColorRole result_item_selection_border_brush          = ColorRole::Highlight;
     const double    result_item_selection_border_radius         = input_border_radius;
     const double    result_item_selection_border_width          = 0;
+    const ColorRole result_item_selection_text_color            = ColorRole::HighlightedText;
+    const ColorRole result_item_selection_subtext_color         = ColorRole::PlaceholderText;
     const int       result_item_padding                         = general_spacing;
     const ColorRole result_item_text_color                      = ColorRole::WindowText;
     const ColorRole result_item_subtext_color                   = ColorRole::PlaceholderText;
@@ -105,6 +107,7 @@ static const struct {
     const ColorRole action_item_selection_border_brush          = ColorRole::Highlight;
     const double    action_item_selection_border_radius         = input_border_radius;
     const double    action_item_selection_border_width          = 0;
+    const ColorRole action_item_selection_text_color            = ColorRole::HighlightedText;
     const int       action_item_padding                         = general_spacing;
     const ColorRole action_item_text_color                      = ColorRole::WindowText;
     const int       action_item_font_size                       = QApplication::font().pointSize();
@@ -154,6 +157,8 @@ static const struct {
     const char *result_item_selection_border_brush     = "result_item_selection_border_brush";
     const char *result_item_selection_border_radius    = "result_item_selection_border_radius";
     const char *result_item_selection_border_width     = "result_item_selection_border_width";
+    const char *result_item_selection_text_color       = "result_item_selection_text_color";
+    const char *result_item_selection_subtext_color    = "result_item_selection_subtext_color";
     const char *result_item_padding                    = "result_item_padding";
     const char *result_item_text_color                 = "result_item_text_color";
     const char *result_item_subtext_color              = "result_item_subtext_color";
@@ -167,6 +172,7 @@ static const struct {
     const char *action_item_selection_border_brush     = "action_item_selection_border_brush";
     const char *action_item_selection_border_radius    = "action_item_selection_border_radius";
     const char *action_item_selection_border_width     = "action_item_selection_border_width";
+    const char *action_item_selection_text_color       = "action_item_selection_text_color";
     const char *action_item_padding                    = "action_item_padding";
     const char *action_item_text_color                 = "action_item_text_color";
     const char *action_item_font_size                  = "action_item_font_size";
@@ -230,6 +236,7 @@ Window::Window(PluginInstance *p):
     settings_button->installEventFilter(this);
     results_list->hide();
     actions_list->hide();
+    actions_list->setMaxItems(100);
     settings_button->hide();
 
     // Reproducible UX
@@ -440,7 +447,15 @@ void Window::initializeProperties()
 
     setResultItemSubTextColor(
         s->value(keys.result_item_subtext_color,
-                palette().color(defaults.result_item_subtext_color)).value<QColor>());
+                 palette().color(defaults.result_item_subtext_color)).value<QColor>());
+
+    setResultItemSelectionTextColor(
+        s->value(keys.result_item_selection_text_color,
+                 palette().color(defaults.result_item_selection_text_color)).value<QColor>());
+
+    setResultItemSelectionSubTextColor(
+        s->value(keys.result_item_selection_subtext_color,
+                 palette().color(defaults.result_item_selection_subtext_color)).value<QColor>());
 
     setResultItemIconSize(
         s->value(keys.result_item_icon_size,
@@ -479,9 +494,13 @@ void Window::initializeProperties()
         s->value(keys.action_item_selection_border_width,
                  defaults.action_item_selection_border_width).toDouble());
 
+    setActionItemSelectionTextColor(
+        s->value(keys.action_item_selection_text_color,
+                 palette().color(defaults.action_item_selection_text_color)).value<QColor>());
+
     setActionItemTextColor(
         s->value(keys.action_item_text_color,
-                palette().color(defaults.action_item_text_color)).value<QColor>());
+                 palette().color(defaults.action_item_text_color)).value<QColor>());
 
     setActionItemFontSize(
         s->value(keys.action_item_font_size,
@@ -1603,7 +1622,13 @@ QColor Window::resultItemTextColor() const { return results_list->textColor(); }
 void Window::setResultItemTextColor(QColor val) { results_list->setTextColor(val); }
 
 QColor Window::resultItemSubTextColor() const { return results_list->subtextColor(); }
-void Window::setResultItemSubTextColor(QColor val) { results_list->setSubextColor(val); }
+void Window::setResultItemSubTextColor(QColor val) { results_list->setSubtextColor(val); }
+
+QColor Window::resultItemSelectionTextColor() const { return results_list->selectionTextColor(); }
+void Window::setResultItemSelectionTextColor(QColor val) { results_list->setSelectionTextColor(val); }
+
+QColor Window::resultItemSelectionSubTextColor() const { return results_list->selectionSubtextColor(); }
+void Window::setResultItemSelectionSubTextColor(QColor val) { results_list->setSelectionSubextColor(val); }
 
 uint Window::resultItemIconSize() const { return results_list->iconSize(); }
 void Window::setResultItemIconSize(uint val) { results_list->setIconSite(val); }
@@ -1633,11 +1658,14 @@ void Window::setActionItemSelectionBorderRadius(double val) { actions_list->setB
 double Window::actionItemSelectionBorderWidth() const { return actions_list->borderWidth(); }
 void Window::setActionItemSelectionBorderWidth(double val) { actions_list->setBorderWidth(val); }
 
+QColor Window::actionItemSelectionTextColor() const { return actions_list->selectionTextColor(); }
+void Window::setActionItemSelectionTextColor(QColor val) { actions_list->setSelectionTextColor(val); }
+
 uint Window::actionItemPadding() const { return actions_list->padding(); }
 void Window::setActionItemPadding(uint val) { actions_list->setPadding(val); }
 
 QColor Window::actionItemTextColor() const { return actions_list->textColor(); }
 void Window::setActionItemTextColor(QColor val) { actions_list->setTextColor(val); }
 
-uint Window::actionItemFontSize() const { return actions_list->fontSize(); }
-void Window::setActionItemFontSize(uint val) { actions_list->setFontSize(val); }
+uint Window::actionItemFontSize() const { return actions_list->textFontSize(); }
+void Window::setActionItemFontSize(uint val) { actions_list->setTextFontSize(val); }

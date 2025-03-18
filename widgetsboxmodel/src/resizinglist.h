@@ -1,14 +1,50 @@
-// Copyright (c) 2022-2024 Manuel Schneider
+// Copyright (c) 2022-2025 Manuel Schneider
 
 #pragma once
 #include <QListView>
-class ItemDelegateBase;
+#include <QStyledItemDelegate>
+
+
+class ItemDelegateBase : public QStyledItemDelegate
+{
+public:
+    ItemDelegateBase();
+
+    QFont text_font;
+    QColor text_color;
+    QFontMetrics text_font_metrics;
+    QColor selection_text_color;
+    QBrush selection_background_brush;
+    QBrush selection_border_brush;
+    double selection_border_radius;
+    double selection_border_width;
+    int padding;
+    bool draw_debug_overlays;
+
+protected:
+
+    void paint(QPainter *painter, const QStyleOptionViewItem &options, const QModelIndex &index) const override;
+
+};
+
 
 class ResizingList : public QListView
 {
 public:
 
     ResizingList(QWidget *parent = nullptr);
+
+    bool debugMode() const;
+    void setDebugMode(bool);
+
+    uint textFontSize() const;
+    void setTextFontSize(uint);
+
+    QColor textColor() const;
+    void setTextColor(QColor);
+
+    QColor selectionTextColor() const;
+    void setSelectionTextColor(QColor);
 
     QBrush selectionBackgroundBrush() const;
     void setSelectionBackgroundBrush(QBrush);
