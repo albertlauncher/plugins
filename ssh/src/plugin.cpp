@@ -79,7 +79,8 @@ std::vector<RankItem> Plugin::getItems(const QString &query, bool allowParams) c
     {
         if (host.startsWith(q_host, Qt::CaseInsensitive))
         {
-            QString cmd = "ssh ";
+            QString cmd = defaultTrigger();
+
             if (!q_user.isEmpty())
                 cmd += q_user + '@';
             cmd += host;
@@ -89,7 +90,12 @@ std::vector<RankItem> Plugin::getItems(const QString &query, bool allowParams) c
             auto a = [cmd, this]{ apps->runTerminal(QString("%1 || exec $SHELL").arg(cmd)); };
 
             r.emplace_back(
-                StandardItem::make(host, host, tr_desc.arg(cmd), cmd, icon_urls, {{"c", tr_conn, a}}),
+                StandardItem::make(host,
+                                   host,
+                                   tr_desc.arg(cmd),
+                                   cmd.mid(defaultTrigger().length()),
+                                   icon_urls,
+                                   {{"c", tr_conn, a}}),
                 (double)q_host.size() / host.size()
             );
         }
