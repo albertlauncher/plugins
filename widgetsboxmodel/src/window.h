@@ -57,7 +57,12 @@ private:
     bool haveMatches() const;
     bool haveFallbacks() const;
 
-    void onSettingsButtonClicked(Qt::MouseButton button);
+    void onSettingsButtonClick(Qt::MouseButton button);
+    void onMatchActivation(const QModelIndex &);
+    void onMatchActionActivation(const QModelIndex &);
+    void onFallbackActivation(const QModelIndex &);
+    void onFallbackActionActivation(const QModelIndex &);
+
     bool event(QEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
 

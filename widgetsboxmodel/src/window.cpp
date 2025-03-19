@@ -248,7 +248,7 @@ Window::Window(PluginInstance *p):
             this, [this]{ inputChanged(input_line->text()); });
 
     connect(settings_button, &SettingsButton::clicked,
-            this, &Window::onSettingsButtonClicked);
+            this, &Window::onSettingsButtonClick);
 }
 
 Window::~Window() {}
@@ -852,12 +852,7 @@ void Window::initializeStatemachine()
 
     QObject::connect(s_results_disabled, &QState::entered, this, [this, display_delay_timer]{
         display_delay_timer->start();
-        results_list->setEnabled(false);
         input_line->removeEventFilter(results_list);
-    });
-
-    QObject::connect(s_results_disabled, &QState::exited, this, [this]{
-        results_list->setEnabled(true);
     });
 
     QObject::connect(s_results_matches, &QState::entered, this, [this]{
@@ -889,6 +884,14 @@ void Window::initializeStatemachine()
         input_line->installEventFilter(this);
 
         results_list->show();
+
+        connect(results_list, &ResizingList::activated, this, &Window::onMatchActivation);
+        connect(actions_list, &ResizingList::activated, this, &Window::onMatchActionActivation);
+    });
+
+    QObject::connect(s_results_matches, &QState::exited, this, [this]{
+        disconnect(results_list, &ResizingList::activated, this, &Window::onMatchActivation);
+        disconnect(actions_list, &ResizingList::activated, this, &Window::onMatchActionActivation);
     });
 
     QObject::connect(s_results_fallbacks, &QState::entered, this, [this]{
@@ -905,6 +908,14 @@ void Window::initializeStatemachine()
         input_line->installEventFilter(this);
 
         results_list->show();
+
+        connect(results_list, &ResizingList::activated, this, &Window::onFallbackActivation);
+        connect(actions_list, &ResizingList::activated, this, &Window::onFallbackActionActivation);
+    });
+
+    QObject::connect(s_results_fallbacks, &QState::exited, this, [this]{
+        disconnect(results_list, &ResizingList::activated, this, &Window::onFallbackActivation);
+        disconnect(actions_list, &ResizingList::activated, this, &Window::onFallbackActionActivation);
     });
 
 
@@ -915,7 +926,6 @@ void Window::initializeStatemachine()
         actions_list->hide();
         input_line->removeEventFilter(actions_list);
 
-        // See QAbstractItemView::setModel documentation
         auto *sm = actions_list->selectionModel();
         actions_list->setModel(nullptr);
         delete sm;
@@ -953,29 +963,6 @@ void Window::initializeStatemachine()
     QObject::connect(s_results_fallback_actions, &QState::entered, this, showActions);
     QObject::connect(s_results_fallback_actions, &QState::exited, this, hideActions);
 
-
-    // Activations
-
-    auto activate = [this, s_results_matches, s_results_fallbacks](uint i, uint a)
-    {
-        if (s_results_matches->active())
-            current_query->activateMatch(i, a);
-        else if (s_results_fallbacks->active())
-            current_query->activateFallback(i, a);
-        else
-            WARN << "Activated action in neither Match nor Fallback state.";
-
-        hide();
-    };
-
-    QObject::connect(results_list, &ResizingList::activated,
-                     [activate](const auto &index){activate(index.row(), 0);});
-
-    QObject::connect(actions_list, &ResizingList::activated, this,
-                     [this, activate](const auto &index){activate(results_list->currentIndex().row(),
-                                                                    index.row());});
-
-
     state_machine = new QStateMachine(this);
     state_machine->addState(s_root);
     state_machine->setInitialState(s_root);
@@ -989,7 +976,7 @@ bool Window::haveFallbacks() const { return current_query->fallbacks().size() > 
 void Window::postCustomEvent(EventType event_type)
 { state_machine->postEvent(new Event(event_type)); } // takes ownership
 
-void Window::onSettingsButtonClicked(Qt::MouseButton button)
+void Window::onSettingsButtonClick(Qt::MouseButton button)
 {
     if (button == Qt::LeftButton)
         albert::showSettings();
@@ -1001,6 +988,34 @@ void Window::onSettingsButtonClicked(Qt::MouseButton button)
         menu->setAttribute(Qt::WA_DeleteOnClose);
         menu->popup(QCursor::pos());
     }
+}
+
+void Window::onMatchActivation(const QModelIndex &index)
+{
+    if (index.isValid())
+        current_query->activateMatch(index.row(), 0);
+    hide();
+}
+
+void Window::onMatchActionActivation(const QModelIndex &index)
+{
+    if (index.isValid())
+        current_query->activateMatch(results_list->currentIndex().row(), index.row());
+    hide();
+}
+
+void Window::onFallbackActivation(const QModelIndex &index)
+{
+    if (index.isValid())
+        current_query->activateFallback(index.row(), 0);
+    hide();
+}
+
+void Window::onFallbackActionActivation(const QModelIndex &index)
+{
+    if (index.isValid())
+        current_query->activateFallback(results_list->currentIndex().row(), index.row());
+    hide();
 }
 
 QString Window::input() const { return input_line->text(); }
