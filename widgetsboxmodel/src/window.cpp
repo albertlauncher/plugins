@@ -868,7 +868,7 @@ void Window::initializeStatemachine()
         connect(results_list->selectionModel(), &QItemSelectionModel::currentChanged,
                 this, [this](const QModelIndex &current, const QModelIndex&) {
                     if (results_list->currentIndex().isValid())
-                        input_line->setInputHint(current.data((int)ItemRoles::InputActionRole).toString());
+                        input_line->setInputHint(current.data(ItemRoles::InputActionRole).toString());
                 });
 
         if (current_query->string().isEmpty()) {
@@ -937,7 +937,7 @@ void Window::initializeStatemachine()
         if (auto current_index = results_list->currentIndex();
             current_index.isValid())
         {
-            if (auto action_names = current_index.data((int)ItemRoles::ActionsListRole).toStringList();
+            if (auto action_names = current_index.data(ItemRoles::ActionsListRole).toStringList();
                 !action_names.isEmpty())
             {
                 // See QAbstractItemView::setModel documentation
@@ -1224,7 +1224,7 @@ bool Window::eventFilter(QObject *watched, QEvent *event)
             case Qt::Key_Tab:
                 // Toggle insert completion string
                 if (auto i = results_list->currentIndex(); i.isValid())
-                    if (auto t = i.data((int)ItemRoles::InputActionRole).toString();
+                    if (auto t = i.data(ItemRoles::InputActionRole).toString();
                         !(t.isNull() && t.isEmpty()))
                         input_line->setText(t);
                 return true;

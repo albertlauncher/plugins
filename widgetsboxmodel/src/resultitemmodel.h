@@ -12,7 +12,7 @@ class RankItem;
 class ResultItem;
 }
 
-enum class ItemRoles
+enum ItemRoles
 {
     TextRole = Qt::DisplayRole,  ///< QString, The text
     SubTextRole = Qt::UserRole,  ///< QString, The subtext

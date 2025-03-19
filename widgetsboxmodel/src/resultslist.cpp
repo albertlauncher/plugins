@@ -132,15 +132,15 @@ void ResultsListDelegate::paint(QPainter *p,
     // DATA
     //
 
-    const auto text = text_font_metrics.elidedText(i.data((int) ItemRoles::TextRole).toString(),
+    const auto text = text_font_metrics.elidedText(i.data(ItemRoles::TextRole).toString(),
                                                    o.textElideMode,
                                                    text_rect.width());
 
-    const auto subtext = subtext_font_metrics.elidedText(i.data((int) ItemRoles::SubTextRole).toString(),
+    const auto subtext = subtext_font_metrics.elidedText(i.data(ItemRoles::SubTextRole).toString(),
                                                          o.textElideMode,
                                                          subtext_rect.width());
 
-    const auto icon_urls = i.data((int) ItemRoles::IconUrlsRole).value<QStringList>();
+    const auto icon_urls = i.data(ItemRoles::IconUrlsRole).value<QStringList>();
     const auto dpr = o.widget->devicePixelRatioF();
     auto selected = o.state.testFlag(QStyle::State_Selected);
 

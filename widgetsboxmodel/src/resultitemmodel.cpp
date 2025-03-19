@@ -29,12 +29,12 @@ ResultItemsModel::ResultItemsModel(Query &query):
 QHash<int, QByteArray> ResultItemsModel::roleNames() const
 {
     static QHash<int, QByteArray> qml_role_names = {
-        {(int)ItemRoles::TextRole, "itemText"},
-        {(int)ItemRoles::SubTextRole, "itemSubText"},
-        {(int)ItemRoles::InputActionRole, "itemInputAction"},
-        {(int)ItemRoles::IconUrlsRole, "itemIconUrls"},
-        {(int)ItemRoles::ActionsListRole, "itemActionsList"},
-        {(int)ItemRoles::ActivateActionRole, "itemActionActivate"}
+        {ItemRoles::TextRole, "itemText"},
+        {ItemRoles::SubTextRole, "itemSubText"},
+        {ItemRoles::InputActionRole, "itemInputAction"},
+        {ItemRoles::IconUrlsRole, "itemIconUrls"},
+        {ItemRoles::ActionsListRole, "itemActionsList"},
+        {ItemRoles::ActivateActionRole, "itemActionActivate"}
     };
     return qml_role_names;
 }
@@ -44,13 +44,13 @@ QVariant ResultItemsModel::getResultItemData(const ResultItem &result_item, int 
     const auto &[extension, item] = result_item;
 
     switch (role) {
-        case (int)ItemRoles::TextRole:
+        case ItemRoles::TextRole:
         {
             QString text = item->text();
             text.replace('\n', ' ');
             return text;
         }
-        case (int)ItemRoles::SubTextRole:
+        case ItemRoles::SubTextRole:
         {
             QString text = item->subtext();
             text.replace('\n', ' ');
@@ -59,13 +59,13 @@ QVariant ResultItemsModel::getResultItemData(const ResultItem &result_item, int 
         case Qt::ToolTipRole:
             return QString("%1\n%2").arg(item->text(), item->subtext());
 
-        case (int)ItemRoles::InputActionRole:
+        case ItemRoles::InputActionRole:
             return item->inputActionText();
 
-        case (int)ItemRoles::IconUrlsRole:
+        case ItemRoles::IconUrlsRole:
             return item->iconUrls();
 
-        case (int)ItemRoles::ActionsListRole:
+        case ItemRoles::ActionsListRole:
         {
             if (auto it = actions_cache_.find(&result_item);
                 it != actions_cache_.end())
@@ -92,7 +92,7 @@ int MatchItemsModel::rowCount(const QModelIndex &) const
 
 bool MatchItemsModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    if (index.isValid() && role == (int)ItemRoles::ActivateActionRole)
+    if (index.isValid() && role == ItemRoles::ActivateActionRole)
         return query_.activateMatch(index.row(), value.toUInt());
     else
         return false;
@@ -113,7 +113,7 @@ int FallbackItemsModel::rowCount(const QModelIndex &) const
 
 bool FallbackItemsModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    if (index.isValid() && role == (int)ItemRoles::ActivateActionRole)
+    if (index.isValid() && role == ItemRoles::ActivateActionRole)
         return query_.activateFallback(index.row(), value.toUInt());
     else
         return false;
