@@ -150,19 +150,19 @@ void InputLine::paintEvent(QPaintEvent *event)
         {
             hint = hint.mid(query.length());
 
-            qreal bearing_diff = 0;
-            if (!text().isEmpty())
-            {
-                QChar c = text().at(text().length()-1);
-                DEBG << "rightBearing" << c << QFontMetricsF(font()).rightBearing(c);
-                // bearing_diff -= QFontMetricsF(font()).rightBearing(c);
-            }
-            if (!hint.isEmpty())
-            {
-                DEBG << "leftBearing" << hint.at(0) << QFontMetricsF(font()).leftBearing(hint.at(0));
-                // bearing_diff -= QFontMetricsF(font()).leftBearing(hint.at(0));
-            }
-            r.adjust(bearing_diff, 0, 0, 0);
+            // qreal bearing_diff = 0;
+            // if (!text().isEmpty())
+            // {
+            //     QChar c = text().at(text().length()-1);
+            //     DEBG << "rightBearing" << c << QFontMetricsF(font()).rightBearing(c);
+            //     // bearing_diff += QFontMetricsF(font()).rightBearing(c);
+            // }
+            // if (!hint.isEmpty())
+            // {
+            //     DEBG << "leftBearing" << hint.at(0) << QFontMetricsF(font()).leftBearing(hint.at(0));
+            //     // bearing_diff += QFontMetricsF(font()).leftBearing(hint.at(0));
+            // }
+            // r.adjust(bearing_diff, 0, 0, 0);
         }
         else
             hint = QString(" %1").arg(input_hint_);
