@@ -573,6 +573,14 @@ void Window::initializeWindowActions()
     addAction(a);
 }
 
+static void setModelDeleteSelection(QAbstractItemView *v, QAbstractItemModel *m)
+{
+   // See QAbstractItemView::setModel documentation
+    auto *sm = v->selectionModel();
+    v->setModel(m);
+    delete sm;
+}
+
 void Window::initializeStatemachine()
 {
     //
@@ -831,23 +839,16 @@ void Window::initializeStatemachine()
     // RESULTS
 
     QObject::connect(s_results_query_unset, &QState::entered, this, [this]{
-        auto *sm = results_list->selectionModel();
-        results_list->setModel(nullptr);
-        delete sm;
-
+        setModelDeleteSelection(results_list, nullptr);
         input_line->removeEventFilter(results_list);
     });
 
     QObject::connect(s_results_query_set, &QState::entered, this, [this]{
-        // Eventfilters are processed in reverse order
-        input_line->removeEventFilter(this);
-        input_line->installEventFilter(results_list);
-        input_line->installEventFilter(this);
+        installEventFilterKeepThisPrioritized(input_line, results_list);
     });
 
     QObject::connect(s_results_hidden, &QState::entered, this, [this]{
         results_list->hide();
-        input_line->removeEventFilter(results_list);
     });
 
     QObject::connect(s_results_disabled, &QState::entered, this, [this, display_delay_timer]{
@@ -855,80 +856,11 @@ void Window::initializeStatemachine()
         input_line->removeEventFilter(results_list);
     });
 
-    QObject::connect(s_results_matches, &QState::entered, this, [this]{
-
-        results_model = make_unique<MatchItemsModel>(*current_query);
-        auto *m = results_model.get();
-
-        auto *sm = results_list->selectionModel();
-        results_list->setModel(m);
-        delete sm;
-
-        // let selection model currentChanged set input hint
-        connect(results_list->selectionModel(), &QItemSelectionModel::currentChanged,
-                this, [this](const QModelIndex &current, const QModelIndex&) {
-                    if (results_list->currentIndex().isValid())
-                        input_line->setInputHint(current.data(ItemRoles::InputActionRole).toString());
-                });
-
-        if (current_query->string().isEmpty()) {
-            // avoid setting completion when synopsis should be shown
-            const QSignalBlocker block(results_list->selectionModel());
-            results_list->setCurrentIndex(m->index(0, 0));
-        } else
-            results_list->setCurrentIndex(m->index(0, 0));
-
-        // Eventfilters are processed in reverse order
-        input_line->removeEventFilter(this);
-        input_line->installEventFilter(results_list);
-        input_line->installEventFilter(this);
-
-        results_list->show();
-
-        connect(results_list, &ResizingList::activated, this, &Window::onMatchActivation);
-        connect(actions_list, &ResizingList::activated, this, &Window::onMatchActionActivation);
-    });
-
-    QObject::connect(s_results_matches, &QState::exited, this, [this]{
-        disconnect(results_list, &ResizingList::activated, this, &Window::onMatchActivation);
-        disconnect(actions_list, &ResizingList::activated, this, &Window::onMatchActionActivation);
-    });
-
-    QObject::connect(s_results_fallbacks, &QState::entered, this, [this]{
-        results_model = make_unique<FallbackItemsModel>(*current_query);
-        auto *m = results_model.get();
-        auto *sm = results_list->selectionModel();
-        results_list->setModel(m);
-        delete sm;
-        results_list->setCurrentIndex(m->index(0, 0)); // should be okay since this state requires rc>0
-
-        // Eventfilters are processed in reverse order
-        input_line->removeEventFilter(this);
-        input_line->installEventFilter(results_list);
-        input_line->installEventFilter(this);
-
-        results_list->show();
-
-        connect(results_list, &ResizingList::activated, this, &Window::onFallbackActivation);
-        connect(actions_list, &ResizingList::activated, this, &Window::onFallbackActionActivation);
-    });
-
-    QObject::connect(s_results_fallbacks, &QState::exited, this, [this]{
-        disconnect(results_list, &ResizingList::activated, this, &Window::onFallbackActivation);
-        disconnect(actions_list, &ResizingList::activated, this, &Window::onFallbackActionActivation);
-    });
-
-
-    // ACTIONS
-
     auto hideActions = [this]
     {
         actions_list->hide();
         input_line->removeEventFilter(actions_list);
-
-        auto *sm = actions_list->selectionModel();
-        actions_list->setModel(nullptr);
-        delete sm;
+        setModelDeleteSelection(actions_list, nullptr);
     };
 
     auto showActions = [this]
@@ -940,25 +872,70 @@ void Window::initializeStatemachine()
             if (auto action_names = current_index.data(ItemRoles::ActionsListRole).toStringList();
                 !action_names.isEmpty())
             {
-                // See QAbstractItemView::setModel documentation
-                auto *sm = actions_list->selectionModel();
-                auto *old_m = actions_list->model();
-                auto m = new QStringListModel(action_names, actions_list);
-                actions_list->setModel(m);
-                delete sm;
+                auto old_m = actions_list->model();
+                auto new_m = new QStringListModel(action_names, actions_list);
+                setModelDeleteSelection(actions_list, new_m);
                 delete old_m;
 
-                // Eventfilters are processed in reverse order
-                actions_list->setCurrentIndex(m->index(0, 0)); // should be okay since this state requires rc>0
-                input_line->installEventFilter(actions_list);
-                actions_list->show();
+                installEventFilterKeepThisPrioritized(input_line, actions_list);
 
+                actions_list->show();
             }
         }
     };
 
+    QObject::connect(s_results_matches, &QState::entered, this, [this]{
+        results_model = make_unique<MatchItemsModel>(*current_query);
+        setModelDeleteSelection(results_list, results_model.get());
+
+        installEventFilterKeepThisPrioritized(input_line, results_list);
+        connect(results_list, &ResizingList::activated, this, &Window::onMatchActivation);
+        connect(actions_list, &ResizingList::activated, this, &Window::onMatchActionActivation);
+
+        results_list->show();
+
+        // let selection model currentChanged set input hint
+        connect(results_list->selectionModel(), &QItemSelectionModel::currentChanged,
+                this, [this](const QModelIndex &current, const QModelIndex&) {
+                    if (current.isValid())
+                        input_line->setInputHint(current.data(ItemRoles::InputActionRole).toString());
+                });
+
+        // Initialize if we have a selected item
+        if (results_list->currentIndex().isValid())
+        {
+
+            if (input_line->inputHint().isEmpty())
+                input_line->setInputHint(results_list->currentIndex()
+                                             .data(ItemRoles::InputActionRole).toString());
+        }
+    });
+
+    QObject::connect(s_results_matches, &QState::exited, this, [this]{
+        input_line->removeEventFilter(results_list);
+        disconnect(results_list, &ResizingList::activated, this, &Window::onMatchActivation);
+        disconnect(actions_list, &ResizingList::activated, this, &Window::onMatchActionActivation);
+    });
+
     QObject::connect(s_results_match_actions, &QState::entered, this, showActions);
     QObject::connect(s_results_match_actions, &QState::exited, this, hideActions);
+
+    QObject::connect(s_results_fallbacks, &QState::entered, this, [this]{
+        results_model = make_unique<FallbackItemsModel>(*current_query);
+        setModelDeleteSelection(results_list, results_model.get());
+
+        installEventFilterKeepThisPrioritized(input_line, results_list);
+        connect(results_list, &ResizingList::activated, this, &Window::onFallbackActivation);
+        connect(actions_list, &ResizingList::activated, this, &Window::onFallbackActionActivation);
+
+        results_list->show();
+    });
+
+    QObject::connect(s_results_fallbacks, &QState::exited, this, [this]{
+        input_line->removeEventFilter(results_list);
+        disconnect(results_list, &ResizingList::activated, this, &Window::onFallbackActivation);
+        disconnect(actions_list, &ResizingList::activated, this, &Window::onFallbackActionActivation);
+    });
 
     QObject::connect(s_results_fallback_actions, &QState::entered, this, showActions);
     QObject::connect(s_results_fallback_actions, &QState::exited, this, hideActions);
@@ -967,6 +944,14 @@ void Window::initializeStatemachine()
     state_machine->addState(s_root);
     state_machine->setInitialState(s_root);
     state_machine->start();
+}
+
+void Window::installEventFilterKeepThisPrioritized(QObject *watched, QObject *filter)
+{
+    // Eventfilters are processed in reverse order
+    watched->removeEventFilter(this);
+    watched->installEventFilter(filter);
+    watched->installEventFilter(this);
 }
 
 bool Window::haveMatches() const { return current_query->matches().size() > 0; }
@@ -1033,8 +1018,7 @@ void Window::setQuery(Query *q)
     if(q)
     {
         input_line->setTriggerLength(q->trigger().length());
-        // if (q->string().isEmpty())
-        if (q->isTriggered() && q->string().isEmpty())
+        if (q->string().isEmpty())
             input_line->setInputHint(q->synopsis());
 
         connect(current_query, &Query::matchesAdded,

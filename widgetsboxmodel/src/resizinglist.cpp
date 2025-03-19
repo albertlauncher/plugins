@@ -40,7 +40,7 @@ void ItemDelegateBase::paint(QPainter *p, const QStyleOptionViewItem &opt, const
 
 ResizingList::ResizingList(QWidget *parent) : QListView(parent)
 {
-    connect(this, &ResizingList::clicked, this, &ResizingList::activated, Qt::QueuedConnection);
+    connect(this, &ResizingList::clicked, this, &ResizingList::activated);
 
     setFrameShape(QFrame::NoFrame);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -121,13 +121,18 @@ void ResizingList::setModel(QAbstractItemModel *m)
     if (model() != nullptr)
         disconnect(model(), nullptr, this, nullptr);
 
+    QAbstractItemView::setModel(m);
+
     if (m != nullptr)
     {
-        connect(m, &QAbstractItemModel::rowsInserted, this, &ResizingList::updateGeometry);
-        connect(m, &QAbstractItemModel::modelReset, this, &ResizingList::updateGeometry);
+        current_row_count_ = m->rowCount();
+        connect(m, &QAbstractItemModel::rowsInserted, this, &ResizingList::onUpdateSelectionAndSize);
+        connect(m, &QAbstractItemModel::modelReset, this, &ResizingList::onUpdateSelectionAndSize);
+        onUpdateSelectionAndSize();
     }
+    else
+        current_row_count_ = 0;
 
-    QAbstractItemView::setModel(m);
     updateGeometry();
 }
 
@@ -160,4 +165,17 @@ bool ResizingList::eventFilter(QObject*, QEvent *event)
         }
     }
     return false;
+}
+
+void ResizingList::onUpdateSelectionAndSize()
+{
+    // Trigger an update if the addes rows should increase the list size
+    if (current_row_count_ < maxItems_)
+        updateGeometry();
+
+    current_row_count_ = model()->rowCount();
+
+    // Force a selection
+    if (!currentIndex().isValid())
+        setCurrentIndex(model()->index(0, 0));
 }

@@ -72,6 +72,7 @@ public:
 protected:
 
     bool eventFilter(QObject*, QEvent *event) override;
+    void onUpdateSelectionAndSize();
 
     void relayout();
 
@@ -80,5 +81,6 @@ private:
     virtual ItemDelegateBase *delegate() const = 0;
 
     uint maxItems_;
+    uint current_row_count_;
 
 };

@@ -53,6 +53,7 @@ private:
     void initializeProperties();
     void initializeWindowActions();
     void initializeStatemachine();
+    void installEventFilterKeepThisPrioritized(QObject *watched, QObject *filter);
 
     bool haveMatches() const;
     bool haveFallbacks() const;
@@ -76,13 +77,10 @@ private:
     SettingsButton *settings_button;
     ResultsList *results_list;
     ActionsList *actions_list;
-    std::unique_ptr<ResultItemsModel> results_model;
-    std::unique_ptr<DebugOverlay> debug_overlay_;
-    std::unique_ptr<QPropertyAnimation> color_animation_;
-    std::unique_ptr<QPropertyAnimation> speed_animation_;
     bool dark_mode;
 
     albert::Query *current_query;
+    std::unique_ptr<ResultItemsModel> results_model;
 
     enum Mod {Shift, Meta, Contol, Alt};
     Mod mod_command = Mod::Contol;
@@ -99,6 +97,9 @@ private:
     bool shadow_offset_;
     QColor settings_button_color_;
     QColor settings_button_color_highlight_;
+    std::unique_ptr<DebugOverlay> debug_overlay_;
+    std::unique_ptr<QPropertyAnimation> color_animation_;
+    std::unique_ptr<QPropertyAnimation> speed_animation_;
 
     enum EventType {
         ShowActions = QEvent::User,

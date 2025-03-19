@@ -69,6 +69,8 @@ InputLine::InputLine(QWidget *parent):
                                + 2 * (int)document()->documentMargin()); });
 }
 
+const QString &InputLine::inputHint() const { return input_hint_; }
+
 void InputLine::setInputHint(const QString &t)
 {
     input_hint_ = t;

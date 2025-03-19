@@ -12,8 +12,11 @@ public:
 
     InputLine(QWidget *parent = nullptr);
 
+    const QString& inputHint() const;
     void setInputHint(const QString&);
+
     void setCompletion(const QString&);
+
     void setTriggerLength(uint);
 
     bool clear_on_hide;
