@@ -160,8 +160,10 @@ bool ResizingList::eventFilter(QObject*, QEvent *event)
 
             case Qt::Key_Enter:
             case Qt::Key_Return:
-                emit activated(currentIndex());
-                return true;
+                if (!keyEvent->modifiers().testFlag(Qt::ShiftModifier)){ // shift enter needed by input line
+                    emit activated(currentIndex());
+                    return true;
+                }
         }
     }
     return false;

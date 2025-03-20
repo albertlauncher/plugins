@@ -217,7 +217,9 @@ void InputLine::keyPressEvent(QKeyEvent *event)
 
     case Qt::Key_Return:
     case Qt::Key_Enter:
-        if (event->modifiers().testFlag(Qt::ShiftModifier))
+        if (event->modifiers() == Qt::NoModifier)
+            return event->ignore();
+        else if (event->modifiers().testFlag(Qt::ShiftModifier))
         {
             insertPlainText("\n");
             return event->accept();
