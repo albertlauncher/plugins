@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2024 Manuel Schneider
+// Copyright (c) 2022-2025 Manuel Schneider
 
 #pragma once
 #include <QPlainTextEdit>
@@ -12,11 +12,13 @@ public:
 
     InputLine(QWidget *parent = nullptr);
 
-    const QString& inputHint() const;
-    void setInputHint(const QString&);
+    const QString& synopsis() const;
+    void setSynopsis(const QString&);
 
-    void setCompletion(const QString&);
+    const QString& completion() const;
+    void setCompletion(const QString& = {});
 
+    uint triggerLength() const;
     void setTriggerLength(uint);
 
     bool clear_on_hide;
@@ -38,8 +40,8 @@ private:
     void keyPressEvent(QKeyEvent *event) override;
 
     albert::InputHistory history_;
-    QString input_hint_;
     QString completion_;
+    QString synopsis_;
     QString user_text_;
     uint trigger_length_;
     class TriggerHighlighter;

@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2024 Manuel Schneider
+// Copyright (c) 2022-2025 Manuel Schneider
 
 #include "inputline.h"
 #include <QApplication>
@@ -40,10 +40,6 @@ InputLine::InputLine(QWidget *parent):
     setWordWrapMode(QTextOption::NoWrap);
     viewport()->setAutoFillBackground(false);
 
-    connect(this, &QPlainTextEdit::textChanged, this, [this]{
-        input_hint_.clear();
-    });
-
     connect(this, &QPlainTextEdit::textChanged,
             this, &InputLine::textEdited);
 
@@ -69,19 +65,23 @@ InputLine::InputLine(QWidget *parent):
                                + 2 * (int)document()->documentMargin()); });
 }
 
-const QString &InputLine::inputHint() const { return input_hint_; }
+const QString &InputLine::synopsis() const { return synopsis_; }
 
-void InputLine::setInputHint(const QString &t)
+void InputLine::setSynopsis(const QString &t)
 {
-    input_hint_ = t;
+    synopsis_ = t;
     update();
 }
+
+const QString &InputLine::completion() const { return completion_; }
 
 void InputLine::setCompletion(const QString &t)
 {
-    completion_ = t.toLower();
+    completion_ = t;
     update();
 }
+
+uint InputLine::triggerLength() const { return trigger_length_; }
 
 void InputLine::setTriggerLength(uint len)
 {
@@ -142,43 +142,50 @@ void InputLine::previous()
 
 void InputLine::paintEvent(QPaintEvent *event)
 {
-    if (!input_hint_.isNull() || !completion_.isNull())
+    if (!synopsis_.isEmpty() || !completion_.isEmpty())
     {
-        auto r = QRectF(contentsRect()).adjusted(
-            QFontMetricsF(font()).horizontalAdvance(text()) + 1, 1, -1, -1); // 1xp document margin
 
-        QString hint = input_hint_.isNull() ? completion_ : input_hint_;
-        if (auto query = text().mid(trigger_length_); hint.startsWith(query, Qt::CaseInsensitive))
-        {
-            hint = hint.mid(query.length());
-
-            // qreal bearing_diff = 0;
-            // if (!text().isEmpty())
-            // {
-            //     QChar c = text().at(text().length()-1);
-            //     DEBG << "rightBearing" << c << QFontMetricsF(font()).rightBearing(c);
-            //     // bearing_diff += QFontMetricsF(font()).rightBearing(c);
-            // }
-            // if (!hint.isEmpty())
-            // {
-            //     DEBG << "leftBearing" << hint.at(0) << QFontMetricsF(font()).leftBearing(hint.at(0));
-            //     // bearing_diff += QFontMetricsF(font()).leftBearing(hint.at(0));
-            // }
-            // r.adjust(bearing_diff, 0, 0, 0);
-        }
+        QString c = completion();
+        if (auto query = text().mid(trigger_length_);
+            completion().startsWith(query, Qt::CaseInsensitive))
+            c = completion().mid(query.length());
         else
-            hint = QString(" %1").arg(input_hint_);
+            c.prepend(QChar::Space);
 
-
-        // drawDebugRect(p, r,
-        //               QString("%1 inputhint").arg(objectName()),
-        //               Qt::red, Qt::green);
+        auto r = QRectF(contentsRect()).adjusted(fontMetrics().horizontalAdvance(text()) + 1,
+                                                 1, -1, -1); // 1xp document margin
+        auto c_width = fontMetrics().horizontalAdvance(c);
+        if (c_width > r.width())
+        {
+            c = fontMetrics().elidedText(c, Qt::ElideRight, (int)r.width());
+            c_width = fontMetrics().horizontalAdvance(c);
+        }
 
         QPainter p(viewport());
         p.setPen(palette().button().color());
-        p.drawText(r, Qt::TextSingleLine,
-                   fontMetrics().elidedText(hint, Qt::ElideRight, (int)r.width()));
+
+        p.drawText(r, Qt::TextSingleLine, c);
+
+        if (fontMetrics().horizontalAdvance(synopsis()) + c_width < r.width())
+            p.drawText(r.adjusted(c_width, 0, 0, 0),
+                       Qt::TextSingleLine | Qt::AlignRight,
+                       synopsis());
     }
+
+
+    // qreal bearing_diff = 0;
+    // if (!text().isEmpty())
+    // {
+    //     QChar c = text().at(text().length()-1);
+    //     DEBG << "rightBearing" << c << QFontMetricsF(font()).rightBearing(c);
+    //     // bearing_diff += QFontMetricsF(font()).rightBearing(c);
+    // }
+    // if (!hint.isEmpty())
+    // {
+    //     DEBG << "leftBearing" << hint.at(0) << QFontMetricsF(font()).leftBearing(hint.at(0));
+    //     // bearing_diff += QFontMetricsF(font()).leftBearing(hint.at(0));
+    // }
+    // r.adjust(bearing_diff, 0, 0, 0);
 
     QPlainTextEdit::paintEvent(event);
 }

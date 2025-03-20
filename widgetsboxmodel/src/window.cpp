@@ -895,18 +895,16 @@ void Window::initializeStatemachine()
         // let selection model currentChanged set input hint
         connect(results_list->selectionModel(), &QItemSelectionModel::currentChanged,
                 this, [this](const QModelIndex &current, const QModelIndex&) {
-                    if (current.isValid())
-                        input_line->setInputHint(current.data(ItemRoles::InputActionRole).toString());
-                });
+            if (current.isValid())
+                input_line->setCompletion(current.data(ItemRoles::InputActionRole).toString());
+        });
 
         // Initialize if we have a selected item
         if (results_list->currentIndex().isValid())
-        {
-
-            if (input_line->inputHint().isEmpty())
-                input_line->setInputHint(results_list->currentIndex()
-                                             .data(ItemRoles::InputActionRole).toString());
-        }
+            input_line->setCompletion(results_list->currentIndex()
+                                          .data(ItemRoles::InputActionRole).toString());
+        else
+            input_line->setCompletion();
     });
 
     QObject::connect(s_results_matches, &QState::exited, this, [this]{
@@ -1016,8 +1014,8 @@ void Window::setQuery(Query *q)
     if(q)
     {
         input_line->setTriggerLength(q->trigger().length());
-        if (q->string().isEmpty())
-            input_line->setInputHint(q->synopsis());
+        input_line->setSynopsis(q->synopsis());
+        input_line->setCompletion();
 
         connect(current_query, &Query::matchesAdded,
                 this, [this]{ postCustomEvent(QueryHaveMatches); });
