@@ -26,8 +26,6 @@ public:
     int horizontal_spacing;
     int vertical_spacing;
 
-    bool draw_debug_overlays;
-
     QSize sizeHint(const QStyleOptionViewItem &o, const QModelIndex&) const override;
     void paint(QPainter *p, const QStyleOptionViewItem &o, const QModelIndex &i) const override;
 

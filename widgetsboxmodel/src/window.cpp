@@ -658,11 +658,7 @@ void Window::initializeStatemachine()
     //                  this, []{ CRIT << "s_results_fallback_items::enter"; });
     // QObject::connect(s_results_fallback_actions, &QState::entered,
     //                  this, []{ CRIT << "s_results_fallback_actions::enter"; });
-
     // connect(input_line, &InputLine::textChanged, []{ CRIT << "InputLine::textChanged";});
-    // connect(this, &Window::queryChanged, []{ CRIT << "Window::queryChanged";});
-    // connect(this, &Window::queryStateBusy, []{ CRIT << "Window::queryStateBusy";});
-    // connect(this, &Window::queryStateIdle, []{ CRIT << "Window::queryStateIdle";});
 
     //
     // Transitions
@@ -1534,6 +1530,7 @@ void Window::setDebugMode(bool val)
         return;
 
     results_list->setDebugMode(val);
+    actions_list->setDebugMode(val);
 
     if (val)
     {
