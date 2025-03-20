@@ -1201,14 +1201,6 @@ bool Window::eventFilter(QObject *watched, QEvent *event)
             auto *ke = static_cast<QKeyEvent *>(event);
             switch (ke->key()) {
 
-            case Qt::Key_Tab:
-                // Toggle insert completion string
-                if (auto i = results_list->currentIndex(); i.isValid())
-                    if (auto t = i.data(ItemRoles::InputActionRole).toString();
-                        !(t.isNull() && t.isEmpty()))
-                        input_line->setText(t);
-                return true;
-
             case Qt::Key_Up:
                 // Move up in the history
                 if (!results_list->currentIndex().isValid()

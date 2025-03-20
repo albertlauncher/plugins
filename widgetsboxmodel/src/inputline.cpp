@@ -208,10 +208,12 @@ void InputLine::keyPressEvent(QKeyEvent *event)
 {
     switch (event->key()) {
 
-    // case Qt::Key_Tab:
-    //     if (!completion_.isEmpty())
-    //         setText(completion_);
-    //     return event->accept();
+    case Qt::Key_Tab:
+        if (!completion_.isEmpty())
+        {
+            setText(text().left(trigger_length_) + completion_);
+            return event->accept();
+        }
 
     case Qt::Key_Return:
     case Qt::Key_Enter:
