@@ -171,16 +171,18 @@ void ResultsListDelegate::paint(QPainter *p,
     // Draw text
     p->setFont(text_font);
     p->setPen(QPen(selected ? selection_text_color : text_color, 0));
-    // Clips. Adjust by descent sice origin seems to be the baseline
+    p->drawText(text_rect, Qt::AlignTop | Qt::AlignLeft | Qt::TextDontClip, text);
+    // // Clips. Adjust by descent sice origin seems to be the baseline
     // p->drawText(text_rect, text);
-    p->drawText(text_rect.bottomLeft() - QPoint(0, text_font_metrics.descent() - 1), text);
+    // p->drawText(text_rect.bottomLeft() - QPoint(0, text_font_metrics.descent() - 1), text);
 
     // Draw subtext
     p->setFont(subtext_font);
     p->setPen(QPen(selected ? selection_subtext_color : subtext_color, 0));
-    // Clips. Adjust by descent sice origin seems to be the baseline
+    p->drawText(subtext_rect, Qt::AlignTop | Qt::AlignLeft | Qt::TextDontClip, subtext);
+    // // Clips. Adjust by descent sice origin seems to be the baseline
     // p->drawText(subtext_rect, subtext);
-    p->drawText(subtext_rect.bottomLeft() - QPoint(0, subtext_font_metrics.descent() - 1), subtext);
+    // p->drawText(subtext_rect.bottomLeft() - QPoint(0, subtext_font_metrics.descent() - 1), subtext);
 
     if (draw_debug_overlays)
     {
