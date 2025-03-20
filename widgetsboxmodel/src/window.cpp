@@ -249,6 +249,8 @@ Window::Window(PluginInstance *p):
 
     connect(settings_button, &SettingsButton::clicked,
             this, &Window::onSettingsButtonClick);
+
+    QPixmapCache::setCacheLimit(1024 * 50);  // 50 MB
 }
 
 Window::~Window() {}
