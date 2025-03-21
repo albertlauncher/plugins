@@ -600,6 +600,7 @@ void Window::initializeStatemachine()
     auto s_settings_button_hidden = new QState(s_settings_button_appearance);
     auto s_settings_button_visible = new QState(s_settings_button_appearance);
     auto s_settings_button_highlight = new QState(s_settings_button_appearance);
+    auto s_settings_button_highlight_delay = new QState(s_settings_button_appearance);
     s_settings_button_appearance->setInitialState(s_settings_button_hidden);
 
     auto s_settings_button_spin = new QState(s_root);
@@ -626,43 +627,43 @@ void Window::initializeStatemachine()
     auto s_results_fallback_actions = new QState(s_results_fallbacks);
     s_results_fallbacks->setInitialState(s_results_fallback_items);
 
-    // auto busy_delay_timer = new QTimer(this);
-    // busy_delay_timer->setInterval(250);
-    // busy_delay_timer->setSingleShot(true);
-
-    // connect(busy_delay_timer, &QTimer::timeout,
-    //         this, [this]{ settings_button->setMode(SettingsButton::Busy); });
-
     auto display_delay_timer = new QTimer(this);
     display_delay_timer->setInterval(250);
     display_delay_timer->setSingleShot(true);
+
+    auto busy_delay_timer = new QTimer(this);
+    busy_delay_timer->setInterval(250);
+    busy_delay_timer->setSingleShot(true);
+
 
     //
     // Debug
     //
 
     // QObject::connect(s_settings_button_hidden, &QState::entered,
-    //                  this, []{ CRIT << "s_settings_button_hidden::enter"; });
+    //                  this, []{ CRIT << "s_settings_button_hidden"; });
     // QObject::connect(s_settings_button_visible, &QState::entered,
-    //                  this, []{ CRIT << "s_settings_button_visible::enter"; });
+    //                  this, []{ CRIT << "s_settings_button_visible"; });
     // QObject::connect(s_settings_button_highlight, &QState::entered,
-    //                  this, []{ CRIT << "s_settings_button_highlight::enter"; });
+    //                  this, []{ CRIT << "s_settings_button_highlight"; });
+    // QObject::connect(s_settings_button_highlight_delay, &QState::entered,
+    //                  this, []{ CRIT << "s_settings_button_highlight_delay"; });
     // QObject::connect(s_results_query_unset, &QState::entered,
-    //                  this, []{ CRIT << "s_results_query_unset::enter"; });
+    //                  this, []{ CRIT << "s_results_query_unset"; });
     // QObject::connect(s_results_query_set, &QState::entered,
-    //                  this, []{ CRIT << "s_results_query_set::enter"; });
+    //                  this, []{ CRIT << "s_results_query_set"; });
     // QObject::connect(s_results_hidden, &QState::entered,
-    //                  this, []{ CRIT << "s_results_hidden::enter"; });
+    //                  this, []{ CRIT << "s_results_hidden"; });
     // QObject::connect(s_results_disabled, &QState::entered,
-    //                  this, []{ CRIT << "s_results_disabled::enter"; });
+    //                  this, []{ CRIT << "s_results_disabled"; });
     // QObject::connect(s_results_match_items, &QState::entered,
-    //                  this, []{ CRIT << "s_results_match_items::enter"; });
+    //                  this, []{ CRIT << "s_results_match_items"; });
     // QObject::connect(s_results_match_actions, &QState::entered,
-    //                  this, []{ CRIT << "s_results_match_actions::enter"; });
+    //                  this, []{ CRIT << "s_results_match_actions"; });
     // QObject::connect(s_results_fallback_items, &QState::entered,
-    //                  this, []{ CRIT << "s_results_fallback_items::enter"; });
+    //                  this, []{ CRIT << "s_results_fallback_items"; });
     // QObject::connect(s_results_fallback_actions, &QState::entered,
-    //                  this, []{ CRIT << "s_results_fallback_actions::enter"; });
+    //                  this, []{ CRIT << "s_results_fallback_actions"; });
     // connect(input_line, &InputLine::textChanged, []{ CRIT << "InputLine::textChanged";});
 
     //
@@ -675,7 +676,11 @@ void Window::initializeStatemachine()
 
     addTransition(s_settings_button_hidden, s_settings_button_highlight, SettingsButtonEnter);
 
-    addTransition(s_settings_button_hidden, s_settings_button_highlight, QuerySet);
+    addTransition(s_settings_button_hidden, s_settings_button_highlight, QueryBusy,
+                  [this] { return settings_button->isVisible(); });
+
+    addTransition(s_settings_button_hidden, s_settings_button_highlight_delay, QueryBusy,
+                  [this] { return settings_button->isHidden(); });
 
 
     // settingsbutton visible ->
@@ -684,36 +689,40 @@ void Window::initializeStatemachine()
 
     addTransition(s_settings_button_visible, s_settings_button_highlight, SettingsButtonEnter);
 
-    addTransition(s_settings_button_visible, s_settings_button_highlight, QuerySet);
+    addTransition(s_settings_button_visible, s_settings_button_highlight, QueryBusy);
 
 
     // settingsbutton highlight ->
 
-    addTransition(s_settings_button_highlight, s_settings_button_hidden, SettingsButtonLeave,
-                  [this] { return !input_frame->underMouse(); });
-
-    addTransition(s_settings_button_highlight, s_settings_button_hidden, QueryUnset,
-                  [this] { return !input_frame->underMouse() && !settings_button->underMouse(); });
-
     addTransition(s_settings_button_highlight, s_settings_button_hidden, QueryIdle,
                   [this] { return !input_frame->underMouse() && !settings_button->underMouse(); });
-
-    addTransition(s_settings_button_highlight, s_settings_button_visible, SettingsButtonLeave,
-                  [this] { return input_frame->underMouse(); });
-
-    addTransition(s_settings_button_highlight, s_settings_button_visible, QueryUnset,
-                  [this] { return input_frame->underMouse() && !settings_button->underMouse(); });
 
     addTransition(s_settings_button_highlight, s_settings_button_visible, QueryIdle,
                   [this] { return input_frame->underMouse() && !settings_button->underMouse(); });
 
+    addTransition(s_settings_button_highlight, s_settings_button_visible, SettingsButtonLeave,
+                  [this] { return input_frame->underMouse(); });
+
+    addTransition(s_settings_button_highlight, s_settings_button_hidden, SettingsButtonLeave,
+                  [this] { return !input_frame->underMouse(); });
+
+
+    // settingsbutton delay highlight ->
+
+    addTransition(s_settings_button_highlight_delay, s_settings_button_highlight,
+                  busy_delay_timer, &QTimer::timeout);
+
+    addTransition(s_settings_button_highlight_delay, s_settings_button_highlight, InputFrameEnter);
+
+    addTransition(s_settings_button_highlight_delay, s_settings_button_highlight, SettingsButtonEnter);
+
+    addTransition(s_settings_button_highlight_delay, s_settings_button_hidden, QueryIdle);
+
 
     // settingsbutton spin
 
-    addTransition(s_settings_button_slow, s_settings_button_fast, QuerySet);
-    addTransition(s_settings_button_fast, s_settings_button_slow, QueryUnset);
-
     addTransition(s_settings_button_slow, s_settings_button_fast, QueryBusy);
+
     addTransition(s_settings_button_fast, s_settings_button_slow, QueryIdle);
 
 
@@ -803,6 +812,12 @@ void Window::initializeStatemachine()
                 settings_button, &SettingsButton::hide);
         color_animation_->start();
     });
+
+    QObject::connect(s_settings_button_highlight_delay, &QState::entered,
+                     this, [busy_delay_timer]{ busy_delay_timer->start(); });
+
+    QObject::connect(s_settings_button_highlight_delay, &QState::exited,
+                     this, [busy_delay_timer]{ busy_delay_timer->stop(); });
 
     QObject::connect(s_settings_button_visible, &QState::entered, this, [this]{
         settings_button->show();
@@ -941,6 +956,7 @@ void Window::initializeStatemachine()
     QObject::connect(s_results_fallback_actions, &QState::entered, this, showActions);
     QObject::connect(s_results_fallback_actions, &QState::exited, this, hideActions);
 
+
     state_machine = new QStateMachine(this);
     state_machine->addState(s_root);
     state_machine->setInitialState(s_root);
@@ -1011,7 +1027,11 @@ void Window::setInput(const QString &text) { input_line->setText(text); }
 void Window::setQuery(Query *q)
 {
     if(current_query)
+    {
         disconnect(current_query, nullptr, this, nullptr);
+        if (current_query->isActive())  // for statemachine integrity
+            postCustomEvent(QueryIdle);
+    }
 
     current_query = q;
     postCustomEvent(current_query ? QuerySet : QueryUnset);
