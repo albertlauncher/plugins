@@ -64,6 +64,6 @@ void Plugin::handleTriggerQuery(Query &query)
 
     if (QStringLiteral("busy").startsWith(query.string()))
     {
-        query.add(StandardItem::make({}, "busy", "Test delayed queries", "debug busy", icon, {}));
+        query.add(StandardItem::make({}, "busy", "Test delayed queries", "busy", icon, {}));
     }
 }
