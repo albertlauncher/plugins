@@ -59,6 +59,7 @@ static const struct {
     const bool      quit_on_close                               = false;
     const bool      shadow_client                               = true;
     const bool      shadow_system                               = false;
+    const bool      disable_input_method                        = true;
     const char*     theme_dark                                  = "Default System Palette";
     const char*     theme_light                                 = "Default System Palette";
     const uint      max_results                                 = 5;
@@ -133,6 +134,7 @@ static const struct {
     const char *shadow_system                          = "systemShadow";
     const char *theme_dark                             = "darkTheme";
     const char *theme_light                            = "lightTheme";
+    const char *disable_input_method                   = "disable_input_method";
 
     const char* window_background_brush                = "window_background_brush";
     const char* window_border_brush                    = "window_border_brush";
@@ -351,6 +353,9 @@ void Window::initializeProperties()
     setShowCentered(
         s->value(keys.centered,
                  defaults.centered).toBool());
+    setDisableInputMethod(
+        s->value(keys.disable_input_method,
+                 defaults.disable_input_method).toBool());
     setDebugMode(
         s->value(keys.debug,
                  defaults.debug).toBool());
@@ -1534,6 +1539,9 @@ void Window::setDebugMode(bool val)
     update();
     emit debugModeChanged(val);
 }
+
+bool Window::disableInputMethod() const { return input_line->disable_input_method_; }
+void Window::setDisableInputMethod(bool val) { input_line->disable_input_method_ = val; }
 
 double Window::windowBorderRadius() const { return frame->radius(); }
 void Window::setWindowBorderRadius(double val) { frame->setRadius(val); }

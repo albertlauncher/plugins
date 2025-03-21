@@ -170,6 +170,9 @@ public:
     bool showCentered() const;
     void setShowCentered(bool b = true);
 
+    bool disableInputMethod() const;
+    void setDisableInputMethod(bool b = true);
+
     bool debugMode() const;
     void setDebugMode(bool b = true);
 

@@ -244,3 +244,14 @@ void InputLine::keyPressEvent(QKeyEvent *event)
 
     QPlainTextEdit::keyPressEvent(event);
 }
+
+void InputLine::inputMethodEvent(QInputMethodEvent *event)
+{
+    if (disable_input_method_ && !event->preeditString().isEmpty()) {
+        qApp->inputMethod()->commit();
+        return event->accept();
+    }
+    else
+        QPlainTextEdit::inputMethodEvent(event);
+
+}

@@ -35,12 +35,21 @@ template<typename T>
 static void bind(T *t,
                  QCheckBox *check_box,
                  bool (T::*get)() const,
+                 void (T::*set)(bool))
+{
+    check_box->setChecked((t->*get)());
+    QObject::connect(check_box, &QCheckBox::toggled, t, set);
+}
+
+template<typename T>
+static void bind(T *t,
+                 QCheckBox *check_box,
+                 bool (T::*get)() const,
                  void (T::*set)(bool),
                  void (T::*sig)(bool))
 {
-    check_box->setChecked((t->*get)());
+    bind(t, check_box, get, set);
     QObject::connect(t, sig, check_box, &QCheckBox::setChecked);
-    QObject::connect(check_box, &QCheckBox::toggled, t, set);
 }
 
 template<typename T>
@@ -188,6 +197,10 @@ QWidget* Plugin::createFrontendConfigWidget()
            &Window::quitOnClose,
            &Window::setQuitOnClose,
            &Window::quitOnCloseChanged);
+
+    ::bind(&window, ui.checkBox_input_method,
+           &Window::disableInputMethod,
+           &Window::setDisableInputMethod);
 
     ::bind(&window, ui.checkBox_center,
            &Window::showCentered,

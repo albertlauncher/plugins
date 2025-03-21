@@ -21,9 +21,6 @@ public:
     uint triggerLength() const;
     void setTriggerLength(uint);
 
-    bool clear_on_hide;
-    bool history_search;
-
     QString text() const;
     void setText(QString);
 
@@ -33,11 +30,16 @@ public:
     void next();
     void previous();
 
+    bool clear_on_hide;
+    bool history_search;
+    bool disable_input_method_;
+
 private:
 
     void paintEvent(QPaintEvent *event) override;
     void hideEvent(QHideEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void inputMethodEvent(QInputMethodEvent *event) override;
 
     albert::InputHistory history_;
     QString completion_;
