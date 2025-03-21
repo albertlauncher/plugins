@@ -1107,17 +1107,8 @@ bool Window::event(QEvent *event)
             else
                 screen = QGuiApplication::primaryScreen();
 
-            // move window  TODO remove debugging stuff heree
-            auto geo = screen->geometry();
-
-            auto win_width = frameSize().width();
-            auto newX = geo.center().x() - win_width / 2;
-            auto newY = geo.top() + geo.height() / 5;
-
-            // DEBG << screen->name() << screen->manufacturer() << screen->model() << screen->devicePixelRatio() << geo;
-            // DEBG << "win_width" << win_width  << "newX" << newX << "newY" << newY;
-
-            move(newX, newY);
+            move(screen->geometry().center().x() - frameSize().width() / 2,
+                 screen->geometry().top() + screen->geometry().height() / 5);
         }
 
 #if not defined Q_OS_MACOS // steals focus on macos
