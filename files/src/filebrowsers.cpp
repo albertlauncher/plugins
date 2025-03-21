@@ -8,6 +8,7 @@
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QMimeDatabase>
+#include <QFileInfo>
 using namespace albert;
 using namespace std;
 
@@ -21,20 +22,19 @@ FilePathBrowser::FilePathBrowser(bool &matchCaseSensitive, bool &showHidden,
 
 bool FilePathBrowser::allowTriggerRemap() const { return false; }
 
-void FilePathBrowser::handle_(Query &query, const QString &query_string) const
+QFileInfoList FilePathBrowser::listFiles(const QString &filter_path) const
 {
-    vector<shared_ptr<Item>> results;
-    QFileInfo query_file_info(query_string);
+    QFileInfo query_file_info(filter_path);
     QDir dir(query_file_info.path());
 
     if (dir.exists())
     {
         auto pattern = query_file_info.fileName() + "*";
 
-        auto filters = QDir::AllEntries | QDir::Hidden | QDir::NoDotAndDotDot;
+        auto filters = QDir::AllEntries | QDir::NoDotAndDotDot;
         if (match_case_sensitive_)
             filters |= QDir::CaseSensitive;
-        if (show_hidden_)
+        if (show_hidden_ || query_file_info.fileName().startsWith(QStringLiteral(".")))
             filters |= QDir::Hidden;
 
         QDir::SortFlags sort_flags = QDir::Name;
@@ -43,36 +43,13 @@ void FilePathBrowser::handle_(Query &query, const QString &query_string) const
         if (show_dirs_first_)
             sort_flags |= QDir::DirsFirst;
 
-        QFileInfoList entry_info_list;
         if (pattern.isEmpty())
-            entry_info_list = dir.entryInfoList(filters, sort_flags);
+            return dir.entryInfoList(filters, sort_flags);
         else
-            entry_info_list = dir.entryInfoList({pattern}, filters, sort_flags);
-
-
-        QMimeDatabase mimeDatabase;
-        for (const auto &fi : entry_info_list)
-        {
-            QMimeType mimetype = mimeDatabase.mimeTypeForFile(fi);
-            QString completion = fi.filePath();
-
-            if (fi.isDir())
-                completion.append(QDir::separator());
-
-            if (completion.startsWith(QDir::homePath()))
-                completion = QString("~%1").arg(completion.mid(QDir::homePath().size()));
-
-            results.emplace_back(make_shared<StandardFile>(
-                fi.filePath(),
-                mimetype,
-                completion
-            ));
-        }
-
-        query.add(::move(results));
+            return dir.entryInfoList({pattern}, filters, sort_flags);
     }
+    return {};
 }
-
 
 // -------------------------------------------------------------------------------------------------
 
@@ -87,10 +64,24 @@ QString RootBrowser::name() const { return tr("Root browser"); }
 
 QString RootBrowser::description() const { return tr("Browse root directory by path"); }
 
-QString RootBrowser::defaultTrigger() const { return "/"; }
+QString RootBrowser::defaultTrigger() const { return QStringLiteral("/"); }
 
 void RootBrowser::handleTriggerQuery(Query &query)
-{ return handle_(query, QString("/%1").arg(query.string())); }
+{
+    vector<shared_ptr<Item>> results;
+    QMimeDatabase mimeDatabase;
+    for (const auto &fi : listFiles(defaultTrigger() + query.string()))
+    {
+        QMimeType mimetype = mimeDatabase.mimeTypeForFile(fi);
+        QString completion = fi.filePath().mid(1);
+        if (fi.isDir())
+            completion.append(QDir::separator());
+
+        results.emplace_back(make_shared<StandardFile>(fi.filePath(), mimetype, completion));
+    }
+
+    query.add(::move(results));
+}
 
 
 // -------------------------------------------------------------------------------------------------
@@ -106,9 +97,24 @@ QString HomeBrowser::name() const { return tr("Home browser"); }
 
 QString HomeBrowser::description() const { return tr("Browse home directory by path"); }
 
-QString HomeBrowser::defaultTrigger() const { return "~"; }
+QString HomeBrowser::defaultTrigger() const { return QStringLiteral("~"); }
 
 void HomeBrowser::handleTriggerQuery(Query &query)
-{ return handle_(query, QString("%1%2").arg(QDir::homePath(), query.string())); }
+{
+    vector<shared_ptr<Item>> results;
+    QMimeDatabase mimeDatabase;
+    auto home_length = QDir::homePath().size();
+    for (const auto &fi : listFiles(QDir::homePath() + query.string()))
+    {
+        QMimeType mimetype = mimeDatabase.mimeTypeForFile(fi);
+        QString completion = fi.filePath().mid(home_length);
+        if (fi.isDir())
+            completion.append(QDir::separator());
+
+        results.emplace_back(make_shared<StandardFile>(fi.filePath(), mimetype, completion));
+    }
+
+    query.add(::move(results));
+}
 
 
