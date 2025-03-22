@@ -142,7 +142,8 @@ void InputLine::previous()
 
 void InputLine::paintEvent(QPaintEvent *event)
 {
-    if (!synopsis_.isEmpty() || !completion_.isEmpty())
+    if (document()->size().height() == 1
+        && !(synopsis_.isEmpty() && completion_.isEmpty()))
     {
 
         QString c = completion();
