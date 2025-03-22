@@ -53,10 +53,7 @@ bool SettingsButton::event(QEvent *event)
 
 void SettingsButton::paintEvent(QPaintEvent *)
 {
-    auto pad = 0;//  rect().height() / 10;
-    auto gear_rect = contentsRect().adjusted(pad,pad,-pad,-pad);
-
-    QPixmap pm = QPixmap(gear_rect.size() * devicePixelRatioF());
+    QPixmap pm = QPixmap(contentsRect().size() * devicePixelRatioF());
     pm.fill(Qt::transparent);
 
     QPainter pp(&pm);
@@ -73,5 +70,5 @@ void SettingsButton::paintEvent(QPaintEvent *)
     pm.setDevicePixelRatio(devicePixelRatioF());
 
     QPainter p(this);
-    p.drawPixmap(gear_rect, pm);
+    p.drawPixmap(contentsRect(), pm);
 }

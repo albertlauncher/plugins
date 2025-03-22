@@ -256,9 +256,6 @@ QWidget* Plugin::createFrontendConfigWidget()
     addPixelMetricSpinBox(fl, tr("Input frame padding"), &window,
                           &Window::inputPadding, &Window::setInputPadding);
 
-    addPixelMetricSpinBox(fl, tr("Settings button size"), &window,
-                          &Window::settingsButtonSize, &Window::setSettingsButtonSize);
-
 
     addPixelMetricSpinBox(fl, tr("Result item selection border radius"), &window,
                           &Window::resultItemSelectionBorderRadius, &Window::setResultItemSelectionBorderRadius);

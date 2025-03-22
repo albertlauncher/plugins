@@ -16,6 +16,7 @@ class Frame;
 class InputLine;
 class ItemDelegate;
 class Plugin;
+class QSpacerItem;
 class QEvent;
 class QFrame;
 class QKeyCombination;
@@ -74,6 +75,8 @@ private:
     Frame *frame;
     Frame *input_frame;
     InputLine *input_line;
+    QSpacerItem *spacer_left;
+    QSpacerItem *spacer_right;
     SettingsButton *settings_button;
     ResultsList *results_list;
     ActionsList *actions_list;
@@ -224,9 +227,6 @@ public:
 
     QColor settingsButtonHightlightColor() const;
     void setSettingsButtonHightlightColor(QColor);
-
-    uint settingsButtonSize() const;
-    void setSettingsButtonSize(uint);
 
 
     QBrush resultItemSelectionBackgroundBrush() const;

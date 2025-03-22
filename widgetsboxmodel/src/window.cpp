@@ -46,7 +46,7 @@ static const struct {
     using ColorRole = QPalette::ColorRole;
 
     const double    settings_button_rps_idle = 0.2;
-    const double    settings_button_rps_busy = 1;
+    const double    settings_button_rps_busy = 0.7;
 
     const bool      always_on_top                               = true;
     const bool      centered                                    = true;
@@ -87,7 +87,6 @@ static const struct {
 
     const ColorRole settings_button_color                       = ColorRole::Button;
     const ColorRole settings_button_highlight_color             = ColorRole::Highlight;
-    const int       settings_button_size                        = 18;
 
     const ColorRole result_item_selection_background_brush      = ColorRole::Highlight;
     const ColorRole result_item_selection_border_brush          = ColorRole::Highlight;
@@ -153,7 +152,6 @@ static const struct {
 
     const char *settings_button_color                  = "settings_button_color";
     const char *settings_button_highlight_color        = "settings_button_highlight_color";
-    const char *settings_button_size                   = "settings_button_size";
 
     const char *result_item_selection_background_brush = "result_item_selection_background_brush";
     const char *result_item_selection_border_brush     = "result_item_selection_border_brush";
@@ -223,6 +221,8 @@ Window::Window(PluginInstance *p):
     frame(new Frame(this)),
     input_frame(new Frame(frame)),
     input_line(new InputLine(input_frame)),
+    spacer_left(new QSpacerItem(0, 0)),
+    spacer_right(new QSpacerItem(0, 0)),
     settings_button(new SettingsButton(input_frame)),
     results_list(new ResultsList(frame)),
     actions_list(new ActionsList(frame)),
@@ -269,13 +269,16 @@ void Window::initializeUi()
     results_list->setObjectName("resultsList");
     actions_list->setObjectName("actionList");
 
+
     // Structure
 
     auto *window_layout = new QVBoxLayout(this);
     window_layout->addWidget(frame, 0, Qt::AlignTop);
 
     auto *input_frame_layout = new QHBoxLayout(input_frame);
-    input_frame_layout->addWidget(input_line);
+    input_frame_layout->addItem(spacer_left);
+    input_frame_layout->addWidget(input_line, 0, Qt::AlignTop);  // Needed to remove ui flicker
+    input_frame_layout->addItem(spacer_right);
     input_frame_layout->addWidget(settings_button, 0, Qt::AlignTop);
 
     auto *frame_layout = new QVBoxLayout(frame);
@@ -283,6 +286,7 @@ void Window::initializeUi()
     frame_layout->addWidget(results_list);
     frame_layout->addWidget(actions_list);
     frame_layout->addStretch(0);
+
 
     // Properties
 
@@ -303,11 +307,12 @@ void Window::initializeUi()
 
     // Required. Nobody touches the layout margins. Widget margins managed by setInputPadding.
     input_frame_layout->setContentsMargins(0,0,0,0);
+    input_frame_layout->setSpacing(0);
 
     input_line->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
 
     settings_button->setFocusPolicy(Qt::NoFocus);
-    settings_button->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
+    settings_button->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Fixed);
 
     results_list->setFocusPolicy(Qt::NoFocus);
     results_list->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
@@ -422,10 +427,6 @@ void Window::initializeProperties()
     setSettingsButtonHightlightColor(
         s->value(keys.settings_button_highlight_color,
                  palette().color(defaults.settings_button_highlight_color)).value<QColor>());
-
-    setSettingsButtonSize(
-        s->value(keys.settings_button_size,
-                 defaults.settings_button_size).toInt());
 
 
     setResultItemSelectionBackgroundBrush(
@@ -1592,7 +1593,22 @@ double Window::inputBorderWidth() const { return input_frame->borderWidth(); }
 void Window::setInputBorderWidth(double val) { input_frame->setBorderWidth(val); }
 
 uint Window::inputFontSize() const { return input_line->fontSize(); }
-void Window::setInputFontSize(uint val) { input_line->setFontSize(val); }
+void Window::setInputFontSize(uint val)
+{
+    input_line->setFontSize(val);
+
+    // Fix for nicely aligned text.
+    // The text should be idented by the distance of the cap line to the top.
+    auto fm = input_line->fontMetrics();
+    auto font_margin_fix = (fm.lineSpacing() - fm.capHeight() - fm.tightBoundingRect("|").width())/2 ;
+    spacer_left->changeSize(font_margin_fix, 0, QSizePolicy::Fixed, QSizePolicy::Fixed);
+    spacer_right->changeSize(font_margin_fix, 0, QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+    auto input_line_height = fm.lineSpacing() + 2;  // 1px document margins
+    settings_button->setFixedSize(input_line_height, input_line_height);
+    settings_button->setContentsMargins(font_margin_fix, font_margin_fix,
+                                        font_margin_fix, font_margin_fix);
+}
 
 
 QColor Window::settingsButtonColor() const { return settings_button_color_; }
@@ -1605,9 +1621,6 @@ void Window::setSettingsButtonColor(QColor val)
 
 QColor Window::settingsButtonHightlightColor() const { return settings_button_color_highlight_; }
 void Window::setSettingsButtonHightlightColor(QColor val) { settings_button_color_highlight_ = val; }
-
-uint Window::settingsButtonSize() const { return settings_button->width(); }
-void Window::setSettingsButtonSize(uint val) { settings_button->setFixedSize(val,val); }
 
 
 QBrush Window::resultItemSelectionBackgroundBrush() const { return results_list->selectionBackgroundBrush(); }
