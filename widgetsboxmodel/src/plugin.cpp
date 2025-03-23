@@ -157,20 +157,10 @@ QWidget* Plugin::createFrontendConfigWidget()
            &Window::setClearOnHide,
            &Window::clearOnHideChanged);
 
-    ::bind(&window, ui.checkBox_client_shadow,
-           &Window::displayClientShadow,
-           &Window::setDisplayClientShadow,
-           &Window::displayClientShadowChanged);
-
     ::bind(&window, ui.checkBox_scrollbar,
            &Window::displayScrollbar,
            &Window::setDisplayScrollbar,
            &Window::displayScrollbarChanged);
-
-    ::bind(&window, ui.checkBox_system_shadow,
-           &Window::displaySystemShadow,
-           &Window::setDisplaySystemShadow,
-           &Window::displaySystemShadowChanged);
 
     ::bind(&window, ui.checkBox_followCursor,
            &Window::followCursor,
@@ -226,6 +216,13 @@ QWidget* Plugin::createFrontendConfigWidget()
 
     addFontSpinBox(fl, tr("Action font size"), &window,
                    &Window::actionItemFontSize, &Window::setActionItemFontSize);
+
+
+    addPixelMetricSpinBox(fl, tr("Window shadow size"), &window,
+                          &Window::windowShadowSize, &Window::setWindowShadowSize);
+
+    addPixelMetricSpinBox(fl, tr("Window shadow offset"), &window,
+                          &Window::windowShadowOffset, &Window::setWindowShadowOffset);
 
 
     sb = addPixelMetricSpinBox(fl, tr("Window width"), &window,

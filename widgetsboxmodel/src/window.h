@@ -1,6 +1,7 @@
 // Copyright (c) 2022-2025 Manuel Schneider
 
 #pragma once
+#include "windowframe.h"
 #include <QEvent>
 #include <QPoint>
 #include <QTimer>
@@ -26,7 +27,7 @@ class ResultItemsModel;
 class ResultsList;
 class SettingsButton;
 
-class Window : public QWidget
+class Window : public WindowFrame
 {
     Q_OBJECT
 
@@ -72,7 +73,6 @@ private:
 
     QStateMachine *state_machine;
 
-    Frame *frame;
     Frame *input_frame;
     InputLine *input_line;
     QSpacerItem *spacer_left;
@@ -146,14 +146,8 @@ public:
     bool clearOnHide() const;
     void setClearOnHide(bool b = true);
 
-    bool displayClientShadow() const;
-    void setDisplayClientShadow(bool value);
-
     bool displayScrollbar() const;
     void setDisplayScrollbar(bool value);
-
-    bool displaySystemShadow() const;
-    void setDisplaySystemShadow(bool value);
 
     bool followCursor() const;
     void setFollowCursor(bool b = true);
@@ -178,6 +172,16 @@ public:
 
     bool debugMode() const;
     void setDebugMode(bool b = true);
+
+
+    uint windowShadowSize() const;
+    void setWindowShadowSize(uint);
+
+    uint windowShadowOffset() const;
+    void setWindowShadowOffset(uint);
+
+    QBrush windowShadowBrush() const;
+    void setWindowShadowBrush(QBrush);
 
 
     QBrush windowBackgroundBrush() const;

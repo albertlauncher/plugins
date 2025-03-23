@@ -66,6 +66,10 @@ static const struct {
 
     const uint      general_spacing                             = 6;
 
+    const uint      window_shadow_size                          = 80;
+    const uint      window_shadow_offset                        = 8;
+    const QColor    window_shadow_color                         = QColor(0, 0, 0, 92);
+
     const ColorRole input_background_brush                      = ColorRole::Base;
     const ColorRole input_border_brush                          = ColorRole::Highlight;
     const double    input_border_width                          = 0;
@@ -74,9 +78,6 @@ static const struct {
 
     const ColorRole window_background_brush                     = ColorRole::Window;
     const ColorRole window_border_brush                         = ColorRole::Highlight;
-    const uint      window_shadow_size                          = 64;
-    const double    window_shadow_offset                        = 4;
-    const QColor    window_shadow_color                         = QColor(0, 0, 0, 192);
     const double    window_border_width                         = 1;
     const int       window_padding                              = general_spacing + (int)window_border_width;
     const double    window_border_radius                        = window_padding + input_border_radius;
@@ -134,6 +135,10 @@ static const struct {
     const char *theme_dark                             = "darkTheme";
     const char *theme_light                            = "lightTheme";
     const char *disable_input_method                   = "disable_input_method";
+
+    const char* window_shadow_size                     = "window_background_brush";
+    const char* window_shadow_offset                   = "window_shadow_offset";
+    const char* window_shadow_brush                    = "window_shadow_brush";
 
     const char* window_background_brush                = "window_background_brush";
     const char* window_border_brush                    = "window_border_brush";
@@ -218,14 +223,13 @@ static map<QString, QString> findThemes(const QString &plugin_id)
 Window::Window(PluginInstance *p):
     themes(findThemes(p->loader().metaData().id)),
     plugin(p),
-    frame(new Frame(this)),
-    input_frame(new Frame(frame)),
+    input_frame(new Frame(this)),
     input_line(new InputLine(input_frame)),
     spacer_left(new QSpacerItem(0, 0)),
     spacer_right(new QSpacerItem(0, 0)),
     settings_button(new SettingsButton(input_frame)),
-    results_list(new ResultsList(frame)),
-    actions_list(new ActionsList(frame)),
+    results_list(new ResultsList(this)),
+    actions_list(new ActionsList(this)),
     dark_mode(haveDarkSystemPalette()),
     current_query{nullptr}
 {
@@ -247,7 +251,7 @@ Window::Window(PluginInstance *p):
     setStyleRecursive(this, style);
 
     connect(input_line, &InputLine::textChanged,
-            this, [this]{ inputChanged(input_line->text()); });
+            this, [this]{ emit inputChanged(input_line->text()); });
 
     connect(settings_button, &SettingsButton::clicked,
             this, &Window::onSettingsButtonClick);
@@ -262,7 +266,6 @@ void Window::initializeUi()
     // Identifiers
 
     setObjectName("window");
-    frame->setObjectName("frame");
     input_frame->setObjectName("inputFrame");
     settings_button->setObjectName("settingsButton");
     input_line->setObjectName("inputLine");
@@ -272,40 +275,33 @@ void Window::initializeUi()
 
     // Structure
 
-    auto *window_layout = new QVBoxLayout(this);
-    window_layout->addWidget(frame, 0, Qt::AlignTop);
-
     auto *input_frame_layout = new QHBoxLayout(input_frame);
     input_frame_layout->addItem(spacer_left);
     input_frame_layout->addWidget(input_line, 0, Qt::AlignTop);  // Needed to remove ui flicker
     input_frame_layout->addItem(spacer_right);
     input_frame_layout->addWidget(settings_button, 0, Qt::AlignTop);
 
-    auto *frame_layout = new QVBoxLayout(frame);
-    frame_layout->addWidget(input_frame);
-    frame_layout->addWidget(results_list);
-    frame_layout->addWidget(actions_list);
-    frame_layout->addStretch(0);
+    auto *layout = new QVBoxLayout(this);
+    layout->addWidget(input_frame);
+    layout->addWidget(results_list);
+    layout->addWidget(actions_list);
+    layout->addStretch(0);
 
 
     // Properties
 
-    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);
+    // contentsMargins: setShadowSize
+    // layout.contentsMargins: setWindowPadding
+    // input_frame.contentsMargins: setInputPadding
+    // input_frame_layout.contentsMargins: Have to be set to zero
+
+    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
     setAttribute(Qt::WA_TranslucentBackground);
     setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Fixed);
-
-    // Required. Nobody touches the layout margins. Widget margins managed by shadow.
-    window_layout->setContentsMargins(0,0,0,0);
-    window_layout->setSizeConstraint(QLayout::SetFixedSize);
-
-    frame->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Fixed);
-
-    // Required. Nobody touches the layout margins. Widget margins managed by setWindowPadding.
-    frame_layout->setContentsMargins(0,0,0,0);
+    layout->setSizeConstraint(QLayout::SetFixedSize);
 
     input_frame->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Fixed);
 
-    // Required. Nobody touches the layout margins. Widget margins managed by setInputPadding.
     input_frame_layout->setContentsMargins(0,0,0,0);
     input_frame_layout->setSpacing(0);
 
@@ -331,15 +327,9 @@ void Window::initializeProperties()
     setClearOnHide(
         s->value(keys.clear_on_hide,
                  defaults.clear_on_hide).toBool());
-    setDisplayClientShadow(
-        s->value(keys.shadow_client,
-                 defaults.shadow_client).toBool());
     setDisplayScrollbar(
         s->value(keys.display_scrollbar,
                  defaults.display_scrollbar).toBool());
-    setDisplaySystemShadow(
-        s->value(keys.shadow_system,
-                 defaults.shadow_system).toBool());
     setFollowCursor(
         s->value(keys.follow_cursor,
                  defaults.follow_cursor).toBool());
@@ -364,6 +354,19 @@ void Window::initializeProperties()
     setDebugMode(
         s->value(keys.debug,
                  defaults.debug).toBool());
+
+
+    setWindowShadowSize(
+        s->value(keys.window_shadow_size,
+                 defaults.window_shadow_size).toUInt());
+
+    setWindowShadowOffset(
+        s->value(keys.window_shadow_offset,
+                 defaults.window_shadow_offset).toUInt());
+
+    setWindowShadowBrush(
+        s->value(keys.window_shadow_brush,
+                 defaults.window_shadow_color).value<QBrush>());
 
 
     setWindowBackgroundBrush(
@@ -1411,35 +1414,6 @@ void Window::setClearOnHide(bool val)
     emit clearOnHideChanged(val);
 }
 
-bool Window::displayClientShadow() const { return graphicsEffect() != nullptr; }
-void Window::setDisplayClientShadow(bool val)
-{
-    if (displayClientShadow() == val)
-        return;
-
-    if (val)
-    {
-        auto* effect = new QGraphicsDropShadowEffect(this);
-        effect->setBlurRadius(defaults.window_shadow_size);
-        effect->setColor(defaults.window_shadow_color);
-        effect->setXOffset(0.0);
-        effect->setYOffset(defaults.window_shadow_offset);
-        setGraphicsEffect(effect);  // takes ownership
-        setContentsMargins(defaults.window_shadow_size,
-                           defaults.window_shadow_size - (int)effect->yOffset(),
-                           defaults.window_shadow_size,
-                           defaults.window_shadow_size + (int)effect->yOffset());
-    }
-    else
-    {
-        setGraphicsEffect(nullptr);
-        setContentsMargins(0,0,0,0);
-    }
-
-    plugin->settings()->setValue(keys.shadow_client, val);
-    emit displayClientShadowChanged(val);
-}
-
 bool Window::displayScrollbar() const
 { return results_list->verticalScrollBarPolicy() != Qt::ScrollBarAlwaysOff; }
 void Window::setDisplayScrollbar(bool val)
@@ -1450,18 +1424,6 @@ void Window::setDisplayScrollbar(bool val)
     results_list->setVerticalScrollBarPolicy(val ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff);
     plugin->settings()->setValue(keys.display_scrollbar, val);
     emit displayScrollbarChanged(val);
-}
-
-bool Window::displaySystemShadow() const
-{ return !windowFlags().testFlag(Qt::NoDropShadowWindowHint); }
-void Window::setDisplaySystemShadow(bool val)
-{
-    if (displaySystemShadow() == val)
-        return;
-
-    setWindowFlags(windowFlags().setFlag(Qt::NoDropShadowWindowHint, !val));
-    plugin->settings()->setValue(keys.shadow_system, val);
-    emit displaySystemShadowChanged(val);
 }
 
 bool Window::followCursor() const { return followCursor_; }
@@ -1552,29 +1514,38 @@ void Window::setDebugMode(bool val)
     emit debugModeChanged(val);
 }
 
+uint Window::windowShadowSize() const { return shadowSize(); }
+void Window::setWindowShadowSize(uint val) { setShadowSize(val); }
+
+uint Window::windowShadowOffset() const { return shadowOffset(); }
+void Window::setWindowShadowOffset(uint val) { setShadowOffset(val); }
+
+QBrush Window::windowShadowBrush() const { return shadowBrush(); }
+void Window::setWindowShadowBrush(QBrush val) { setShadowBrush(val); }
+
 bool Window::disableInputMethod() const { return input_line->disable_input_method_; }
 void Window::setDisableInputMethod(bool val) { input_line->disable_input_method_ = val; }
 
-double Window::windowBorderRadius() const { return frame->radius(); }
-void Window::setWindowBorderRadius(double val) { frame->setRadius(val); }
+double Window::windowBorderRadius() const { return radius(); }
+void Window::setWindowBorderRadius(double val) { setRadius(val); }
 
-QBrush Window::windowBackgroundBrush() const { return frame->fillBrush(); }
-void Window::setWindowBackgroundBrush(QBrush val) { frame->setFillBrush(val); }
+QBrush Window::windowBackgroundBrush() const { return fillBrush(); }
+void Window::setWindowBackgroundBrush(QBrush val) { setFillBrush(val); }
 
-double Window::windowBorderWidth() const { return frame->borderWidth(); }
-void Window::setWindowBorderWidth(double val) { frame->setBorderWidth(val); }
+double Window::windowBorderWidth() const { return borderWidth(); }
+void Window::setWindowBorderWidth(double val) { setBorderWidth(val); }
 
-QBrush Window::windowBorderBrush() const { return frame->borderBrush(); }
-void Window::setWindowBorderBrush(QBrush val) { frame->setBorderBrush(val); }
+QBrush Window::windowBorderBrush() const { return borderBrush(); }
+void Window::setWindowBorderBrush(QBrush val) { setBorderBrush(val); }
 
-uint Window::windowPadding() const { return frame->contentsMargins().left(); }
-void Window::setWindowPadding(uint val) { frame->setContentsMargins(val, val, val, val); }
+uint Window::windowPadding() const { return layout()->contentsMargins().left(); }
+void Window::setWindowPadding(uint val) { layout()->setContentsMargins(val, val, val, val); }
 
-uint Window::windowSpacing() const { return frame->layout()->spacing(); }
-void Window::setWindowSpacing(uint val) { frame->layout()->setSpacing(val); }
+uint Window::windowSpacing() const { return layout()->spacing(); }
+void Window::setWindowSpacing(uint val) { layout()->setSpacing(val); }
 
-uint Window::windowWidth() const { return frame->width(); }
-void Window::setWindowWidth(uint val) { frame->setFixedWidth(val); }
+uint Window::windowWidth() const { return input_frame->width(); }
+void Window::setWindowWidth(uint val) { input_frame->setFixedWidth(val); }
 
 
 QBrush Window::inputBackgroundBrush() const { return input_frame->fillBrush(); }
@@ -1689,3 +1660,47 @@ void Window::setActionItemTextColor(QColor val) { actions_list->setTextColor(val
 
 uint Window::actionItemFontSize() const { return actions_list->textFontSize(); }
 void Window::setActionItemFontSize(uint val) { actions_list->setTextFontSize(val); }
+
+
+
+
+// bool Window::displayClientShadow() const { return graphicsEffect() != nullptr; }
+// void Window::setDisplayClientShadow(bool val)
+// {
+//     if (displayClientShadow() == val)
+//         return;
+
+//     if (val)
+//     {
+//         auto* effect = new QGraphicsDropShadowEffect(this);
+//         effect->setBlurRadius(defaults.window_shadow_size);
+//         effect->setColor(defaults.window_shadow_color);
+//         effect->setXOffset(0.0);
+//         effect->setYOffset(defaults.window_shadow_offset);
+//         setGraphicsEffect(effect);  // takes ownership
+//         setContentsMargins(defaults.window_shadow_size,
+//                            defaults.window_shadow_size - (int)effect->yOffset(),
+//                            defaults.window_shadow_size,
+//                            defaults.window_shadow_size + (int)effect->yOffset());
+//     }
+//     else
+//     {
+//         setGraphicsEffect(nullptr);
+//         setContentsMargins(0,0,0,0);
+//     }
+
+//     plugin->settings()->setValue(keys.shadow_client, val);
+//     emit displayClientShadowChanged(val);
+// }
+
+// bool Window::displaySystemShadow() const
+// { return !windowFlags().testFlag(Qt::NoDropShadowWindowHint); }
+// void Window::setDisplaySystemShadow(bool val)
+// {
+//     if (displaySystemShadow() == val)
+//         return;
+
+//     setWindowFlags(windowFlags().setFlag(Qt::NoDropShadowWindowHint, !val));
+//     plugin->settings()->setValue(keys.shadow_system, val);
+//     emit displaySystemShadowChanged(val);
+// }
