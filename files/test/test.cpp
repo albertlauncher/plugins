@@ -132,10 +132,6 @@ void FilesTests::fs_index_path()
 
 void FilesTests::fs_index()
 {
-    int argc;
-    char *argv = {};
-
-    // QCoreApplication app(argc, &argv);
     QLoggingCategory::setFilterRules("*.debug=true");
 
     QTemporaryDir root;
