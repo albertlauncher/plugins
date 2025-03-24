@@ -1008,10 +1008,10 @@ void Window::applyTheme(const Theme &theme)
 
     results_list->setSelectionBackgroundBrush(theme.result_item_selection_background_brush);
     results_list->setSelectionBorderBrush(theme.result_item_selection_border_brush);
-    results_list->setTextColor(theme.result_item_selection_text_color);
-    results_list->setSubtextColor(theme.result_item_selection_subtext_color);
-    results_list->setSelectionTextColor(theme.result_item_text_color);
-    results_list->setSelectionSubextColor(theme.result_item_subtext_color);
+    results_list->setSelectionSubextColor(theme.result_item_selection_subtext_color);
+    results_list->setSelectionTextColor(theme.result_item_selection_text_color);
+    results_list->setSubtextColor(theme.result_item_subtext_color);
+    results_list->setTextColor(theme.result_item_text_color);
 
     actions_list->setSelectionBackgroundBrush(theme.action_item_selection_background_brush);
     actions_list->setSelectionBorderBrush(theme.action_item_selection_border_brush);
