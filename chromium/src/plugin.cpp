@@ -6,8 +6,11 @@
 #include <QDir>
 #include <QDirIterator>
 #include <QFileDialog>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSettings>
+#include <QStringListModel>
 #include <QStandardPaths>
 #include <albert/albert.h>
 #include <albert/logging.h>
