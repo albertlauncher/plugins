@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2024 Manuel Schneider
+// Copyright (c) 2022-2025 Manuel Schneider
 
 #include "cast_specialization.hpp"
 #include "embeddedmodule.hpp"
@@ -15,7 +15,6 @@
 #include <QProcess>
 #include <QRegularExpression>
 #include <QSettings>
-#include <QStandardPaths>
 #include <QTextEdit>
 #include <QUrl>
 #include <albert/albert.h>
@@ -192,26 +191,14 @@ path Plugin::userPluginDirectoryPath() const { return dataLocation() / PLUGINS; 
 
 path Plugin::stubFilePath() const { return userPluginDirectoryPath() / STUB_FILE; }
 
-QStringList Plugin::pluginDirs() const
-{
-    using QSP = QStandardPaths;
-
-    QStringList plugin_dirs;
-    for (const auto &d_dir : QSP::locateAll(QSP::AppDataLocation, id(), QSP::LocateDirectory))
-        if (QDir p_dir{d_dir}; p_dir.cd(PLUGINS))
-            plugin_dirs << p_dir.path();
-
-    return plugin_dirs;
-}
-
 vector<unique_ptr<PyPluginLoader>> Plugin::scanPlugins() const
 {
     auto start = system_clock::now();
 
     vector<unique_ptr<PyPluginLoader>> plugins;
-    for (const QString &plugin_dir : pluginDirs())
+    for (const auto &data_location : dataLocations())
     {
-        if (QDir dir{plugin_dir}; dir.exists())
+        if (QDir dir{data_location/PLUGINS}; dir.exists())
         {
             DEBG << "Searching Python plugins in" << dir.absolutePath();
             for (const QFileInfo &file_info : dir.entryInfoList(QDir::Files
@@ -273,10 +260,9 @@ QWidget *Plugin::buildConfigWidget()
 
     connect(ui.pushButton_venv_reset, &QPushButton::clicked, this, [this]
     {
-        auto text = tr("Resetting the virtual environment requires a restart.");
-
-        using MB = QMessageBox;
-        if (MB::question(nullptr, qApp->applicationDisplayName(), text, MB::Cancel | MB::Ok, MB::Ok)
+        if (question(tr("Resetting the virtual environment requires a restart."),
+                     QMessageBox::Cancel | QMessageBox::Ok,
+                     QMessageBox::Ok)
             == QMessageBox::Ok)
         {
             QFile::moveToTrash(venvPath().c_str());

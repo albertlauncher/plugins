@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2024 Manuel Schneider
+// Copyright (c) 2017-2025 Manuel Schneider
 
 #pragma once
 #include "pybind11/gil.h"
@@ -36,7 +36,6 @@ private:
     std::filesystem::path userPluginDirectoryPath() const;
     std::filesystem::path stubFilePath() const;
 
-    QStringList pluginDirs() const;
     std::vector<std::unique_ptr<PyPluginLoader>> scanPlugins() const;
 
     albert::StrongDependency<applications::Plugin> apps{"applications"};

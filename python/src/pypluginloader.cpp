@@ -9,10 +9,10 @@
 #include <QFileInfo>
 #include <QFutureWatcher>
 #include <QLoggingCategory>
-#include <QMessageBox>
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QtConcurrentRun>
+#include <albert/albert.h>
 namespace py = pybind11;
 using namespace albert;
 using namespace std;
@@ -240,17 +240,10 @@ void PyPluginLoader::load()
             throw;
 
         // ask user if dependencies should be installed
-        QMessageBox mb;
-        mb.setIcon(QMessageBox::Information);
-        mb.setWindowTitle("Module not found");
-        mb.setText(Plugin::tr(
-                       "Some modules in the plugin '%1' were not found.\n\n"
-                       "Install dependencies into the virtual environment?")
-                   .arg(metadata_.name));
-        mb.setStandardButtons(QMessageBox::Yes|QMessageBox::No);
-        mb.setDefaultButton(QMessageBox::Yes);
-        // mb.setInformativeText(e.what());
-        if (mb.exec() == QMessageBox::Yes)
+        auto button = question(Plugin::tr("Some modules in the plugin '%1' were not found.\n\n"
+                                          "Install dependencies into the virtual environment?")
+                                   .arg(metadata_.name));
+        if (button == QMessageBox::Yes)
         {
             if (plugin_.installPackages(metadata_.runtime_dependencies))
                 return load_();  // On success try to load again
