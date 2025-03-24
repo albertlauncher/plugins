@@ -8,7 +8,7 @@ using namespace albert;
 using namespace std;
 
 Plugin::Plugin() :
-    window(this),
+    window(*this),
     themes_query_handler(&window)
 {
     connect(&window, &Window::inputChanged, this, &Plugin::inputChanged);

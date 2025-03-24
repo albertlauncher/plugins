@@ -26,6 +26,7 @@ class QStateMachine;
 class ResultItemsModel;
 class ResultsList;
 class SettingsButton;
+class Theme;
 
 class Window : public WindowFrame
 {
@@ -33,8 +34,10 @@ class Window : public WindowFrame
 
 public:
 
-    Window(albert::PluginInstance *plugin);
+    Window(albert::PluginInstance &plugin);
     ~Window();
+
+    albert::PluginInstance const &plugin;
 
     QString input() const;
     void setInput(const QString&);
@@ -42,10 +45,7 @@ public:
     void setQuery(albert::Query *query);
 
     const std::map<QString, QString> themes;
-    void applyThemeFile(const QString& path);
-
-    std::map<QString, QString> findPalettes() const;
-    void applyPalette(const QString& palette_name);  // throws
+    void applyTheme(const QString& name);  // throws
 
     bool darkMode() const;
 
@@ -56,6 +56,8 @@ private:
     void initializeWindowActions();
     void initializeStatemachine();
     void installEventFilterKeepThisPrioritized(QObject *watched, QObject *filter);
+    std::map<QString, QString> findThemes() const;
+    void applyTheme(const Theme &);
 
     bool haveMatches() const;
     bool haveFallbacks() const;
@@ -68,8 +70,6 @@ private:
 
     bool event(QEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
-
-    albert::PluginInstance const * const plugin;
 
     QStateMachine *state_machine;
 

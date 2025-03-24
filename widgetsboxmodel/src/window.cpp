@@ -15,16 +15,11 @@
 #include <QApplication>
 #include <QBoxLayout>
 #include <QDir>
-#include <QFrame>
-#include <QGraphicsEffect>
 #include <QKeyEvent>
 #include <QMenu>
-#include <QMessageBox>
 #include <QPixmapCache>
 #include <QPropertyAnimation>
 #include <QSettings>
-#include <QSignalBlocker>
-#include <QStandardPaths>
 #include <QStateMachine>
 #include <QStringListModel>
 #include <QStyleFactory>
@@ -198,31 +193,11 @@ constexpr Qt::Key mods_keys[] = {
     Qt::Key_Alt
 };
 
-
-static map<QString, QString> findThemes(const QString &plugin_id)
-{
-    map<QString, QString> themes;
-
-    auto data_paths = QStandardPaths::locateAll(
-        QStandardPaths::AppDataLocation, plugin_id, QStandardPaths::LocateDirectory);
-
-    for (const QString &data_path : as_const(data_paths))
-    {
-        auto theme_dir_path = QString("%1/themes").arg(data_path);
-        auto file_infos = QDir(theme_dir_path).entryInfoList(QStringList("*.qss"),
-                                                             QDir::Files | QDir::NoSymLinks);
-        for (const auto &file_info : as_const(file_infos))
-            themes.emplace(file_info.baseName(), file_info.canonicalFilePath());
-    }
-
-    return themes;
 }
 
-}
-
-Window::Window(PluginInstance *p):
-    themes(findThemes(p->loader().metaData().id)),
+Window::Window(PluginInstance &p) :
     plugin(p),
+    themes(findThemes()),
     input_frame(new Frame(this)),
     input_line(new InputLine(input_frame)),
     spacer_left(new QSpacerItem(0, 0)),
@@ -320,7 +295,7 @@ void Window::initializeUi()
 
 void Window::initializeProperties()
 {
-    auto s = plugin->settings();
+    auto s = plugin.settings();
     setAlwaysOnTop(
         s->value(keys.always_on_top,
                  defaults.always_on_top).toBool());
@@ -533,7 +508,7 @@ void Window::initializeProperties()
     //     setThemeDark(themes.begin()->first);  // okay, we know there is at least one theme
     // }
 
-    s = plugin->state();
+    s = plugin.state();
     if (!showCentered() && s->contains(keys.window_position)
         && s->value(keys.window_position).canConvert<QPoint>())
         move(s->value(keys.window_position).toPoint());
@@ -1054,39 +1029,43 @@ void Window::setQuery(Query *q)
     }
 }
 
-void Window::applyThemeFile(const QString& path)
+map<QString, QString> Window::findThemes() const
 {
-    QFile f(path);
-    if (f.open(QFile::ReadOnly))
-    {
-        setStyleSheet(f.readAll());
-        f.close();
-    }
+    map<QString, QString> t;
+    for (const auto &path : plugin.dataLocations())
+        for (const auto &ini_file_info : QDir(path/"themes")
+                                             .entryInfoList(QStringList("*.ini"),
+                                                            QDir::Files|QDir::NoSymLinks))
+            t.emplace(ini_file_info.baseName(), ini_file_info.canonicalFilePath());
+    return t;
+}
+
+void Window::applyTheme(const QString& name)
+{
+    if (name.isNull())
+        applyTheme(Theme());
     else
     {
-        auto msg = QString("%1:\n\n%2\n\n%3")
-                       .arg(tr("The theme file could not be opened"), path, f.errorString());
-        WARN << msg;
-        QMessageBox::warning(this, qApp->applicationDisplayName(), msg);
+        try {
+            auto path = themes.at(name);
+            try {
+                applyTheme(readTheme(path));
+            } catch (const runtime_error &e) {
+                WARN << e.what();
+                albert::warning(QString("%1:\n\n%2").arg(tr("Failed loading theme"), e.what()));
+            }
+        } catch (const out_of_range&) {
+            CRIT << "Theme does not exist:" << name;
+        }
     }
 }
 
-map<QString, QString> Window::findPalettes() const
-{
-    auto data_paths = QStandardPaths::locateAll(
-        QStandardPaths::AppDataLocation,
-        plugin->loader().metaData().id,
-        QStandardPaths::LocateDirectory);
 
-    return ::findPalettes(data_paths);
-}
-
-void Window::applyPalette(const QString &palette_name)
+void Window::applyTheme(const Theme &theme)
 {
-    if (palette_name.isNull())
-        setPalette(QApplication::style()->standardPalette());
-    else
-        setPalette(readPalette(findPalettes().at(palette_name)));
+    setPalette(theme.palette);
+
+    // TODO
 }
 
 bool Window::darkMode() const { return dark_mode; }
@@ -1124,7 +1103,7 @@ bool Window::event(QEvent *event)
 
     else if (event->type() == QEvent::Hide)
     {
-        plugin->state()->setValue(keys.window_position, pos());
+        plugin.state()->setValue(keys.window_position, pos());
 
         /*
          * Prevent the flicker when the window is shown
@@ -1158,7 +1137,7 @@ bool Window::event(QEvent *event)
         dark_mode = haveDarkSystemPalette();
         auto theme_name = (dark_mode) ? theme_dark_ : theme_light_;
         try {
-            applyThemeFile(themes.at(theme_name));
+            applyTheme(theme_name);
         } catch (const out_of_range&) {
             CRIT << "Set theme does not exist:" << theme_name;
         }
@@ -1363,32 +1342,28 @@ bool Window::eventFilter(QObject *watched, QEvent *event)
 const QString &Window::themeLight() const { return theme_light_; }
 void Window::setThemeLight(const QString &val)
 {
-    if (themeLight() == val)
+    if (themeLight() == val || !themes.contains(val))
         return;
 
-    // intended implicit test for existance
-    auto theme_file = themes.at(val);
     if (!dark_mode)
-        applyThemeFile(theme_file);
+        applyTheme(val);
 
     theme_light_ = val;
-    plugin->settings()->setValue(keys.theme_light, val);
+    plugin.settings()->setValue(keys.theme_light, val);
     emit themeLightChanged(val);
 }
 
 const QString &Window::themeDark() const { return theme_dark_; }
 void Window::setThemeDark(const QString &val)
 {
-    if (themeDark() == val)
+    if (themeDark() == val || !themes.contains(val))
         return;
 
-    // intended implicit test for existance
-    auto theme_file = themes.at(val);
     if (dark_mode)
-        applyThemeFile(theme_file);
+        applyTheme(val);
 
-    theme_dark_ = val;theme_dark_ = val;
-    plugin->settings()->setValue(keys.theme_dark, val);
+    theme_dark_ = val;
+    plugin.settings()->setValue(keys.theme_dark, val);
     emit themeDarkChanged(val);
 }
 
@@ -1399,7 +1374,7 @@ void Window::setAlwaysOnTop(bool val)
         return;
 
     setWindowFlags(windowFlags().setFlag(Qt::WindowStaysOnTopHint, val));
-    plugin->settings()->setValue(keys.always_on_top, val);
+    plugin.settings()->setValue(keys.always_on_top, val);
     emit clearOnHideChanged(val);
 }
 
@@ -1410,7 +1385,7 @@ void Window::setClearOnHide(bool val)
         return;
 
     input_line->clear_on_hide = val;
-    plugin->settings()->setValue(keys.clear_on_hide, val);
+    plugin.settings()->setValue(keys.clear_on_hide, val);
     emit clearOnHideChanged(val);
 }
 
@@ -1422,7 +1397,7 @@ void Window::setDisplayScrollbar(bool val)
         return;
 
     results_list->setVerticalScrollBarPolicy(val ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff);
-    plugin->settings()->setValue(keys.display_scrollbar, val);
+    plugin.settings()->setValue(keys.display_scrollbar, val);
     emit displayScrollbarChanged(val);
 }
 
@@ -1433,7 +1408,7 @@ void Window::setFollowCursor(bool val)
         return;
 
     followCursor_ = val;
-    plugin->settings()->setValue(keys.follow_cursor, val);
+    plugin.settings()->setValue(keys.follow_cursor, val);
     emit hideOnFocusLossChanged(val);
 }
 
@@ -1444,7 +1419,7 @@ void Window::setHideOnFocusLoss(bool val)
         return;
 
     hideOnFocusLoss_ = val;
-    plugin->settings()->setValue(keys.hide_on_focus_loss, val);
+    plugin.settings()->setValue(keys.hide_on_focus_loss, val);
     emit hideOnFocusLossChanged(val);
 }
 
@@ -1455,7 +1430,7 @@ void Window::setHistorySearchEnabled(bool val)
         return;
 
     input_line->history_search = val;
-    plugin->settings()->setValue(keys.history_search, val);
+    plugin.settings()->setValue(keys.history_search, val);
     emit maxResultsChanged(val);
 }
 
@@ -1466,7 +1441,7 @@ void Window::setMaxResults(uint val)
         return;
 
     results_list->setMaxItems(val);
-    plugin->settings()->setValue(keys.max_results, val);
+    plugin.settings()->setValue(keys.max_results, val);
     emit maxResultsChanged(val);
 }
 
@@ -1477,7 +1452,7 @@ void Window::setQuitOnClose(bool val)
         return;
 
     quitOnClose_ = val;
-    plugin->settings()->setValue(keys.quit_on_close, val);
+    plugin.settings()->setValue(keys.quit_on_close, val);
     emit quitOnCloseChanged(val);
 }
 
@@ -1488,7 +1463,7 @@ void Window::setShowCentered(bool val)
         return;
 
     showCentered_ = val;
-    plugin->settings()->setValue(keys.centered, val);
+    plugin.settings()->setValue(keys.centered, val);
     emit showCenteredChanged(val);
 }
 
@@ -1509,7 +1484,7 @@ void Window::setDebugMode(bool val)
     else
         debug_overlay_.reset();
 
-    plugin->settings()->setValue(keys.debug, val);
+    plugin.settings()->setValue(keys.debug, val);
     update();
     emit debugModeChanged(val);
 }
@@ -1689,7 +1664,7 @@ void Window::setActionItemFontSize(uint val) { actions_list->setTextFontSize(val
 //         setContentsMargins(0,0,0,0);
 //     }
 
-//     plugin->settings()->setValue(keys.shadow_client, val);
+//     plugin.settings()->setValue(keys.shadow_client, val);
 //     emit displayClientShadowChanged(val);
 // }
 
@@ -1701,6 +1676,6 @@ void Window::setActionItemFontSize(uint val) { actions_list->setTextFontSize(val
 //         return;
 
 //     setWindowFlags(windowFlags().setFlag(Qt::NoDropShadowWindowHint, !val));
-//     plugin->settings()->setValue(keys.shadow_system, val);
+//     plugin.settings()->setValue(keys.shadow_system, val);
 //     emit displaySystemShadowChanged(val);
 // }
