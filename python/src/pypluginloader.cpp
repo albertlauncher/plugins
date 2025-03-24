@@ -1,4 +1,4 @@
-// Copyright (c) 2023-2024 Manuel Schneider
+// Copyright (c) 2023-2025 Manuel Schneider
 
 #include "trampolineclasses.hpp"
 
@@ -12,7 +12,7 @@
 #include <QMessageBox>
 #include <QRegularExpression>
 #include <QStandardPaths>
-#include <QtConcurrent>
+#include <QtConcurrentRun>
 namespace py = pybind11;
 using namespace albert;
 using namespace std;
