@@ -13,25 +13,6 @@ public:
 
     Theme();
     Theme(const QPalette &palette);
-    Theme(const QPalette &palette,
-          const QBrush &window_shadow_brush,
-          const QBrush &window_background_brush,
-          const QBrush &window_border_brush,
-          const QBrush &input_background_brush,
-          const QBrush &input_border_brush,
-          const QColor &settings_button_color,
-          const QColor &settings_button_highlight_color,
-          const QBrush &result_item_selection_background_brush,
-          const QBrush &result_item_selection_border_brush,
-          const QColor &result_item_selection_text_color,
-          const QColor &result_item_selection_subtext_color,
-          const QColor &result_item_text_color,
-          const QColor &result_item_subtext_color,
-          const QBrush &action_item_selection_background_brush,
-          const QBrush &action_item_selection_border_brush,
-          const QColor &action_item_selection_text_color,
-          const QColor &action_item_text_color);
-
 
     static Theme read(const QString &);
     static void write(const Theme &, const QString &);
@@ -45,6 +26,7 @@ public:
     QBrush window_border_brush;
     QBrush input_background_brush;
     QBrush input_border_brush;
+    QColor input_hint_color;
     QColor settings_button_color;
     QColor settings_button_highlight_color;
     QBrush result_item_selection_background_brush;
@@ -57,4 +39,8 @@ public:
     QBrush action_item_selection_border_brush;
     QColor action_item_selection_text_color;
     QColor action_item_text_color;
+
+    QColor parseColor(const QString &s) const;
+    QBrush parseBrush(const QString &s) const;
+
 };

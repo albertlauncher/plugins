@@ -22,6 +22,7 @@ const char *window_background_brush = "window_background_brush";
 const char *window_border_brush = "window_border_brush";
 const char *input_background_brush = "input_background_brush";
 const char *input_border_brush = "input_border_brush";
+const char *input_hint_color = "input_hint_color";
 const char *settings_button_color = "settings_button_color";
 const char *settings_button_highlight_color = "settings_button_highlight_color";
 const char *result_item_selection_background_brush = "result_item_selection_background_brush";
@@ -72,15 +73,6 @@ static QString toString(const QBrush &brush)
     // else
         return {};
 }
-
-// static QColor parseColor(const QString &)
-// {
-//     QColor c = QColor::fromString(s);
-//     if (!c.isValid())
-//         WARN << "Failed to parse color:" << s;
-// }
-
-
 
 static const array<QPalette::ColorGroup, 3> colorGroups
 {
@@ -226,100 +218,75 @@ Theme::Theme():
     Theme(QApplication::style()->standardPalette())
 {}
 
-Theme::Theme(const QPalette &palette):
-    Theme(palette,
-          QColor(0, 0, 0, 92),                       // window_shadow_brush
-          palette.brush(QPalette::Window),           // window_background_brush
-          palette.brush(QPalette::Highlight),        // window_border_brush
-          palette.brush(QPalette::Base),             // input_background_brush
-          palette.brush(QPalette::Highlight),        // input_border_brush
-          palette.color(QPalette::Button),           // settings_button_color
-          palette.color(QPalette::Highlight),        // settings_button_highlight_color
-          palette.brush(QPalette::Highlight),        // result_item_selection_background_brush
-          palette.brush(QPalette::Highlight),        // result_item_selection_border_brush
-          palette.color(QPalette::HighlightedText),  // result_item_selection_text_color
-          palette.color(QPalette::PlaceholderText),  // result_item_selection_subtext_color
-          palette.color(QPalette::WindowText),       // result_item_text_color
-          palette.color(QPalette::PlaceholderText),  // result_item_subtext_color
-          palette.brush(QPalette::Highlight),        // action_item_selection_background_brush
-          palette.brush(QPalette::Highlight),        // action_item_selection_border_brush
-          palette.color(QPalette::HighlightedText),  // action_item_selection_text_color
-          palette.color(QPalette::WindowText))       // action_item_text_color
+Theme::Theme(const QPalette &p):
+    palette(p),
+    window_shadow_brush(QColor(0, 0, 0, 92)),
+    window_background_brush(p.brush(QPalette::Window)),
+    window_border_brush(p.brush(QPalette::Highlight)),
+    input_background_brush(p.brush(QPalette::Base)),
+    input_border_brush(p.brush(QPalette::Highlight)),
+    input_hint_color(p.color(QPalette::Button)),
+    settings_button_color(p.color(QPalette::Button)),
+    settings_button_highlight_color(p.color(QPalette::Highlight)),
+    result_item_selection_background_brush(p.brush(QPalette::Highlight)),
+    result_item_selection_border_brush(p.brush(QPalette::Highlight)),
+    result_item_selection_text_color(p.color(QPalette::HighlightedText)),
+    result_item_selection_subtext_color(p.color(QPalette::PlaceholderText)),
+    result_item_text_color(p.color(QPalette::WindowText)),
+    result_item_subtext_color(p.color(QPalette::PlaceholderText)),
+    action_item_selection_background_brush(p.brush(QPalette::Highlight)),
+    action_item_selection_border_brush(p.brush(QPalette::Highlight)),
+    action_item_selection_text_color(p.color(QPalette::HighlightedText)),
+    action_item_text_color(p.color(QPalette::WindowText))
 {
 
 }
 
-Theme::Theme(const QPalette &_palette,
-             const QBrush &_window_shadow_brush,
-             const QBrush &_window_background_brush,
-             const QBrush &_window_border_brush,
-             const QBrush &_input_background_brush,
-             const QBrush &_input_border_brush,
-             const QColor &_settings_button_color,
-             const QColor &_settings_button_highlight_color,
-             const QBrush &_result_item_selection_background_brush,
-             const QBrush &_result_item_selection_border_brush,
-             const QColor &_result_item_selection_text_color,
-             const QColor &_result_item_selection_subtext_color,
-             const QColor &_result_item_text_color,
-             const QColor &_result_item_subtext_color,
-             const QBrush &_action_item_selection_background_brush,
-             const QBrush &_action_item_selection_border_brush,
-             const QColor &_action_item_selection_text_color,
-             const QColor &_action_item_text_color):
-    palette(_palette),
-    window_shadow_brush(_window_shadow_brush),
-    window_background_brush(_window_background_brush),
-    window_border_brush(_window_border_brush),
-    input_background_brush(_input_background_brush),
-    input_border_brush(_input_border_brush),
-    settings_button_color(_settings_button_color),
-    settings_button_highlight_color(_settings_button_highlight_color),
-    result_item_selection_background_brush(_result_item_selection_background_brush),
-    result_item_selection_border_brush(_result_item_selection_border_brush),
-    result_item_selection_text_color(_result_item_selection_text_color),
-    result_item_selection_subtext_color(_result_item_selection_subtext_color),
-    result_item_text_color(_result_item_text_color),
-    result_item_subtext_color(_result_item_subtext_color),
-    action_item_selection_background_brush(_action_item_selection_background_brush),
-    action_item_selection_border_brush(_action_item_selection_border_brush),
-    action_item_selection_text_color(_action_item_selection_text_color),
-    action_item_text_color(_action_item_text_color)
-{}
+static void read(const QSettings &s, const char *k, const Theme &t, QBrush *out)
+{
+    if (auto v = s.value(k).toString(); v.isEmpty())
+        return;
+    else if (auto b = t.parseBrush(v); b.style() != Qt::NoBrush)
+        *out = b;
+}
+
+static void read(const QSettings &s, const char *k, const Theme &t, QColor *out)
+{
+    if (auto v = s.value(k).toString(); v.isEmpty())
+        return;
+    else if (auto c = t.parseColor(v); c.isValid())
+        *out = c;
+}
 
 Theme Theme::read(const QString &path)
 {
     QSettings s(path, QSettings::IniFormat);
-
-    auto palette = readPalette(s);
-
-    auto t = Theme(palette);
-
-#define readColor(val) t.val = s.value(QStringLiteral(#val), t.val).value<QColor>();\
-    CRIT << s.group() << QStringLiteral(#val) << toString(t.val);
-#define readBrush(val) t.val = s.value(QStringLiteral(#val), t.val).value<QBrush>();
-
+    auto t = Theme(readPalette(s));
     s.beginGroup(QStringLiteral("Window"));
-    t.window_shadow_brush = s.value(keys.window_shadow_brush,
-                                    t.window_shadow_brush).value<QColor>();
 
-    readBrush(window_shadow_brush)
-    readBrush(window_background_brush)
-    readBrush(window_border_brush)
-    readBrush(input_background_brush)
-    readBrush(input_border_brush)
-    readColor(settings_button_color)
-    readColor(settings_button_highlight_color)
-    readBrush(result_item_selection_background_brush)
-    readBrush(result_item_selection_border_brush)
-    readColor(result_item_selection_text_color)
-    readColor(result_item_selection_subtext_color)
-    readColor(result_item_text_color)
-    readColor(result_item_subtext_color)
-    readBrush(action_item_selection_background_brush)
-    readBrush(action_item_selection_border_brush)
-    readColor(action_item_selection_text_color)
-    readColor(action_item_text_color)
+
+#define read(val) ::read(s, keys.val, t, &t.val);\
+        CRIT << keys.val << t.val;
+
+
+    read(window_shadow_brush);
+    read(window_background_brush)
+    read(window_border_brush)
+    read(input_background_brush)
+    read(input_border_brush)
+    read(input_hint_color)
+    read(settings_button_color)
+    read(settings_button_highlight_color)
+    read(result_item_selection_background_brush)
+    read(result_item_selection_border_brush)
+    read(result_item_selection_text_color)
+    read(result_item_selection_subtext_color)
+    read(result_item_text_color)
+    read(result_item_subtext_color)
+    read(action_item_selection_background_brush)
+    read(action_item_selection_border_brush)
+    read(action_item_selection_text_color)
+    read(action_item_text_color)
     s.endGroup();
 
     return t;
@@ -336,7 +303,7 @@ void Theme::write(const Theme &theme, const QString &path)
 
     writePalette(theme.palette, s);
 
-#define writeValue(val) s.setValue(QStringLiteral(#val), toString(theme.val));
+#define writeValue(val) s.setValue(keys.val, toString(theme.val));
 
     s.beginGroup(QStringLiteral("Window"));
     writeValue(window_shadow_brush)
@@ -344,6 +311,7 @@ void Theme::write(const Theme &theme, const QString &path)
     writeValue(window_border_brush)
     writeValue(input_background_brush)
     writeValue(input_border_brush)
+    writeValue(input_hint_color)
     writeValue(settings_button_color)
     writeValue(settings_button_highlight_color)
     writeValue(result_item_selection_background_brush)
@@ -360,3 +328,24 @@ void Theme::write(const Theme &theme, const QString &path)
 }
 
 void Theme::write(const QString &path) const { write(*this, path); }
+
+
+QColor Theme::parseColor(const QString &s) const
+{
+    if (s.isEmpty())
+        return {};
+
+    if (s[0] == '#')
+        return QColor::fromString(s);
+
+    for (int cr = 0; cr < (int)QPalette::NColorRoles; ++cr)
+        if (s == QMetaEnum::fromType<QPalette::ColorRole>().key(cr))
+            return palette.color(QPalette::Active, static_cast<QPalette::ColorRole>(cr));
+
+    return QColor::fromString(s);
+}
+
+QBrush Theme::parseBrush(const QString &s) const
+{
+    return parseColor(s);
+}

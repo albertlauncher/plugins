@@ -120,6 +120,16 @@ void InputLine::setFontSize(uint val)
     // setFixedHeight(fontMetrics().lineSpacing() + 2 * (int)document()->documentMargin());
 }
 
+QColor InputLine::hintColor() const { return hint_color_; }
+
+void InputLine::setHintColor(const QColor &val)
+{
+    if (hint_color_ == val)
+        return;
+    hint_color_ = val;
+    update();
+}
+
 void InputLine::next()
 {
     auto t = history_.next(history_search ? user_text_ : QString());
@@ -173,8 +183,7 @@ void InputLine::paintEvent(QPaintEvent *event)
         }
 
         QPainter p(viewport());
-        p.setPen(palette().button().color());
-
+        p.setPen(hint_color_);
         p.drawText(r, Qt::TextSingleLine, c);
 
         if (fontMetrics().horizontalAdvance(synopsis()) + c_width < r.width())

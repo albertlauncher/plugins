@@ -27,6 +27,9 @@ public:
     uint fontSize() const;
     void setFontSize(uint);
 
+    QColor hintColor() const;
+    void setHintColor(const QColor &);
+
     void next();
     void previous();
 
@@ -49,6 +52,7 @@ private:
     uint trigger_length_;
     class TriggerHighlighter;
     TriggerHighlighter *highlighter_;
+    QColor hint_color_;
 
 signals:
 
