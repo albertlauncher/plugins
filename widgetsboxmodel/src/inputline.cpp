@@ -140,6 +140,16 @@ void InputLine::previous()
         setText(t);
 }
 
+bool InputLine::event(QEvent *event)
+{
+    if (event->type() == QEvent::PaletteChange)
+    {
+        QSignalBlocker b(this);  // see below
+        highlighter_->rehighlight();
+    }
+    return QPlainTextEdit::event(event);
+}
+
 void InputLine::paintEvent(QPaintEvent *event)
 {
     if (document()->size().height() == 1
