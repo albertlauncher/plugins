@@ -18,7 +18,7 @@ public:
         if (input_line.trigger_length_ && text.length() >= input_line.trigger_length_)
         {
             setFormat(0, input_line.trigger_length_,
-                      input_line.palette().highlight().color());
+                      input_line.trigger_color_);
 
             setFormat(input_line.trigger_length_,
                       text.length()-input_line.trigger_length_,
@@ -120,6 +120,17 @@ void InputLine::setFontSize(uint val)
     // setFixedHeight(fontMetrics().lineSpacing() + 2 * (int)document()->documentMargin());
 }
 
+QColor InputLine::triggerColor() const { return trigger_color_; }
+
+void InputLine::setTriggerColor(const QColor &val)
+{
+    if (trigger_color_ == val)
+        return;
+    trigger_color_ = val;
+    QSignalBlocker b(this);  // see below
+    highlighter_->rehighlight();  // triggers QPlainTextEdit::textChanged!
+}
+
 QColor InputLine::hintColor() const { return hint_color_; }
 
 void InputLine::setHintColor(const QColor &val)
@@ -148,16 +159,6 @@ void InputLine::previous()
     if (auto t = history_.prev(history_search ? user_text_ : QString());
         !t.isNull())
         setText(t);
-}
-
-bool InputLine::event(QEvent *event)
-{
-    if (event->type() == QEvent::PaletteChange)
-    {
-        QSignalBlocker b(this);  // see below
-        highlighter_->rehighlight();
-    }
-    return QPlainTextEdit::event(event);
 }
 
 void InputLine::paintEvent(QPaintEvent *event)

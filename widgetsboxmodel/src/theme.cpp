@@ -22,6 +22,7 @@ const char *window_background_brush = "window_background_brush";
 const char *window_border_brush = "window_border_brush";
 const char *input_background_brush = "input_background_brush";
 const char *input_border_brush = "input_border_brush";
+const char *input_trigger_color = "input_trigger_color";
 const char *input_hint_color = "input_hint_color";
 const char *settings_button_color = "settings_button_color";
 const char *settings_button_highlight_color = "settings_button_highlight_color";
@@ -225,6 +226,7 @@ Theme::Theme(const QPalette &p):
     window_border_brush(p.brush(QPalette::Highlight)),
     input_background_brush(p.brush(QPalette::Base)),
     input_border_brush(p.brush(QPalette::Highlight)),
+    input_trigger_color(p.color(QPalette::Highlight)),
     input_hint_color(p.color(QPalette::Button)),
     settings_button_color(p.color(QPalette::Button)),
     settings_button_highlight_color(p.color(QPalette::Highlight)),
@@ -274,6 +276,7 @@ Theme Theme::read(const QString &path)
     read(window_border_brush)
     read(input_background_brush)
     read(input_border_brush)
+    read(input_trigger_color)
     read(input_hint_color)
     read(settings_button_color)
     read(settings_button_highlight_color)
@@ -311,6 +314,7 @@ void Theme::write(const Theme &theme, const QString &path)
     writeValue(window_border_brush)
     writeValue(input_background_brush)
     writeValue(input_border_brush)
+    writeValue(input_trigger_color)
     writeValue(input_hint_color)
     writeValue(settings_button_color)
     writeValue(settings_button_highlight_color)

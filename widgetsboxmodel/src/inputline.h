@@ -27,6 +27,9 @@ public:
     uint fontSize() const;
     void setFontSize(uint);
 
+    QColor triggerColor() const;
+    void setTriggerColor(const QColor &);
+
     QColor hintColor() const;
     void setHintColor(const QColor &);
 
@@ -39,7 +42,6 @@ public:
 
 private:
 
-    bool event(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void hideEvent(QHideEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
@@ -53,6 +55,7 @@ private:
     class TriggerHighlighter;
     TriggerHighlighter *highlighter_;
     QColor hint_color_;
+    QColor trigger_color_;
 
 signals:
 

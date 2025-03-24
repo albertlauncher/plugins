@@ -26,6 +26,7 @@ public:
     QBrush window_border_brush;
     QBrush input_background_brush;
     QBrush input_border_brush;
+    QColor input_trigger_color;
     QColor input_hint_color;
     QColor settings_button_color;
     QColor settings_button_highlight_color;

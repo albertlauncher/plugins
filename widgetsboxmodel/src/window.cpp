@@ -999,6 +999,7 @@ void Window::applyTheme(const Theme &theme)
     input_frame->setFillBrush(theme.input_background_brush);
     input_frame->setBorderBrush(theme.input_border_brush);
 
+    input_line->setTriggerColor(theme.input_trigger_color);
     input_line->setHintColor(theme.input_hint_color);
 
     settings_button_color_ = theme.settings_button_color;
