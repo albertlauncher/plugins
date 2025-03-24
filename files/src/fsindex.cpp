@@ -1,7 +1,7 @@
-// Copyright (c) 2022 Manuel Schneider
+// Copyright (c) 2022-2025 Manuel Schneider
 
 #include "fsindex.h"
-#include <QtConcurrent>
+#include <QtConcurrentRun>
 #include <albert/logging.h>
 using namespace std;
 
