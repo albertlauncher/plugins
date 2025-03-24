@@ -999,29 +999,29 @@ void Window::onSettingsButtonClick(Qt::MouseButton button)
 void Window::onMatchActivation(const QModelIndex &index)
 {
     if (index.isValid())
-        current_query->activateMatch(index.row(), 0);
-    hide();
+        if (current_query->activateMatch(index.row(), 0))
+            hide();
 }
 
 void Window::onMatchActionActivation(const QModelIndex &index)
 {
     if (index.isValid())
-        current_query->activateMatch(results_list->currentIndex().row(), index.row());
-    hide();
+        if (current_query->activateMatch(results_list->currentIndex().row(), index.row()))
+            hide();
 }
 
 void Window::onFallbackActivation(const QModelIndex &index)
 {
     if (index.isValid())
-        current_query->activateFallback(index.row(), 0);
-    hide();
+        if (current_query->activateFallback(index.row(), 0))
+            hide();
 }
 
 void Window::onFallbackActionActivation(const QModelIndex &index)
 {
     if (index.isValid())
-        current_query->activateFallback(results_list->currentIndex().row(), index.row());
-    hide();
+        if (current_query->activateFallback(results_list->currentIndex().row(), index.row()))
+            hide();
 }
 
 QString Window::input() const { return input_line->text(); }
