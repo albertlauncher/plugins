@@ -122,3 +122,15 @@ void WindowFrame::setShadowBrush(QBrush val)
     shadow_brush_ = val;
     emit shadowBrushChanged(val);
 }
+
+bool WindowFrame::event(QEvent *event)
+{
+    switch (event->type()) {
+    case QEvent::Resize:
+        QPixmapCache::remove(cacheKey());
+        break;
+    default:
+        break;
+    }
+    return Frame::event(event);
+}

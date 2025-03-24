@@ -5,7 +5,7 @@
 #include "frame.h"
 #include "util.h"
 #include "inputline.h"
-#include "palettereader.h"
+#include "theme.h"
 #include "resizinglist.h"
 #include "resultitemmodel.h"
 #include "resultslist.h"
@@ -339,19 +339,6 @@ void Window::initializeProperties()
         s->value(keys.window_shadow_offset,
                  defaults.window_shadow_offset).toUInt());
 
-    setWindowShadowBrush(
-        s->value(keys.window_shadow_brush,
-                 defaults.window_shadow_color).value<QBrush>());
-
-
-    setWindowBackgroundBrush(
-        s->value(keys.window_background_brush,
-                 palette().brush(defaults.window_background_brush)).value<QBrush>());
-
-    setWindowBorderBrush(
-        s->value(keys.window_border_brush,
-                 palette().brush(defaults.window_border_brush)).value<QBrush>());
-
     setWindowBorderRadius(
         s->value(keys.window_border_radius,
                  defaults.window_border_radius).toDouble());
@@ -373,14 +360,6 @@ void Window::initializeProperties()
                  defaults.window_width).toInt());
 
 
-    setInputBackgroundBrush(
-        s->value(keys.input_background_brush,
-                 palette().brush(defaults.input_background_brush)).value<QBrush>());
-
-    setInputBorderBrush(
-        s->value(keys.input_border_brush,
-                 palette().brush(defaults.input_border_brush)).value<QBrush>());
-
     setInputPadding(
         s->value(keys.input_padding,
                  defaults.input_padding).toUInt());
@@ -398,23 +377,6 @@ void Window::initializeProperties()
                  defaults.input_font_size).toInt());
 
 
-    setSettingsButtonColor(
-        s->value(keys.settings_button_color,
-                 palette().color(defaults.settings_button_color)).value<QColor>());
-
-    setSettingsButtonHightlightColor(
-        s->value(keys.settings_button_highlight_color,
-                 palette().color(defaults.settings_button_highlight_color)).value<QColor>());
-
-
-    setResultItemSelectionBackgroundBrush(
-        s->value(keys.result_item_selection_background_brush,
-                 palette().brush(defaults.result_item_selection_background_brush)).value<QBrush>());
-
-    setResultItemSelectionBorderBrush(
-        s->value(keys.result_item_selection_border_brush,
-                 palette().brush(defaults.result_item_selection_border_brush)).value<QBrush>());
-
     setResultItemSelectionBorderRadius(
         s->value(keys.result_item_selection_border_radius,
                  defaults.result_item_selection_border_radius).toDouble());
@@ -426,22 +388,6 @@ void Window::initializeProperties()
     setResultItemPadding(
         s->value(keys.result_item_padding,
                  defaults.result_item_padding).toUInt());
-
-    setResultItemTextColor(
-        s->value(keys.result_item_text_color,
-                 palette().color(defaults.result_item_text_color)).value<QColor>());
-
-    setResultItemSubTextColor(
-        s->value(keys.result_item_subtext_color,
-                 palette().color(defaults.result_item_subtext_color)).value<QColor>());
-
-    setResultItemSelectionTextColor(
-        s->value(keys.result_item_selection_text_color,
-                 palette().color(defaults.result_item_selection_text_color)).value<QColor>());
-
-    setResultItemSelectionSubTextColor(
-        s->value(keys.result_item_selection_subtext_color,
-                 palette().color(defaults.result_item_selection_subtext_color)).value<QColor>());
 
     setResultItemIconSize(
         s->value(keys.result_item_icon_size,
@@ -464,14 +410,6 @@ void Window::initializeProperties()
                  defaults.result_item_vertical_spacing).toUInt());
 
 
-    setActionItemSelectionBackgroundBrush(
-        s->value(keys.action_item_selection_background_brush,
-                 palette().brush(defaults.action_item_selection_background_brush)).value<QBrush>());
-
-    setActionItemSelectionBorderBrush(
-        s->value(keys.action_item_selection_border_brush,
-                 palette().brush(defaults.action_item_selection_border_brush)).value<QBrush>());
-
     setActionItemSelectionBorderRadius(
         s->value(keys.action_item_selection_border_radius,
                  defaults.action_item_selection_border_radius).toDouble());
@@ -479,14 +417,6 @@ void Window::initializeProperties()
     setActionItemSelectionBorderWidth(
         s->value(keys.action_item_selection_border_width,
                  defaults.action_item_selection_border_width).toDouble());
-
-    setActionItemSelectionTextColor(
-        s->value(keys.action_item_selection_text_color,
-                 palette().color(defaults.action_item_selection_text_color)).value<QColor>());
-
-    setActionItemTextColor(
-        s->value(keys.action_item_text_color,
-                 palette().color(defaults.action_item_text_color)).value<QColor>());
 
     setActionItemFontSize(
         s->value(keys.action_item_font_size,
@@ -496,17 +426,13 @@ void Window::initializeProperties()
         s->value(keys.action_item_padding,
                  defaults.action_item_padding).toUInt());
 
-    // try {
-    //     setThemeLight(s->value(CFG_THEME_LIGHT, DEF_THEME_LIGHT).toString());
-    // } catch (const out_of_range &) {
-    //     setThemeLight(themes.begin()->first);  // okay, we know there is at least one theme
-    // }
 
-    // try {
-    //     setThemeDark(s->value(CFG_THEME_DARK, DEF_THEME_DARK).toString());
-    // } catch (const out_of_range &) {
-    //     setThemeDark(themes.begin()->first);  // okay, we know there is at least one theme
-    // }
+    if (auto t = s->value(keys.theme_light).toString(); themes.contains(t))
+        theme_light_ = t;
+    if (auto t = s->value(keys.theme_dark).toString(); themes.contains(t))
+        theme_dark_ = t;
+    applyTheme(dark_mode ? theme_dark_ : theme_light_);
+
 
     s = plugin.state();
     if (!showCentered() && s->contains(keys.window_position)
@@ -1043,13 +969,13 @@ map<QString, QString> Window::findThemes() const
 void Window::applyTheme(const QString& name)
 {
     if (name.isNull())
-        applyTheme(Theme());
+        applyTheme(Theme{});
     else
     {
         try {
             auto path = themes.at(name);
             try {
-                applyTheme(readTheme(path));
+                applyTheme(Theme::read(path));
             } catch (const runtime_error &e) {
                 WARN << e.what();
                 albert::warning(QString("%1:\n\n%2").arg(tr("Failed loading theme"), e.what()));
@@ -1060,12 +986,35 @@ void Window::applyTheme(const QString& name)
     }
 }
 
-
 void Window::applyTheme(const Theme &theme)
 {
+    QPixmapCache::clear();
+
     setPalette(theme.palette);
 
-    // TODO
+    setShadowBrush(theme.window_shadow_brush);
+    setFillBrush(theme.window_background_brush);
+    setBorderBrush(theme.window_border_brush);
+
+    input_frame->setFillBrush(theme.input_background_brush);
+    input_frame->setBorderBrush(theme.input_border_brush);
+
+    settings_button_color_ = theme.settings_button_color;
+    settings_button->color = theme.settings_button_color;
+    settings_button->color.setAlpha(0);
+    settings_button_color_highlight_ = theme.settings_button_highlight_color;
+
+    results_list->setSelectionBackgroundBrush(theme.result_item_selection_background_brush);
+    results_list->setSelectionBorderBrush(theme.result_item_selection_border_brush);
+    results_list->setTextColor(theme.result_item_selection_text_color);
+    results_list->setSubtextColor(theme.result_item_selection_subtext_color);
+    results_list->setSelectionTextColor(theme.result_item_text_color);
+    results_list->setSelectionSubextColor(theme.result_item_subtext_color);
+
+    actions_list->setSelectionBackgroundBrush(theme.action_item_selection_background_brush);
+    actions_list->setSelectionBorderBrush(theme.action_item_selection_border_brush);
+    actions_list->setSelectionTextColor(theme.action_item_selection_text_color);
+    actions_list->setTextColor(theme.action_item_text_color);
 }
 
 bool Window::darkMode() const { return dark_mode; }
@@ -1342,8 +1291,14 @@ bool Window::eventFilter(QObject *watched, QEvent *event)
 const QString &Window::themeLight() const { return theme_light_; }
 void Window::setThemeLight(const QString &val)
 {
-    if (themeLight() == val || !themes.contains(val))
+    if (themeLight() == val)
         return;
+
+    if (!themes.contains(val) && !val.isNull())
+    {
+        WARN << "Theme does not exist:" << val;
+        return;
+    }
 
     if (!dark_mode)
         applyTheme(val);
@@ -1356,8 +1311,14 @@ void Window::setThemeLight(const QString &val)
 const QString &Window::themeDark() const { return theme_dark_; }
 void Window::setThemeDark(const QString &val)
 {
-    if (themeDark() == val || !themes.contains(val))
+    if (themeDark() == val)
         return;
+
+    if (!themes.contains(val) && !val.isNull())
+    {
+        WARN << "Theme does not exist:" << val;
+        return;
+    }
 
     if (dark_mode)
         applyTheme(val);
@@ -1489,29 +1450,21 @@ void Window::setDebugMode(bool val)
     emit debugModeChanged(val);
 }
 
+bool Window::disableInputMethod() const { return input_line->disable_input_method_; }
+void Window::setDisableInputMethod(bool val) { input_line->disable_input_method_ = val; }
+
+
 uint Window::windowShadowSize() const { return shadowSize(); }
 void Window::setWindowShadowSize(uint val) { setShadowSize(val); }
 
 uint Window::windowShadowOffset() const { return shadowOffset(); }
 void Window::setWindowShadowOffset(uint val) { setShadowOffset(val); }
 
-QBrush Window::windowShadowBrush() const { return shadowBrush(); }
-void Window::setWindowShadowBrush(QBrush val) { setShadowBrush(val); }
-
-bool Window::disableInputMethod() const { return input_line->disable_input_method_; }
-void Window::setDisableInputMethod(bool val) { input_line->disable_input_method_ = val; }
-
 double Window::windowBorderRadius() const { return radius(); }
 void Window::setWindowBorderRadius(double val) { setRadius(val); }
 
-QBrush Window::windowBackgroundBrush() const { return fillBrush(); }
-void Window::setWindowBackgroundBrush(QBrush val) { setFillBrush(val); }
-
 double Window::windowBorderWidth() const { return borderWidth(); }
 void Window::setWindowBorderWidth(double val) { setBorderWidth(val); }
-
-QBrush Window::windowBorderBrush() const { return borderBrush(); }
-void Window::setWindowBorderBrush(QBrush val) { setBorderBrush(val); }
 
 uint Window::windowPadding() const { return layout()->contentsMargins().left(); }
 void Window::setWindowPadding(uint val) { layout()->setContentsMargins(val, val, val, val); }
@@ -1522,12 +1475,6 @@ void Window::setWindowSpacing(uint val) { layout()->setSpacing(val); }
 uint Window::windowWidth() const { return input_frame->width(); }
 void Window::setWindowWidth(uint val) { input_frame->setFixedWidth(val); }
 
-
-QBrush Window::inputBackgroundBrush() const { return input_frame->fillBrush(); }
-void Window::setInputBackgroundBrush(QBrush val) { input_frame->setFillBrush(val); }
-
-QBrush Window::inputBorderBrush() const { return input_frame->borderBrush(); }
-void Window::setInputBorderBrush(QBrush val) { input_frame->setBorderBrush(val); }
 
 uint Window::inputPadding() const { return input_frame->contentsMargins().left(); }
 void Window::setInputPadding(uint val) { input_frame->setContentsMargins(val, val, val, val); }
@@ -1557,24 +1504,6 @@ void Window::setInputFontSize(uint val)
 }
 
 
-QColor Window::settingsButtonColor() const { return settings_button_color_; }
-void Window::setSettingsButtonColor(QColor val)
-{
-    settings_button_color_ = val;
-    val.setAlpha(0);
-    settings_button->color = val;
-}
-
-QColor Window::settingsButtonHightlightColor() const { return settings_button_color_highlight_; }
-void Window::setSettingsButtonHightlightColor(QColor val) { settings_button_color_highlight_ = val; }
-
-
-QBrush Window::resultItemSelectionBackgroundBrush() const { return results_list->selectionBackgroundBrush(); }
-void Window::setResultItemSelectionBackgroundBrush(QBrush val) { results_list->setSelectionBackgroundBrush(val); }
-
-QBrush Window::resultItemSelectionBorderBrush() const { return results_list->selectionBorderBrush(); }
-void Window::setResultItemSelectionBorderBrush(QBrush val) { results_list->setSelectionBorderBrush(val); }
-
 double Window::resultItemSelectionBorderRadius() const { return results_list->borderRadius(); }
 void Window::setResultItemSelectionBorderRadius(double val) { results_list->setBorderRadius(val); }
 
@@ -1583,18 +1512,6 @@ void Window::setResultItemSelectionBorderWidth(double val) { results_list->setBo
 
 uint Window::resultItemPadding() const { return results_list->padding(); }
 void Window::setResultItemPadding(uint val) { results_list->setPadding(val); }
-
-QColor Window::resultItemTextColor() const { return results_list->textColor(); }
-void Window::setResultItemTextColor(QColor val) { results_list->setTextColor(val); }
-
-QColor Window::resultItemSubTextColor() const { return results_list->subtextColor(); }
-void Window::setResultItemSubTextColor(QColor val) { results_list->setSubtextColor(val); }
-
-QColor Window::resultItemSelectionTextColor() const { return results_list->selectionTextColor(); }
-void Window::setResultItemSelectionTextColor(QColor val) { results_list->setSelectionTextColor(val); }
-
-QColor Window::resultItemSelectionSubTextColor() const { return results_list->selectionSubtextColor(); }
-void Window::setResultItemSelectionSubTextColor(QColor val) { results_list->setSelectionSubextColor(val); }
 
 uint Window::resultItemIconSize() const { return results_list->iconSize(); }
 void Window::setResultItemIconSize(uint val) { results_list->setIconSite(val); }
@@ -1612,26 +1529,14 @@ uint Window::resultItemVerticalSpace() const { return results_list->verticalSpac
 void Window::setResultItemVerticalSpace(uint val) { results_list->setVerticalSpacing(val); }
 
 
-QBrush Window::actionItemSelectionBackgroundBrush() const { return actions_list->selectionBackgroundBrush(); }
-void Window::setActionItemSelectionBackgroundBrush(QBrush val) { actions_list->setSelectionBackgroundBrush(val); }
-
-QBrush Window::actionItemSelectionBorderBrush() const { return actions_list->selectionBorderBrush(); }
-void Window::setActionItemSelectionBorderBrush(QBrush val) { actions_list->setSelectionBorderBrush(val); }
-
 double Window::actionItemSelectionBorderRadius() const { return actions_list->borderRadius(); }
 void Window::setActionItemSelectionBorderRadius(double val) { actions_list->setBorderRadius(val); }
 
 double Window::actionItemSelectionBorderWidth() const { return actions_list->borderWidth(); }
 void Window::setActionItemSelectionBorderWidth(double val) { actions_list->setBorderWidth(val); }
 
-QColor Window::actionItemSelectionTextColor() const { return actions_list->selectionTextColor(); }
-void Window::setActionItemSelectionTextColor(QColor val) { actions_list->setSelectionTextColor(val); }
-
 uint Window::actionItemPadding() const { return actions_list->padding(); }
 void Window::setActionItemPadding(uint val) { actions_list->setPadding(val); }
-
-QColor Window::actionItemTextColor() const { return actions_list->textColor(); }
-void Window::setActionItemTextColor(QColor val) { actions_list->setTextColor(val); }
 
 uint Window::actionItemFontSize() const { return actions_list->textFontSize(); }
 void Window::setActionItemFontSize(uint val) { actions_list->setTextFontSize(val); }

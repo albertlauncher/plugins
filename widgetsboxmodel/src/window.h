@@ -180,12 +180,6 @@ public:
     uint windowShadowOffset() const;
     void setWindowShadowOffset(uint);
 
-    QBrush windowShadowBrush() const;
-    void setWindowShadowBrush(QBrush);
-
-
-    QBrush windowBackgroundBrush() const;
-    void setWindowBackgroundBrush(QBrush);
 
     uint windowWidth() const;
     void setWindowWidth(uint);
@@ -202,15 +196,6 @@ public:
     double windowBorderWidth() const;
     void setWindowBorderWidth(double);
 
-    QBrush windowBorderBrush() const;
-    void setWindowBorderBrush(QBrush);
-
-
-    QBrush inputBackgroundBrush() const;
-    void setInputBackgroundBrush(QBrush);
-
-    QBrush inputBorderBrush() const;
-    void setInputBorderBrush(QBrush);
 
     uint inputPadding() const;
     void setInputPadding(uint);
@@ -226,36 +211,11 @@ public:
     void setInputFontSize(uint);
 
 
-    QColor settingsButtonColor() const;
-    void setSettingsButtonColor(QColor);
-
-    QColor settingsButtonHightlightColor() const;
-    void setSettingsButtonHightlightColor(QColor);
-
-
-    QBrush resultItemSelectionBackgroundBrush() const;
-    void setResultItemSelectionBackgroundBrush(QBrush val);
-
-    QBrush resultItemSelectionBorderBrush() const;
-    void setResultItemSelectionBorderBrush(QBrush val);
-
     double resultItemSelectionBorderRadius() const;
     void setResultItemSelectionBorderRadius(double);
 
     double resultItemSelectionBorderWidth() const;
     void setResultItemSelectionBorderWidth(double);
-
-    QColor resultItemTextColor() const;
-    void setResultItemTextColor(QColor);
-
-    QColor resultItemSubTextColor() const;
-    void setResultItemSubTextColor(QColor);
-
-    QColor resultItemSelectionTextColor() const;
-    void setResultItemSelectionTextColor(QColor);
-
-    QColor resultItemSelectionSubTextColor() const;
-    void setResultItemSelectionSubTextColor(QColor);
 
     uint resultItemIconSize() const;
     void setResultItemIconSize(uint);
@@ -276,23 +236,12 @@ public:
     void setResultItemPadding(uint);
 
 
-    QBrush actionItemSelectionBackgroundBrush() const;
-    void setActionItemSelectionBackgroundBrush(QBrush val);
-
-    QBrush actionItemSelectionBorderBrush() const;
-    void setActionItemSelectionBorderBrush(QBrush val);
-
     double actionItemSelectionBorderRadius() const;
     void setActionItemSelectionBorderRadius(double);
 
     double actionItemSelectionBorderWidth() const;
     void setActionItemSelectionBorderWidth(double);
 
-    void setActionItemSelectionTextColor(QColor val);
-    QColor actionItemSelectionTextColor() const;
-
-    QColor actionItemTextColor() const;
-    void setActionItemTextColor(QColor);
 
     uint actionItemFontSize() const;
     void setActionItemFontSize(uint);
