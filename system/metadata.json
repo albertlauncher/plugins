@@ -1,5 +1,6 @@
 {
     "authors": ["@manuelschneid3r"],
+    "credits": "Flatwoken Icon (CC BY-SA 4.0 DEED) by Alessandro Roncone",
     "description": "Control your machine state",
     "description[de]": "Steuern Sie den Zustand Ihrer Maschine",
     "license": "MIT",
