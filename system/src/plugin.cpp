@@ -18,7 +18,7 @@ static QString defaultCommand(SupportedCommands command)
 #if defined(Q_OS_MAC)
     switch (command) {
         case LOCK:      return R"R(pmset displaysleepnow)R";
-        case LOGOUT:    return R"R(osascript -e 'tell app "System Events" to  «event aevtrlgo»')R";
+        case LOGOUT:    return R"R(osascript -e 'tell app "System Events" to log out')R";
         case SUSPEND:   return R"R(osascript -e 'tell app "System Events" to sleep')R";
         case REBOOT:    return R"R(osascript -e 'tell app "System Events" to restart')R";
         case POWEROFF:  return R"R(osascript -e 'tell app "System Events" to shut down')R";
