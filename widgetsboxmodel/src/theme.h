@@ -14,10 +14,7 @@ public:
     Theme();
     Theme(const QPalette &palette);
 
-    static Theme read(const QString &);
-    static void write(const Theme &, const QString &);
-    void write(const QString &) const;
-
+    static Theme read(const QString &path);
 
     QPalette palette;
 
@@ -40,8 +37,5 @@ public:
     QBrush action_item_selection_border_brush;
     QColor action_item_selection_text_color;
     QColor action_item_text_color;
-
-    QColor parseColor(const QString &s) const;
-    QBrush parseBrush(const QString &s) const;
 
 };
