@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2024 Manuel Schneider
+// Copyright (c) 2022-2025 Manuel Schneider
 
 #include "plugin.h"
 #include <QCheckBox>
@@ -109,6 +109,7 @@ void Plugin::handleTriggerQuery(Query &query)
     QLocale loc;
     int rank = 0;
     Matcher matcher(query.string());
+    vector<shared_ptr<Item>> items;
 
     shared_lock l(mutex);
 
@@ -151,8 +152,7 @@ void Plugin::handleTriggerQuery(Query &query)
                         snippets->addSnippet(t);
                     });
 
-            query.add(
-                StandardItem::make(
+            items.push_back(StandardItem::make(
                     id(),
                     entry.text,
                     QString("#%1 %2").arg(rank).arg(loc.toString(entry.datetime, QLocale::LongFormat)),
@@ -162,6 +162,8 @@ void Plugin::handleTriggerQuery(Query &query)
             );
         }
     }
+
+    query.add(items);
 }
 
 QWidget *Plugin::buildConfigWidget()
