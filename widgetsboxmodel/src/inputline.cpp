@@ -4,6 +4,7 @@
 #include <QApplication>
 #include <QPaintEvent>
 #include <QPainter>
+#include <QSignalBlocker>
 #include <QSyntaxHighlighter>
 #include <albert/logging.h>
 
@@ -11,19 +12,52 @@ class InputLine::TriggerHighlighter : public QSyntaxHighlighter
 {
     InputLine &input_line;
 public:
+
+    double formatted_text_length;
+    bool block_rehighlight = true;
+
     TriggerHighlighter(QTextDocument *d, InputLine *i) : QSyntaxHighlighter(d), input_line(*i) {}
+
+    // QPlainTextEdit triggers rehighlight on keypress. At this point trigger_lenght is not set yet.
+    // We want to make sure that we are in contol over the rehighlights. Also rehighlight emits
+    // QPlainTextEdit:textChanged which has to be avoided. Intended shadowing.
+    void rehighlight()
+    {
+        block_rehighlight = false;
+        QSignalBlocker b(&input_line);  // see below
+        QSyntaxHighlighter::rehighlight();  // triggers QPlainTextEdit::textChanged!
+    }
 
     void highlightBlock(const QString &text) override
     {
+        if (block_rehighlight)
+            return;
+
+        block_rehighlight = true;
+        formatted_text_length = 0.0;
+
         if (input_line.trigger_length_ && text.length() >= input_line.trigger_length_)
         {
-            setFormat(0, input_line.trigger_length_,
-                      input_line.trigger_color_);
+            auto f = input_line.font();
+            f.setWeight(QFont::Light);
+            f.setCapitalization(QFont::SmallCaps);
+
+            QTextCharFormat fmt;
+            fmt.setFont(f);
+            fmt.setForeground(input_line.trigger_color_);
+            setFormat(0, input_line.trigger_length_, fmt);
+
+            formatted_text_length +=
+                QFontMetricsF(f).horizontalAdvance(text.left(input_line.trigger_length_));
 
             setFormat(input_line.trigger_length_,
                       text.length()-input_line.trigger_length_,
                       input_line.palette().text().color());
         }
+
+        formatted_text_length
+            += QFontMetricsF(input_line.font())
+                   .horizontalAdvance(text.sliced(input_line.trigger_length_));
     }
 };
 
@@ -86,8 +120,7 @@ uint InputLine::triggerLength() const { return trigger_length_; }
 void InputLine::setTriggerLength(uint len)
 {
     trigger_length_ = len;
-    QSignalBlocker b(this);  // see below
-    highlighter_->rehighlight();  // triggers QPlainTextEdit::textChanged!
+    highlighter_->rehighlight();
 }
 
 QString InputLine::text() const { return toPlainText(); }
@@ -127,8 +160,7 @@ void InputLine::setTriggerColor(const QColor &val)
     if (trigger_color_ == val)
         return;
     trigger_color_ = val;
-    QSignalBlocker b(this);  // see below
-    highlighter_->rehighlight();  // triggers QPlainTextEdit::textChanged!
+    highlighter_->rehighlight();
 }
 
 QColor InputLine::hintColor() const { return hint_color_; }
@@ -174,7 +206,7 @@ void InputLine::paintEvent(QPaintEvent *event)
         else
             c.prepend(QChar::Space);
 
-        auto r = QRectF(contentsRect()).adjusted(fontMetrics().horizontalAdvance(text()) + 1,
+        auto r = QRectF(contentsRect()).adjusted(highlighter_->formatted_text_length + 1,
                                                  1, -1, -1); // 1xp document margin
         auto c_width = fontMetrics().horizontalAdvance(c);
         if (c_width > r.width())
@@ -187,10 +219,16 @@ void InputLine::paintEvent(QPaintEvent *event)
         p.setPen(hint_color_);
         p.drawText(r, Qt::TextSingleLine, c);
 
-        if (fontMetrics().horizontalAdvance(synopsis()) + c_width < r.width())
-            p.drawText(r.adjusted(c_width, 0, 0, 0),
-                       Qt::TextSingleLine | Qt::AlignRight,
-                       synopsis());
+        if (synopsis_.length() > 0)
+        {
+            auto f = font();
+            f.setWeight(QFont::Light);
+            p.setFont(f);
+            if (fontMetrics().horizontalAdvance(synopsis()) + c_width < r.width())
+                p.drawText(r.adjusted(c_width, 0, 0, 0),
+                           Qt::TextSingleLine | Qt::AlignRight,
+                           synopsis());
+        }
     }
 
 
@@ -263,6 +301,7 @@ void InputLine::keyPressEvent(QKeyEvent *event)
         break;
     }
 
+    // Triggers unwanted rehighlight! See InputLine::TriggerHighlighter::rehighlight
     QPlainTextEdit::keyPressEvent(event);
 }
 
@@ -274,5 +313,4 @@ void InputLine::inputMethodEvent(QInputMethodEvent *event)
     }
     else
         QPlainTextEdit::inputMethodEvent(event);
-
 }
