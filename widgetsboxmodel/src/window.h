@@ -45,7 +45,6 @@ public:
     void setQuery(albert::Query *query);
 
     const std::map<QString, QString> themes;
-    void applyTheme(const QString& name);  // throws
 
     bool darkMode() const;
 
@@ -57,6 +56,7 @@ private:
     void initializeStatemachine();
     void installEventFilterKeepThisPrioritized(QObject *watched, QObject *filter);
     std::map<QString, QString> findThemes() const;
+    void applyTheme(const QString& name);  // only for valid names, throws runtime_errors
     void applyTheme(const Theme &);
 
     bool haveMatches() const;
@@ -90,8 +90,8 @@ private:
     Mod mod_actions = Mod::Alt;
     Mod mod_fallback = Mod::Meta;
 
-    QString theme_light_;
-    QString theme_dark_;
+    QString theme_light_;  // null or exists in themes
+    QString theme_dark_;   // null or exists in themes
     bool hideOnFocusLoss_;
     bool showCentered_;
     bool followCursor_;

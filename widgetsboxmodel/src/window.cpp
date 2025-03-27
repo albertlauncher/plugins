@@ -93,11 +93,11 @@ static const struct {
     const int       result_item_padding                         = general_spacing;
     const ColorRole result_item_text_color                      = ColorRole::WindowText;
     const ColorRole result_item_subtext_color                   = ColorRole::PlaceholderText;
-    const int       result_item_icon_size                       = 34;
+    const int       result_item_icon_size                       = 39;
     const int       result_item_text_font_size                  = QApplication::font().pointSize() + 4;
-    const int       result_item_subtext_font_size               = QApplication::font().pointSize() - 2;
+    const int       result_item_subtext_font_size               = QApplication::font().pointSize() - 1;
     const int       result_item_horizontal_spacing              = general_spacing;
-    const int       result_item_vertical_spacing                = 1;
+    const int       result_item_vertical_spacing                = 2;
 
     const ColorRole action_item_selection_background_brush      = ColorRole::Highlight;
     const ColorRole action_item_selection_border_brush          = ColorRole::Highlight;
@@ -431,8 +431,9 @@ void Window::initializeProperties()
         theme_light_ = t;
     if (auto t = s->value(keys.theme_dark).toString(); themes.contains(t))
         theme_dark_ = t;
-    applyTheme(dark_mode ? theme_dark_ : theme_light_);
 
+    // applyTheme requires a valid window for the message box. Set theme later.
+    QTimer::singleShot(0, [this]{ applyTheme(dark_mode ? theme_dark_ : theme_light_); });
 
     s = plugin.state();
     if (!showCentered() && s->contains(keys.window_position)
@@ -972,16 +973,15 @@ void Window::applyTheme(const QString& name)
         applyTheme(Theme{});
     else
     {
+        auto path = themes.at(name);  // names assumed to exist
+
         try {
-            auto path = themes.at(name);
-            try {
-                applyTheme(Theme::read(path));
-            } catch (const runtime_error &e) {
-                WARN << e.what();
-                albert::warning(QString("%1:\n\n%2").arg(tr("Failed loading theme"), e.what()));
-            }
-        } catch (const out_of_range&) {
-            CRIT << "Theme does not exist:" << name;
+            applyTheme(Theme::read(path));
+        } catch (const runtime_error &e) {
+            applyTheme(Theme());
+            WARN << e.what();
+            albert::warning(QString("%1:%2\n\n%3")
+                                .arg(tr("Failed loading theme"), name, e.what()));
         }
     }
 }
@@ -1087,12 +1087,7 @@ bool Window::event(QEvent *event)
         QApplication::setPalette(QApplication::style()->standardPalette());
 #endif
         dark_mode = haveDarkSystemPalette();
-        auto theme_name = (dark_mode) ? theme_dark_ : theme_light_;
-        try {
-            applyTheme(theme_name);
-        } catch (const out_of_range&) {
-            CRIT << "Set theme does not exist:" << theme_name;
-        }
+        applyTheme((dark_mode) ? theme_dark_ : theme_light_);
     }
 
     else if (event->type() == QEvent::Close)
