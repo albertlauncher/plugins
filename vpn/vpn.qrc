@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="shield-empty">resources/shield-empty.svg</file>
+        <file alias="shield-half">resources/shield-half.svg</file>
+        <file alias="shield-full">resources/shield-full.svg</file>
+    </qresource>
+</RCC>

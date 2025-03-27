@@ -23,12 +23,18 @@ QString VpnConnectionItem::subtext() const
 
 QStringList VpnConnectionItem::iconUrls() const
 {
-    if (state_ == State::Connected)
-        return {QStringLiteral("gen:?&text=🔐")};
-    else
-        return {QStringLiteral("gen:?&text=🔓")};
+    switch (state_) {
+    case State::Invalid:
+    case State::Disconnected:
+        return {QStringLiteral(":shield-empty")};
+    case State::Connecting:
+    case State::Disconnecting:
+        return {QStringLiteral(":shield-half")};
+    case State::Connected:
+        return {QStringLiteral(":shield-full")};
+    }
+    return {};  // make compilers happy
 }
-
 
 QString VpnConnectionItem::inputActionText() const { return text(); }
 

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 find_package(Albert REQUIRED)
 
-project(vpn VERSION 5.0)
+project(vpn VERSION 6.0)
 
 file(GLOB_RECURSE I18N_SOURCES src/*)
 
@@ -11,6 +11,7 @@ albert_plugin(
         src/plugin.h
         src/vpnconnectionitem.h
         src/vpnconnectionitem.cpp
+        vpn.qrc
     INCLUDE
         PRIVATE
             src
