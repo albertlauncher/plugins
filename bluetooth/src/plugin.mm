@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Manuel Schneider
+// Copyright (c) 2024-2025 Manuel Schneider
 
 #include "plugin.h"
 #include <IOBluetooth/IOBluetooth.h>
@@ -34,14 +34,15 @@ class Plugin::Private
 {
 public:
     QString tr_bt = Plugin::tr("Bluetooth");
-    static const QStringList icon_urls;
     __strong BluetoothConnectionHandler* delegate;
     bool fuzzy;
 };
 
-const QStringList Plugin::Private::icon_urls =
-    {"qfip:/System/Applications/Utilities/Bluetooth File Exchange.app"};
-
+static QStringList icons(bool active)
+{
+    return QStringList(active ? QStringLiteral(":bt-active")
+                              : QStringLiteral(":bt-inactive"));
+}
 
 Plugin::Plugin() : d(make_unique<Private>())
 {
@@ -71,7 +72,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
     {
         auto desc = enabled ? tr("Enabled") : tr("Disabled");
         r.emplace_back(StandardItem::make(
-            id(), d->tr_bt, desc, d->tr_bt, d->icon_urls,
+            id(), d->tr_bt, desc, d->tr_bt, icons(enabled),
             {
                 {
                     QStringLiteral("pow"), enabled ? tr("Disable") : tr("Enable"),
@@ -123,7 +124,7 @@ vector<RankItem> Plugin::handleGlobalQuery(const Query &query)
 
             r.emplace_back(
                 StandardItem::make(
-                    id(), device_name, desc, device_name, d->icon_urls,
+                    id(), device_name, desc, device_name, icons(device.isConnected),
                     {{
                         QStringLiteral("toogle"),
                         device.isConnected ? tr("Disconnect") : tr("Connect"),

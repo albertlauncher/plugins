@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="bt-active">resources/bluetooth-active.svg</file>
+        <file alias="bt-inactive">resources/bluetooth-inactive.svg</file>
+    </qresource>
+</RCC>
